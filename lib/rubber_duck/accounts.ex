@@ -1,4 +1,11 @@
 defmodule RubberDuck.Accounts do
+  @moduledoc """
+  Domain for user account management and authentication in RubberDuck.
+  
+  Provides operations for user registration, authentication, and
+  account management using username-based authentication.
+  """
+
   use Ash.Domain,
     otp_app: :rubber_duck
 

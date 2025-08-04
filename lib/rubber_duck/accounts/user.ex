@@ -1,4 +1,12 @@
 defmodule RubberDuck.Accounts.User do
+  @moduledoc """
+  User resource for authentication and account management.
+  
+  Handles user registration, authentication, and account operations
+  using username-based authentication with bcrypt password hashing.
+  Supports JWT tokens for session management.
+  """
+
   use Ash.Resource,
     otp_app: :rubber_duck,
     domain: RubberDuck.Accounts,
