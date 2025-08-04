@@ -123,15 +123,15 @@ Establish the core application structure with Ash Framework, PostgreSQL database
 
 #### Tasks:
 - [ ] 1.4.1 Create User resource with AshAuthentication
-  - [ ] 1.4.1.1 Add email and password fields
-  - [ ] 1.4.1.2 Configure bcrypt hashing
-  - [ ] 1.4.1.3 Add confirmation fields
+  - [ ] 1.4.1.1 Add username field (required)
+  - [ ] 1.4.1.2 Add email field (optional)
+  - [ ] 1.4.1.3 Configure bcrypt password hashing
   - [ ] 1.4.1.4 Set up profile attributes
 - [ ] 1.4.2 Implement authentication strategies
-  - [ ] 1.4.2.1 Password strategy with bcrypt
+  - [ ] 1.4.2.1 Username/password strategy with bcrypt
   - [ ] 1.4.2.2 Token strategy with JWT
-  - [ ] 1.4.2.3 Email confirmation flow
-  - [ ] 1.4.2.4 Password reset flow
+  - [ ] 1.4.2.3 Optional email confirmation flow
+  - [ ] 1.4.2.4 Password reset via username or email
 - [ ] 1.4.3 Create Token resource
   - [ ] 1.4.3.1 JWT token generation
   - [ ] 1.4.3.2 Token expiration handling
