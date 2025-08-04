@@ -8,6 +8,8 @@ defmodule RubberDuck.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      RubberDuck.Repo,
+      {AshAuthentication.Supervisor, [otp_app: :rubber_duck]}
       # Starts a worker by calling: RubberDuck.Worker.start_link(arg)
       # {RubberDuck.Worker, arg}
     ]
