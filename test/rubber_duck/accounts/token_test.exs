@@ -62,16 +62,15 @@ defmodule RubberDuck.Accounts.TokenTest do
       # Regular users should not be able to access tokens directly
       # Tokens are managed by AshAuthentication only
       
-      # Try to read tokens as regular user (should return empty results due to policies)
-      # The policy allows the action but returns no results for unauthorized actors
-      assert {:ok, []} = Ash.read(RubberDuck.Accounts.Token, actor: user)
+      # Try to read tokens as regular user (should be forbidden)
+      assert {:error, %Ash.Error.Forbidden{}} = Ash.read(RubberDuck.Accounts.Token, actor: user)
     end
 
     test "token resource prevents unauthorized operations for regular users", %{user: user} do
-      # Try to perform token operations as regular user (should return empty results)
+      # Try to perform token operations as regular user (should be forbidden)
       
-      # Attempt to get expired tokens (should return empty due to policies)
-      assert {:ok, []} = Ash.read(RubberDuck.Accounts.Token, action: :expired, actor: user)
+      # Attempt to get expired tokens (should be forbidden)
+      assert {:error, %Ash.Error.Forbidden{}} = Ash.read(RubberDuck.Accounts.Token, action: :expired, actor: user)
     end
 
     test "token resource has proper policy configuration" do

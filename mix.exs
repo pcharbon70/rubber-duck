@@ -51,7 +51,14 @@ defmodule RubberDuck.MixProject do
       {:file_system, "~> 1.1.0"},
 
       # JSON Schema validation
-      {:ex_json_schema, "~> 0.10"}
+      {:ex_json_schema, "~> 0.10"},
+
+      # Telemetry and monitoring
+      {:telemetry_metrics, "~> 1.0"},
+      {:telemetry_poller, "~> 1.0"},
+
+      # Error reporting
+      {:tower, "~> 0.6"}
     ]
   end
 
