@@ -36,6 +36,8 @@ defmodule RubberDuck.MixProject do
       # Ash framework
       {:picosat_elixir, "~> 0.2"},
       {:igniter, "~> 0.6"},
+      # HTTP client
+      {:req, "~> 0.5"},
       # Circuit breaker library
       {:fuse, "~> 2.5"},
       {:ex_rated, "~> 2.1"},
