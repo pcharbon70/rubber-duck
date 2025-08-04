@@ -11,16 +11,6 @@ defmodule RubberDuck.Accounts.User do
       log_out_everywhere do
         apply_on_password_change? true
       end
-
-      confirmation :confirm_new_user do
-        monitor_fields [:email]
-        confirm_on_create? true
-        confirm_on_update? false
-        require_interaction? true
-        confirmed_at_field :confirmed_at
-        auto_confirm_actions [:sign_in_with_magic_link, :reset_password_with_token]
-        sender RubberDuck.Accounts.User.Senders.SendNewUserConfirmationEmail
-      end
     end
 
     tokens do
@@ -33,15 +23,9 @@ defmodule RubberDuck.Accounts.User do
 
     strategies do
       password :password do
-        identity_field :email
+        identity_field :username
         hash_provider AshAuthentication.BcryptProvider
-
-        resettable do
-          sender RubberDuck.Accounts.User.Senders.SendPasswordResetEmail
-          # these configurations will be the default in a future release
-          password_reset_action_name :reset_password_with_token
-          request_password_reset_action_name :request_password_reset_token
-        end
+        # Password reset disabled - admin must handle password resets manually
       end
     end
   end
@@ -85,11 +69,11 @@ defmodule RubberDuck.Accounts.User do
     end
 
     read :sign_in_with_password do
-      description "Attempt to sign in using a email and password."
+      description "Attempt to sign in using a username and password."
       get? true
 
-      argument :email, :ci_string do
-        description "The email to use for retrieving the user."
+      argument :username, :ci_string do
+        description "The username to use for retrieving the user."
         allow_nil? false
       end
 
@@ -99,7 +83,7 @@ defmodule RubberDuck.Accounts.User do
         sensitive? true
       end
 
-      # validates the provided email and password and generates a token
+      # validates the provided username and password and generates a token
       prepare AshAuthentication.Strategy.Password.SignInPreparation
 
       metadata :token, :string do
@@ -136,9 +120,10 @@ defmodule RubberDuck.Accounts.User do
     end
 
     create :register_with_password do
-      description "Register a new user with a email and password."
+      description "Register a new user with a username and password."
 
-      argument :email, :ci_string do
+      argument :username, :ci_string do
+        description "The unique username for the user."
         allow_nil? false
       end
 
@@ -155,8 +140,8 @@ defmodule RubberDuck.Accounts.User do
         sensitive? true
       end
 
-      # Sets the email from the argument
-      change set_attribute(:email, arg(:email))
+      # Sets the username from the argument
+      change set_attribute(:username, arg(:username))
 
       # Hashes the provided password
       change AshAuthentication.Strategy.Password.HashPasswordChange
@@ -173,58 +158,15 @@ defmodule RubberDuck.Accounts.User do
       end
     end
 
-    action :request_password_reset_token do
-      description "Send password reset instructions to a user if they exist."
-
-      argument :email, :ci_string do
-        allow_nil? false
-      end
-
-      # creates a reset token and invokes the relevant senders
-      run {AshAuthentication.Strategy.Password.RequestPasswordReset, action: :get_by_email}
-    end
-
-    read :get_by_email do
-      description "Looks up a user by their email"
+    read :get_by_username do
+      description "Looks up a user by their username"
       get? true
 
-      argument :email, :ci_string do
+      argument :username, :ci_string do
         allow_nil? false
       end
 
-      filter expr(email == ^arg(:email))
-    end
-
-    update :reset_password_with_token do
-      argument :reset_token, :string do
-        allow_nil? false
-        sensitive? true
-      end
-
-      argument :password, :string do
-        description "The proposed password for the user, in plain text."
-        allow_nil? false
-        constraints min_length: 8
-        sensitive? true
-      end
-
-      argument :password_confirmation, :string do
-        description "The proposed password for the user (again), in plain text."
-        allow_nil? false
-        sensitive? true
-      end
-
-      # validates the provided reset token
-      validate AshAuthentication.Strategy.Password.ResetTokenValidation
-
-      # validates that the password matches the confirmation
-      validate AshAuthentication.Strategy.Password.PasswordConfirmationValidation
-
-      # Hashes the provided password
-      change AshAuthentication.Strategy.Password.HashPasswordChange
-
-      # Generates an authentication token for the user
-      change AshAuthentication.GenerateTokenChange
+      filter expr(username == ^arg(:username))
     end
   end
 
@@ -241,7 +183,8 @@ defmodule RubberDuck.Accounts.User do
   attributes do
     uuid_primary_key :id
 
-    attribute :email, :ci_string do
+    attribute :username, :ci_string do
+      description "Unique username for authentication"
       allow_nil? false
       public? true
     end
@@ -250,11 +193,9 @@ defmodule RubberDuck.Accounts.User do
       allow_nil? false
       sensitive? true
     end
-
-    attribute :confirmed_at, :utc_datetime_usec
   end
 
   identities do
-    identity :unique_email, [:email]
+    identity :unique_username, [:username]
   end
 end
