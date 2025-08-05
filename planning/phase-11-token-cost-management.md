@@ -58,7 +58,7 @@ Create intelligent budget management agents that autonomously monitor, optimize,
   - [ ] 11.1.4.1 Cross-level budget optimization with cascade effect management
   - [ ] 11.1.4.2 Emergency budget reallocation with priority-based distribution
   - [ ] 11.1.4.3 Budget rollover and reset automation with policy enforcement
-  - [ ] 11.1.4.4 Hierarchical approval workflows with autonomous escalation
+  - [ ] 11.1.4.4 Hierarchical approval using Runic state machines with autonomous escalation
 
 #### Actions:
 - [ ] 11.1.5 Budget management actions
@@ -69,7 +69,7 @@ Create intelligent budget management agents that autonomously monitor, optimize,
 
 #### Unit Tests:
 - [ ] 11.1.6 Test hierarchical budget allocation and cascading effects
-- [ ] 11.1.7 Test budget transfer mechanisms and approval workflows
+- [ ] 11.1.7 Test budget transfer mechanisms and Runic approval workflows
 - [ ] 11.1.8 Test emergency reallocation scenarios and impact management
 - [ ] 11.1.9 Test budget optimization algorithms and efficiency improvements
 
@@ -163,11 +163,11 @@ Create intelligent budget management agents that autonomously monitor, optimize,
 - [ ] 11.4.3 Build QuotaManagementAgent
   - [ ] 11.4.3.1 Dynamic quota adjustment based on usage patterns and priorities
   - [ ] 11.4.3.2 Fair usage enforcement with queue management and prioritization
-  - [ ] 11.4.3.3 Emergency quota increases with automatic approval workflows
+  - [ ] 11.4.3.3 Emergency quota increases with Runic approval workflows
   - [ ] 11.4.3.4 Usage throttling with intelligent request scheduling
 - [ ] 11.4.4 Create BudgetGovernanceAgent
   - [ ] 11.4.4.1 Policy enforcement with customizable rule engine
-  - [ ] 11.4.4.2 Approval workflow automation with stakeholder routing
+  - [ ] 11.4.4.2 Runic workflow automation for approvals with stakeholder routing
   - [ ] 11.4.4.3 Audit trail generation with compliance reporting
   - [ ] 11.4.4.4 Exception handling with risk assessment and mitigation
 

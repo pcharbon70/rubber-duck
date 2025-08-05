@@ -15,14 +15,15 @@ This document provides a comprehensive, phased implementation plan for the Rubbe
 ### Agentic Phase Overview
 1. **Agentic Foundation & Core Infrastructure** - Autonomous supervision, self-managing auth, adaptive database
 2. **Autonomous LLM Orchestration System** - Goal-based provider agents, intelligent routing, self-optimization
-3. **Intelligent Tool Agent System** - Self-discovering tools, adaptive execution, emergent workflows
-4. **Multi-Agent Planning & Coordination** - Distributed planning, autonomous task decomposition, collective intelligence
-5. **Autonomous Memory & Context Management** - Self-organizing memory agents, adaptive context selection, pattern learning
-6. **Self-Managing Communication Agents** - Adaptive connections, intelligent presence, autonomous collaboration
-7. **Autonomous Conversation System** - Learning conversation agents, adaptive responses, emergent dialogue patterns
-8. **Self-Protecting Security System** - Autonomous threat detection, adaptive policies, self-healing security
-9. **Self-Optimizing Instruction Management** - Evolving instruction agents, adaptive templates, intelligent filtering
-10. **Autonomous Production Management** - Self-deploying systems, predictive scaling, autonomous recovery
+3. **Runic Workflow System** - Dynamic workflow composition, runtime modification, learning optimization
+4. **Intelligent Tool Agent System** - Self-discovering tools, adaptive execution, Runic-based workflows
+5. **Multi-Agent Planning & Coordination** - Distributed planning, autonomous task decomposition, collective intelligence
+6. **Autonomous Memory & Context Management** - Self-organizing memory agents, adaptive context selection, pattern learning
+7. **Self-Managing Communication Agents** - Adaptive connections, intelligent presence, autonomous collaboration
+8. **Autonomous Conversation System** - Learning conversation agents, adaptive responses, emergent dialogue patterns
+9. **Self-Protecting Security System** - Autonomous threat detection, adaptive policies, self-healing security
+10. **Self-Optimizing Instruction Management** - Evolving instruction agents, adaptive templates, intelligent filtering
+11. **Autonomous Production Management** - Self-deploying systems, predictive scaling, autonomous recovery
 
 ---
 
@@ -570,6 +571,207 @@ Telemetry Events → Learning → Optimization → Adaptation → Improvement
 
 ---
 
+## Phase 2A: Runic Workflow System
+
+### Overview
+Establish a dynamic, composable workflow system using Runic that enables agents to build, modify, and optimize workflows at runtime. This phase creates the foundation for all agent-driven workflow composition, execution, and learning throughout the system.
+
+### 2A.1 Core Workflow Components
+
+#### Tasks:
+- [ ] 2A.1.1 Set up Runic integration
+  - [ ] 2A.1.1.1 Add Runic dependency to mix.exs
+  - [ ] 2A.1.1.2 Configure Runic for RubberDuck namespace
+  - [ ] 2A.1.1.3 Create workflow utilities module
+  - [ ] 2A.1.1.4 Set up workflow testing infrastructure
+- [ ] 2A.1.2 Implement Step components
+  - [ ] 2A.1.2.1 Basic step wrappers for agent actions
+  - [ ] 2A.1.2.2 Multi-arity step support for agent collaboration
+  - [ ] 2A.1.2.3 Error handling steps with recovery strategies
+  - [ ] 2A.1.2.4 Async step execution for long-running operations
+- [ ] 2A.1.3 Build Rule components
+  - [ ] 2A.1.3.1 Pattern matching rules for agent decisions
+  - [ ] 2A.1.3.2 Guard clause rules for condition evaluation
+  - [ ] 2A.1.3.3 Multi-rule workflows for complex logic
+  - [ ] 2A.1.3.4 Rule priority and conflict resolution
+- [ ] 2A.1.4 Create State Machine components
+  - [ ] 2A.1.4.1 Agent state machines for lifecycle management
+  - [ ] 2A.1.4.2 Workflow state machines for execution tracking
+  - [ ] 2A.1.4.3 Reducer functions for state transitions
+  - [ ] 2A.1.4.4 Reactor patterns for event-driven updates
+
+#### Actions:
+- [ ] 2A.1.5 Core workflow actions
+  - [ ] 2A.1.5.1 CreateWorkflow action for dynamic composition
+  - [ ] 2A.1.5.2 ExecuteStep action with context passing
+  - [ ] 2A.1.5.3 EvaluateRule action for decision making
+  - [ ] 2A.1.5.4 TransitionState action for state machines
+
+#### Unit Tests:
+- [ ] 2A.1.6 Test step execution and composition
+- [ ] 2A.1.7 Test rule evaluation and priority
+- [ ] 2A.1.8 Test state machine transitions
+- [ ] 2A.1.9 Test error handling and recovery
+
+### 2A.2 Workflow Composition System
+
+#### Tasks:
+- [ ] 2A.2.1 Create WorkflowBuilderAgent
+  - [ ] 2A.2.1.1 Dynamic workflow generation from goals
+  - [ ] 2A.2.1.2 Component selection based on capabilities
+  - [ ] 2A.2.1.3 Optimization strategies for efficiency
+  - [ ] 2A.2.1.4 Validation of workflow correctness
+- [ ] 2A.2.2 Implement WorkflowMergerAgent
+  - [ ] 2A.2.2.1 Merge multiple workflows intelligently
+  - [ ] 2A.2.2.2 Conflict resolution strategies
+  - [ ] 2A.2.2.3 Dependency management across workflows
+  - [ ] 2A.2.2.4 Performance optimization during merge
+- [ ] 2A.2.3 Build WorkflowAdapterAgent
+  - [ ] 2A.2.3.1 Runtime workflow modification
+  - [ ] 2A.2.3.2 Hot-swapping components
+  - [ ] 2A.2.3.3 Version management for workflows
+  - [ ] 2A.2.3.4 Backward compatibility handling
+- [ ] 2A.2.4 Create WorkflowTemplateLibrary
+  - [ ] 2A.2.4.1 Common workflow patterns
+  - [ ] 2A.2.4.2 Agent-specific templates
+  - [ ] 2A.2.4.3 Template composition and inheritance
+  - [ ] 2A.2.4.4 Template learning from successful workflows
+
+#### Actions:
+- [ ] 2A.2.5 Composition actions
+  - [ ] 2A.2.5.1 ComposeWorkflow action with goal decomposition
+  - [ ] 2A.2.5.2 MergeWorkflows action with optimization
+  - [ ] 2A.2.5.3 AdaptWorkflow action for runtime changes
+  - [ ] 2A.2.5.4 SaveTemplate action for reusable patterns
+
+#### Unit Tests:
+- [ ] 2A.2.6 Test workflow composition from goals
+- [ ] 2A.2.7 Test workflow merging and conflicts
+- [ ] 2A.2.8 Test runtime workflow adaptation
+- [ ] 2A.2.9 Test template management and reuse
+
+### 2A.3 Evaluation Strategies
+
+#### Tasks:
+- [ ] 2A.3.1 Implement ReactUntilSatisfiedAgent
+  - [ ] 2A.3.1.1 Convergence detection algorithms
+  - [ ] 2A.3.1.2 Maximum iteration handling
+  - [ ] 2A.3.1.3 Performance optimization strategies
+  - [ ] 2A.3.1.4 Result aggregation and filtering
+- [ ] 2A.3.2 Create SingleReactionAgent
+  - [ ] 2A.3.2.1 One-shot execution optimization
+  - [ ] 2A.3.2.2 Result validation and quality checks
+  - [ ] 2A.3.2.3 Error boundary implementation
+  - [ ] 2A.3.2.4 Performance metrics collection
+- [ ] 2A.3.3 Build LazyEvaluationAgent
+  - [ ] 2A.3.3.1 Demand-driven execution
+  - [ ] 2A.3.3.2 Resource optimization strategies
+  - [ ] 2A.3.3.3 Partial evaluation support
+  - [ ] 2A.3.3.4 Cache management for results
+- [ ] 2A.3.4 Implement StreamingEvaluationAgent
+  - [ ] 2A.3.4.1 GenStage integration for backpressure
+  - [ ] 2A.3.4.2 Flow control mechanisms
+  - [ ] 2A.3.4.3 Real-time result streaming
+  - [ ] 2A.3.4.4 Buffer management strategies
+
+#### Actions:
+- [ ] 2A.3.5 Evaluation actions
+  - [ ] 2A.3.5.1 EvaluateWorkflow action with strategy selection
+  - [ ] 2A.3.5.2 StreamResults action for real-time processing
+  - [ ] 2A.3.5.3 CacheResults action for performance
+  - [ ] 2A.3.5.4 ValidateResults action for quality assurance
+
+#### Unit Tests:
+- [ ] 2A.3.6 Test react until satisfied convergence
+- [ ] 2A.3.7 Test single reaction execution
+- [ ] 2A.3.8 Test lazy evaluation efficiency
+- [ ] 2A.3.9 Test streaming with backpressure
+
+### 2A.4 Map/Reduce Infrastructure
+
+#### Tasks:
+- [ ] 2A.4.1 Create MapOperatorAgent
+  - [ ] 2A.4.1.1 Parallel execution strategies
+  - [ ] 2A.4.1.2 Work distribution algorithms
+  - [ ] 2A.4.1.3 Resource allocation optimization
+  - [ ] 2A.4.1.4 Progress tracking and monitoring
+- [ ] 2A.4.2 Implement ReduceOperatorAgent
+  - [ ] 2A.4.2.1 Aggregation strategies for different data types
+  - [ ] 2A.4.2.2 Incremental reduction support
+  - [ ] 2A.4.2.3 Memory-efficient processing
+  - [ ] 2A.4.2.4 Custom reducer composition
+- [ ] 2A.4.3 Build FanOutCoordinatorAgent
+  - [ ] 2A.4.3.1 Dynamic worker allocation
+  - [ ] 2A.4.3.2 Load balancing strategies
+  - [ ] 2A.4.3.3 Failure handling and recovery
+  - [ ] 2A.4.3.4 Performance optimization
+- [ ] 2A.4.4 Create FanInAggregatorAgent
+  - [ ] 2A.4.4.1 Result collection strategies
+  - [ ] 2A.4.4.2 Ordering guarantees
+  - [ ] 2A.4.4.3 Partial result handling
+  - [ ] 2A.4.4.4 Timeout management
+
+#### Actions:
+- [ ] 2A.4.5 Map/Reduce actions
+  - [ ] 2A.4.5.1 MapData action with parallel execution
+  - [ ] 2A.4.5.2 ReduceResults action with aggregation
+  - [ ] 2A.4.5.3 DistributeWork action for fan-out
+  - [ ] 2A.4.5.4 CollectResults action for fan-in
+
+#### Unit Tests:
+- [ ] 2A.4.6 Test parallel map execution
+- [ ] 2A.4.7 Test reduce aggregation strategies
+- [ ] 2A.4.8 Test fan-out/fan-in coordination
+- [ ] 2A.4.9 Test failure recovery in distributed ops
+
+### 2A.5 Workflow Learning System
+
+#### Tasks:
+- [ ] 2A.5.1 Create WorkflowAnalyzerAgent
+  - [ ] 2A.5.1.1 Performance pattern recognition
+  - [ ] 2A.5.1.2 Bottleneck identification
+  - [ ] 2A.5.1.3 Success factor analysis
+  - [ ] 2A.5.1.4 Failure pattern detection
+- [ ] 2A.5.2 Implement WorkflowOptimizerAgent
+  - [ ] 2A.5.2.1 Automatic optimization strategies
+  - [ ] 2A.5.2.2 Component substitution recommendations
+  - [ ] 2A.5.2.3 Parallel execution opportunities
+  - [ ] 2A.5.2.4 Resource usage optimization
+- [ ] 2A.5.3 Build WorkflowLearningAgent
+  - [ ] 2A.5.3.1 Pattern extraction from successful workflows
+  - [ ] 2A.5.3.2 Template generation from patterns
+  - [ ] 2A.5.3.3 Performance prediction models
+  - [ ] 2A.5.3.4 Continuous improvement strategies
+- [ ] 2A.5.4 Create WorkflowEvolutionAgent
+  - [ ] 2A.5.4.1 Genetic algorithm for workflow optimization
+  - [ ] 2A.5.4.2 Mutation strategies for exploration
+  - [ ] 2A.5.4.3 Fitness evaluation functions
+  - [ ] 2A.5.4.4 Population management
+
+#### Actions:
+- [ ] 2A.5.5 Learning actions
+  - [ ] 2A.5.5.1 AnalyzeWorkflow action for insights
+  - [ ] 2A.5.5.2 OptimizeWorkflow action for improvements
+  - [ ] 2A.5.5.3 LearnPattern action for template extraction
+  - [ ] 2A.5.5.4 EvolveWorkflow action for exploration
+
+#### Unit Tests:
+- [ ] 2A.5.6 Test pattern recognition accuracy
+- [ ] 2A.5.7 Test optimization effectiveness
+- [ ] 2A.5.8 Test learning from execution history
+- [ ] 2A.5.9 Test evolutionary improvements
+
+### 2A.6 Phase 2A Integration Tests
+
+#### Integration Tests:
+- [ ] 2A.6.1 Test end-to-end workflow composition and execution
+- [ ] 2A.6.2 Test workflow merging and adaptation scenarios
+- [ ] 2A.6.3 Test map/reduce with complex workflows
+- [ ] 2A.6.4 Test learning and optimization feedback loops
+- [ ] 2A.6.5 Test integration with LLM orchestration (Phase 2)
+
+---
+
 ## Phase 3: Intelligent Tool Agent System
 
 ### Overview
@@ -686,72 +888,72 @@ Transform tools into intelligent agents that autonomously decide when and how to
 - [ ] 3.3.8 Test todo extraction and prioritization
 - [ ] 3.3.9 Test type inference accuracy and learning
 
-### 3.4 Tool Composition with Reactor
+### 3.4 Tool Composition with Runic Workflows
 
 #### Tasks:
-- [ ] 3.4.1 Create WorkflowComposerAgent
-  - [ ] 3.4.1.1 Workflow generation with goal decomposition
-  - [ ] 3.4.1.2 Optimization strategies with resource efficiency
-  - [ ] 3.4.1.3 Parallel execution with dependency resolution
-  - [ ] 3.4.1.4 Error handling flows with recovery strategies
-- [ ] 3.4.2 Implement DAGExecutorAgent
-  - [ ] 3.4.2.1 Dependency resolution with cycle detection
-  - [ ] 3.4.2.2 Execution optimization with resource scheduling
-  - [ ] 3.4.2.3 Resource allocation with performance prediction
-  - [ ] 3.4.2.4 Progress tracking with completion estimation
-- [ ] 3.4.3 Build ConditionalLogicAgent
-  - [ ] 3.4.3.1 Condition evaluation with context awareness
-  - [ ] 3.4.3.2 Branch prediction with performance optimization
-  - [ ] 3.4.3.3 Loop optimization with termination detection
-  - [ ] 3.4.3.4 Early termination with resource conservation
-- [ ] 3.4.4 Create WorkflowLearningAgent
-  - [ ] 3.4.4.1 Pattern recognition with workflow optimization
-  - [ ] 3.4.4.2 Optimization learning from execution outcomes
-  - [ ] 3.4.4.3 Reusable templates with success pattern extraction
-  - [ ] 3.4.4.4 Performance prediction with historical analysis
+- [ ] 3.4.1 Create RunicWorkflowComposerAgent
+  - [ ] 3.4.1.1 Dynamic workflow generation using Runic.workflow()
+  - [ ] 3.4.1.2 Goal decomposition into Runic steps and rules
+  - [ ] 3.4.1.3 Parallel execution with Runic map/reduce patterns
+  - [ ] 3.4.1.4 Error handling with Runic state machines
+- [ ] 3.4.2 Implement RunicExecutorAgent
+  - [ ] 3.4.2.1 Workflow execution using Workflow.react_until_satisfied
+  - [ ] 3.4.2.2 Evaluation strategy selection (lazy, streaming, etc.)
+  - [ ] 3.4.2.3 Resource allocation with Runic's FanOut/FanIn
+  - [ ] 3.4.2.4 Progress tracking via workflow state inspection
+- [ ] 3.4.3 Build RunicRuleAgent
+  - [ ] 3.4.3.1 Condition evaluation using Runic.rule() patterns
+  - [ ] 3.4.3.2 Multi-rule composition for complex decisions
+  - [ ] 3.4.3.3 Rule priority management and conflict resolution
+  - [ ] 3.4.3.4 Dynamic rule modification at runtime
+- [ ] 3.4.4 Create RunicLearningAgent
+  - [ ] 3.4.4.1 Pattern extraction from successful workflows
+  - [ ] 3.4.4.2 Template generation using Workflow.merge()
+  - [ ] 3.4.4.3 Performance optimization via workflow adaptation
+  - [ ] 3.4.4.4 Workflow evolution using learning algorithms
 
 #### Actions:
-- [ ] 3.4.5 Composition actions
-  - [ ] 3.4.5.1 ComposeWorkflow action with intelligent planning
-  - [ ] 3.4.5.2 ExecuteDAG action with optimal scheduling
-  - [ ] 3.4.5.3 EvaluateCondition action with context analysis
-  - [ ] 3.4.5.4 OptimizeWorkflow action with performance learning
+- [ ] 3.4.5 Runic composition actions
+  - [ ] 3.4.5.1 ComposeRunicWorkflow action with dynamic building
+  - [ ] 3.4.5.2 ExecuteRunicWorkflow action with strategy selection
+  - [ ] 3.4.5.3 EvaluateRunicRule action with context passing
+  - [ ] 3.4.5.4 OptimizeRunicWorkflow action with learning feedback
 
 #### Unit Tests:
-- [ ] 3.4.6 Test autonomous workflow composition
-- [ ] 3.4.7 Test DAG execution optimization
-- [ ] 3.4.8 Test workflow learning and improvement
-- [ ] 3.4.9 Test conditional logic accuracy
+- [ ] 3.4.6 Test Runic workflow composition from goals
+- [ ] 3.4.7 Test workflow execution strategies
+- [ ] 3.4.8 Test workflow learning and template extraction
+- [ ] 3.4.9 Test rule evaluation and priority handling
 
-### 3.5 Tool Composition with Reactor
+### 3.5 Advanced Tool Orchestration with Runic
 
 #### Tasks:
-- [ ] 3.5.1 Implement composite tool support
-  - [ ] 3.5.1.1 Workflow definition
-  - [ ] 3.5.1.2 Step sequencing
-  - [ ] 3.5.1.3 Data flow
-  - [ ] 3.5.1.4 Error handling
-- [ ] 3.5.2 Create DAG execution
-  - [ ] 3.5.2.1 Dependency resolution
-  - [ ] 3.5.2.2 Parallel execution
-  - [ ] 3.5.2.3 Result aggregation
-  - [ ] 3.5.2.4 Rollback support
-- [ ] 3.5.3 Build conditional logic
-  - [ ] 3.5.3.1 Branching support
-  - [ ] 3.5.3.2 Loop constructs
-  - [ ] 3.5.3.3 Early termination
-  - [ ] 3.5.3.4 Skip conditions
-- [ ] 3.5.4 Implement tool orchestration
-  - [ ] 3.5.4.1 Execution planning
-  - [ ] 3.5.4.2 Resource allocation
-  - [ ] 3.5.4.3 Progress tracking
-  - [ ] 3.5.4.4 Result collection
+- [ ] 3.5.1 Implement tool workflow patterns
+  - [ ] 3.5.1.1 Tool chains using Runic pipelines
+  - [ ] 3.5.1.2 Branching tool flows with Runic rules
+  - [ ] 3.5.1.3 Stateful tool execution with state machines
+  - [ ] 3.5.1.4 Error recovery using Runic reactors
+- [ ] 3.5.2 Create parallel tool execution
+  - [ ] 3.5.2.1 Map operations for tool fan-out
+  - [ ] 3.5.2.2 Reduce operations for result aggregation
+  - [ ] 3.5.2.3 Resource management with accumulators
+  - [ ] 3.5.2.4 Progress tracking with workflow inspection
+- [ ] 3.5.3 Build adaptive tool selection
+  - [ ] 3.5.3.1 Rule-based tool routing
+  - [ ] 3.5.3.2 Context-aware tool selection
+  - [ ] 3.5.3.3 Learning from tool performance
+  - [ ] 3.5.3.4 Dynamic tool substitution
+- [ ] 3.5.4 Implement tool collaboration patterns
+  - [ ] 3.5.4.1 Multi-agent tool coordination
+  - [ ] 3.5.4.2 Tool result sharing via workflow facts
+  - [ ] 3.5.4.3 Collaborative decision making
+  - [ ] 3.5.4.4 Emergent tool behaviors
 
 #### Unit Tests:
-- [ ] 3.5.5 Test workflow execution
-- [ ] 3.5.6 Test parallel processing
-- [ ] 3.5.7 Test conditional logic
-- [ ] 3.5.8 Test orchestration
+- [ ] 3.5.5 Test tool workflow patterns
+- [ ] 3.5.6 Test parallel tool execution
+- [ ] 3.5.7 Test adaptive tool selection
+- [ ] 3.5.8 Test tool collaboration
 
 ### 3.6 Phase 3 Integration Tests
 

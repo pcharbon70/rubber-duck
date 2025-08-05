@@ -5,22 +5,23 @@
 ---
 
 ## Phase Links
-- **Previous**: [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
+- **Previous**: [Phase 2A: Runic Workflow System](phase-02a-runic-workflow.md)
 - **Next**: [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
 - **Related**: [Implementation Appendices](implementation-appendices.md)
 
 ## All Phases
 1. [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
 2. [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
-3. **Phase 3: Intelligent Tool Agent System** *(Current)*
-4. [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
-5. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
-6. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
-7. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
-8. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
-9. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
-10. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
-11. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
+3. [Phase 2A: Runic Workflow System](phase-02a-runic-workflow.md)
+4. **Phase 3: Intelligent Tool Agent System** *(Current)*
+5. [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
+6. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
+7. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
+8. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
+9. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
+10. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
+11. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
+12. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
 
 ---
 
@@ -139,72 +140,72 @@ Transform tools into intelligent agents that autonomously decide when and how to
 - [ ] 3.3.8 Test todo extraction and prioritization
 - [ ] 3.3.9 Test type inference accuracy and learning
 
-## 3.4 Tool Composition with Reactor
+## 3.4 Tool Composition with Runic Workflows
 
 #### Tasks:
-- [ ] 3.4.1 Create WorkflowComposerAgent
-  - [ ] 3.4.1.1 Workflow generation with goal decomposition
-  - [ ] 3.4.1.2 Optimization strategies with resource efficiency
-  - [ ] 3.4.1.3 Parallel execution with dependency resolution
-  - [ ] 3.4.1.4 Error handling flows with recovery strategies
-- [ ] 3.4.2 Implement DAGExecutorAgent
-  - [ ] 3.4.2.1 Dependency resolution with cycle detection
-  - [ ] 3.4.2.2 Execution optimization with resource scheduling
-  - [ ] 3.4.2.3 Resource allocation with performance prediction
-  - [ ] 3.4.2.4 Progress tracking with completion estimation
-- [ ] 3.4.3 Build ConditionalLogicAgent
-  - [ ] 3.4.3.1 Condition evaluation with context awareness
-  - [ ] 3.4.3.2 Branch prediction with performance optimization
-  - [ ] 3.4.3.3 Loop optimization with termination detection
-  - [ ] 3.4.3.4 Early termination with resource conservation
-- [ ] 3.4.4 Create WorkflowLearningAgent
-  - [ ] 3.4.4.1 Pattern recognition with workflow optimization
-  - [ ] 3.4.4.2 Optimization learning from execution outcomes
-  - [ ] 3.4.4.3 Reusable templates with success pattern extraction
-  - [ ] 3.4.4.4 Performance prediction with historical analysis
+- [ ] 3.4.1 Create RunicWorkflowComposerAgent
+  - [ ] 3.4.1.1 Dynamic workflow generation using Runic.workflow()
+  - [ ] 3.4.1.2 Goal decomposition into Runic steps and rules
+  - [ ] 3.4.1.3 Parallel execution with Runic map/reduce patterns
+  - [ ] 3.4.1.4 Error handling with Runic state machines
+- [ ] 3.4.2 Implement RunicExecutorAgent
+  - [ ] 3.4.2.1 Workflow execution using Workflow.react_until_satisfied
+  - [ ] 3.4.2.2 Evaluation strategy selection (lazy, streaming, etc.)
+  - [ ] 3.4.2.3 Resource allocation with Runic's FanOut/FanIn
+  - [ ] 3.4.2.4 Progress tracking via workflow state inspection
+- [ ] 3.4.3 Build RunicRuleAgent
+  - [ ] 3.4.3.1 Condition evaluation using Runic.rule() patterns
+  - [ ] 3.4.3.2 Multi-rule composition for complex decisions
+  - [ ] 3.4.3.3 Rule priority management and conflict resolution
+  - [ ] 3.4.3.4 Dynamic rule modification at runtime
+- [ ] 3.4.4 Create RunicLearningAgent
+  - [ ] 3.4.4.1 Pattern extraction from successful workflows
+  - [ ] 3.4.4.2 Template generation using Workflow.merge()
+  - [ ] 3.4.4.3 Performance optimization via workflow adaptation
+  - [ ] 3.4.4.4 Workflow evolution using learning algorithms
 
 #### Actions:
-- [ ] 3.4.5 Composition actions
-  - [ ] 3.4.5.1 ComposeWorkflow action with intelligent planning
-  - [ ] 3.4.5.2 ExecuteDAG action with optimal scheduling
-  - [ ] 3.4.5.3 EvaluateCondition action with context analysis
-  - [ ] 3.4.5.4 OptimizeWorkflow action with performance learning
+- [ ] 3.4.5 Runic composition actions
+  - [ ] 3.4.5.1 ComposeRunicWorkflow action with dynamic building
+  - [ ] 3.4.5.2 ExecuteRunicWorkflow action with strategy selection
+  - [ ] 3.4.5.3 EvaluateRunicRule action with context passing
+  - [ ] 3.4.5.4 OptimizeRunicWorkflow action with learning feedback
 
 #### Unit Tests:
-- [ ] 3.4.6 Test autonomous workflow composition
-- [ ] 3.4.7 Test DAG execution optimization
-- [ ] 3.4.8 Test workflow learning and improvement
-- [ ] 3.4.9 Test conditional logic accuracy
+- [ ] 3.4.6 Test Runic workflow composition from goals
+- [ ] 3.4.7 Test workflow execution strategies
+- [ ] 3.4.8 Test workflow learning and template extraction
+- [ ] 3.4.9 Test rule evaluation and priority handling
 
-## 3.5 Tool Composition with Reactor
+## 3.5 Advanced Tool Orchestration with Runic
 
 #### Tasks:
-- [ ] 3.5.1 Implement composite tool support
-  - [ ] 3.5.1.1 Workflow definition
-  - [ ] 3.5.1.2 Step sequencing
-  - [ ] 3.5.1.3 Data flow
-  - [ ] 3.5.1.4 Error handling
-- [ ] 3.5.2 Create DAG execution
-  - [ ] 3.5.2.1 Dependency resolution
-  - [ ] 3.5.2.2 Parallel execution
-  - [ ] 3.5.2.3 Result aggregation
-  - [ ] 3.5.2.4 Rollback support
-- [ ] 3.5.3 Build conditional logic
-  - [ ] 3.5.3.1 Branching support
-  - [ ] 3.5.3.2 Loop constructs
-  - [ ] 3.5.3.3 Early termination
-  - [ ] 3.5.3.4 Skip conditions
-- [ ] 3.5.4 Implement tool orchestration
-  - [ ] 3.5.4.1 Execution planning
-  - [ ] 3.5.4.2 Resource allocation
-  - [ ] 3.5.4.3 Progress tracking
-  - [ ] 3.5.4.4 Result collection
+- [ ] 3.5.1 Implement tool workflow patterns
+  - [ ] 3.5.1.1 Tool chains using Runic pipelines
+  - [ ] 3.5.1.2 Branching tool flows with Runic rules
+  - [ ] 3.5.1.3 Stateful tool execution with state machines
+  - [ ] 3.5.1.4 Error recovery using Runic reactors
+- [ ] 3.5.2 Create parallel tool execution
+  - [ ] 3.5.2.1 Map operations for tool fan-out
+  - [ ] 3.5.2.2 Reduce operations for result aggregation
+  - [ ] 3.5.2.3 Resource management with accumulators
+  - [ ] 3.5.2.4 Progress tracking with workflow inspection
+- [ ] 3.5.3 Build adaptive tool selection
+  - [ ] 3.5.3.1 Rule-based tool routing
+  - [ ] 3.5.3.2 Context-aware tool selection
+  - [ ] 3.5.3.3 Learning from tool performance
+  - [ ] 3.5.3.4 Dynamic tool substitution
+- [ ] 3.5.4 Implement tool collaboration patterns
+  - [ ] 3.5.4.1 Multi-agent tool coordination
+  - [ ] 3.5.4.2 Tool result sharing via workflow facts
+  - [ ] 3.5.4.3 Collaborative decision making
+  - [ ] 3.5.4.4 Emergent tool behaviors
 
 #### Unit Tests:
-- [ ] 3.5.5 Test workflow execution
-- [ ] 3.5.6 Test parallel processing
-- [ ] 3.5.7 Test conditional logic
-- [ ] 3.5.8 Test orchestration
+- [ ] 3.5.5 Test tool workflow patterns
+- [ ] 3.5.6 Test parallel tool execution
+- [ ] 3.5.7 Test adaptive tool selection
+- [ ] 3.5.8 Test tool collaboration
 
 ## 3.6 Phase 3 Integration Tests
 
@@ -222,7 +223,7 @@ Transform tools into intelligent agents that autonomously decide when and how to
 **Prerequisites:**
 - Phase 1: Agentic Foundation & Core Infrastructure completed
 - Phase 2: Autonomous LLM Orchestration System for code generation
-- Reactor library understanding for workflow composition
+- Phase 2A: Runic Workflow System for dynamic composition
 - Tool registry and execution infrastructure
 
 **Provides Foundation For:**
@@ -235,7 +236,7 @@ Transform tools into intelligent agents that autonomously decide when and how to
 - Autonomous tool discovery and registration system
 - Intelligent tool selection based on goals and context
 - Self-optimizing tool execution with learning capabilities
-- Advanced workflow composition using Reactor patterns
+- Advanced workflow composition using Runic dataflow patterns
 - Code operation agents for generation, refactoring, and analysis
 - Analysis tool agents for repository search and dependency management
 
