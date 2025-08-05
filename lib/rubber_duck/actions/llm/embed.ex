@@ -31,7 +31,7 @@ defmodule RubberDuck.Actions.LLM.Embed do
 
   defp execute_embedding_generation(params) do
     start_time = System.monotonic_time(:millisecond)
-    
+
     try do
       results = process_embedding_request(params)
       handle_embedding_results(results, params.provider, start_time)
@@ -61,7 +61,7 @@ defmodule RubberDuck.Actions.LLM.Embed do
   defp handle_successful_embeddings(embeddings, provider, start_time) do
     duration = System.monotonic_time(:millisecond) - start_time
     HealthMonitor.record_success(provider.name, duration)
-    
+
     {:ok, build_success_response(embeddings, provider, duration)}
   end
 
@@ -80,7 +80,7 @@ defmodule RubberDuck.Actions.LLM.Embed do
     duration = System.monotonic_time(:millisecond) - start_time
     HealthMonitor.record_failure(provider.name, reason)
     Logger.warning("Embedding generation failed for provider #{provider.name}: #{inspect(reason)}")
-    
+
     {:error, build_error_response(reason, provider, duration)}
   end
 
@@ -88,7 +88,7 @@ defmodule RubberDuck.Actions.LLM.Embed do
     duration = System.monotonic_time(:millisecond) - start_time
     HealthMonitor.record_failure(provider.name, exception)
     Logger.error("Embedding generation crashed for provider #{provider.name}: #{inspect(exception)}")
-    
+
     {:error, build_error_response({:exception, exception}, provider, duration)}
   end
 

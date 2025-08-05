@@ -9,9 +9,9 @@ defmodule RubberDuck.ProjectsTest do
         password: "testpassword123",
         password_confirmation: "testpassword123"
       }
-      
+
       {:ok, user} = RubberDuck.Accounts.register_user(user_attrs, authorize?: false)
-      
+
       %{user: user}
     end
 
@@ -44,10 +44,10 @@ defmodule RubberDuck.ProjectsTest do
       }
 
       assert {:ok, project} = RubberDuck.Projects.create_project(project_attrs, actor: user)
-      
+
       code_file_attrs = Map.put(code_file_attrs, :project_id, project.id)
       assert {:ok, code_file} = RubberDuck.Projects.create_code_file(code_file_attrs, actor: user)
-      
+
       assert code_file.path == "lib/test.ex"
       assert code_file.project_id == project.id
       assert code_file.size_bytes == 20
@@ -61,7 +61,7 @@ defmodule RubberDuck.ProjectsTest do
       }
 
       assert {:ok, _project} = RubberDuck.Projects.create_project(project_attrs, actor: user)
-      
+
       projects = RubberDuck.Projects.list_projects_by_owner!(actor: user)
       assert length(projects) == 1
       assert hd(projects).name == "Test Project"

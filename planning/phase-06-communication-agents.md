@@ -159,7 +159,7 @@ Create autonomous agents that manage real-time communication, adapting to networ
 - [ ] 6.5.2 Implement status categories
   - [ ] 6.5.2.1 Engine status
   - [ ] 6.5.2.2 Tool execution
-  - [ ] 6.5.2.3 Workflow progress
+  - [ ] 6.5.2.3 Runic workflow progress
   - [ ] 6.5.2.4 System alerts
 - [ ] 6.5.3 Build subscription system
   - [ ] 6.5.3.1 Category subscription

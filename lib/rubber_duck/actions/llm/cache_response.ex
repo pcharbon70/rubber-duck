@@ -395,7 +395,7 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
 
   defp find_expired_cache_keys do
     now = System.system_time(:second)
-    
+
     @cache_table
     |> :ets.tab2list()
     |> Enum.filter(&is_expired_entry?(&1, now))

@@ -12,15 +12,16 @@
 ## All Phases
 1. [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
 2. [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
-3. [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
-4. **Phase 4: Multi-Agent Planning & Coordination** *(Current)*
-5. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
-6. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
-7. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
-8. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
-9. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
-10. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
-11. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
+3. [Phase 2A: Runic Workflow System](phase-02a-runic-workflow.md)
+4. [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
+5. **Phase 4: Multi-Agent Planning & Coordination** *(Current)*
+6. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
+7. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
+8. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
+9. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
+10. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
+11. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
+12. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
 
 ---
 
@@ -194,6 +195,7 @@ Leverage Jido's full capabilities for multi-agent orchestration, creating a syst
 **Prerequisites:**
 - Phase 1: Agentic Foundation & Core Infrastructure completed
 - Phase 2: Autonomous LLM Orchestration System for intelligent responses
+- Phase 2A: Runic Workflow System for dynamic execution patterns
 - Phase 3: Intelligent Tool Agent System for task execution
 - Jido SDK understanding and integration
 - Signal-based communication patterns
@@ -201,7 +203,7 @@ Leverage Jido's full capabilities for multi-agent orchestration, creating a syst
 **Provides Foundation For:**
 - Phase 5: Memory agents that track planning patterns and outcomes
 - Phase 6: Communication agents that coordinate with planning agents
-- Phase 7: Conversation agents that initiate planning workflows
+- Phase 7: Conversation agents that initiate Runic planning workflows
 - Phase 9: Instruction management agents that optimize planning templates
 
 **Key Outputs:**

@@ -162,7 +162,7 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   defp trim_messages_to_fit(messages, max_tokens) do
     {system_messages, other_messages} = separate_system_messages(messages)
     available_tokens = max_tokens - estimate_message_tokens(system_messages)
-    
+
     kept_messages = select_recent_messages_within_limit(other_messages, available_tokens)
     system_messages ++ kept_messages
   end
@@ -181,13 +181,13 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
     {kept_messages, _} = messages
     |> Enum.reverse()
     |> Enum.reduce_while({[], available_tokens}, &accumulate_message_if_fits/2)
-    
+
     kept_messages
   end
 
   defp accumulate_message_if_fits(message, {acc, remaining_tokens}) do
     message_tokens = estimate_single_message_tokens(message)
-    
+
     if message_tokens <= remaining_tokens do
       {:cont, {[message | acc], remaining_tokens - message_tokens}}
     else

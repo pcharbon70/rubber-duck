@@ -265,7 +265,7 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
   defp update_provider_metrics(state, provider_name, type, data) do
     metrics = Map.get(state.metrics, provider_name, default_metrics())
     updated_metrics = apply_metric_update(metrics, type, data)
-    
+
     emit_metrics_update_signal(provider_name, updated_metrics, type)
     put_in(state, [:metrics, provider_name], updated_metrics)
   end

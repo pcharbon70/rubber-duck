@@ -61,7 +61,7 @@ defmodule RubberDuck.AccountsTest do
       }
 
       assert {:ok, _user} = RubberDuck.Accounts.register_user(user_attrs, authorize?: false)
-      
+
       # Registration action should have token metadata defined
       action = Ash.Resource.Info.action(RubberDuck.Accounts.User, :register_with_password)
       token_metadata = Enum.find(action.metadata, &(&1.name == :token))
@@ -76,7 +76,7 @@ defmodule RubberDuck.AccountsTest do
         password: "validpassword123",
         password_confirmation: "validpassword123"
       }
-      
+
       {:ok, user} = RubberDuck.Accounts.register_user(user_attrs, authorize?: false)
       %{user: user}
     end
@@ -119,7 +119,7 @@ defmodule RubberDuck.AccountsTest do
         password: "validpassword123",
         password_confirmation: "validpassword123"
       }
-      
+
       {:ok, user} = RubberDuck.Accounts.register_user(user_attrs, authorize?: false)
       %{user: user}
     end
@@ -166,7 +166,7 @@ defmodule RubberDuck.AccountsTest do
         password: "validpassword123",
         password_confirmation: "validpassword123"
       }
-      
+
       {:ok, user} = RubberDuck.Accounts.register_user(user_attrs, authorize?: false)
       %{user: user}
     end

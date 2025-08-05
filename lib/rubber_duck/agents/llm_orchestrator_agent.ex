@@ -28,7 +28,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       max_memory_experiences: [type: :pos_integer, default: 1000],
       agent_state_id: [type: {:or, [:string, :nil]}, default: nil],
       last_checkpoint: [type: {:or, [:utc_datetime, :nil]}, default: nil],
-      
+
       # LLM Orchestrator specific fields
       provider_performance: [type: :map, default: %{}],
       cost_budget: [type: :float, default: nil],
@@ -111,7 +111,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     with {:ok, provider} <- select_optimal_provider(agent, request),
          _ = emit_provider_selected_signal(provider, request),
          {:ok, response} <- execute_completion(agent, provider, request) do
-      
+
       finalize_successful_completion(agent, provider, request, response, start_time, cache_key)
     else
       {:error, reason} ->
@@ -129,16 +129,16 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
 
   defp finalize_successful_completion(agent, provider, request, response, start_time, cache_key) do
     duration = System.monotonic_time(:millisecond) - start_time
-    
+
     updated_agent = update_provider_performance(agent, provider.name, %{
       success: true,
       duration: duration,
       tokens_used: response.usage.total_tokens,
       quality_score: estimate_quality(response)
     })
-    
+
     final_agent = maybe_cache_response(updated_agent, cache_key, response)
-    
+
     emit_completion_success_signal(provider, request, duration, response)
     {:ok, response, final_agent}
   end
@@ -179,7 +179,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   defp process_streaming_request(agent, request) do
     with {:ok, provider} <- select_optimal_provider(agent, request),
          {:ok, stream} <- execute_streaming(agent, provider, request) do
-      
+
       tracked_stream = create_tracked_stream(stream)
       {:ok, tracked_stream, agent}
     else

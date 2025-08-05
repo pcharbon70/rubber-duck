@@ -28,7 +28,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       max_memory_experiences: [type: :pos_integer, default: 1000],
       agent_state_id: [type: {:or, [:string, :nil]}, default: nil],
       last_checkpoint: [type: {:or, [:utc_datetime, :nil]}, default: nil],
-      
+
       # LLM Monitoring specific fields
       monitoring_active: [type: :boolean, default: true],
       auto_recovery_enabled: [type: :boolean, default: true],
