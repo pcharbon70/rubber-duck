@@ -14,7 +14,8 @@ config :rubber_duck,
   ash_domains: [
     RubberDuck.Accounts,
     RubberDuck.Projects,
-    RubberDuck.AI
+    RubberDuck.AI,
+    RubberDuck.Agents
   ]
 
 # Configure Tower error reporting

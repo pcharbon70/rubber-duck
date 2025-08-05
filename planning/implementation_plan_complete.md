@@ -1,153 +1,183 @@
-# RubberDuck Complete Implementation Plan
+# RubberDuck Agentic Implementation Plan
 
 ## Executive Summary
 
-This document provides a comprehensive, phased implementation plan for the RubberDuck AI-powered coding assistant system. The plan follows a bottom-up approach, establishing infrastructure and core components first, then building increasingly sophisticated features on top of a solid foundation.
+This document provides a comprehensive, phased implementation plan for the RubberDuck AI-powered coding assistant system using fully autonomous agentic architecture. The plan transforms traditional service-oriented design into a distributed intelligence system where every component is an autonomous agent capable of self-management, learning, and goal-driven behavior.
 
-### Implementation Philosophy
-- **Infrastructure First**: Database, authentication, and core frameworks before features
-- **Incremental Complexity**: Simple components before complex orchestration
-- **Test-Driven**: Unit tests for components, integration tests for phases
-- **Production-Ready**: Security, monitoring, and performance built-in from the start
+### Agentic Implementation Philosophy
+- **Autonomous Decision-Making**: Agents make decisions based on goals, not explicit instructions
+- **Self-Organizing Systems**: Infrastructure and components organize themselves optimally
+- **Continuous Learning**: Every agent improves behavior based on outcomes and experience
+- **Emergent Intelligence**: Complex behaviors emerge from simple agent interactions
+- **Distributed Coordination**: No central controller - intelligence distributed across agents
+- **Proactive Adaptation**: Agents anticipate needs and adapt before issues arise
 
-### Phase Overview
-1. **Foundation & Core Infrastructure** - Ash Framework, PostgreSQL, Authentication
-2. **LLM Integration Layer** - Multi-provider support, routing, streaming
-3. **Tool System Architecture** - DSL, execution pipeline, safety layers
-4. **Agentic Planning System** - Jido integration, multi-agent coordination
-5. **Memory & Context Management** - Three-tier memory, embeddings, optimization
-6. **Real-time Communication** - Phoenix Channels, WebSocket, broadcasting
-7. **Conversation System** - Conversation engine, hybrid interface, pattern learning
-8. **Security & Sandboxing** - Filesystem isolation, access control, encryption
-9. **Instruction & Prompt Management** - Hierarchical instructions, templates, filtering
-10. **Production Readiness** - Performance, monitoring, deployment, documentation
+### Agentic Phase Overview
+1. **Agentic Foundation & Core Infrastructure** - Autonomous supervision, self-managing auth, adaptive database
+2. **Autonomous LLM Orchestration System** - Goal-based provider agents, intelligent routing, self-optimization
+3. **Intelligent Tool Agent System** - Self-discovering tools, adaptive execution, emergent workflows
+4. **Multi-Agent Planning & Coordination** - Distributed planning, autonomous task decomposition, collective intelligence
+5. **Autonomous Memory & Context Management** - Self-organizing memory agents, adaptive context selection, pattern learning
+6. **Self-Managing Communication Agents** - Adaptive connections, intelligent presence, autonomous collaboration
+7. **Autonomous Conversation System** - Learning conversation agents, adaptive responses, emergent dialogue patterns
+8. **Self-Protecting Security System** - Autonomous threat detection, adaptive policies, self-healing security
+9. **Self-Optimizing Instruction Management** - Evolving instruction agents, adaptive templates, intelligent filtering
+10. **Autonomous Production Management** - Self-deploying systems, predictive scaling, autonomous recovery
 
 ---
 
-## Phase 1: Foundation & Core Infrastructure
+## Phase 1: Agentic Foundation & Core Infrastructure
 
 ### Overview
-Establish the core application structure with Ash Framework, PostgreSQL database with required extensions, authentication system, and base project configuration.
+Replace traditional OTP patterns with autonomous Jido agents, creating a foundation where every component is a self-managing, goal-driven agent capable of autonomous decision-making and continuous learning. The system self-organizes and adapts without manual intervention.
 
-### 1.1 Project Setup & Configuration
-
-#### Tasks:
-- [ ] 1.1.1 Initialize Elixir project with Phoenix
-  - [ ] 1.1.1.1 Create project with `mix phx.new rubber_duck`
-  - [ ] 1.1.1.2 Configure mix.exs dependencies
-  - [ ] 1.1.1.3 Set up folder structure
-  - [ ] 1.1.1.4 Initialize git repository
-- [ ] 1.1.2 Configure development environment
-  - [ ] 1.1.2.1 Set up .env files for secrets
-  - [ ] 1.1.2.2 Configure dev.exs for local development
-  - [ ] 1.1.2.3 Set up test.exs for testing
-  - [ ] 1.1.2.4 Configure runtime.exs for production
-- [ ] 1.1.3 Add core dependencies to mix.exs
-  - [ ] 1.1.3.1 Add Ash Framework (~> 3.0)
-  - [ ] 1.1.3.2 Add AshPostgres (~> 2.0)
-  - [ ] 1.1.3.3 Add AshAuthentication (~> 4.0)
-  - [ ] 1.1.3.4 Add Jido (~> 1.0.0-rc.5)
-- [ ] 1.1.4 Configure formatter
-  - [ ] 1.1.4.1 Set up .formatter.exs with Spark plugins
-  - [ ] 1.1.4.2 Add import dependencies
-  - [ ] 1.1.4.3 Configure line length and style
-  - [ ] 1.1.4.4 Add pre-commit hooks
-
-#### Unit Tests:
-- [ ] 1.1.5 Test configuration loading
-- [ ] 1.1.6 Test environment variable handling
-- [ ] 1.1.7 Test dependency resolution
-- [ ] 1.1.8 Test formatter configuration
-
-### 1.2 PostgreSQL Database Setup
+### 1.1 Core Domain Agents
 
 #### Tasks:
-- [ ] 1.2.1 Configure PostgreSQL connection
-  - [ ] 1.2.1.1 Set up database URLs in config
-  - [ ] 1.2.1.2 Configure pool settings
-  - [ ] 1.2.1.3 Set up SSL for production
-  - [ ] 1.2.1.4 Configure connection timeouts
-- [ ] 1.2.2 Install required extensions
-  - [ ] 1.2.2.1 Enable ash-functions extension
-  - [ ] 1.2.2.2 Enable citext for case-insensitive text
-  - [ ] 1.2.2.3 Enable pgvector for embeddings
-  - [ ] 1.2.2.4 Enable uuid-ossp for UUIDs
-- [ ] 1.2.3 Create RubberDuck.Repo module
-  - [ ] 1.2.3.1 Use AshPostgres.Repo
-  - [ ] 1.2.3.2 Configure installed extensions
-  - [ ] 1.2.3.3 Set up migrations path
-  - [ ] 1.2.3.4 Add telemetry events
-- [ ] 1.2.4 Set up database migrations
-  - [ ] 1.2.4.1 Create initial schema migration
-  - [ ] 1.2.4.2 Add extension initialization
-  - [ ] 1.2.4.3 Create indexes for performance
-  - [ ] 1.2.4.4 Add database constraints
+- [ ] 1.1.1 Create UserAgent
+  - [ ] 1.1.1.1 Autonomous user session management with behavioral learning
+  - [ ] 1.1.1.2 Preference learning and proactive adaptation
+  - [ ] 1.1.1.3 User behavior pattern recognition and prediction
+  - [ ] 1.1.1.4 Proactive assistance suggestions based on usage patterns
+- [ ] 1.1.2 Implement ProjectAgent
+  - [ ] 1.1.2.1 Self-organizing project structure optimization
+  - [ ] 1.1.2.2 Automatic dependency detection and management
+  - [ ] 1.1.2.3 Continuous code quality monitoring and improvement
+  - [ ] 1.1.2.4 Autonomous refactoring suggestions with impact analysis
+- [ ] 1.1.3 Build CodeFileAgent
+  - [ ] 1.1.3.1 Self-analyzing code changes with quality assessment
+  - [ ] 1.1.3.2 Automatic documentation updates and consistency checks
+  - [ ] 1.1.3.3 Dependency impact analysis and change propagation
+  - [ ] 1.1.3.4 Performance optimization detection and recommendations
+- [ ] 1.1.4 Create AIAnalysisAgent
+  - [ ] 1.1.4.1 Autonomous analysis scheduling based on project activity
+  - [ ] 1.1.4.2 Result quality self-assessment and improvement learning
+  - [ ] 1.1.4.3 Learning from user feedback and analysis outcomes
+  - [ ] 1.1.4.4 Proactive insight generation and pattern discovery
+
+#### Actions:
+- [ ] 1.1.5 Define core agentic actions
+  - [ ] 1.1.5.1 CreateEntity action with goal-driven validation
+  - [ ] 1.1.5.2 UpdateEntity action with impact assessment
+  - [ ] 1.1.5.3 AnalyzeEntity action with learning from outcomes
+  - [ ] 1.1.5.4 OptimizeEntity action with performance tracking
 
 #### Unit Tests:
-- [ ] 1.2.5 Test database connection
-- [ ] 1.2.6 Test extension availability
-- [ ] 1.2.7 Test migration running
-- [ ] 1.2.8 Test transaction handling
+- [ ] 1.1.6 Test autonomous agent behaviors and decision-making
+- [ ] 1.1.7 Test agent-to-agent communication via signals
+- [ ] 1.1.8 Test goal achievement and learning mechanisms
+- [ ] 1.1.9 Test emergent behaviors from agent interactions
 
-### 1.3 Ash Framework Foundation
+### 1.2 Authentication Agent System
 
 #### Tasks:
-- [ ] 1.3.1 Create core domains
-  - [ ] 1.3.1.1 Create RubberDuck.Accounts domain
-  - [ ] 1.3.1.2 Create RubberDuck.Projects domain
-  - [ ] 1.3.1.3 Create RubberDuck.AI domain
-  - [ ] 1.3.1.4 Configure domain relationships
-- [ ] 1.3.2 Implement base resources
-  - [ ] 1.3.2.1 Create Project resource
-  - [ ] 1.3.2.2 Create CodeFile resource
-  - [ ] 1.3.2.3 Create AnalysisResult resource
-  - [ ] 1.3.2.4 Create Prompt resource
-- [ ] 1.3.3 Set up resource relationships
-  - [ ] 1.3.3.1 Project has_many CodeFiles
-  - [ ] 1.3.3.2 Project has_many AnalysisResults
-  - [ ] 1.3.3.3 User has_many Projects
-  - [ ] 1.3.3.4 Configure foreign keys
-- [ ] 1.3.4 Configure Ash policies
-  - [ ] 1.3.4.1 Set up policy authorizer
-  - [ ] 1.3.4.2 Create base policies
-  - [ ] 1.3.4.3 Configure bypass rules
-  - [ ] 1.3.4.4 Add audit logging
+- [ ] 1.2.1 Create AuthenticationAgent
+  - [ ] 1.2.1.1 Autonomous session lifecycle management with pattern learning
+  - [ ] 1.2.1.2 Intelligent threat detection and adaptive response
+  - [ ] 1.2.1.3 Dynamic security policies based on risk assessment
+  - [ ] 1.2.1.4 Behavioral authentication with user pattern analysis
+- [ ] 1.2.2 Implement TokenAgent
+  - [ ] 1.2.2.1 Self-managing token lifecycle with predictive renewal
+  - [ ] 1.2.2.2 Automatic renewal strategies based on usage patterns
+  - [ ] 1.2.2.3 Usage pattern analysis and anomaly detection
+  - [ ] 1.2.2.4 Security anomaly detection with automatic countermeasures
+- [ ] 1.2.3 Build PermissionAgent
+  - [ ] 1.2.3.1 Dynamic permission adjustment based on context
+  - [ ] 1.2.3.2 Context-aware access control with behavioral analysis
+  - [ ] 1.2.3.3 Risk-based authentication with adaptive thresholds
+  - [ ] 1.2.3.4 Privilege escalation monitoring with automatic response
+- [ ] 1.2.4 Create SecurityMonitorSensor
+  - [ ] 1.2.4.1 Real-time threat detection with pattern recognition
+  - [ ] 1.2.4.2 Attack pattern recognition and prediction
+  - [ ] 1.2.4.3 Automatic countermeasures with learning from outcomes
+  - [ ] 1.2.4.4 Security event correlation and threat intelligence
+
+#### Actions:
+- [ ] 1.2.5 Security orchestration actions
+  - [ ] 1.2.5.1 AuthenticateUser action with behavioral analysis
+  - [ ] 1.2.5.2 ValidateToken action with anomaly detection
+  - [ ] 1.2.5.3 EnforcePolicy action with context awareness
+  - [ ] 1.2.5.4 RespondToThreat action with adaptive strategies
 
 #### Unit Tests:
-- [ ] 1.3.5 Test resource creation
-- [ ] 1.3.6 Test relationship loading
-- [ ] 1.3.7 Test policy enforcement
-- [ ] 1.3.8 Test change tracking
+- [ ] 1.2.6 Test autonomous threat response and learning
+- [ ] 1.2.7 Test adaptive security policies and effectiveness
+- [ ] 1.2.8 Test behavioral authentication accuracy
+- [ ] 1.2.9 Test agent coordination in security scenarios
 
-### 1.4 Authentication System ✅ **COMPLETED**
+### 1.3 Database Agent Layer
 
 #### Tasks:
-- [x] 1.4.1 Create User resource with AshAuthentication
-  - [x] 1.4.1.1 Add username field (required) - **Username-only authentication implemented**
-  - [x] 1.4.1.2 Add email field (optional) - **Removed for simplicity - username-only approach**
-  - [x] 1.4.1.3 Configure bcrypt password hashing - **Implemented with BcryptProvider**
-  - [x] 1.4.1.4 Set up profile attributes - **Basic user profile with username**
-- [x] 1.4.2 Implement authentication strategies
-  - [x] 1.4.2.1 Username/password strategy with bcrypt - **Fully implemented**
-  - [x] 1.4.2.2 Token strategy with JWT - **Advanced JWT token system implemented**
-  - [x] 1.4.2.3 Optional email confirmation flow - **Not implemented - username-only approach**
-  - [x] 1.4.2.4 Password reset via username or email - **Password change functionality implemented**
-- [x] 1.4.3 Create Token resource
-  - [x] 1.4.3.1 JWT token generation - **Advanced token generation with JTI tracking**
-  - [x] 1.4.3.2 Token expiration handling - **Comprehensive expiration system**
-  - [x] 1.4.3.3 Refresh token support - **Token refresh capabilities**
-  - [x] 1.4.3.4 Token revocation - **Advanced revocation with cleanup**
-- [x] 1.4.4 Implement RubberDuck.Secrets module
-  - [x] 1.4.4.1 Token signing secrets - **JWT signing secrets implemented**
-  - [x] 1.4.4.2 Secret rotation support - **Environment-based secret management**
-  - [x] 1.4.4.3 Environment-based secrets - **Secure secret handling**
-  - [x] 1.4.4.4 Secret validation - **Proper secret validation**
+- [ ] 1.3.1 Create DataPersistenceAgent
+  - [ ] 1.3.1.1 Autonomous query optimization with performance learning
+  - [ ] 1.3.1.2 Self-managing connection pools with adaptive sizing
+  - [ ] 1.3.1.3 Predictive data caching based on access patterns
+  - [ ] 1.3.1.4 Automatic index suggestions with impact analysis
+- [ ] 1.3.2 Implement MigrationAgent
+  - [ ] 1.3.2.1 Self-executing migrations with rollback decision making
+  - [ ] 1.3.2.2 Intelligent rollback triggers based on failure patterns
+  - [ ] 1.3.2.3 Data integrity validation with automated fixes
+  - [ ] 1.3.2.4 Performance impact prediction and mitigation
+- [ ] 1.3.3 Build QueryOptimizerAgent
+  - [ ] 1.3.3.1 Query pattern learning and optimization
+  - [ ] 1.3.3.2 Automatic query rewriting with performance tracking
+  - [ ] 1.3.3.3 Cache strategy optimization based on usage patterns
+  - [ ] 1.3.3.4 Load balancing decisions with predictive scaling
+- [ ] 1.3.4 Create DataHealthSensor
+  - [ ] 1.3.4.1 Performance monitoring with anomaly detection
+  - [ ] 1.3.4.2 Predictive anomaly detection and prevention
+  - [ ] 1.3.4.3 Capacity planning with growth prediction
+  - [ ] 1.3.4.4 Automatic scaling triggers with cost optimization
+
+#### Actions:
+- [ ] 1.3.5 Data management actions
+  - [ ] 1.3.5.1 OptimizeQuery action with learning from results
+  - [ ] 1.3.5.2 ManageConnections action with adaptive pooling
+  - [ ] 1.3.5.3 CacheData action with intelligent invalidation
+  - [ ] 1.3.5.4 ScaleResources action with cost awareness
 
 #### Unit Tests:
-- [x] 1.4.5 Test user registration - **15 comprehensive tests covering all scenarios**
-- [x] 1.4.6 Test authentication flows - **Sign-in, password management, error cases**
-- [x] 1.4.7 Test token generation and validation - **Token resource configuration and policies**
-- [x] 1.4.8 Test email confirmation - **Not applicable - username-only authentication**
+- [ ] 1.3.6 Test autonomous query optimization effectiveness
+- [ ] 1.3.7 Test predictive scaling accuracy
+- [ ] 1.3.8 Test data integrity maintenance
+- [ ] 1.3.9 Test agent learning from database performance
+
+### 1.4 Application Supervision Tree ✅ **COMPLETED - AGENTIC UPGRADE PLANNED**
+
+#### Tasks:
+- [ ] 1.4.1 Create SupervisorAgent
+  - [ ] 1.4.1.1 Self-organizing supervision tree with dynamic strategies
+  - [ ] 1.4.1.2 Intelligent restart strategies based on failure patterns
+  - [ ] 1.4.1.3 Autonomous resource allocation decisions
+  - [ ] 1.4.1.4 Failure pattern learning and prediction
+- [ ] 1.4.2 Implement HealthCheckAgent
+  - [ ] 1.4.2.1 Proactive health monitoring with predictive capabilities
+  - [ ] 1.4.2.2 Predictive failure detection using pattern analysis
+  - [ ] 1.4.2.3 Self-healing orchestration with autonomous recovery
+  - [ ] 1.4.2.4 Performance optimization based on system metrics
+- [ ] 1.4.3 Build TelemetryAgent
+  - [ ] 1.4.3.1 Autonomous metric collection with intelligent filtering
+  - [ ] 1.4.3.2 Pattern recognition in system behavior
+  - [ ] 1.4.3.3 Anomaly detection with proactive alerting
+  - [ ] 1.4.3.4 Predictive analytics for system optimization
+- [ ] 1.4.4 Create SystemResourceSensor
+  - [ ] 1.4.4.1 Resource usage monitoring with trend analysis
+  - [ ] 1.4.4.2 Bottleneck detection and resolution suggestions
+  - [ ] 1.4.4.3 Capacity forecasting with growth modeling
+  - [ ] 1.4.4.4 Optimization triggers with automated responses
+
+#### Actions:
+- [ ] 1.4.5 System management actions
+  - [ ] 1.4.5.1 RestartProcess action with intelligent strategy selection
+  - [ ] 1.4.5.2 AllocateResources action with predictive scaling
+  - [ ] 1.4.5.3 OptimizePerformance action with continuous learning
+  - [ ] 1.4.5.4 ScaleSystem action with cost-aware decisions
+
+#### Unit Tests:
+- [ ] 1.4.6 Test autonomous self-healing capabilities
+- [ ] 1.4.7 Test resource optimization effectiveness
+- [ ] 1.4.8 Test failure recovery and learning
+- [ ] 1.4.9 Test predictive system behavior
 
 ### 1.5 Application Supervision Tree ✅ **COMPLETED**
 
@@ -190,132 +220,310 @@ Establish the core application structure with Ash Framework, PostgreSQL database
 
 ---
 
-## Phase 2: LLM Integration Layer
+## Phase 2: Autonomous LLM Orchestration System
 
 ### Overview
-Build the multi-provider LLM integration layer with support for OpenAI, Anthropic, and local models, including intelligent routing, fallback mechanisms, and streaming responses.
+Transform LLM integration into a multi-agent system where agents autonomously select providers, optimize requests, learn from interactions, and continuously improve performance without human intervention. Each component becomes a goal-driven agent with learning capabilities.
 
-### 2.1 LLM Service Architecture ✅ **COMPLETED**
-
-#### Tasks:
-- [x] 2.1.1 Create RubberDuck.LLM.Service GenServer
-  - [x] 2.1.1.1 Define state structure for providers - **State tracks providers, request count, uptime**
-  - [x] 2.1.1.2 Implement provider registry - **ETS-based registry with fast lookups**
-  - [x] 2.1.1.3 Add connection pooling - **DynamicSupervisor for provider connections**
-  - [x] 2.1.1.4 Set up metrics collection - **Integrated with telemetry and health monitor**
-- [x] 2.1.2 Define provider behavior
-  - [x] 2.1.2.1 Create RubberDuck.LLM.Provider behavior - **Complete behavior with callbacks**
-  - [x] 2.1.2.2 Define callback functions - **complete/2, stream/2, embed/2, health_check/1**
-  - [x] 2.1.2.3 Add capability detection - **capabilities/0 callback for feature detection**
-  - [x] 2.1.2.4 Implement error handling - **Tagged tuple returns, fallback mechanisms**
-- [x] 2.1.3 Implement provider configuration
-  - [x] 2.1.3.1 API key management - **Secure loading from env variables**
-  - [x] 2.1.3.2 Endpoint configuration - **Configurable base URLs per provider**
-  - [x] 2.1.3.3 Model selection - **Per-provider model configuration**
-  - [x] 2.1.3.4 Rate limit settings - **ex_rated integration with configurable limits**
-- [x] 2.1.4 Create provider health monitoring
-  - [x] 2.1.4.1 Availability checking - **Periodic health checks every 30 seconds**
-  - [x] 2.1.4.2 Response time tracking - **Rolling window of last 100 response times**
-  - [x] 2.1.4.3 Error rate monitoring - **Sliding window with automatic thresholds**
-  - [x] 2.1.4.4 Automatic provider disabling - **50% error rate threshold triggers disable**
-
-#### Unit Tests:
-- [x] 2.1.5 Test service initialization - **Service startup and provider loading tests**
-- [x] 2.1.6 Test provider registration - **Registry operations and ETS storage**
-- [x] 2.1.7 Test configuration management - **Config validation and loading**
-- [x] 2.1.8 Test health monitoring - **Health checks and metrics tracking**
-
-### 2.2 Provider Implementations
+### 2.1 LLM Orchestrator Agent System ✅ **COMPLETED - AGENTIC UPGRADE PLANNED**
 
 #### Tasks:
-- [ ] 2.2.1 Implement OpenAI provider
-  - [ ] 2.2.1.1 API client with HTTPoison
-  - [ ] 2.2.1.2 GPT-4 and GPT-3.5 support
-  - [ ] 2.2.1.3 Streaming response handling
-  - [ ] 2.2.1.4 Function calling support
-- [ ] 2.2.2 Implement Anthropic provider
-  - [ ] 2.2.2.1 Claude API integration
-  - [ ] 2.2.2.2 Message formatting
-  - [ ] 2.2.2.3 System prompt handling
-  - [ ] 2.2.2.4 Token counting
-- [ ] 2.2.3 Implement local model provider
-  - [ ] 2.2.3.1 Ollama integration
-  - [ ] 2.2.3.2 HuggingFace support
-  - [ ] 2.2.3.3 Model loading
-  - [ ] 2.2.3.4 GPU acceleration
-- [ ] 2.2.4 Create mock provider for testing
-  - [ ] 2.2.4.1 Configurable responses
-  - [ ] 2.2.4.2 Latency simulation
-  - [ ] 2.2.4.3 Error injection
-  - [ ] 2.2.4.4 Token tracking
+- [ ] 2.1.1 Create LLMOrchestratorAgent
+  - [ ] 2.1.1.1 Goal-based provider selection with multi-criteria optimization
+  - [ ] 2.1.1.2 Cost-quality optimization with learning from outcomes
+  - [ ] 2.1.1.3 Failure prediction and proactive avoidance strategies  
+  - [ ] 2.1.1.4 Continuous learning from request-response patterns
+- [ ] 2.1.2 Implement ProviderSelectorAgent
+  - [ ] 2.1.2.1 Multi-criteria decision making with adaptive weights
+  - [ ] 2.1.2.2 Real-time capability assessment and performance tracking
+  - [ ] 2.1.2.3 Load distribution intelligence with fairness algorithms
+  - [ ] 2.1.2.4 Performance prediction based on historical data
+- [ ] 2.1.3 Build RequestOptimizerAgent
+  - [ ] 2.1.3.1 Intelligent prompt enhancement with quality scoring
+  - [ ] 2.1.3.2 Context window management with relevance optimization
+  - [ ] 2.1.3.3 Token optimization with cost-quality tradeoffs
+  - [ ] 2.1.3.4 Response quality prediction and validation
+- [ ] 2.1.4 Create ProviderHealthSensor
+  - [ ] 2.1.4.1 Real-time availability monitoring with predictive analytics
+  - [ ] 2.1.4.2 Performance degradation detection with early warnings
+  - [ ] 2.1.4.3 Cost anomaly detection with budget optimization
+  - [ ] 2.1.4.4 Capacity prediction with usage modeling
+
+#### Actions:
+- [ ] 2.1.5 LLM orchestration actions
+  - [ ] 2.1.5.1 SelectProvider action with learning from outcomes
+  - [ ] 2.1.5.2 OptimizeRequest action with quality assessment
+  - [ ] 2.1.5.3 RouteRequest action with intelligent load balancing
+  - [ ] 2.1.5.4 HandleFailure action with adaptive recovery strategies
 
 #### Unit Tests:
-- [ ] 2.2.5 Test OpenAI API calls
-- [ ] 2.2.6 Test Anthropic integration
-- [ ] 2.2.7 Test local model loading
-- [ ] 2.2.8 Test mock provider behavior
+- [ ] 2.1.6 Test autonomous provider selection accuracy
+- [ ] 2.1.7 Test request optimization effectiveness
+- [ ] 2.1.8 Test failure prediction and handling
+- [ ] 2.1.9 Test agent learning and adaptation mechanisms
 
-### 2.3 Intelligent Routing System
+### 2.2 Provider Agent Implementations
 
 #### Tasks:
-- [ ] 2.3.1 Implement routing strategies
-  - [ ] 2.3.1.1 Round-robin routing
-  - [ ] 2.3.1.2 Priority-based routing
-  - [ ] 2.3.1.3 Cost-optimized routing
-  - [ ] 2.3.1.4 Capability-based routing
-- [ ] 2.3.2 Create fallback mechanism
-  - [ ] 2.3.2.1 Primary/secondary provider setup
-  - [ ] 2.3.2.2 Automatic failover
-  - [ ] 2.3.2.3 Retry logic with backoff
-  - [ ] 2.3.2.4 Error classification
-- [ ] 2.3.3 Build circuit breaker
-  - [ ] 2.3.3.1 Failure threshold configuration
-  - [ ] 2.3.3.2 Open/closed/half-open states
-  - [ ] 2.3.3.3 Recovery detection
-  - [ ] 2.3.3.4 Provider isolation
-- [ ] 2.3.4 Implement load balancing
-  - [ ] 2.3.4.1 Request distribution
-  - [ ] 2.3.4.2 Provider capacity tracking
-  - [ ] 2.3.4.3 Dynamic weight adjustment
-  - [ ] 2.3.4.4 Queue management
+- [ ] 2.2.1 Create OpenAIProviderAgent
+  - [ ] 2.2.1.1 Self-managing rate limits with predictive throttling
+  - [ ] 2.2.1.2 Automatic retry strategies with backoff learning
+  - [ ] 2.2.1.3 Cost optimization with quality maintenance
+  - [ ] 2.2.1.4 Quality monitoring with response assessment
+- [ ] 2.2.2 Implement AnthropicProviderAgent
+  - [ ] 2.2.2.1 Context window optimization with content prioritization
+  - [ ] 2.2.2.2 Response caching strategies with relevance scoring
+  - [ ] 2.2.2.3 Error pattern learning with adaptive handling
+  - [ ] 2.2.2.4 Performance tuning with usage analytics
+- [ ] 2.2.3 Build LocalModelAgent
+  - [ ] 2.2.3.1 Intelligent resource allocation with GPU optimization
+  - [ ] 2.2.3.2 Model loading strategies with performance caching
+  - [ ] 2.2.3.3 Performance optimization with hardware awareness
+  - [ ] 2.2.3.4 Quality assessment with model capability tracking
+- [ ] 2.2.4 Create ProviderLearningAgent
+  - [ ] 2.2.4.1 Performance pattern analysis with trend prediction
+  - [ ] 2.2.4.2 Cost prediction models with budget optimization
+  - [ ] 2.2.4.3 Quality improvement strategies with A/B testing
+  - [ ] 2.2.4.4 Failure prediction with proactive mitigation
+
+#### Actions:
+- [ ] 2.2.5 Provider-specific actions
+  - [ ] 2.2.5.1 CallAPI action with adaptive error handling
+  - [ ] 2.2.5.2 ManageRateLimit action with predictive throttling
+  - [ ] 2.2.5.3 CacheResponse action with intelligent invalidation
+  - [ ] 2.2.5.4 OptimizeModel action with performance tracking
 
 #### Unit Tests:
-- [ ] 2.3.5 Test routing strategies
-- [ ] 2.3.6 Test fallback scenarios
-- [ ] 2.3.7 Test circuit breaker states
-- [ ] 2.3.8 Test load distribution
+- [ ] 2.2.6 Test autonomous rate limit management
+- [ ] 2.2.7 Test intelligent caching strategies
+- [ ] 2.2.8 Test quality monitoring and learning
+- [ ] 2.2.9 Test provider agent coordination
 
-### 2.4 Advanced AI Techniques
+### 2.3 Intelligent Routing Agent System
 
 #### Tasks:
-- [ ] 2.4.1 Implement Chain-of-Thought prompting
-  - [ ] 2.4.1.1 CoT prompt templates
-  - [ ] 2.4.1.2 Step-by-step reasoning
-  - [ ] 2.4.1.3 Thought extraction
-  - [ ] 2.4.1.4 Validation logic
-- [ ] 2.4.2 Build RAG system
-  - [ ] 2.4.2.1 Document chunking
-  - [ ] 2.4.2.2 Embedding generation
-  - [ ] 2.4.2.3 Similarity search
-  - [ ] 2.4.2.4 Context injection
-- [ ] 2.4.3 Create self-correction loop
-  - [ ] 2.4.3.1 Output validation
-  - [ ] 2.4.3.2 Error detection
-  - [ ] 2.4.3.3 Correction prompting
-  - [ ] 2.4.3.4 Iteration limits
-- [ ] 2.4.4 Implement few-shot learning
-  - [ ] 2.4.4.1 Example selection
-  - [ ] 2.4.4.2 Prompt construction
-  - [ ] 2.4.4.3 Dynamic examples
-  - [ ] 2.4.4.4 Performance tracking
+- [ ] 2.3.1 Create RoutingStrategyAgent
+  - [ ] 2.3.1.1 Dynamic strategy selection with performance learning
+  - [ ] 2.3.1.2 Multi-objective optimization (cost, quality, latency)
+  - [ ] 2.3.1.3 Learning from routing outcomes and user satisfaction
+  - [ ] 2.3.1.4 Predictive routing with traffic pattern analysis
+- [ ] 2.3.2 Implement LoadBalancerAgent
+  - [ ] 2.3.2.1 Predictive load distribution with capacity modeling
+  - [ ] 2.3.2.2 Provider capacity modeling with performance prediction
+  - [ ] 2.3.2.3 Queue optimization with intelligent prioritization
+  - [ ] 2.3.2.4 Fairness algorithms with SLA compliance
+- [ ] 2.3.3 Build CircuitBreakerAgent
+  - [ ] 2.3.3.1 Failure pattern recognition with machine learning
+  - [ ] 2.3.3.2 Recovery prediction with health assessment
+  - [ ] 2.3.3.3 Gradual recovery strategies with risk management
+  - [ ] 2.3.3.4 Impact minimization with graceful degradation
+- [ ] 2.3.4 Create FallbackCoordinatorAgent
+  - [ ] 2.3.4.1 Intelligent fallback selection with quality preservation
+  - [ ] 2.3.4.2 Quality maintenance during provider failures
+  - [ ] 2.3.4.3 Cost optimization across fallback chains
+  - [ ] 2.3.4.4 User experience preservation with seamless transitions
+
+#### Actions:
+- [ ] 2.3.5 Routing actions
+  - [ ] 2.3.5.1 DetermineRoute action with multi-criteria analysis
+  - [ ] 2.3.5.2 DistributeLoad action with predictive balancing
+  - [ ] 2.3.5.3 TripCircuit action with intelligent thresholds
+  - [ ] 2.3.5.4 ExecuteFallback action with quality assurance
 
 #### Unit Tests:
-- [ ] 2.4.5 Test CoT generation
-- [ ] 2.4.6 Test RAG retrieval
-- [ ] 2.4.7 Test self-correction
-- [ ] 2.4.8 Test few-shot prompting
+- [ ] 2.3.6 Test autonomous routing decisions
+- [ ] 2.3.7 Test intelligent load distribution
+- [ ] 2.3.8 Test circuit breaker learning behavior
+- [ ] 2.3.9 Test fallback coordination effectiveness
 
-### 2.5 Streaming and Response Management
+### 2.4 Autonomous RAG (Retrieval-Augmented Generation) System
+
+#### Overview
+Implement a comprehensive, self-improving RAG system using pipeline-based architecture with autonomous agents managing every aspect of retrieval, context building, and generation optimization. The system learns from user interactions and continuously improves retrieval quality.
+
+#### Tasks:
+- [ ] 2.4.1 Create RAGOrchestrationAgent
+  - [ ] 2.4.1.1 Pipeline flow management with adaptive optimization
+  - [ ] 2.4.1.2 Generation struct lifecycle management with error recovery
+  - [ ] 2.4.1.3 Provider coordination for embeddings and text generation
+  - [ ] 2.4.1.4 Performance monitoring with pipeline telemetry integration
+- [ ] 2.4.2 Implement EmbeddingGenerationAgent
+  - [ ] 2.4.2.1 Query embedding with provider abstraction (OpenAI, Cohere, Ollama, Nx)
+  - [ ] 2.4.2.2 Batch embedding processing for document ingestion
+  - [ ] 2.4.2.3 Embedding quality assessment with dimension validation
+  - [ ] 2.4.2.4 Provider selection based on query characteristics and performance
+- [ ] 2.4.3 Build RetrievalCoordinatorAgent
+  - [ ] 2.4.3.1 Multi-strategy retrieval orchestration (semantic, fulltext, hybrid)
+  - [ ] 2.4.3.2 Reciprocal Rank Fusion (RRF) with adaptive weighting
+  - [ ] 2.4.3.3 Result deduplication with configurable identity keys
+  - [ ] 2.4.3.4 Retrieval strategy learning from success patterns
+- [ ] 2.4.4 Create ContextBuilderAgent
+  - [ ] 2.4.4.1 Intelligent context assembly from multiple sources
+  - [ ] 2.4.4.2 Context relevance scoring with user feedback integration
+  - [ ] 2.4.4.3 Context optimization for token efficiency
+  - [ ] 2.4.4.4 Source tracking and attribution management
+- [ ] 2.4.5 Implement PromptBuilderAgent
+  - [ ] 2.4.5.1 Template-based prompt construction with context injection
+  - [ ] 2.4.5.2 Dynamic prompt optimization based on query types
+  - [ ] 2.4.5.3 Prompt effectiveness learning from response quality
+  - [ ] 2.4.5.4 Context window management with intelligent truncation
+- [ ] 2.4.6 Build RAGEvaluationAgent
+  - [ ] 2.4.6.1 RAG Triad assessment (context relevance, groundedness, answer relevance)
+  - [ ] 2.4.6.2 Hallucination detection with confidence scoring
+  - [ ] 2.4.6.3 Response quality learning with continuous improvement
+  - [ ] 2.4.6.4 Evaluation provider management with fallback strategies
+
+#### Vector Storage Integration:
+- [ ] 2.4.7 Create VectorStoreManagerAgent
+  - [ ] 2.4.7.1 PGVector integration with PostgreSQL and vector extensions
+  - [ ] 2.4.7.2 Chroma vector database support with collection management
+  - [ ] 2.4.7.3 Hybrid retrieval combining vector similarity and fulltext search
+  - [ ] 2.4.7.4 Index optimization with performance monitoring
+- [ ] 2.4.8 Implement DocumentIngestionAgent
+  - [ ] 2.4.8.1 Multi-format document loading (files, text, structured data)
+  - [ ] 2.4.8.2 Intelligent chunking with overlap and boundary detection
+  - [ ] 2.4.8.3 Metadata extraction and enrichment
+  - [ ] 2.4.8.4 Batch processing with progress tracking and error recovery
+
+#### AI Provider System:
+- [ ] 2.4.9 Create RAGProviderManagerAgent
+  - [ ] 2.4.9.1 Multi-provider support (OpenAI, Cohere, Ollama, Nx/Bumblebee)
+  - [ ] 2.4.9.2 Provider capability assessment and selection
+  - [ ] 2.4.9.3 Local model serving with Nx.Serving integration
+  - [ ] 2.4.9.4 Streaming response handling with real-time processing
+- [ ] 2.4.10 Build RAGTelemetryAgent
+  - [ ] 2.4.10.1 Comprehensive event tracking for all pipeline stages
+  - [ ] 2.4.10.2 Performance metrics collection with latency and accuracy
+  - [ ] 2.4.10.3 Error pattern analysis with predictive failure detection
+  - [ ] 2.4.10.4 Usage analytics with optimization recommendations
+
+#### Advanced RAG Features:
+- [ ] 2.4.11 Implement MultiRetrievalFusionAgent
+  - [ ] 2.4.11.1 Semantic search with embedding similarity
+  - [ ] 2.4.11.2 Fulltext search with keyword matching and ranking
+  - [ ] 2.4.11.3 Time-based retrieval for recent information prioritization
+  - [ ] 2.4.11.4 Custom retrieval strategies with pluggable functions
+- [ ] 2.4.12 Create RAGQualityAssuranceAgent
+  - [ ] 2.4.12.1 Pipeline validation with error detection
+  - [ ] 2.4.12.2 Response coherence checking with consistency validation
+  - [ ] 2.4.12.3 Source verification with attribution accuracy
+  - [ ] 2.4.12.4 Quality threshold enforcement with fallback triggers
+
+#### Actions:
+- [ ] 2.4.13 RAG orchestration actions
+  - [ ] 2.4.13.1 ProcessQuery action with full pipeline execution
+  - [ ] 2.4.13.2 GenerateEmbedding action with provider selection
+  - [ ] 2.4.13.3 RetrieveDocuments action with multi-strategy fusion
+  - [ ] 2.4.13.4 BuildContext action with relevance optimization
+  - [ ] 2.4.13.5 GenerateResponse action with streaming support
+  - [ ] 2.4.13.6 EvaluateQuality action with comprehensive assessment
+  - [ ] 2.4.13.7 IngestDocuments action with batch processing
+  - [ ] 2.4.13.8 OptimizePipeline action with performance learning
+
+#### Data Structures:
+```elixir
+# Core Generation struct for pipeline processing
+%Generation{
+  query: "user's question",
+  query_embedding: [0.1, 0.2, ...],
+  retrieval_results: %{
+    semantic_results: [...],
+    fulltext_results: [...],
+    fused_results: [...]
+  },
+  context: "assembled relevant information",
+  context_sources: ["source1.txt", "source2.md"],
+  prompt: "formatted prompt with context",
+  response: "generated answer",
+  evaluations: %{
+    rag_triad: %{
+      context_relevance_score: 4.2,
+      groundedness_score: 4.8,
+      answer_relevance_score: 4.5
+    },
+    hallucination: false
+  },
+  halted?: false,
+  errors: [],
+  telemetry_metadata: %{},
+  ref: reference
+}
+```
+
+#### Vector Store Schemas:
+```elixir
+# PGVector implementation
+schema "chunks" do
+  field(:document, :string)
+  field(:source, :string)
+  field(:chunk, :string)
+  field(:embedding, Pgvector.Ecto.Vector)
+  field(:metadata, :map)
+  timestamps()
+end
+
+# Chroma collection configuration
+collection_config = %{
+  "hnsw:space" => "l2",
+  "hnsw:construction_ef" => 128,
+  "hnsw:M" => 16
+}
+```
+
+#### Pipeline Flow:
+```
+Query → Embedding → Multi-Retrieval → Fusion → Context → Prompt → Generation → Evaluation
+  ↓         ↓           ↓            ↓        ↓       ↓         ↓           ↓
+Agent    Agent       Agent        Agent    Agent   Agent     Agent      Agent
+  ↓         ↓           ↓            ↓        ↓       ↓         ↓           ↓
+Telemetry Events → Learning → Optimization → Adaptation → Improvement
+```
+
+#### Unit Tests:
+- [ ] 2.4.14 Test autonomous pipeline orchestration and flow control
+- [ ] 2.4.15 Test multi-provider embedding generation and selection
+- [ ] 2.4.16 Test reciprocal rank fusion accuracy and adaptation
+- [ ] 2.4.17 Test context building quality and relevance optimization
+- [ ] 2.4.18 Test prompt construction effectiveness and learning
+- [ ] 2.4.19 Test RAG Triad evaluation accuracy and consistency
+- [ ] 2.4.20 Test vector store integration and performance
+- [ ] 2.4.21 Test document ingestion and chunking strategies
+- [ ] 2.4.22 Test provider fallback and error recovery
+- [ ] 2.4.23 Test telemetry collection and performance analytics
+- [ ] 2.4.24 Test streaming response handling and real-time processing
+- [ ] 2.4.25 Test agent learning and continuous improvement mechanisms
+
+### 2.5 Advanced AI Technique Agents
+
+#### Tasks:
+- [ ] 2.5.1 Create ChainOfThoughtAgent
+  - [ ] 2.5.1.1 Reasoning path generation with logic validation
+  - [ ] 2.5.1.2 Step validation with error detection and correction
+  - [ ] 2.5.1.3 Logic error detection with automatic refinement
+  - [ ] 2.5.1.4 Insight extraction with pattern recognition
+- [ ] 2.5.2 Build SelfCorrectionAgent
+  - [ ] 2.5.2.1 Error detection with pattern matching and validation
+  - [ ] 2.5.2.2 Correction strategies with learning from mistakes
+  - [ ] 2.5.2.3 Quality improvement with iterative refinement
+  - [ ] 2.5.2.4 Learning from correction outcomes and user feedback
+- [ ] 2.5.3 Create FewShotLearningAgent
+  - [ ] 2.5.3.1 Example selection with relevance and diversity optimization
+  - [ ] 2.5.3.2 Pattern recognition with generalization capabilities
+  - [ ] 2.5.3.3 Generalization with transfer learning
+  - [ ] 2.5.3.4 Performance tracking with continuous improvement
+
+#### Actions:
+- [ ] 2.5.4 AI technique actions
+  - [ ] 2.5.4.1 GenerateReasoning action with quality validation
+  - [ ] 2.5.4.2 CorrectOutput action with learning integration
+  - [ ] 2.5.4.3 SelectExamples action with intelligent curation
+
+#### Unit Tests:
+- [ ] 2.5.5 Test reasoning generation quality and validity
+- [ ] 2.5.6 Test self-correction effectiveness and learning
+- [ ] 2.5.7 Test few-shot learning adaptation and performance
+
+### 2.6 Streaming and Response Management
 
 #### Tasks:
 - [ ] 2.5.1 Implement streaming infrastructure
@@ -356,130 +564,158 @@ Build the multi-provider LLM integration layer with support for OpenAI, Anthropi
 
 ---
 
-## Phase 3: Tool System Architecture
+## Phase 3: Intelligent Tool Agent System
 
 ### Overview
-Implement the comprehensive tool system with Spark DSL, execution pipeline, safety layers, and the core library of 26+ tools for code operations.
+Transform tools into intelligent agents that autonomously decide when and how to execute, learn from usage patterns, optimize their own performance, and coordinate with other agents to achieve complex goals. Each tool becomes a self-improving agent.
 
-### 3.1 Tool DSL with Spark
-
-#### Tasks:
-- [ ] 3.1.1 Design tool DSL structure
-  - [ ] 3.1.1.1 Define tool entity
-  - [ ] 3.1.1.2 Create parameter schema
-  - [ ] 3.1.1.3 Add capability requirements
-  - [ ] 3.1.1.4 Set up validation rules
-- [ ] 3.1.2 Implement Spark extension
-  - [ ] 3.1.2.1 Create RubberDuck.Tool.DSL module
-  - [ ] 3.1.2.2 Define DSL sections
-  - [ ] 3.1.2.3 Add transformers
-  - [ ] 3.1.2.4 Implement validators
-- [ ] 3.1.3 Build tool compiler
-  - [ ] 3.1.3.1 DSL parsing
-  - [ ] 3.1.3.2 Schema generation
-  - [ ] 3.1.3.3 Runtime compilation
-  - [ ] 3.1.3.4 Error reporting
-- [ ] 3.1.4 Create tool registry
-  - [ ] 3.1.4.1 Tool registration
-  - [ ] 3.1.4.2 Discovery mechanism
-  - [ ] 3.1.4.3 Metadata storage
-  - [ ] 3.1.4.4 Version management
-
-#### Unit Tests:
-- [ ] 3.1.5 Test DSL parsing
-- [ ] 3.1.6 Test schema generation
-- [ ] 3.1.7 Test tool registration
-- [ ] 3.1.8 Test validation rules
-
-### 3.2 Tool Execution Pipeline
+### 3.1 Tool Framework Agents
 
 #### Tasks:
-- [ ] 3.2.1 Create validation layer
-  - [ ] 3.2.1.1 Input validation against schema
-  - [ ] 3.2.1.2 Type checking
-  - [ ] 3.2.1.3 Range validation
-  - [ ] 3.2.1.4 Custom validators
-- [ ] 3.2.2 Implement authorization layer
-  - [ ] 3.2.2.1 Capability checking
-  - [ ] 3.2.2.2 User permissions
-  - [ ] 3.2.2.3 Resource access
-  - [ ] 3.2.2.4 Audit logging
-- [ ] 3.2.3 Build execution layer
-  - [ ] 3.2.3.1 Task supervisor setup
-  - [ ] 3.2.3.2 Process isolation
-  - [ ] 3.2.3.3 Timeout handling
-  - [ ] 3.2.3.4 Resource limits
-- [ ] 3.2.4 Create result processing
-  - [ ] 3.2.4.1 Output sanitization
-  - [ ] 3.2.4.2 Sensitive data filtering
-  - [ ] 3.2.4.3 Format conversion
-  - [ ] 3.2.4.4 Error enrichment
+- [ ] 3.1.1 Create ToolRegistryAgent
+  - [ ] 3.1.1.1 Dynamic tool discovery with capability assessment
+  - [ ] 3.1.1.2 Autonomous capability assessment and performance tracking
+  - [ ] 3.1.1.3 Usage pattern analysis with optimization suggestions
+  - [ ] 3.1.1.4 Performance optimization with continuous learning
+- [ ] 3.1.2 Implement ToolSelectorAgent
+  - [ ] 3.1.2.1 Goal-based tool selection with multi-criteria optimization
+  - [ ] 3.1.2.2 Multi-tool orchestration with dependency resolution
+  - [ ] 3.1.2.3 Efficiency optimization with resource awareness
+  - [ ] 3.1.2.4 Learning from tool combination outcomes
+- [ ] 3.1.3 Build ToolExecutorAgent
+  - [ ] 3.1.3.1 Autonomous execution with intelligent parameter optimization
+  - [ ] 3.1.3.2 Resource management with predictive allocation
+  - [ ] 3.1.3.3 Error recovery with adaptive retry strategies
+  - [ ] 3.1.3.4 Result optimization with quality assessment
+- [ ] 3.1.4 Create ToolMonitorSensor
+  - [ ] 3.1.4.1 Performance tracking with anomaly detection
+  - [ ] 3.1.4.2 Usage analytics with pattern recognition
+  - [ ] 3.1.4.3 Error pattern detection with predictive alerts
+  - [ ] 3.1.4.4 Optimization opportunity identification
+
+#### Actions:
+- [ ] 3.1.5 Tool framework actions
+  - [ ] 3.1.5.1 RegisterTool action with capability verification
+  - [ ] 3.1.5.2 SelectTool action with goal-based optimization
+  - [ ] 3.1.5.3 ExecuteTool action with adaptive execution
+  - [ ] 3.1.5.4 OptimizeTool action with performance learning
 
 #### Unit Tests:
-- [ ] 3.2.5 Test validation layer
-- [ ] 3.2.6 Test authorization checks
-- [ ] 3.2.7 Test process isolation
-- [ ] 3.2.8 Test result processing
+- [ ] 3.1.6 Test autonomous tool discovery and assessment
+- [ ] 3.1.7 Test intelligent tool selection accuracy
+- [ ] 3.1.8 Test autonomous execution optimization
+- [ ] 3.1.9 Test tool agent coordination and learning
 
-### 3.3 Core Tool Library - Code Operations
+### 3.2 Code Operation Tool Agents
 
 #### Tasks:
-- [ ] 3.3.1 Implement CodeGenerator tool
-  - [ ] 3.3.1.1 Code generation from specs
-  - [ ] 3.3.1.2 Language detection
-  - [ ] 3.3.1.3 Template support
-  - [ ] 3.3.1.4 Validation
-- [ ] 3.3.2 Create CodeRefactorer tool
-  - [ ] 3.3.2.1 AST manipulation
-  - [ ] 3.3.2.2 Pattern detection
-  - [ ] 3.3.2.3 Safe transformations
-  - [ ] 3.3.2.4 Diff generation
-- [ ] 3.3.3 Build CodeExplainer tool
-  - [ ] 3.3.3.1 Code analysis
-  - [ ] 3.3.3.2 Documentation generation
-  - [ ] 3.3.3.3 Complexity metrics
-  - [ ] 3.3.3.4 Example generation
-- [ ] 3.3.4 Implement CodeFormatter tool
-  - [ ] 3.3.4.1 Language-specific formatting
-  - [ ] 3.3.4.2 Style configuration
-  - [ ] 3.3.4.3 Incremental formatting
-  - [ ] 3.3.4.4 Format validation
+- [ ] 3.2.1 Create CodeGeneratorAgent
+  - [ ] 3.2.1.1 Intent understanding with context analysis
+  - [ ] 3.2.1.2 Pattern learning from successful generations
+  - [ ] 3.2.1.3 Quality optimization with iterative improvement
+  - [ ] 3.2.1.4 Style adaptation based on project conventions
+- [ ] 3.2.2 Implement CodeRefactorerAgent
+  - [ ] 3.2.2.1 Improvement detection with quality metrics
+  - [ ] 3.2.2.2 Risk assessment with safety validation
+  - [ ] 3.2.2.3 Incremental refactoring with impact analysis
+  - [ ] 3.2.2.4 Impact analysis with dependency tracking
+- [ ] 3.2.3 Build CodeExplainerAgent
+  - [ ] 3.2.3.1 Complexity analysis with readability scoring
+  - [ ] 3.2.3.2 Documentation generation with context awareness
+  - [ ] 3.2.3.3 Learning path creation with difficulty assessment
+  - [ ] 3.2.3.4 Example generation with relevance optimization
+- [ ] 3.2.4 Create CodeQualitySensor
+  - [ ] 3.2.4.1 Real-time analysis with continuous monitoring
+  - [ ] 3.2.4.2 Pattern detection with anti-pattern identification
+  - [ ] 3.2.4.3 Improvement suggestions with priority ranking
+  - [ ] 3.2.4.4 Technical debt tracking with remediation planning
+
+#### Actions:
+- [ ] 3.2.5 Code operation actions
+  - [ ] 3.2.5.1 GenerateCode action with quality validation
+  - [ ] 3.2.5.2 RefactorCode action with safety verification
+  - [ ] 3.2.5.3 ExplainCode action with clarity optimization
+  - [ ] 3.2.5.4 ImproveCode action with continuous learning
 
 #### Unit Tests:
-- [ ] 3.3.5 Test code generation
-- [ ] 3.3.6 Test refactoring operations
-- [ ] 3.3.7 Test explanation quality
-- [ ] 3.3.8 Test formatting correctness
+- [ ] 3.2.6 Test code generation quality and accuracy
+- [ ] 3.2.7 Test refactoring safety and effectiveness
+- [ ] 3.2.8 Test explanation clarity and completeness
+- [ ] 3.2.9 Test code quality improvement learning
 
-### 3.4 Core Tool Library - Analysis Tools
+### 3.3 Analysis Tool Agents
 
 #### Tasks:
-- [ ] 3.4.1 Create RepoSearch tool
-  - [ ] 3.4.1.1 Full-text search
-  - [ ] 3.4.1.2 Regex support
-  - [ ] 3.4.1.3 File filtering
-  - [ ] 3.4.1.4 Result ranking
-- [ ] 3.4.2 Implement DependencyInspector tool
-  - [ ] 3.4.2.1 Dependency parsing
-  - [ ] 3.4.2.2 Version checking
-  - [ ] 3.4.2.3 Vulnerability scanning
-  - [ ] 3.4.2.4 Update suggestions
-- [ ] 3.4.3 Build TodoExtractor tool
-  - [ ] 3.4.3.1 Comment parsing
-  - [ ] 3.4.3.2 TODO/FIXME detection
-  - [ ] 3.4.3.3 Priority extraction
-  - [ ] 3.4.3.4 Report generation
-- [ ] 3.4.4 Create TypeInferrer tool
-  - [ ] 3.4.4.1 Type analysis
-  - [ ] 3.4.4.2 Spec generation
-  - [ ] 3.4.4.3 Type checking
-  - [ ] 3.4.4.4 Dialyzer integration
+- [ ] 3.3.1 Create RepoSearchAgent
+  - [ ] 3.3.1.1 Intelligent indexing with semantic understanding
+  - [ ] 3.3.1.2 Semantic search with context awareness
+  - [ ] 3.3.1.3 Result ranking with relevance learning
+  - [ ] 3.3.1.4 Learning from search usage patterns
+- [ ] 3.3.2 Implement DependencyInspectorAgent
+  - [ ] 3.3.2.1 Vulnerability monitoring with threat intelligence
+  - [ ] 3.3.2.2 Update recommendations with compatibility analysis
+  - [ ] 3.3.2.3 Compatibility analysis with risk assessment
+  - [ ] 3.3.2.4 Risk assessment with security scoring
+- [ ] 3.3.3 Build TodoExtractorAgent
+  - [ ] 3.3.3.1 Priority assessment with context analysis
+  - [ ] 3.3.3.2 Grouping and categorization with intelligent clustering
+  - [ ] 3.3.3.3 Progress tracking with completion prediction
+  - [ ] 3.3.3.4 Completion prediction with timeline estimation
+- [ ] 3.3.4 Create TypeInferrerAgent
+  - [ ] 3.3.4.1 Type system learning with pattern recognition
+  - [ ] 3.3.4.2 Spec generation with quality validation
+  - [ ] 3.3.4.3 Consistency checking with error detection
+  - [ ] 3.3.4.4 Migration assistance with automated suggestions
+
+#### Actions:
+- [ ] 3.3.5 Analysis actions
+  - [ ] 3.3.5.1 SearchRepository action with semantic understanding
+  - [ ] 3.3.5.2 AnalyzeDependencies action with security assessment
+  - [ ] 3.3.5.3 ExtractTodos action with priority optimization
+  - [ ] 3.3.5.4 InferTypes action with accuracy validation
 
 #### Unit Tests:
-- [ ] 3.4.5 Test search accuracy
-- [ ] 3.4.6 Test dependency analysis
-- [ ] 3.4.7 Test TODO extraction
-- [ ] 3.4.8 Test type inference
+- [ ] 3.3.6 Test search accuracy and semantic understanding
+- [ ] 3.3.7 Test dependency analysis completeness
+- [ ] 3.3.8 Test todo extraction and prioritization
+- [ ] 3.3.9 Test type inference accuracy and learning
+
+### 3.4 Tool Composition with Reactor
+
+#### Tasks:
+- [ ] 3.4.1 Create WorkflowComposerAgent
+  - [ ] 3.4.1.1 Workflow generation with goal decomposition
+  - [ ] 3.4.1.2 Optimization strategies with resource efficiency
+  - [ ] 3.4.1.3 Parallel execution with dependency resolution
+  - [ ] 3.4.1.4 Error handling flows with recovery strategies
+- [ ] 3.4.2 Implement DAGExecutorAgent
+  - [ ] 3.4.2.1 Dependency resolution with cycle detection
+  - [ ] 3.4.2.2 Execution optimization with resource scheduling
+  - [ ] 3.4.2.3 Resource allocation with performance prediction
+  - [ ] 3.4.2.4 Progress tracking with completion estimation
+- [ ] 3.4.3 Build ConditionalLogicAgent
+  - [ ] 3.4.3.1 Condition evaluation with context awareness
+  - [ ] 3.4.3.2 Branch prediction with performance optimization
+  - [ ] 3.4.3.3 Loop optimization with termination detection
+  - [ ] 3.4.3.4 Early termination with resource conservation
+- [ ] 3.4.4 Create WorkflowLearningAgent
+  - [ ] 3.4.4.1 Pattern recognition with workflow optimization
+  - [ ] 3.4.4.2 Optimization learning from execution outcomes
+  - [ ] 3.4.4.3 Reusable templates with success pattern extraction
+  - [ ] 3.4.4.4 Performance prediction with historical analysis
+
+#### Actions:
+- [ ] 3.4.5 Composition actions
+  - [ ] 3.4.5.1 ComposeWorkflow action with intelligent planning
+  - [ ] 3.4.5.2 ExecuteDAG action with optimal scheduling
+  - [ ] 3.4.5.3 EvaluateCondition action with context analysis
+  - [ ] 3.4.5.4 OptimizeWorkflow action with performance learning
+
+#### Unit Tests:
+- [ ] 3.4.6 Test autonomous workflow composition
+- [ ] 3.4.7 Test DAG execution optimization
+- [ ] 3.4.8 Test workflow learning and improvement
+- [ ] 3.4.9 Test conditional logic accuracy
 
 ### 3.5 Tool Composition with Reactor
 
@@ -522,10 +758,10 @@ Implement the comprehensive tool system with Spark DSL, execution pipeline, safe
 
 ---
 
-## Phase 4: Agentic Planning System
+## Phase 4: Multi-Agent Planning & Coordination
 
 ### Overview
-Integrate Jido SDK for multi-agent orchestration, implement agent communication via signals, and create planning templates for complex task coordination.
+Leverage Jido's full capabilities for multi-agent orchestration, creating a system where agents collaborate autonomously to plan, execute, and refine complex tasks. Intelligence emerges from agent interactions without central control.
 
 ### 4.1 Jido SDK Integration
 
@@ -688,10 +924,10 @@ Integrate Jido SDK for multi-agent orchestration, implement agent communication 
 
 ---
 
-## Phase 5: Memory & Context Management
+## Phase 5: Autonomous Memory & Context Management
 
 ### Overview
-Implement the three-tier memory architecture with ETS for short-term storage, pattern extraction for mid-term memory, and pgvector for long-term semantic search.
+Create self-managing memory agents that autonomously organize, compress, and retrieve information based on relevance and usage patterns. Memory becomes intelligent and self-optimizing.
 
 ### 5.1 Short-Term Memory with ETS
 
@@ -854,10 +1090,10 @@ Implement the three-tier memory architecture with ETS for short-term storage, pa
 
 ---
 
-## Phase 6: Real-time Communication
+## Phase 6: Self-Managing Communication Agents
 
 ### Overview
-Build the real-time communication infrastructure with Phoenix Channels, WebSocket support, multi-client handling, and status broadcasting.
+Create autonomous agents that manage real-time communication, adapting to network conditions, user behavior, and system load. Communication becomes intelligent and self-optimizing.
 
 ### 6.1 Phoenix Channels Infrastructure
 
@@ -1020,10 +1256,10 @@ Build the real-time communication infrastructure with Phoenix Channels, WebSocke
 
 ---
 
-## Phase 7: Conversation System
+## Phase 7: Autonomous Conversation System
 
 ### Overview
-Implement the conversation engine with GenServer architecture, hybrid command-chat interface, pattern extraction, and intelligent message routing.
+Build a self-improving conversation system where agents learn from interactions, adapt to user preferences, and autonomously enhance communication quality through emergent intelligence.
 
 ### 7.1 Conversation Engine Core
 
@@ -1186,10 +1422,10 @@ Implement the conversation engine with GenServer architecture, hybrid command-ch
 
 ---
 
-## Phase 8: Security & Sandboxing
+## Phase 8: Self-Protecting Security System
 
 ### Overview
-Implement comprehensive security measures including filesystem sandboxing, access control, encryption, and audit logging.
+Create self-protecting security agents that autonomously detect threats, enforce policies, adapt to new attack patterns, and maintain system security without human intervention.
 
 ### 8.1 Filesystem Sandbox
 
@@ -1352,10 +1588,10 @@ Implement comprehensive security measures including filesystem sandboxing, acces
 
 ---
 
-## Phase 9: Instruction & Prompt Management
+## Phase 9: Self-Optimizing Instruction Management
 
 ### Overview
-Build the hierarchical instruction system with template processing, dynamic loading, and intelligent filtering for context-aware AI guidance.
+Create self-organizing agents that learn optimal prompting strategies, manage instruction sets, and continuously improve communication with LLMs through autonomous optimization.
 
 ### 9.1 Hierarchical Instruction System
 
@@ -1518,10 +1754,10 @@ Build the hierarchical instruction system with template processing, dynamic load
 
 ---
 
-## Phase 10: Production Readiness
+## Phase 10: Autonomous Production Management
 
 ### Overview
-Finalize the system for production deployment with performance optimizations, comprehensive monitoring, deployment configurations, and complete documentation.
+Create autonomous agents that ensure the system is production-ready, self-monitoring, self-healing, and continuously improving without human intervention. The system manages itself.
 
 ### 10.1 Performance Optimization
 
@@ -1684,6 +1920,103 @@ Finalize the system for production deployment with performance optimizations, co
 
 ---
 
+## Agentic Signal-Based Communication Protocol
+
+### Overview
+Define the autonomous communication protocol for inter-agent coordination using Jido's Signal system, enabling emergent behaviors and distributed intelligence.
+
+### Core Signal Types
+
+#### 1. Goal Coordination Signals
+- `GoalAssigned`: Autonomous goal distribution with priority weighting
+- `GoalCompleted`: Achievement notification with success metrics
+- `GoalFailed`: Failure notification with learning opportunities
+- `GoalModified`: Dynamic goal adaptation with context updates
+- `GoalEmergent`: Self-discovered goals from pattern recognition
+
+#### 2. Autonomous Coordination Signals
+- `ResourceRequest`: Intelligent resource negotiation with optimization
+- `ResourceGrant`: Resource allocation with performance tracking
+- `TaskDelegation`: Autonomous task distribution with capability matching
+- `StatusUpdate`: Proactive progress sharing with predictive insights
+- `CapabilityAdvertise`: Dynamic capability broadcasting with learning
+
+#### 3. Learning & Adaptation Signals
+- `ExperienceShared`: Collective learning with pattern extraction
+- `PatternDetected`: Autonomous pattern discovery with validation
+- `StrategyUpdate`: Self-improving strategy evolution
+- `KnowledgeQuery`: Intelligent knowledge retrieval with context
+- `InsightGenerated`: Emergent insight sharing with impact assessment
+
+#### 4. Autonomous Response Signals
+- `SystemAlert`: Self-detecting critical events with impact analysis
+- `SecurityThreat`: Autonomous threat detection with countermeasures
+- `PerformanceDegradation`: Self-monitoring with optimization triggers
+- `RecoveryRequired`: Self-healing activation with recovery strategies
+- `OptimizationOpportunity`: Proactive improvement identification
+
+### Agent Behavior Principles
+
+1. **Autonomous Decision-Making**
+   - Agents make goal-driven decisions within learned constraints
+   - Decision quality improves through outcome-based learning
+   - Context awareness guides intelligent choice selection
+   - Collaborative decision-making through signal negotiation
+
+2. **Emergent Intelligence**
+   - Complex behaviors emerge from simple agent interactions
+   - System intelligence grows through agent collaboration
+   - Patterns emerge organically from usage and feedback
+   - Innovation happens through agent experimentation
+
+3. **Continuous Learning Integration**
+   - Every agent action generates learning opportunities
+   - Success patterns are automatically shared across agents
+   - Failure analysis drives autonomous improvement
+   - Performance metrics guide self-optimization
+
+4. **Self-Organization Patterns**
+   - Agents self-organize into optimal coordination structures
+   - Load balancing happens through intelligent agent distribution
+   - Resource allocation optimizes through autonomous negotiation
+   - System resilience emerges from agent redundancy
+
+### Persistence Integration with Ash Framework
+
+All agent learning, experiences, and insights are persisted using the existing Ash framework:
+- **AgentState**: Core agent configuration and learning parameters
+- **AgentExperience**: Historical actions and outcomes for learning
+- **AgentInsight**: Extracted patterns and learned strategies
+- **ProviderPerformance**: Performance metrics and optimization data
+
+### Migration to Agentic Architecture
+
+1. **Phase-by-Phase Agent Integration**
+   - Start with Phase 2 (LLM Orchestration) as the agentic pilot
+   - Validate autonomous patterns provide superior performance
+   - Apply proven agentic learnings to subsequent phases
+   - Maintain system stability during autonomous transformation
+
+2. **Gradual Intelligence Introduction**
+   - Begin with monitoring agents (Sensors) for observability
+   - Add decision-making agents (Orchestrators) for automation
+   - Introduce learning agents for continuous improvement
+   - Ensure each intelligence layer stabilizes before progression
+
+3. **Emergent Behavior Validation**
+   - Unit test individual agent autonomy and decision-making
+   - Integration test agent-to-agent coordination and learning
+   - System test emergent behaviors and collective intelligence
+   - Performance test autonomous scaling and optimization
+
+4. **Autonomous Rollback Capability**
+   - Maintain ability to disable autonomous behaviors per agent
+   - Gradual feature flags for agent intelligence levels
+   - Continuous monitoring of autonomous system health
+   - Rapid rollback on autonomous system degradation
+
+---
+
 ## Implementation Timeline
 
 ### Estimated Duration: 12-15 months
@@ -1716,28 +2049,34 @@ Finalize the system for production deployment with performance optimizations, co
 
 ---
 
-## Success Criteria
+## Agentic Success Criteria
 
-### Technical Metrics
-- [ ] 99.9% uptime SLA
-- [ ] <100ms response latency for chat
-- [ ] Support for 1000+ concurrent users
-- [ ] <1% error rate
-- [ ] 90%+ test coverage
+### Autonomous System Metrics
+- [ ] 99.9% uptime through self-healing capabilities
+- [ ] <50ms response latency through predictive optimization
+- [ ] Support for 10,000+ concurrent users through autonomous scaling
+- [ ] <0.1% error rate through proactive error prevention
+- [ ] 95%+ test coverage including agent behavior validation
+- [ ] 90%+ autonomous decision accuracy
+- [ ] <10s agent learning adaptation time
 
-### Functional Requirements
-- [ ] Multi-provider LLM support operational
-- [ ] All 26+ tools implemented and tested
-- [ ] Real-time collaboration working
-- [ ] Security sandbox verified
-- [ ] Complete API documentation
+### Agentic Functional Requirements
+- [ ] Autonomous LLM provider optimization operational
+- [ ] All tool agents demonstrating learning and improvement
+- [ ] Self-organizing real-time collaboration
+- [ ] Autonomous security threat detection and response
+- [ ] Self-generating and updating documentation
+- [ ] Emergent workflow optimization from agent coordination
+- [ ] Proactive system optimization without human intervention
 
-### Quality Indicators
-- [ ] Passing all security audits
-- [ ] Meeting performance benchmarks
-- [ ] Positive user feedback
-- [ ] Stable production deployment
-- [ ] Comprehensive monitoring in place
+### Intelligence Quality Indicators
+- [ ] Agents demonstrate measurable learning from experience
+- [ ] System performance improves continuously over time
+- [ ] Autonomous decision-making accuracy exceeds 90%
+- [ ] Emergent behaviors provide value beyond programmed functions
+- [ ] Self-healing resolves 95%+ of system issues automatically
+- [ ] User satisfaction increases through adaptive personalization
+- [ ] Cost optimization happens autonomously with quality maintenance
 
 ---
 
@@ -1759,4 +2098,14 @@ Finalize the system for production deployment with performance optimizations, co
 
 ## Conclusion
 
-This comprehensive implementation plan provides a structured approach to building the RubberDuck AI-powered coding assistant. By following this phased approach with careful attention to infrastructure, testing, and security, the project can be successfully delivered with high quality and reliability. The modular design ensures that each phase builds upon previous work while maintaining independence for parallel development where possible.
+This agentic implementation plan provides a revolutionary approach to building the RubberDuck AI-powered coding assistant as a fully autonomous, learning system. By transforming every component into an intelligent agent, we create a system that:
+
+- **Operates Autonomously**: Makes intelligent decisions without constant human intervention
+- **Learns Continuously**: Improves performance through experience and outcome analysis
+- **Self-Organizes**: Optimizes its own structure and processes for maximum efficiency
+- **Adapts Proactively**: Anticipates needs and responds to changes before they become problems
+- **Scales Intelligently**: Manages resources and performance through autonomous optimization
+
+The agentic architecture ensures that RubberDuck becomes more valuable over time, with intelligence emerging from agent interactions and system capabilities growing through collective learning. This represents a fundamental shift from traditional software to truly intelligent, autonomous systems that embody the future of AI-powered development tools.
+
+By leveraging Jido SDK patterns and maintaining Ash framework for persistence, we achieve both cutting-edge agent intelligence and robust, production-ready infrastructure. The result is a system that not only serves users effectively but continuously evolves to serve them better.
