@@ -189,27 +189,92 @@ Create self-organizing agents that learn optimal prompting strategies, manage in
 
 ---
 
+## 9.7 Jido Instruction Integration
+
+### Alignment with Jido Instructions
+This phase extends Jido's native Instruction capabilities:
+
+```elixir
+# RubberDuck instructions become Jido Instructions
+defmodule RubberDuck.Instructions.CodeGeneration do
+  def create_instruction(template, params) do
+    %Instruction{
+      action: GenerateCode,
+      params: %{
+        template: template,
+        variables: params,
+        context: load_hierarchy_context()
+      },
+      opts: [timeout: 30_000]
+    }
+  end
+end
+```
+
+### Instruction Templates as Skills
+Package instruction templates as reusable Skills:
+
+```elixir
+defmodule RubberDuck.Skills.InstructionTemplate do
+  use Jido.Skill,
+    name: "instruction_template",
+    description: "Manages hierarchical instruction templates",
+    signals: [
+      input: ["instruction.load", "instruction.update"],
+      output: ["instruction.ready", "instruction.optimized"]
+    ]
+    
+  def router do
+    [
+      %{path: "instruction.load", instruction: LoadTemplate},
+      %{path: "instruction.update", instruction: UpdateTemplate},
+      %{path: "template.optimize", instruction: OptimizeTemplate}
+    ]  
+  end
+end
+```
+
+### Runtime Instruction Management
+Use Directives for dynamic instruction updates:
+
+```elixir
+# Hot reload instruction templates
+%Directive.Enqueue{
+  action: :reload_instructions,
+  params: %{path: ".rubber_duck/instructions"}
+}
+
+# Switch instruction strategy
+%Directive.Enqueue{
+  action: :change_instruction_mode,
+  params: %{from: :verbose, to: :concise}
+}
+```
+
 ## Phase Dependencies
 
 **Prerequisites:**
-- Phase 1: Agentic Foundation & Core Infrastructure completed
-- Phase 2: Autonomous LLM Orchestration System for prompt optimization
+- Phase 1: Agentic Foundation & Core Infrastructure (with Skills Registry)
+- Phase 2: Autonomous LLM Orchestration System (with provider Skills)
+- Phase 4: Multi-Agent Planning (with Instruction composition)
 - Phase 5: Autonomous Memory & Context Management for instruction caching
 - Phase 8: Self-Protecting Security System for secure template processing
+- Deep understanding of Jido Instructions and Directives
 - Solid templating engine understanding and file system monitoring
 
 **Provides Foundation For:**
-- Phase 10: Production management agents that use optimized instructions
-- Phase 11: Token and cost management agents that benefit from efficient prompting
-- All phases benefit from improved instruction management and optimization
+- Phase 10: Production management agents that use optimized Instructions
+- Phase 11: Token and cost management agents that benefit from efficient Instructions
+- All phases benefit from Instruction management and optimization
 - Enhanced user experience through better AI communication
 
 **Key Outputs:**
-- Hierarchical instruction system with priority-based merging
+- Hierarchical instruction system aligned with Jido Instructions
+- Instruction templates as reusable Skills
 - Template processing engine with Solid integration
-- Dynamic loading and hot reload capabilities with rollback support
-- Priority and filtering system for context-aware instruction selection
-- Comprehensive prompt management system with analytics
-- Self-optimizing instruction delivery that improves over time
+- Dynamic loading via Directives with hot reload capabilities
+- Priority and filtering system for Instruction selection
+- Self-optimizing Instruction delivery using Jido patterns
+- Runtime Instruction management without restarts
 
 **Next Phase**: [Phase 10: Autonomous Production Management](phase-10-production-management.md) builds upon this instruction optimization to create production management agents that deploy and maintain optimized systems autonomously.

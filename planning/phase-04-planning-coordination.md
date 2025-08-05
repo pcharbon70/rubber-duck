@@ -27,9 +27,9 @@
 
 ## Overview
 
-Leverage Jido's full capabilities for multi-agent orchestration, creating a system where agents collaborate autonomously to plan, execute, and refine complex tasks. Intelligence emerges from agent interactions without central control.
+Leverage Jido's full capabilities for multi-agent orchestration, creating a system where agents collaborate autonomously to plan, execute, and refine complex tasks using Instructions for workflow composition and Directives for runtime adaptation. Intelligence emerges from agent interactions without central control.
 
-## 4.1 Jido SDK Integration
+## 4.1 Enhanced Jido Integration with Instructions
 
 #### Tasks:
 - [ ] 4.1.1 Configure Jido in application
@@ -37,11 +37,11 @@ Leverage Jido's full capabilities for multi-agent orchestration, creating a syst
   - [ ] 4.1.1.2 Configure agent registry
   - [ ] 4.1.1.3 Set up signal bus
   - [ ] 4.1.1.4 Initialize agent pools
-- [ ] 4.1.2 Create agent behavior
-  - [ ] 4.1.2.1 Define RubberDuck.Agent behavior
-  - [ ] 4.1.2.2 Implement lifecycle callbacks
-  - [ ] 4.1.2.3 Add state management
-  - [ ] 4.1.2.4 Create message handling
+- [ ] 4.1.2 Create enhanced agent behavior
+  - [ ] 4.1.2.1 Define RubberDuck.Agent behavior with Skills support
+  - [ ] 4.1.2.2 Implement lifecycle callbacks with Directives
+  - [ ] 4.1.2.3 Add state management with Instructions
+  - [ ] 4.1.2.4 Create message handling with signal routing
 - [ ] 4.1.3 Build agent factory
   - [ ] 4.1.3.1 Agent creation
   - [ ] 4.1.3.2 Configuration injection
@@ -59,35 +59,44 @@ Leverage Jido's full capabilities for multi-agent orchestration, creating a syst
 - [ ] 4.1.7 Test signal bus
 - [ ] 4.1.8 Test monitoring
 
-## 4.2 Core Agent Implementations
+## 4.2 Planning Agents with Instruction Composition
 
 #### Tasks:
-- [ ] 4.2.1 Create PlanCoordinatorAgent
-  - [ ] 4.2.1.1 Plan orchestration logic
-  - [ ] 4.2.1.2 Strategy selection
-  - [ ] 4.2.1.3 Progress tracking
-  - [ ] 4.2.1.4 Termination control
+- [ ] 4.2.1 Create PlanCoordinatorAgent with Instructions
+  - [ ] 4.2.1.1 Plan orchestration using Instruction chains
+  - [ ] 4.2.1.2 Strategy selection via Instructions
+  - [ ] 4.2.1.3 Progress tracking with Instruction IDs
+  - [ ] 4.2.1.4 Termination control via Directives
 - [ ] 4.2.2 Implement TaskDecomposerAgent
-  - [ ] 4.2.2.1 Goal analysis
-  - [ ] 4.2.2.2 Task breakdown
-  - [ ] 4.2.2.3 Dependency mapping
-  - [ ] 4.2.2.4 Complexity estimation
+  - [ ] 4.2.2.1 Goal analysis into Instructions
+  - [ ] 4.2.2.2 Task breakdown as Instruction trees
+  - [ ] 4.2.2.3 Dependency mapping between Instructions
+  - [ ] 4.2.2.4 Complexity estimation per Instruction
 - [ ] 4.2.3 Build SubtaskExecutorAgent
-  - [ ] 4.2.3.1 Task execution
-  - [ ] 4.2.3.2 Tool invocation
-  - [ ] 4.2.3.3 Result collection
-  - [ ] 4.2.3.4 Error handling
+  - [ ] 4.2.3.1 Task execution via Instructions
+  - [ ] 4.2.3.2 Tool invocation through Skills
+  - [ ] 4.2.3.3 Result collection from Instructions
+  - [ ] 4.2.3.4 Error handling with compensation
 - [ ] 4.2.4 Create RefinementAgent
-  - [ ] 4.2.4.1 Plan adjustment
-  - [ ] 4.2.4.2 Error correction
-  - [ ] 4.2.4.3 Optimization logic
-  - [ ] 4.2.4.4 Feedback integration
+  - [ ] 4.2.4.1 Plan adjustment via Directives
+  - [ ] 4.2.4.2 Error correction with new Instructions
+  - [ ] 4.2.4.3 Optimization through Instruction reordering
+  - [ ] 4.2.4.4 Feedback integration with learning
+
+#### Skills:
+- [ ] 4.2.5 Planning Skills Package
+  - [ ] 4.2.5.1 PlanningSkill with goal decomposition
+  - [ ] 4.2.5.2 CoordinationSkill with agent orchestration
+  - [ ] 4.2.5.3 ExecutionSkill with progress tracking
+  - [ ] 4.2.5.4 RefinementSkill with optimization
 
 #### Unit Tests:
-- [ ] 4.2.5 Test coordinator logic
-- [ ] 4.2.6 Test decomposition
-- [ ] 4.2.7 Test task execution
-- [ ] 4.2.8 Test refinement
+- [ ] 4.2.6 Test coordinator logic
+- [ ] 4.2.7 Test decomposition
+- [ ] 4.2.8 Test task execution
+- [ ] 4.2.9 Test refinement
+- [ ] 4.2.10 Test Instruction composition
+- [ ] 4.2.11 Test runtime Directives
 
 ## 4.3 Critic Agent System
 
@@ -149,19 +158,19 @@ Leverage Jido's full capabilities for multi-agent orchestration, creating a syst
 - [ ] 4.4.7 Test event flows
 - [ ] 4.4.8 Test monitoring
 
-## 4.5 Planning Templates
+## 4.5 Planning Templates with Instruction Patterns
 
 #### Tasks:
-- [ ] 4.5.1 Create template DSL
-  - [ ] 4.5.1.1 Template structure
-  - [ ] 4.5.1.2 Step definitions
-  - [ ] 4.5.1.3 Strategy options
-  - [ ] 4.5.1.4 Validation rules
+- [ ] 4.5.1 Create template DSL using Instructions
+  - [ ] 4.5.1.1 Template structure as Instruction trees
+  - [ ] 4.5.1.2 Step definitions as Instructions
+  - [ ] 4.5.1.3 Strategy options via Directives
+  - [ ] 4.5.1.4 Validation rules for Instructions
 - [ ] 4.5.2 Implement core templates
-  - [ ] 4.5.2.1 Feature implementation template
-  - [ ] 4.5.2.2 Bug fix template
-  - [ ] 4.5.2.3 Refactoring template
-  - [ ] 4.5.2.4 TDD template
+  - [ ] 4.5.2.1 Feature implementation Instruction template
+  - [ ] 4.5.2.2 Bug fix Instruction workflow
+  - [ ] 4.5.2.3 Refactoring Instruction chain
+  - [ ] 4.5.2.4 TDD Instruction cycle
 - [ ] 4.5.3 Build template selection
   - [ ] 4.5.3.1 Task classification
   - [ ] 4.5.3.2 Template matching
@@ -179,39 +188,110 @@ Leverage Jido's full capabilities for multi-agent orchestration, creating a syst
 - [ ] 4.5.7 Test customization
 - [ ] 4.5.8 Test execution
 
-## 4.6 Phase 4 Integration Tests
+## 4.6 Instruction-Based Planning Benefits
+
+### Composable Planning Workflows
+Use Instructions to build complex planning workflows:
+```elixir
+def create_feature_plan(feature_request) do
+  instructions = [
+    %Instruction{
+      action: AnalyzeRequirements,
+      params: %{request: feature_request}
+    },
+    %Instruction{
+      action: DecomposeIntoTasks,
+      params: %{strategy: :vertical_slice}
+    },
+    %Instruction{
+      action: EstimateComplexity,
+      params: %{include_dependencies: true}
+    },
+    %Instruction{
+      action: GenerateImplementationPlan,
+      opts: [timeout: 60_000]
+    }
+  ]
+  
+  {:ok, plan} = Workflow.run_chain(instructions)
+end
+```
+
+### Runtime Plan Adaptation
+Use Directives to modify plans during execution:
+```elixir
+# Add critic validation to running plan
+%Directive.Enqueue{
+  action: :add_critic_validation,
+  params: %{critics: [:syntax, :test, :security]}
+}
+
+# Adjust planning strategy mid-execution
+%Directive.Enqueue{
+  action: :change_strategy,
+  params: %{from: :waterfall, to: :iterative}
+}
+```
+
+### Reusable Planning Skills
+Package planning patterns as Skills:
+```elixir
+defmodule RubberDuck.Skills.TDDPlanning do
+  use Jido.Skill,
+    name: "tdd_planning",
+    description: "Test-driven development planning",
+    signals: [
+      input: ["plan.tdd.*"],
+      output: ["plan.complete", "plan.failed"]
+    ]
+    
+  def router do
+    [
+      %{path: "plan.tdd.start", instruction: WriteFalingTest},
+      %{path: "test.failed", instruction: ImplementMinimalCode},
+      %{path: "test.passed", instruction: RefactorCode}
+    ]
+  end
+end
+```
+
+## 4.7 Phase 4 Integration Tests
 
 #### Integration Tests:
-- [ ] 4.6.1 Test multi-agent coordination
-- [ ] 4.6.2 Test signal flow end-to-end
-- [ ] 4.6.3 Test planning templates
-- [ ] 4.6.4 Test critic validation
-- [ ] 4.6.5 Test concurrent planning
+- [ ] 4.7.1 Test multi-agent coordination
+- [ ] 4.7.2 Test signal flow end-to-end
+- [ ] 4.7.3 Test planning templates
+- [ ] 4.7.4 Test critic validation
+- [ ] 4.7.5 Test concurrent planning
+- [ ] 4.7.6 Test Instruction composition
+- [ ] 4.7.7 Test Directive application
+- [ ] 4.7.8 Test Skills integration
 
 ---
 
 ## Phase Dependencies
 
 **Prerequisites:**
-- Phase 1: Agentic Foundation & Core Infrastructure completed
-- Phase 2: Autonomous LLM Orchestration System for intelligent responses
+- Phase 1: Agentic Foundation & Core Infrastructure (with Skills Registry)
+- Phase 2: Autonomous LLM Orchestration System (with provider Skills)
 - Phase 2A: Runic Workflow System for dynamic execution patterns
-- Phase 3: Intelligent Tool Agent System for task execution
-- Jido SDK understanding and integration
+- Phase 3: Intelligent Tool Agent System (with tool Skills)
+- Deep understanding of Jido Instructions and Directives
 - Signal-based communication patterns
 
 **Provides Foundation For:**
-- Phase 5: Memory agents that track planning patterns and outcomes
-- Phase 6: Communication agents that coordinate with planning agents
-- Phase 7: Conversation agents that initiate Runic planning workflows
-- Phase 9: Instruction management agents that optimize planning templates
+- Phase 5: Memory agents that track Instruction patterns and outcomes
+- Phase 6: Communication agents that coordinate via Instructions
+- Phase 7: Conversation agents that generate planning Instructions
+- Phase 9: Instruction management agents that optimize templates
 
 **Key Outputs:**
-- Multi-agent coordination system using Jido SDK
-- Autonomous task decomposition and planning agents
-- Critic agent system for validation and quality assurance
-- Signal-based communication protocol for agent coordination
-- Planning template system for structured task execution
-- Emergent intelligence through agent collaboration
+- Multi-agent coordination using Instruction composition
+- Planning Skills for goal decomposition and orchestration
+- Task breakdown into executable Instruction trees
+- Runtime plan adaptation through Directives
+- Critic agent system with Instruction validation
+- Planning templates as reusable Instruction patterns
+- Emergent intelligence through Instruction-based collaboration
 
 **Next Phase**: [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md) builds upon this planning infrastructure to create intelligent memory systems that learn from planning outcomes and optimize future coordination.

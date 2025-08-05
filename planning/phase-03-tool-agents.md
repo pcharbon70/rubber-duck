@@ -27,9 +27,9 @@
 
 ## Overview
 
-Transform tools into intelligent agents that autonomously decide when and how to execute, learn from usage patterns, optimize their own performance, and coordinate with other agents to achieve complex goals. Each tool becomes a self-improving agent.
+Transform tools into intelligent agents powered by Jido Skills that autonomously decide when and how to execute, learn from usage patterns, optimize their own performance, and coordinate with other agents to achieve complex goals. Each tool becomes a reusable Skill that can be composed via Instructions and adapted through Directives.
 
-## 3.1 Tool Framework Agents
+## 3.1 Tool Framework with Skills Architecture
 
 #### Tasks:
 - [ ] 3.1.1 Create ToolRegistryAgent
@@ -53,20 +53,29 @@ Transform tools into intelligent agents that autonomously decide when and how to
   - [ ] 3.1.4.3 Error pattern detection with predictive alerts
   - [ ] 3.1.4.4 Optimization opportunity identification
 
+#### Skills:
+- [ ] 3.1.5 Core Tool Skills
+  - [ ] 3.1.5.1 ToolRegistrySkill for dynamic discovery
+  - [ ] 3.1.5.2 ToolSelectionSkill with optimization
+  - [ ] 3.1.5.3 ToolExecutionSkill with monitoring
+  - [ ] 3.1.5.4 ToolLearningSkill for performance tracking
+
 #### Actions:
-- [ ] 3.1.5 Tool framework actions
-  - [ ] 3.1.5.1 RegisterTool action with capability verification
-  - [ ] 3.1.5.2 SelectTool action with goal-based optimization
-  - [ ] 3.1.5.3 ExecuteTool action with adaptive execution
-  - [ ] 3.1.5.4 OptimizeTool action with performance learning
+- [ ] 3.1.6 Tool framework actions as Instructions
+  - [ ] 3.1.6.1 RegisterTool instruction with capability verification
+  - [ ] 3.1.6.2 SelectTool instruction with goal-based optimization
+  - [ ] 3.1.6.3 ExecuteTool instruction with adaptive execution
+  - [ ] 3.1.6.4 OptimizeTool instruction with performance learning
 
 #### Unit Tests:
-- [ ] 3.1.6 Test autonomous tool discovery and assessment
-- [ ] 3.1.7 Test intelligent tool selection accuracy
-- [ ] 3.1.8 Test autonomous execution optimization
-- [ ] 3.1.9 Test tool agent coordination and learning
+- [ ] 3.1.7 Test autonomous tool discovery and assessment
+- [ ] 3.1.8 Test intelligent tool selection accuracy
+- [ ] 3.1.9 Test autonomous execution optimization
+- [ ] 3.1.10 Test tool agent coordination and learning
+- [ ] 3.1.11 Test Skills composition for tools
+- [ ] 3.1.12 Test runtime tool Directives
 
-## 3.2 Code Operation Tool Agents
+## 3.2 Code Operation Tool Skills
 
 #### Tasks:
 - [ ] 3.2.1 Create CodeGeneratorAgent
@@ -90,20 +99,29 @@ Transform tools into intelligent agents that autonomously decide when and how to
   - [ ] 3.2.4.3 Improvement suggestions with priority ranking
   - [ ] 3.2.4.4 Technical debt tracking with remediation planning
 
+#### Skills:
+- [ ] 3.2.5 Code Operation Skills Package
+  - [ ] 3.2.5.1 CodeGenerationSkill with quality metrics
+  - [ ] 3.2.5.2 RefactoringSkill with impact analysis
+  - [ ] 3.2.5.3 CodeExplanationSkill with clarity scoring
+  - [ ] 3.2.5.4 CodeImprovementSkill with learning
+
 #### Actions:
-- [ ] 3.2.5 Code operation actions
-  - [ ] 3.2.5.1 GenerateCode action with quality validation
-  - [ ] 3.2.5.2 RefactorCode action with safety verification
-  - [ ] 3.2.5.3 ExplainCode action with clarity optimization
-  - [ ] 3.2.5.4 ImproveCode action with continuous learning
+- [ ] 3.2.6 Code operation actions as Instructions
+  - [ ] 3.2.6.1 GenerateCode instruction with quality validation
+  - [ ] 3.2.6.2 RefactorCode instruction with safety verification
+  - [ ] 3.2.6.3 ExplainCode instruction with clarity optimization
+  - [ ] 3.2.6.4 ImproveCode instruction with continuous learning
 
 #### Unit Tests:
-- [ ] 3.2.6 Test code generation quality and accuracy
-- [ ] 3.2.7 Test refactoring safety and effectiveness
-- [ ] 3.2.8 Test explanation clarity and completeness
-- [ ] 3.2.9 Test code quality improvement learning
+- [ ] 3.2.7 Test code generation quality and accuracy
+- [ ] 3.2.8 Test refactoring safety and effectiveness
+- [ ] 3.2.9 Test explanation clarity and completeness
+- [ ] 3.2.10 Test code quality improvement learning
+- [ ] 3.2.11 Test code Skills orchestration
+- [ ] 3.2.12 Test runtime code tool Directives
 
-## 3.3 Analysis Tool Agents
+## 3.3 Analysis Tool Skills
 
 #### Tasks:
 - [ ] 3.3.1 Create RepoSearchAgent
@@ -127,20 +145,29 @@ Transform tools into intelligent agents that autonomously decide when and how to
   - [ ] 3.3.4.3 Consistency checking with error detection
   - [ ] 3.3.4.4 Migration assistance with automated suggestions
 
+#### Skills:
+- [ ] 3.3.5 Analysis Skills Package
+  - [ ] 3.3.5.1 RepoSearchSkill with semantic understanding
+  - [ ] 3.3.5.2 DependencyAnalysisSkill with security
+  - [ ] 3.3.5.3 TodoExtractionSkill with prioritization
+  - [ ] 3.3.5.4 TypeInferenceSkill with validation
+
 #### Actions:
-- [ ] 3.3.5 Analysis actions
-  - [ ] 3.3.5.1 SearchRepository action with semantic understanding
-  - [ ] 3.3.5.2 AnalyzeDependencies action with security assessment
-  - [ ] 3.3.5.3 ExtractTodos action with priority optimization
-  - [ ] 3.3.5.4 InferTypes action with accuracy validation
+- [ ] 3.3.6 Analysis actions as Instructions
+  - [ ] 3.3.6.1 SearchRepository instruction with semantic understanding
+  - [ ] 3.3.6.2 AnalyzeDependencies instruction with security assessment
+  - [ ] 3.3.6.3 ExtractTodos instruction with priority optimization
+  - [ ] 3.3.6.4 InferTypes instruction with accuracy validation
 
 #### Unit Tests:
-- [ ] 3.3.6 Test search accuracy and semantic understanding
-- [ ] 3.3.7 Test dependency analysis completeness
-- [ ] 3.3.8 Test todo extraction and prioritization
-- [ ] 3.3.9 Test type inference accuracy and learning
+- [ ] 3.3.7 Test search accuracy and semantic understanding
+- [ ] 3.3.8 Test dependency analysis completeness
+- [ ] 3.3.9 Test todo extraction and prioritization
+- [ ] 3.3.10 Test type inference accuracy and learning
+- [ ] 3.3.11 Test analysis Skills composition
+- [ ] 3.3.12 Test runtime analysis Directives
 
-## 3.4 Tool Composition with Runic Workflows
+## 3.4 Tool Composition with Runic Workflows and Skills
 
 #### Tasks:
 - [ ] 3.4.1 Create RunicWorkflowComposerAgent
@@ -164,18 +191,27 @@ Transform tools into intelligent agents that autonomously decide when and how to
   - [ ] 3.4.4.3 Performance optimization via workflow adaptation
   - [ ] 3.4.4.4 Workflow evolution using learning algorithms
 
+#### Skills:
+- [ ] 3.4.5 Workflow Composition Skills
+  - [ ] 3.4.5.1 WorkflowBuilderSkill with Runic integration
+  - [ ] 3.4.5.2 WorkflowExecutorSkill with strategies
+  - [ ] 3.4.5.3 RuleEvaluationSkill with context
+  - [ ] 3.4.5.4 WorkflowOptimizationSkill with learning
+
 #### Actions:
-- [ ] 3.4.5 Runic composition actions
-  - [ ] 3.4.5.1 ComposeRunicWorkflow action with dynamic building
-  - [ ] 3.4.5.2 ExecuteRunicWorkflow action with strategy selection
-  - [ ] 3.4.5.3 EvaluateRunicRule action with context passing
-  - [ ] 3.4.5.4 OptimizeRunicWorkflow action with learning feedback
+- [ ] 3.4.6 Runic composition actions as Instructions
+  - [ ] 3.4.6.1 ComposeRunicWorkflow instruction with dynamic building
+  - [ ] 3.4.6.2 ExecuteRunicWorkflow instruction with strategy selection
+  - [ ] 3.4.6.3 EvaluateRunicRule instruction with context passing
+  - [ ] 3.4.6.4 OptimizeRunicWorkflow instruction with learning feedback
 
 #### Unit Tests:
-- [ ] 3.4.6 Test Runic workflow composition from goals
-- [ ] 3.4.7 Test workflow execution strategies
-- [ ] 3.4.8 Test workflow learning and template extraction
-- [ ] 3.4.9 Test rule evaluation and priority handling
+- [ ] 3.4.7 Test Runic workflow composition from goals
+- [ ] 3.4.8 Test workflow execution strategies
+- [ ] 3.4.9 Test workflow learning and template extraction
+- [ ] 3.4.10 Test rule evaluation and priority handling
+- [ ] 3.4.11 Test workflow Skills integration
+- [ ] 3.4.12 Test runtime workflow Directives
 
 ## 3.5 Advanced Tool Orchestration with Runic
 
@@ -207,37 +243,103 @@ Transform tools into intelligent agents that autonomously decide when and how to
 - [ ] 3.5.7 Test adaptive tool selection
 - [ ] 3.5.8 Test tool collaboration
 
-## 3.6 Phase 3 Integration Tests
+## 3.6 Tool Skills Architecture Benefits
+
+### Pluggable Tool System
+Each tool becomes a reusable Skill that can be shared:
+```elixir
+defmodule RubberDuck.Skills.GitTool do
+  use Jido.Skill,
+    name: "git_tool",
+    description: "Git operations with intelligent branching",
+    signals: [
+      input: ["tool.git.*"],
+      output: ["tool.result.*", "tool.error.*"]
+    ],
+    config: [
+      auto_commit: [type: :boolean, default: false],
+      branch_strategy: [type: :atom, default: :feature]
+    ]
+end
+```
+
+### Tool Composition via Instructions
+Compose complex tool workflows using Instructions:
+```elixir
+instructions = [
+  %Instruction{
+    action: AnalyzeCode,
+    params: %{path: "lib/"},
+    opts: [timeout: 30_000]
+  },
+  %Instruction{
+    action: GenerateTests,
+    params: %{coverage_target: 0.8}
+  },
+  %Instruction{
+    action: RefactorCode,
+    params: %{strategy: :extract_functions}
+  }
+]
+
+{:ok, results} = Workflow.run_chain(instructions)
+```
+
+### Runtime Tool Management with Directives
+Adapt tool behavior without restarts:
+```elixir
+# Add new tool capability
+%Directive.RegisterAction{
+  action_module: RubberDuck.Skills.DatabaseTool
+}
+
+# Adjust tool configuration
+%Directive.Enqueue{
+  action: :configure_tool,
+  params: %{tool: :git, auto_commit: true}
+}
+
+# Disable problematic tool temporarily
+%Directive.DeregisterAction{
+  action_module: RubberDuck.Skills.NetworkTool
+}
+```
+
+## 3.7 Phase 3 Integration Tests
 
 #### Integration Tests:
-- [ ] 3.6.1 Test tool discovery and registration
-- [ ] 3.6.2 Test execution pipeline end-to-end
-- [ ] 3.6.3 Test composite tool workflows
-- [ ] 3.6.4 Test concurrent tool execution
-- [ ] 3.6.5 Test tool failure recovery
+- [ ] 3.7.1 Test tool discovery and registration
+- [ ] 3.7.2 Test execution pipeline end-to-end
+- [ ] 3.7.3 Test composite tool workflows
+- [ ] 3.7.4 Test concurrent tool execution
+- [ ] 3.7.5 Test tool failure recovery
+- [ ] 3.7.6 Test Skills hot-swapping
+- [ ] 3.7.7 Test Instructions composition
+- [ ] 3.7.8 Test Directives application
 
 ---
 
 ## Phase Dependencies
 
 **Prerequisites:**
-- Phase 1: Agentic Foundation & Core Infrastructure completed
-- Phase 2: Autonomous LLM Orchestration System for code generation
+- Phase 1: Agentic Foundation & Core Infrastructure completed (with Skills Registry)
+- Phase 2: Autonomous LLM Orchestration System (with provider Skills)
 - Phase 2A: Runic Workflow System for dynamic composition
-- Tool registry and execution infrastructure
+- Understanding of Jido Skills, Instructions, and Directives
 
 **Provides Foundation For:**
-- Phase 4: Planning agents that orchestrate tool workflows
-- Phase 5: Memory agents that track tool usage patterns
-- Phase 7: Conversation agents that recommend appropriate tools
+- Phase 4: Planning agents that compose tool Instructions
+- Phase 5: Memory agents that track tool Skill usage patterns
+- Phase 7: Conversation agents that recommend tool Skills
 - Phase 9: Instruction management agents that optimize tool selection
 
 **Key Outputs:**
-- Autonomous tool discovery and registration system
-- Intelligent tool selection based on goals and context
+- Tool Skills for code operations (generation, refactoring, analysis)
+- Analysis Skills for repository search and dependency management
+- Workflow composition Skills integrating with Runic
+- Pluggable tool system with hot-swapping via Directives
+- Tool orchestration through composable Instructions
+- Runtime tool adaptation without restarts
 - Self-optimizing tool execution with learning capabilities
-- Advanced workflow composition using Runic dataflow patterns
-- Code operation agents for generation, refactoring, and analysis
-- Analysis tool agents for repository search and dependency management
 
 **Next Phase**: [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md) builds upon these tool agents to create sophisticated planning systems that coordinate multiple agents and tools to achieve complex objectives.

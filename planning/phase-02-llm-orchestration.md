@@ -26,9 +26,9 @@
 
 ## Overview
 
-Transform LLM integration into a multi-agent system where agents autonomously select providers, optimize requests, learn from interactions, and continuously improve performance without human intervention. Each component becomes a goal-driven agent with learning capabilities.
+Transform LLM integration into a multi-agent system where agents autonomously select providers, optimize requests, learn from interactions, and continuously improve performance without human intervention. Using Jido Skills, each provider becomes a pluggable capability that can be configured, composed, and adapted at runtime through Instructions and Directives.
 
-## 2.1 LLM Orchestrator Agent System ✅ **COMPLETED - AGENTIC UPGRADE PLANNED**
+## 2.1 LLM Orchestrator Agent System with Provider Skills ✅ **COMPLETED - SKILLS UPGRADE PLANNED**
 
 #### Tasks:
 - [ ] 2.1.1 Create LLMOrchestratorAgent
@@ -52,57 +52,75 @@ Transform LLM integration into a multi-agent system where agents autonomously se
   - [ ] 2.1.4.3 Cost anomaly detection with budget optimization
   - [ ] 2.1.4.4 Capacity prediction with usage modeling
 
+#### Skills:
+- [ ] 2.1.5 LLM Orchestration Skills
+  - [ ] 2.1.5.1 ProviderSelectionSkill with multi-criteria optimization
+  - [ ] 2.1.5.2 RequestOptimizationSkill with quality assessment
+  - [ ] 2.1.5.3 LoadBalancingSkill with intelligent routing
+  - [ ] 2.1.5.4 FailureRecoverySkill with adaptive strategies
+
 #### Actions:
-- [ ] 2.1.5 LLM orchestration actions
-  - [ ] 2.1.5.1 SelectProvider action with learning from outcomes
-  - [ ] 2.1.5.2 OptimizeRequest action with quality assessment
-  - [ ] 2.1.5.3 RouteRequest action with intelligent load balancing
-  - [ ] 2.1.5.4 HandleFailure action with adaptive recovery strategies
+- [ ] 2.1.6 LLM orchestration actions as Instructions
+  - [ ] 2.1.6.1 SelectProvider instruction with learning from outcomes
+  - [ ] 2.1.6.2 OptimizeRequest instruction with quality assessment
+  - [ ] 2.1.6.3 RouteRequest instruction with intelligent load balancing
+  - [ ] 2.1.6.4 HandleFailure instruction with adaptive recovery strategies
 
 #### Unit Tests:
-- [ ] 2.1.6 Test autonomous provider selection accuracy
-- [ ] 2.1.7 Test request optimization effectiveness
-- [ ] 2.1.8 Test failure prediction and handling
-- [ ] 2.1.9 Test agent learning and adaptation mechanisms
+- [ ] 2.1.7 Test autonomous provider selection accuracy
+- [ ] 2.1.8 Test request optimization effectiveness
+- [ ] 2.1.9 Test failure prediction and handling
+- [ ] 2.1.10 Test agent learning and adaptation mechanisms
+- [ ] 2.1.11 Test Skills composition and configuration
+- [ ] 2.1.12 Test runtime Directives for provider management
 
-## 2.2 Provider Agent Implementations
+## 2.2 Provider Skills Implementation
 
 #### Tasks:
-- [ ] 2.2.1 Create OpenAIProviderAgent
+- [ ] 2.2.1 Create OpenAIProviderSkill
   - [ ] 2.2.1.1 Self-managing rate limits with predictive throttling
   - [ ] 2.2.1.2 Automatic retry strategies with backoff learning
   - [ ] 2.2.1.3 Cost optimization with quality maintenance
   - [ ] 2.2.1.4 Quality monitoring with response assessment
-- [ ] 2.2.2 Implement AnthropicProviderAgent
+- [ ] 2.2.2 Implement AnthropicProviderSkill
   - [ ] 2.2.2.1 Context window optimization with content prioritization
   - [ ] 2.2.2.2 Response caching strategies with relevance scoring
   - [ ] 2.2.2.3 Error pattern learning with adaptive handling
   - [ ] 2.2.2.4 Performance tuning with usage analytics
-- [ ] 2.2.3 Build LocalModelAgent
+- [ ] 2.2.3 Build LocalModelSkill
   - [ ] 2.2.3.1 Intelligent resource allocation with GPU optimization
   - [ ] 2.2.3.2 Model loading strategies with performance caching
   - [ ] 2.2.3.3 Performance optimization with hardware awareness
   - [ ] 2.2.3.4 Quality assessment with model capability tracking
-- [ ] 2.2.4 Create ProviderLearningAgent
+- [ ] 2.2.4 Create ProviderLearningSkill
   - [ ] 2.2.4.1 Performance pattern analysis with trend prediction
   - [ ] 2.2.4.2 Cost prediction models with budget optimization
   - [ ] 2.2.4.3 Quality improvement strategies with A/B testing
   - [ ] 2.2.4.4 Failure prediction with proactive mitigation
 
 #### Actions:
-- [ ] 2.2.5 Provider-specific actions
-  - [ ] 2.2.5.1 CallAPI action with adaptive error handling
-  - [ ] 2.2.5.2 ManageRateLimit action with predictive throttling
-  - [ ] 2.2.5.3 CacheResponse action with intelligent invalidation
-  - [ ] 2.2.5.4 OptimizeModel action with performance tracking
+- [ ] 2.2.5 Provider-specific actions as Instructions
+  - [ ] 2.2.5.1 CallAPI instruction with adaptive error handling
+  - [ ] 2.2.5.2 ManageRateLimit instruction with predictive throttling
+  - [ ] 2.2.5.3 CacheResponse instruction with intelligent invalidation
+  - [ ] 2.2.5.4 OptimizeModel instruction with performance tracking
+
+#### Directives:
+- [ ] 2.2.6 Runtime provider management
+  - [ ] 2.2.6.1 RegisterProvider directive for hot-swapping
+  - [ ] 2.2.6.2 UpdateConfiguration directive for runtime tuning
+  - [ ] 2.2.6.3 DisableProvider directive for maintenance
+  - [ ] 2.2.6.4 LoadBalancing directive for traffic control
 
 #### Unit Tests:
-- [ ] 2.2.6 Test autonomous rate limit management
-- [ ] 2.2.7 Test intelligent caching strategies
-- [ ] 2.2.8 Test quality monitoring and learning
-- [ ] 2.2.9 Test provider agent coordination
+- [ ] 2.2.7 Test autonomous rate limit management
+- [ ] 2.2.8 Test intelligent caching strategies
+- [ ] 2.2.9 Test quality monitoring and learning
+- [ ] 2.2.10 Test provider Skills coordination
+- [ ] 2.2.11 Test Skills hot-swapping
+- [ ] 2.2.12 Test Directives for provider control
 
-## 2.3 Intelligent Routing Agent System
+## 2.3 Intelligent Routing with Composable Skills
 
 #### Tasks:
 - [ ] 2.3.1 Create RoutingStrategyAgent
@@ -126,23 +144,32 @@ Transform LLM integration into a multi-agent system where agents autonomously se
   - [ ] 2.3.4.3 Cost optimization across fallback chains
   - [ ] 2.3.4.4 User experience preservation with seamless transitions
 
+#### Skills:
+- [ ] 2.3.5 Routing Skills Package
+  - [ ] 2.3.5.1 RoutingStrategySkill with multi-criteria analysis
+  - [ ] 2.3.5.2 LoadBalancingSkill with predictive distribution
+  - [ ] 2.3.5.3 CircuitBreakerSkill with failure management
+  - [ ] 2.3.5.4 FallbackSkill with quality preservation
+
 #### Actions:
-- [ ] 2.3.5 Routing actions
-  - [ ] 2.3.5.1 DetermineRoute action with multi-criteria analysis
-  - [ ] 2.3.5.2 DistributeLoad action with predictive balancing
-  - [ ] 2.3.5.3 TripCircuit action with intelligent thresholds
-  - [ ] 2.3.5.4 ExecuteFallback action with quality assurance
+- [ ] 2.3.6 Routing actions as Instructions
+  - [ ] 2.3.6.1 DetermineRoute instruction with multi-criteria analysis
+  - [ ] 2.3.6.2 DistributeLoad instruction with predictive balancing
+  - [ ] 2.3.6.3 TripCircuit instruction with intelligent thresholds
+  - [ ] 2.3.6.4 ExecuteFallback instruction with quality assurance
 
 #### Unit Tests:
-- [ ] 2.3.6 Test autonomous routing decisions
-- [ ] 2.3.7 Test intelligent load distribution
-- [ ] 2.3.8 Test circuit breaker learning behavior
-- [ ] 2.3.9 Test fallback coordination effectiveness
+- [ ] 2.3.7 Test autonomous routing decisions
+- [ ] 2.3.8 Test intelligent load distribution
+- [ ] 2.3.9 Test circuit breaker learning behavior
+- [ ] 2.3.10 Test fallback coordination effectiveness
+- [ ] 2.3.11 Test routing Skills composition
+- [ ] 2.3.12 Test runtime routing Directives
 
-## 2.4 Autonomous RAG (Retrieval-Augmented Generation) System
+## 2.4 Autonomous RAG (Retrieval-Augmented Generation) System with Modular Skills
 
 ### Overview
-Implement a comprehensive, self-improving RAG system using pipeline-based architecture with autonomous agents managing every aspect of retrieval, context building, and generation optimization. The system learns from user interactions and continuously improves retrieval quality.
+Implement a comprehensive, self-improving RAG system using pipeline-based architecture with Skills managing every aspect of retrieval, context building, and generation optimization. Each RAG component becomes a pluggable Skill that can be configured, composed via Instructions, and adapted through Directives.
 
 #### Tasks:
 - [ ] 2.4.1 Create RAGOrchestrationAgent
@@ -367,25 +394,59 @@ Telemetry Events → Learning → Optimization → Adaptation → Improvement
 
 ---
 
+## 2.8 Provider Skills Architecture Benefits
+
+### Pluggable Provider System
+With Skills, adding new LLM providers becomes trivial:
+```elixir
+# Adding a new provider is just creating a new Skill
+defmodule RubberDuck.Skills.GeminiProvider do
+  use Jido.Skill,
+    name: "gemini_provider",
+    signals: [
+      input: ["llm.request.gemini.*"],
+      output: ["llm.response.*"]
+    ]
+end
+```
+
+### Runtime Provider Management
+Use Directives to manage providers without restarts:
+```elixir
+# Hot-swap providers
+%Directive.RegisterAction{
+  action_module: NewProviderSkill
+}
+
+# Adjust provider configuration
+%Directive.Enqueue{
+  action: :update_provider_config,
+  params: %{provider: :openai, temperature: 0.7}
+}
+```
+
 ## Phase Dependencies
 
 **Prerequisites:**
-- Phase 1: Agentic Foundation & Core Infrastructure completed
+- Phase 1: Agentic Foundation & Core Infrastructure completed (with Skills Registry)
 - LLM provider API keys and configurations
 - Vector database setup (PGVector or Chroma)
 - Understanding of RAG architecture patterns
+- Jido Skills, Instructions, and Directives patterns
 
 **Provides Foundation For:**
-- Phase 3: Tool agents that use LLM orchestration for code generation
-- Phase 4: Planning agents that leverage advanced AI techniques
-- Phase 5: Memory agents that utilize RAG for context management
-- Phase 7: Conversation agents that use streaming responses
+- Phase 3: Tool agents that use LLM orchestration Skills
+- Phase 4: Planning agents that compose Instructions with AI techniques
+- Phase 5: Memory agents that utilize RAG Skills for context management
+- Phase 7: Conversation agents that use streaming response Skills
 
 **Key Outputs:**
-- Autonomous LLM provider management system
-- Self-optimizing RAG pipeline with multi-strategy retrieval
-- Intelligent routing and load balancing for AI requests
-- Advanced AI technique implementations (CoT, self-correction, few-shot)
+- Autonomous LLM provider management with pluggable Skills
+- Provider Skills for OpenAI, Anthropic, and local models
+- Self-optimizing RAG pipeline with composable retrieval Skills
+- Intelligent routing Skills for load balancing and failover
+- Advanced AI technique Skills (CoT, self-correction, few-shot)
+- Runtime provider management through Directives
 - Streaming response infrastructure with real-time processing
 
 **Next Phase**: [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md) builds upon this LLM orchestration to create autonomous tool discovery and execution agents.
