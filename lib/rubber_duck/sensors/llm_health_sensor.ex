@@ -1,7 +1,7 @@
 defmodule RubberDuck.Sensors.LLMHealthSensor do
   @moduledoc """
   Sensor for monitoring LLM provider health in real-time.
-  
+
   This sensor replaces the traditional HealthMonitor with an agentic approach,
   emitting signals that agents can react to autonomously.
   """
@@ -60,8 +60,8 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
 
     # Perform health checks
     providers = get_providers_to_check(state)
-    
-    health_results = 
+
+    health_results =
       providers
       |> Enum.map(fn provider ->
         Task.async(fn ->
@@ -93,7 +93,7 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
         duration: payload.duration,
         tokens: payload[:tokens]
       })
-      
+
       {:noreply, new_state}
     else
       {:noreply, state}
@@ -108,7 +108,7 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
         reason: payload[:reason],
         duration: payload[:duration]
       })
-      
+
       {:noreply, new_state}
     else
       {:noreply, state}
@@ -130,7 +130,7 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
 
   defp schedule_health_check(state) do
     if state.timer_ref, do: Process.cancel_timer(state.timer_ref)
-    
+
     timer_ref = Process.send_after(self(), :perform_health_check, state.check_interval)
     %{state | timer_ref: timer_ref}
   end
@@ -146,7 +146,7 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
 
   defp perform_provider_health_check(provider, state) do
     start_time = System.monotonic_time(:millisecond)
-    
+
     result = try do
       case provider.module.health_check(provider.config) do
         :ok -> :ok
@@ -158,13 +158,13 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     catch
       :exit, reason -> {:error, {:exit, reason}}
     end
-    
+
     response_time = System.monotonic_time(:millisecond) - start_time
     metrics = Map.get(state.metrics, provider.name, default_metrics())
-    
+
     # Determine health status
     health_status = determine_health_status(result, response_time, metrics, state)
-    
+
     %{
       status: health_status,
       response_time_ms: response_time,
@@ -177,13 +177,13 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     cond do
       result != :ok ->
         :failed
-      
+
       response_time > state.response_time_threshold ->
         :degraded
-      
+
       metrics.error_rate > state.error_threshold && metrics.total_count >= state.min_samples ->
         :degraded
-      
+
       true ->
         :healthy
     end
@@ -193,29 +193,34 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     Enum.reduce(results, state, fn {provider_name, result}, acc_state ->
       previous_status = get_provider_status(acc_state, provider_name)
       current_status = result.status
-      
+
       # Emit status change signals
       if previous_status != current_status do
         emit_status_change_signal(provider_name, previous_status, current_status, result)
       end
-      
+
       # Update provider availability in registry
-      case current_status do
-        :healthy ->
-          ProviderRegistry.mark_available(provider_name)
-        
-        :failed ->
-          ProviderRegistry.mark_unavailable(provider_name)
-        
-        :degraded ->
-          if state.alert_on_degradation do
-            Logger.warning("Provider #{provider_name} is degraded: #{inspect(result)}")
-          end
-      end
-      
+      update_provider_availability(provider_name, current_status, result, state.alert_on_degradation)
+
       # Update stored status
       put_in(acc_state, [:metrics, provider_name, :last_health_status], current_status)
     end)
+  end
+
+  defp update_provider_availability(provider_name, :healthy, _result, _alert_on_degradation) do
+    ProviderRegistry.mark_available(provider_name)
+  end
+
+  defp update_provider_availability(provider_name, :failed, _result, _alert_on_degradation) do
+    ProviderRegistry.mark_unavailable(provider_name)
+  end
+
+  defp update_provider_availability(provider_name, :degraded, result, true) do
+    Logger.warning("Provider #{provider_name} is degraded: #{inspect(result)}")
+  end
+
+  defp update_provider_availability(_provider_name, :degraded, _result, false) do
+    :ok
   end
 
   defp emit_status_change_signal(provider_name, _previous, :healthy, result) do
@@ -248,10 +253,10 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     cond do
       result.response_time_ms > 5000 ->
         {:slow_response, result.response_time_ms}
-      
+
       result.metrics_summary[:error_rate] > 0.5 ->
         {:high_error_rate, result.metrics_summary.error_rate}
-      
+
       true ->
         :unknown
     end
@@ -259,32 +264,42 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
 
   defp update_provider_metrics(state, provider_name, type, data) do
     metrics = Map.get(state.metrics, provider_name, default_metrics())
+    updated_metrics = apply_metric_update(metrics, type, data)
     
-    updated_metrics = case type do
-      :success ->
-        metrics
-        |> Map.update!(:success_count, &(&1 + 1))
-        |> Map.update!(:total_count, &(&1 + 1))
-        |> update_response_times(data[:duration] || 0)
-        |> calculate_rates()
-      
-      :failure ->
-        metrics
-        |> Map.update!(:error_count, &(&1 + 1))
-        |> Map.update!(:total_count, &(&1 + 1))
-        |> Map.put(:last_error, data[:reason])
-        |> Map.put(:last_error_at, DateTime.utc_now())
-        |> calculate_rates()
+    emit_metrics_update_signal(provider_name, updated_metrics, type)
+    put_in(state, [:metrics, provider_name], updated_metrics)
+  end
+
+  defp apply_metric_update(metrics, type, data) do
+    case type do
+      :success -> update_success_metrics(metrics, data)
+      :failure -> update_failure_metrics(metrics, data)
     end
-    
-    # Emit metrics update signal
+  end
+
+  defp update_success_metrics(metrics, data) do
+    metrics
+    |> Map.update!(:success_count, &(&1 + 1))
+    |> Map.update!(:total_count, &(&1 + 1))
+    |> update_response_times(data[:duration] || 0)
+    |> calculate_rates()
+  end
+
+  defp update_failure_metrics(metrics, data) do
+    metrics
+    |> Map.update!(:error_count, &(&1 + 1))
+    |> Map.update!(:total_count, &(&1 + 1))
+    |> Map.put(:last_error, data[:reason])
+    |> Map.put(:last_error_at, DateTime.utc_now())
+    |> calculate_rates()
+  end
+
+  defp emit_metrics_update_signal(provider_name, metrics, type) do
     emit_signal(@signal_metrics_updated, %{
       provider: provider_name,
-      metrics: summarize_metrics(updated_metrics),
+      metrics: summarize_metrics(metrics),
       type: type
     })
-    
-    put_in(state, [:metrics, provider_name], updated_metrics)
   end
 
   defp default_metrics do
@@ -310,10 +325,10 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     response_times =
       [response_time_ms | metrics.response_times]
       |> Enum.take(1000)
-    
+
     sorted_times = Enum.sort(response_times)
     _count = length(sorted_times)
-    
+
     metrics
     |> Map.put(:response_times, response_times)
     |> Map.put(:avg_response_time, calculate_average(sorted_times))

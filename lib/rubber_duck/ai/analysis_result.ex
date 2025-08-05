@@ -1,7 +1,7 @@
 defmodule RubberDuck.AI.AnalysisResult do
   @moduledoc """
   AnalysisResult resource storing results from AI-powered code analysis.
-  
+
   Contains analysis results including type (complexity, security, style, etc.),
   summary, detailed findings, score, and suggestions. Analysis results are
   linked to projects and optionally to specific code files.

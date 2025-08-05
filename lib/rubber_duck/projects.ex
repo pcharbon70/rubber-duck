@@ -1,7 +1,7 @@
 defmodule RubberDuck.Projects do
   @moduledoc """
   Domain for managing projects and code files in RubberDuck.
-  
+
   Provides operations for creating, reading, updating, and deleting projects
   and their associated code files.
   """

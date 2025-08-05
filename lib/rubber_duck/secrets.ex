@@ -1,7 +1,7 @@
 defmodule RubberDuck.Secrets do
   @moduledoc """
   Secret management module for RubberDuck authentication.
-  
+
   Provides JWT token signing secrets and handles secret rotation
   for secure authentication token management.
   """

@@ -1,7 +1,7 @@
 defmodule RubberDuck.Agents.AgentInsight do
   @moduledoc """
   Resource for storing learned insights from agent experiences.
-  
+
   Insights are patterns, correlations, and optimizations that agents
   discover through analyzing their experiences over time.
   """
@@ -34,10 +34,10 @@ defmodule RubberDuck.Agents.AgentInsight do
     read :latest do
       argument :agent_state_id, :uuid, allow_nil?: false
       argument :insight_type, :string, allow_nil?: true
-      
+
       filter expr(
         agent_state_id == ^arg(:agent_state_id) and
-        if(is_nil(^arg(:insight_type)), true, insight_type == ^arg(:insight_type))
+        if is_nil(^arg(:insight_type)), do: true, else: insight_type == ^arg(:insight_type)
       )
       prepare build(sort: [learned_at: :desc], limit: 10)
     end
@@ -45,7 +45,7 @@ defmodule RubberDuck.Agents.AgentInsight do
     read :by_type do
       argument :agent_state_id, :uuid, allow_nil?: false
       argument :insight_type, :string, allow_nil?: false
-      
+
       filter expr(
         agent_state_id == ^arg(:agent_state_id) and
         insight_type == ^arg(:insight_type)

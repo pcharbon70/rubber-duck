@@ -1,7 +1,7 @@
 defmodule RubberDuck.Agents.LLMMonitoringAgent do
   @moduledoc """
   Autonomous monitoring agent that reacts to LLM health signals.
-  
+
   This agent:
   - Monitors provider health through sensor signals
   - Takes corrective actions when providers degrade
@@ -29,7 +29,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   # Subscribe to health signals
   @health_signals [
     "llm.health.provider.healthy",
-    "llm.health.provider.degraded", 
+    "llm.health.provider.degraded",
     "llm.health.provider.failed",
     "llm.health.check.completed",
     "llm.provider.selected",
@@ -39,7 +39,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   def init(opts) do
     # Subscribe to all health-related signals
     Enum.each(@health_signals, &RubberDuck.Signal.subscribe/1)
-    
+
     # Set initial goals
     initial_goals = [
       %{
@@ -55,7 +55,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
         priority: :medium
       }
     ]
-    
+
     {:ok, Map.update(opts, :goals, initial_goals, fn existing -> existing ++ initial_goals end)}
   end
 
@@ -63,7 +63,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     # Delegate to base module's checkpoint handler
     on_checkpoint(agent)
   end
-  
+
   def handle_info(msg, agent) do
     Logger.debug("Unhandled message in monitoring agent: #{inspect(msg)}")
     {:ok, agent}
@@ -72,12 +72,12 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   def handle_signal("llm.health.provider.failed", payload, agent) do
     provider = payload.provider
     error = payload.error
-    
+
     Logger.error("Provider #{provider} failed: #{inspect(error)}")
-    
+
     # Update failure history
     updated_agent = record_provider_failure(agent, provider, error, payload)
-    
+
     # Check if we need to take action
     if should_take_corrective_action?(updated_agent, provider) do
       take_corrective_action(updated_agent, provider, error)
@@ -89,12 +89,12 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   def handle_signal("llm.health.provider.degraded", payload, agent) do
     provider = payload.provider
     reason = payload.reason
-    
+
     Logger.warning("Provider #{provider} degraded: #{inspect(reason)}")
-    
+
     # Learn from degradation patterns
     updated_agent = learn_degradation_pattern(agent, provider, reason, payload)
-    
+
     # Proactively adjust if needed
     if agent.state.auto_recovery_enabled do
       suggest_provider_adjustment(updated_agent, provider, reason)
@@ -105,12 +105,12 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
 
   def handle_signal("llm.health.provider.healthy", payload, agent) do
     provider = payload.provider
-    
+
     Logger.info("Provider #{provider} recovered to healthy state")
-    
+
     # Record recovery
     updated_agent = record_provider_recovery(agent, provider, payload)
-    
+
     # Learn from recovery patterns
     {:ok, learn_recovery_pattern(updated_agent, provider)}
   end
@@ -120,10 +120,10 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     healthy_count = payload.healthy_count
     degraded_count = payload.degraded_count
     failed_count = payload.failed_count
-    
+
     total_providers = healthy_count + degraded_count + failed_count
     health_ratio = if total_providers > 0, do: healthy_count / total_providers, else: 0
-    
+
     # Update system health metrics
     updated_agent = update_system_health_metrics(agent, %{
       health_ratio: health_ratio,
@@ -131,7 +131,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       failed_count: failed_count,
       timestamp: payload.timestamp
     })
-    
+
     # Check if system health is concerning
     if health_ratio < 0.5 && agent.state.monitoring_active do
       handle_system_health_crisis(updated_agent, payload)
@@ -144,9 +144,9 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     # Learn from fallback patterns
     from_provider = payload.from_provider
     to_provider = payload.to_provider
-    
+
     updated_agent = record_fallback_event(agent, from_provider, to_provider)
-    
+
     # If too many fallbacks, investigate
     if count_recent_fallbacks(updated_agent, from_provider) > agent.state.alert_threshold do
       investigate_provider_issues(updated_agent, from_provider)
@@ -157,19 +157,19 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
 
   def handle_instruction({:diagnose_provider, provider_name}, agent) do
     diagnosis = perform_provider_diagnosis(agent, provider_name)
-    
+
     {:ok, diagnosis, agent}
   end
 
   def handle_instruction({:predict_failures, time_window}, agent) do
     predictions = predict_provider_failures(agent, time_window)
-    
+
     {:ok, predictions, agent}
   end
 
   def handle_instruction(:get_health_summary, agent) do
     summary = compile_health_summary(agent)
-    
+
     {:ok, summary, agent}
   end
 
@@ -182,16 +182,16 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
         recoveries: [],
         degradations: []
       })
-      
+
       failure_record = %{
         error: error,
         timestamp: DateTime.utc_now(),
         metrics: payload[:metrics]
       }
-      
+
       updated_history = Map.update(history, :failures, [failure_record], &[failure_record | &1])
-      
-      %{agent | state: Map.put(agent.state, :provider_history, 
+
+      %{agent | state: Map.put(agent.state, :provider_history,
         Map.put(agent.state.provider_history, provider, updated_history))}
     rescue
       exception ->
@@ -206,30 +206,30 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       recoveries: [],
       degradations: []
     })
-    
+
     recovery_record = %{
       timestamp: DateTime.utc_now(),
       response_time_ms: payload.response_time_ms,
       metrics: payload[:metrics]
     }
-    
+
     updated_history = Map.update(history, :recoveries, [recovery_record], &[recovery_record | &1])
-    
-    %{agent | state: Map.put(agent.state, :provider_history, 
+
+    %{agent | state: Map.put(agent.state, :provider_history,
       Map.put(agent.state.provider_history, provider, updated_history))}
   end
 
   defp should_take_corrective_action?(agent, provider) do
     history = Map.get(agent.state.provider_history, provider, %{})
     recent_failures = get_recent_events(history[:failures] || [], 300) # Last 5 minutes
-    
+
     length(recent_failures) >= agent.state.alert_threshold
   end
 
   defp take_corrective_action(agent, provider, error) do
     try do
       Logger.info("Taking corrective action for provider #{provider}")
-      
+
       # Emit signal for other agents to avoid this provider temporarily
       try do
         RubberDuck.Signal.emit("llm.monitoring.provider.quarantine", %{
@@ -242,10 +242,10 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       rescue
         e -> Logger.warning("Failed to emit quarantine signal: #{inspect(e)}")
       end
-      
+
       # Record the action taken
       updated_agent = record_corrective_action(agent, provider, :quarantine)
-      
+
       {:ok, updated_agent}
     rescue
       exception ->
@@ -264,29 +264,29 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       metrics: payload[:metrics],
       timestamp: DateTime.utc_now()
     }
-    
+
     # Add to failure patterns
     updated_patterns = [pattern | agent.state.failure_patterns] |> Enum.take(1000)
-    
+
     %{agent | state: Map.put(agent.state, :failure_patterns, updated_patterns)}
   end
 
   defp learn_recovery_pattern(agent, provider) do
     # Analyze what led to recovery
     history = Map.get(agent.state.provider_history, provider, %{})
-    
+
     if last_failure = List.first(history[:failures] || []) do
       recovery_time = DateTime.diff(DateTime.utc_now(), last_failure.timestamp)
-      
+
       # Update recovery strategies
       strategy = determine_recovery_strategy(last_failure, recovery_time)
-      
+
       updated_strategies = Map.put(
         agent.state.recovery_strategies,
         {provider, last_failure.error},
         strategy
       )
-      
+
       %{agent | state: Map.put(agent.state, :recovery_strategies, updated_strategies)}
     else
       agent
@@ -295,29 +295,29 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
 
   defp suggest_provider_adjustment(agent, provider, reason) do
     adjustment = case reason do
-      {:slow_response, ms} when ms > 10000 ->
+      {:slow_response, ms} when ms > 10_000 ->
         %{action: :reduce_load, reason: "Very slow response times"}
-      
+
       {:high_error_rate, rate} when rate > 0.8 ->
         %{action: :temporary_disable, reason: "Extremely high error rate"}
-      
+
       _ ->
         %{action: :monitor, reason: "Continue monitoring"}
     end
-    
+
     RubberDuck.Signal.emit("llm.monitoring.adjustment.suggested", %{
       provider: provider,
       adjustment: adjustment,
       current_reason: reason
     })
-    
+
     {:ok, agent}
   end
 
   defp handle_system_health_crisis(agent, health_data) do
     try do
       Logger.error("System health crisis detected: #{inspect(health_data)}")
-      
+
       # Emit crisis signal
       try do
         RubberDuck.Signal.emit("llm.monitoring.crisis", %{
@@ -335,7 +335,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       rescue
         e -> Logger.error("Failed to emit crisis signal: #{inspect(e)}")
       end
-      
+
       # Mark goal as critical
       updated_goals = Enum.map(agent.state.goals, fn goal ->
         if is_map(goal) && goal[:id] == "maintain_health" do
@@ -344,7 +344,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
           goal
         end
       end)
-      
+
       {:ok, %{agent | state: Map.put(agent.state, :goals, updated_goals)}}
     rescue
       exception ->
@@ -359,7 +359,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       to: to_provider,
       timestamp: DateTime.utc_now()
     }
-    
+
     # Add to experience
     on_experience_gained(agent, %{
       type: :fallback,
@@ -387,16 +387,16 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       patterns: find_failure_patterns(agent, provider),
       recommendation: determine_provider_recommendation(agent, provider)
     }
-    
+
     RubberDuck.Signal.emit("llm.monitoring.investigation.complete", investigation)
-    
+
     {:ok, agent}
   end
 
   defp perform_provider_diagnosis(agent, provider_name) do
     history = Map.get(agent.state.provider_history, provider_name, %{})
     patterns = find_failure_patterns(agent, provider_name)
-    
+
     %{
       provider: provider_name,
       health_score: calculate_provider_health_score(history),
@@ -412,7 +412,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     |> Enum.group_by(& &1.provider)
     |> Enum.map(fn {provider, patterns} ->
       failure_probability = calculate_failure_probability(patterns, time_window_seconds)
-      
+
       %{
         provider: provider,
         failure_probability: failure_probability,
@@ -455,7 +455,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   defp suggest_alternatives(agent, failed_provider) do
     # Get all providers except the failed one
     all_providers = Map.keys(agent.state.provider_history)
-    
+
     all_providers
     |> Enum.reject(& &1 == failed_provider)
     |> Enum.map(fn provider ->
@@ -471,7 +471,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   defp calculate_provider_health_score(history) do
     recent_failures = length(get_recent_events(history[:failures] || [], 3600))
     recent_recoveries = length(get_recent_events(history[:recoveries] || [], 3600))
-    
+
     if recent_failures + recent_recoveries == 0 do
       1.0
     else
@@ -515,7 +515,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   defp analyze_time_pattern(occurrences) do
     hours = Enum.map(occurrences, & &1.time_of_day)
     most_common_hour = most_common(hours)
-    
+
     %{
       most_common_hour: most_common_hour,
       occurrences_by_hour: Enum.frequencies(hours)
@@ -537,7 +537,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   defp determine_provider_recommendation(agent, provider) do
     recent_failures = get_provider_recent_failures(agent, provider)
     failure_rate = length(recent_failures) / 12  # Per 5-minute interval in last hour
-    
+
     cond do
       failure_rate > 2.0 -> :immediate_disable
       failure_rate > 1.0 -> :reduce_traffic
@@ -548,9 +548,9 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
 
   defp generate_provider_recommendations(_history, patterns) do
     recommendations = []
-    
+
     # Check for timeout patterns
-    timeout_patterns = Enum.filter(patterns, fn p -> 
+    timeout_patterns = Enum.filter(patterns, fn p ->
       case p.reason do
         {:slow_response, _} -> true
         _ -> false
@@ -561,7 +561,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     else
       recommendations
     end
-    
+
     # Check for time-based patterns
     time_patterns = Enum.find(patterns, & &1.time_pattern.most_common_hour != nil)
     recommendations = if time_patterns do
@@ -569,13 +569,13 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     else
       recommendations
     end
-    
+
     recommendations
   end
 
   defp calculate_failure_probability(patterns, time_window_seconds) do
     recent_patterns = get_recent_events(patterns, time_window_seconds)
-    
+
     if length(recent_patterns) < 2 do
       0.0
     else
@@ -598,13 +598,13 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     cond do
       probability > 0.8 ->
         ["Preemptively switch to backup provider", "Scale up alternative providers"]
-      
+
       probability > 0.5 ->
         ["Increase monitoring frequency", "Prepare fallback configuration"]
-      
+
       probability > 0.3 ->
         ["Monitor provider closely", "Verify backup providers are healthy"]
-      
+
       true ->
         []
     end
@@ -641,10 +641,10 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       timestamp: DateTime.utc_now(),
       goal: %{type: :maintain_health}
     }
-    
+
     elem(on_experience_gained(agent, experience), 1)
   end
-  
+
   defp update_system_health_metrics(agent, metrics) do
     updated_metrics = Map.merge(agent.state.performance_metrics, %{
       last_health_check: metrics.timestamp,
@@ -652,7 +652,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       degraded_providers: metrics.degraded_count,
       failed_providers: metrics.failed_count
     })
-    
+
     %{agent | state: Map.put(agent.state, :performance_metrics, updated_metrics)}
   end
 end

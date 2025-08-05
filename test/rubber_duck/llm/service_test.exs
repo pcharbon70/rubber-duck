@@ -31,7 +31,8 @@ defmodule RubberDuck.LLM.ServiceTest do
 
     @impl true
     def stream(_request, _config) do
-      stream = Stream.iterate(0, &(&1 + 1))
+      stream = 0
+              |> Stream.iterate(&(&1 + 1))
               |> Stream.take(3)
               |> Stream.map(fn i -> "chunk_#{i}" end)
       {:ok, stream}

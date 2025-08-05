@@ -1,7 +1,7 @@
 defmodule RubberDuck.Agents.ProviderPerformance do
   @moduledoc """
   Resource for tracking LLM provider performance metrics.
-  
+
   Stores performance statistics for each provider to help the
   orchestrator agent make informed decisions about provider selection.
   """
@@ -20,7 +20,7 @@ defmodule RubberDuck.Agents.ProviderPerformance do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:agent_state_id, :provider_name, :success_count, :failure_count, 
+      accept [:agent_state_id, :provider_name, :success_count, :failure_count,
               :total_duration, :total_tokens, :quality_sum]
       change set_attribute(:last_updated, &DateTime.utc_now/0)
     end
@@ -31,11 +31,11 @@ defmodule RubberDuck.Agents.ProviderPerformance do
     end
 
     create :upsert do
-      accept [:agent_state_id, :provider_name, :success_count, :failure_count, 
+      accept [:agent_state_id, :provider_name, :success_count, :failure_count,
               :total_duration, :total_tokens, :quality_sum]
       upsert? true
       upsert_identity :unique_provider_per_agent
-      upsert_fields [:success_count, :failure_count, :total_duration, :total_tokens, 
+      upsert_fields [:success_count, :failure_count, :total_duration, :total_tokens,
                      :quality_sum, :last_updated]
       change set_attribute(:last_updated, &DateTime.utc_now/0)
     end
@@ -44,7 +44,7 @@ defmodule RubberDuck.Agents.ProviderPerformance do
       argument :agent_state_id, :uuid, allow_nil?: false
       argument :provider_name, :string, allow_nil?: false
       get? true
-      
+
       filter expr(
         agent_state_id == ^arg(:agent_state_id) and
         provider_name == ^arg(:provider_name)
@@ -53,7 +53,7 @@ defmodule RubberDuck.Agents.ProviderPerformance do
 
     read :for_agent do
       argument :agent_state_id, :uuid, allow_nil?: false
-      
+
       filter expr(agent_state_id == ^arg(:agent_state_id))
     end
   end

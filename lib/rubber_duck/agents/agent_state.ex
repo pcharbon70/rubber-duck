@@ -1,7 +1,7 @@
 defmodule RubberDuck.Agents.AgentState do
   @moduledoc """
   Resource for persisting core agent state.
-  
+
   Stores the essential state information for agents that needs to
   persist across restarts, including metadata specific to each agent type.
   """
@@ -28,7 +28,7 @@ defmodule RubberDuck.Agents.AgentState do
       primary? true
       accept [:metadata, :last_checkpoint]
     end
-    
+
     update :checkpoint do
       accept []
       change set_attribute(:last_checkpoint, &DateTime.utc_now/0)

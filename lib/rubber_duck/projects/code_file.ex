@@ -1,7 +1,7 @@
 defmodule RubberDuck.Projects.CodeFile do
   @moduledoc """
   CodeFile resource representing individual code files within a project.
-  
+
   Stores information about code files including their path, content,
   programming language, size, and status. Code files belong to a project
   and can have associated analysis results.

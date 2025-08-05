@@ -1,7 +1,7 @@
 defmodule RubberDuck.Agents.AgentExperience do
   @moduledoc """
   Resource for storing individual agent experience entries.
-  
+
   Experiences are learning opportunities that agents accumulate
   during their operation, including goal completions, failures,
   and other significant events.
@@ -28,7 +28,7 @@ defmodule RubberDuck.Agents.AgentExperience do
 
     destroy :prune do
       argument :retention_days, :integer, allow_nil?: false, default: 30
-      
+
       filter expr(
         timestamp < datetime_add(now(), ^-1 * arg(:retention_days), :day)
       )
@@ -37,7 +37,7 @@ defmodule RubberDuck.Agents.AgentExperience do
     read :by_agent do
       argument :agent_state_id, :uuid, allow_nil?: false
       argument :limit, :integer, default: 1000
-      
+
       filter expr(agent_state_id == ^arg(:agent_state_id))
       prepare build(sort: [timestamp: :desc], limit: arg(:limit))
     end
@@ -45,7 +45,7 @@ defmodule RubberDuck.Agents.AgentExperience do
     read :recent do
       argument :agent_state_id, :uuid, allow_nil?: false
       argument :hours, :integer, default: 24
-      
+
       filter expr(
         agent_state_id == ^arg(:agent_state_id) and
         timestamp > datetime_add(now(), ^-1 * arg(:hours), :hour)

@@ -1,7 +1,7 @@
 defmodule RubberDuck.Actions.LLM.Embed do
   @moduledoc """
   Action for generating embeddings using an LLM provider.
-  
+
   Converts text into vector representations for semantic search
   and similarity comparisons.
   """
@@ -22,69 +22,90 @@ defmodule RubberDuck.Actions.LLM.Embed do
 
   @impl true
   def run(params, _context) do
-    provider = params.provider
-    texts = params.texts
-    _timeout = params.timeout
-    batch_size = params.batch_size
-    
-    # Check if provider supports embeddings
-    unless supports_embeddings?(provider) do
-      {:error, %{
-        reason: :embeddings_not_supported,
-        provider: provider.name,
-        message: "Provider #{provider.name} does not support embeddings"
-      }}
+    if supports_embeddings?(params.provider) do
+      execute_embedding_generation(params)
     else
-      start_time = System.monotonic_time(:millisecond)
-      
-      try do
-        # Process in batches if needed
-        results = if length(texts) > batch_size do
-          process_in_batches(texts, batch_size, provider, params)
-        else
-          process_single_batch(texts, provider, params)
-        end
-        
-        case results do
-          {:ok, embeddings} ->
-            duration = System.monotonic_time(:millisecond) - start_time
-            HealthMonitor.record_success(provider.name, duration)
-            
-            {:ok, %{
-              embeddings: embeddings,
-              provider: provider.name,
-              model: determine_model(provider, params.model),
-              count: length(embeddings),
-              duration_ms: duration,
-              dimensions: get_embedding_dimensions(embeddings)
-            }}
-          
-          {:error, reason} ->
-            duration = System.monotonic_time(:millisecond) - start_time
-            HealthMonitor.record_failure(provider.name, reason)
-            
-            Logger.warning("Embedding generation failed for provider #{provider.name}: #{inspect(reason)}")
-            
-            {:error, %{
-              reason: reason,
-              provider: provider.name,
-              duration_ms: duration
-            }}
-        end
-      rescue
-        exception ->
-          duration = System.monotonic_time(:millisecond) - start_time
-          HealthMonitor.record_failure(provider.name, exception)
-          
-          Logger.error("Embedding generation crashed for provider #{provider.name}: #{inspect(exception)}")
-          
-          {:error, %{
-            reason: {:exception, exception},
-            provider: provider.name,
-            duration_ms: duration
-          }}
-      end
+      handle_unsupported_provider(params.provider)
     end
+  end
+
+  defp execute_embedding_generation(params) do
+    start_time = System.monotonic_time(:millisecond)
+    
+    try do
+      results = process_embedding_request(params)
+      handle_embedding_results(results, params.provider, start_time)
+    rescue
+      exception ->
+        handle_embedding_exception(exception, params.provider, start_time)
+    end
+  end
+
+  defp process_embedding_request(params) do
+    if length(params.texts) > params.batch_size do
+      process_in_batches(params.texts, params.batch_size, params.provider, params)
+    else
+      process_single_batch(params.texts, params.provider, params)
+    end
+  end
+
+  defp handle_embedding_results(results, provider, start_time) do
+    case results do
+      {:ok, embeddings} ->
+        handle_successful_embeddings(embeddings, provider, start_time)
+      {:error, reason} ->
+        handle_embedding_failure(reason, provider, start_time)
+    end
+  end
+
+  defp handle_successful_embeddings(embeddings, provider, start_time) do
+    duration = System.monotonic_time(:millisecond) - start_time
+    HealthMonitor.record_success(provider.name, duration)
+    
+    {:ok, build_success_response(embeddings, provider, duration)}
+  end
+
+  defp build_success_response(embeddings, provider, duration) do
+    %{
+      embeddings: embeddings,
+      provider: provider.name,
+      model: determine_model(provider, provider.model),
+      count: length(embeddings),
+      duration_ms: duration,
+      dimensions: get_embedding_dimensions(embeddings)
+    }
+  end
+
+  defp handle_embedding_failure(reason, provider, start_time) do
+    duration = System.monotonic_time(:millisecond) - start_time
+    HealthMonitor.record_failure(provider.name, reason)
+    Logger.warning("Embedding generation failed for provider #{provider.name}: #{inspect(reason)}")
+    
+    {:error, build_error_response(reason, provider, duration)}
+  end
+
+  defp handle_embedding_exception(exception, provider, start_time) do
+    duration = System.monotonic_time(:millisecond) - start_time
+    HealthMonitor.record_failure(provider.name, exception)
+    Logger.error("Embedding generation crashed for provider #{provider.name}: #{inspect(exception)}")
+    
+    {:error, build_error_response({:exception, exception}, provider, duration)}
+  end
+
+  defp build_error_response(reason, provider, duration) do
+    %{
+      reason: reason,
+      provider: provider.name,
+      duration_ms: duration
+    }
+  end
+
+  defp handle_unsupported_provider(provider) do
+    {:error, %{
+      reason: :embeddings_not_supported,
+      provider: provider.name,
+      message: "Provider #{provider.name} does not support embeddings"
+    }}
   end
 
   def describe do
@@ -131,12 +152,12 @@ defmodule RubberDuck.Actions.LLM.Embed do
   defp process_single_batch(texts, provider, params) do
     request = build_embedding_request(texts, params)
     config = Map.put(provider.config, :timeout, params.timeout)
-    
+
     case apply(provider.module, :embed, [request, config]) do
       {:ok, response} ->
         embeddings = extract_embeddings(response)
         {:ok, embeddings}
-      
+
       {:error, _reason} = error ->
         error
     end
@@ -145,28 +166,28 @@ defmodule RubberDuck.Actions.LLM.Embed do
   defp process_in_batches(texts, batch_size, provider, params) do
     # Process texts in parallel batches
     batches = Enum.chunk_every(texts, batch_size)
-    
+
     tasks = Enum.map(batches, fn batch ->
       Task.async(fn ->
         process_single_batch(batch, provider, params)
       end)
     end)
-    
+
     # Wait for all tasks with timeout
     results = Task.await_many(tasks, params.timeout)
-    
+
     # Check if all succeeded
     errors = Enum.filter(results, fn
       {:ok, _} -> false
       {:error, _} -> true
     end)
-    
+
     if Enum.empty?(errors) do
       # Combine all embeddings
-      all_embeddings = 
+      all_embeddings =
         results
         |> Enum.flat_map(fn {:ok, embeddings} -> embeddings end)
-      
+
       {:ok, all_embeddings}
     else
       # Return first error
@@ -179,7 +200,7 @@ defmodule RubberDuck.Actions.LLM.Embed do
       input: texts,
       encoding_format: "float"
     }
-    
+
     if params.model do
       Map.put(base_request, :model, params.model)
     else
@@ -195,15 +216,15 @@ defmodule RubberDuck.Actions.LLM.Embed do
         response.data
         |> Enum.sort_by(& &1.index)
         |> Enum.map(& &1.embedding)
-      
+
       # Direct embeddings array
       Map.has_key?(response, :embeddings) ->
         response.embeddings
-      
+
       # Single embedding
       Map.has_key?(response, :embedding) ->
         [response.embedding]
-      
+
       true ->
         []
     end

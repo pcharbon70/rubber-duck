@@ -1,7 +1,7 @@
 defmodule RubberDuck.Actions.LLM.Complete do
   @moduledoc """
   Action for completing text using an LLM provider.
-  
+
   This is a stateless action that executes a completion request
   against a specific provider.
   """
@@ -23,36 +23,36 @@ defmodule RubberDuck.Actions.LLM.Complete do
     provider = params.provider
     request = params.request
     timeout = params.timeout
-    
+
     start_time = System.monotonic_time(:millisecond)
-    
+
     try do
       # Add timeout to provider config
       config = Map.put(provider.config, :timeout, timeout)
-      
+
       # Call the provider's complete function
       case apply(provider.module, :complete, [request, config]) do
         {:ok, response} ->
           duration = System.monotonic_time(:millisecond) - start_time
-          
+
           # Record success metrics
           HealthMonitor.record_success(provider.name, duration)
-          
+
           {:ok, %{
             response: response,
             provider: provider.name,
             duration_ms: duration,
             success: true
           }}
-        
+
         {:error, reason} ->
           duration = System.monotonic_time(:millisecond) - start_time
-          
+
           # Record failure metrics
           HealthMonitor.record_failure(provider.name, reason)
-          
+
           Logger.warning("LLM completion failed for provider #{provider.name}: #{inspect(reason)}")
-          
+
           {:error, %{
             reason: reason,
             provider: provider.name,
@@ -63,12 +63,12 @@ defmodule RubberDuck.Actions.LLM.Complete do
     rescue
       exception ->
         duration = System.monotonic_time(:millisecond) - start_time
-        
+
         # Record failure metrics
         HealthMonitor.record_failure(provider.name, exception)
-        
+
         Logger.error("LLM completion crashed for provider #{provider.name}: #{inspect(exception)}")
-        
+
         {:error, %{
           reason: {:exception, exception},
           provider: provider.name,

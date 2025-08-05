@@ -14,7 +14,8 @@ defmodule RubberDuck.LLM.Config do
   Load configuration for all providers from application environment.
   """
   def load_providers do
-    Application.get_env(:rubber_duck, :llm_providers, [])
+    :rubber_duck
+    |> Application.get_env(:llm_providers, [])
     |> Enum.map(&normalize_provider_config/1)
     |> Enum.filter(&valid_provider_config?/1)
   end
@@ -41,7 +42,8 @@ defmodule RubberDuck.LLM.Config do
   Get rate limit configuration for a provider.
   """
   def rate_limits(provider_name) when is_atom(provider_name) do
-    Application.get_env(:rubber_duck, :llm_rate_limits, %{})
+    :rubber_duck
+    |> Application.get_env(:llm_rate_limits, %{})
     |> Map.get(provider_name, default_rate_limits())
   end
 

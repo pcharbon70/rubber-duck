@@ -1,7 +1,7 @@
 defmodule RubberDuck.AI do
   @moduledoc """
   Domain for AI-related resources in RubberDuck.
-  
+
   Manages analysis results from AI services and user-created prompts
   for various AI operations.
   """

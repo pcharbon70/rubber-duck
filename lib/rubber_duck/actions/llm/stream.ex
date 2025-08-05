@@ -1,7 +1,7 @@
 defmodule RubberDuck.Actions.LLM.Stream do
   @moduledoc """
   Action for streaming text generation using an LLM provider.
-  
+
   Returns a stream that yields completion chunks as they're generated.
   """
 
@@ -24,33 +24,33 @@ defmodule RubberDuck.Actions.LLM.Stream do
     request = params.request
     timeout = params.timeout
     chunk_timeout = params.chunk_timeout
-    
+
     # Ensure streaming is requested
     streaming_request = Map.put(request, :stream, true)
-    
+
     # Add timeout to provider config
     config = Map.put(provider.config, :timeout, timeout)
-    
+
     start_time = System.monotonic_time(:millisecond)
-    
+
     try do
       case apply(provider.module, :stream, [streaming_request, config]) do
         {:ok, stream} ->
           # Wrap the stream to add monitoring and error handling
           monitored_stream = create_monitored_stream(stream, provider, start_time, chunk_timeout)
-          
+
           {:ok, %{
             stream: monitored_stream,
             provider: provider.name,
             started_at: DateTime.utc_now()
           }}
-        
+
         {:error, reason} ->
           duration = System.monotonic_time(:millisecond) - start_time
           HealthMonitor.record_failure(provider.name, reason)
-          
+
           Logger.warning("LLM streaming failed for provider #{provider.name}: #{inspect(reason)}")
-          
+
           {:error, %{
             reason: reason,
             provider: provider.name,
@@ -61,9 +61,9 @@ defmodule RubberDuck.Actions.LLM.Stream do
       exception ->
         duration = System.monotonic_time(:millisecond) - start_time
         HealthMonitor.record_failure(provider.name, exception)
-        
+
         Logger.error("LLM streaming crashed for provider #{provider.name}: #{inspect(exception)}")
-        
+
         {:error, %{
           reason: {:exception, exception},
           provider: provider.name,
@@ -102,78 +102,91 @@ defmodule RubberDuck.Actions.LLM.Stream do
 
   defp create_monitored_stream(stream, provider, start_time, chunk_timeout) do
     Stream.resource(
-      # Start function - initialize state
-      fn -> 
-        %{
-          chunks_received: 0,
-          total_tokens: 0,
-          last_chunk_time: System.monotonic_time(:millisecond)
-        }
-      end,
-      
-      # Next function - handle stream chunks
-      fn state ->
-        try do
-          # Use Task to enforce chunk timeout
-          task = Task.async(fn ->
-            case Enum.take(stream, 1) do
-              [chunk] -> {:ok, chunk}
-              [] -> :done
-            end
-          end)
-          
-          case Task.yield(task, chunk_timeout) || Task.shutdown(task) do
-            {:ok, {:ok, chunk}} ->
-              # Update state
-              new_state = %{state |
-                chunks_received: state.chunks_received + 1,
-                total_tokens: state.total_tokens + estimate_tokens(chunk),
-                last_chunk_time: System.monotonic_time(:millisecond)
-              }
-              
-              # Emit chunk and continue
-              {[chunk], new_state}
-            
-            {:ok, :done} ->
-              # Stream completed
-              duration = System.monotonic_time(:millisecond) - start_time
-              HealthMonitor.record_success(provider.name, duration)
-              
-              {:halt, state}
-            
-            nil ->
-              # Timeout occurred
-              Logger.warning("Stream chunk timeout for provider #{provider.name}")
-              HealthMonitor.record_failure(provider.name, :chunk_timeout)
-              
-              {:halt, state}
-          end
-        rescue
-          exception ->
-            Logger.error("Stream chunk error for provider #{provider.name}: #{inspect(exception)}")
-            HealthMonitor.record_failure(provider.name, exception)
-            
-            {:halt, state}
-        end
-      end,
-      
-      # Cleanup function
-      fn state ->
-        Logger.debug("Stream completed: #{state.chunks_received} chunks, ~#{state.total_tokens} tokens")
-      end
+      fn -> initialize_stream_state() end,
+      fn state -> handle_stream_chunk(stream, state, provider, start_time, chunk_timeout) end,
+      fn state -> cleanup_stream(state) end
     )
+  end
+
+  defp initialize_stream_state do
+    %{
+      chunks_received: 0,
+      total_tokens: 0,
+      last_chunk_time: System.monotonic_time(:millisecond)
+    }
+  end
+
+  defp handle_stream_chunk(stream, state, provider, start_time, chunk_timeout) do
+    try do
+      task = create_chunk_task(stream)
+      process_chunk_result(task, state, provider, start_time, chunk_timeout)
+    rescue
+      exception ->
+        handle_stream_error(exception, provider, state)
+    end
+  end
+
+  defp create_chunk_task(stream) do
+    Task.async(fn ->
+      case Enum.take(stream, 1) do
+        [chunk] -> {:ok, chunk}
+        [] -> :done
+      end
+    end)
+  end
+
+  defp process_chunk_result(task, state, provider, start_time, chunk_timeout) do
+    case Task.yield(task, chunk_timeout) || Task.shutdown(task) do
+      {:ok, {:ok, chunk}} ->
+        handle_successful_chunk(chunk, state)
+      {:ok, :done} ->
+        handle_stream_completion(provider, start_time, state)
+      nil ->
+        handle_chunk_timeout(provider, state)
+    end
+  end
+
+  defp handle_successful_chunk(chunk, state) do
+    new_state = %{state |
+      chunks_received: state.chunks_received + 1,
+      total_tokens: state.total_tokens + estimate_tokens(chunk),
+      last_chunk_time: System.monotonic_time(:millisecond)
+    }
+    {[chunk], new_state}
+  end
+
+  defp handle_stream_completion(provider, start_time, state) do
+    duration = System.monotonic_time(:millisecond) - start_time
+    HealthMonitor.record_success(provider.name, duration)
+    {:halt, state}
+  end
+
+  defp handle_chunk_timeout(provider, state) do
+    Logger.warning("Stream chunk timeout for provider #{provider.name}")
+    HealthMonitor.record_failure(provider.name, :chunk_timeout)
+    {:halt, state}
+  end
+
+  defp handle_stream_error(exception, provider, state) do
+    Logger.error("Stream chunk error for provider #{provider.name}: #{inspect(exception)}")
+    HealthMonitor.record_failure(provider.name, exception)
+    {:halt, state}
+  end
+
+  defp cleanup_stream(state) do
+    Logger.debug("Stream completed: #{state.chunks_received} chunks, ~#{state.total_tokens} tokens")
   end
 
   defp estimate_tokens(chunk) when is_binary(chunk) do
     # Simple estimation: ~1 token per 4 characters
     div(String.length(chunk), 4)
   end
-  
+
   defp estimate_tokens(chunk) when is_map(chunk) do
     # For structured chunks, estimate based on content
     content = chunk[:content] || chunk["content"] || ""
     estimate_tokens(content)
   end
-  
+
   defp estimate_tokens(_), do: 0
 end

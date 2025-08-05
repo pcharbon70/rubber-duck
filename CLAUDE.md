@@ -16,7 +16,7 @@ something or do not know where to look for something.
 
 ## 1. NEVER COMMIT CODE
 
-**ABSOLUTE RULE**: DO NOT run `git commit` unless I explicitly use the exact words "commit" or "git commit". This is non-negotiable. When I ask you to commit, the commit message should NEVER contain any reference to Claude or any AI assistance provided.
+**ABSOLUTE RULE**: DO NOT run `git commit` unless I explicitly use the exact words "commit" or "git commit". This is non-negotiable. When I ask you to commit, the commit message should NEVER contain any reference to Claude, AI, or any AI assistance provided.
 
 ## 2. ONLY IMPLEMENT WHEN ASKED  
 
@@ -35,7 +35,12 @@ something or do not know where to look for something.
 
 ## 4. COMMIT MESSAGE RULE
 
-**ABSOLUTE RULE**: YOU MUST NEVER MENTION CLAUDE IN COMMIT MESSAGES
+**ABSOLUTE RULE**: YOU MUST NEVER MENTION CLAUDE, AI, OR ANY AI ASSISTANCE IN COMMIT MESSAGES
+- No references to "Claude", "AI", "assisted", "generated", or similar terms
+- No "Co-Authored-By: Claude" or similar attribution
+- No emojis or markers that indicate AI involvement
+- Write commit messages as if they were written by a human developer
+- Focus on WHAT changed and WHY, not HOW the code was created
 
 ## 5. NEVER PUSH TO A GIT REPO
 

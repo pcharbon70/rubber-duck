@@ -1,7 +1,7 @@
 defmodule RubberDuck.Projects.Project do
   @moduledoc """
   Project resource representing a coding project in RubberDuck.
-  
+
   A project contains metadata about a user's coding project including
   name, description, programming language, and status. Projects can
   contain multiple code files and analysis results.
@@ -60,7 +60,7 @@ defmodule RubberDuck.Projects.Project do
 
     create :create do
       accept [:name, :description, :language]
-      
+
       change relate_actor(:owner)
     end
 

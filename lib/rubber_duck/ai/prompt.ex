@@ -1,7 +1,7 @@
 defmodule RubberDuck.AI.Prompt do
   @moduledoc """
   Prompt resource for storing and managing AI prompt templates.
-  
+
   Allows users to create, share, and manage reusable prompt templates
   with variables, categories, and usage tracking. Prompts can be
   private or public for sharing with other users.

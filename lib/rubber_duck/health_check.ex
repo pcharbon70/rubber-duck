@@ -1,7 +1,7 @@
 defmodule RubberDuck.HealthCheck do
   @moduledoc """
   Health check GenServer that monitors application components and provides health status endpoints.
-  
+
   Performs periodic checks on:
   - Database connectivity
   - Service availability
@@ -24,7 +24,7 @@ defmodule RubberDuck.HealthCheck do
 
   @doc """
   Get the current health status of all monitored components.
-  
+
   Returns a map with health check results.
   """
   def get_status do
@@ -36,12 +36,12 @@ defmodule RubberDuck.HealthCheck do
   """
   def get_health_json do
     status = get_status()
-    
+
     %{
       status: overall_status(status),
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
       checks: status.checks,
-      uptime: :erlang.statistics(:wall_clock) |> elem(0) |> div(1000)
+      uptime: :wall_clock |> :erlang.statistics() |> elem(0) |> div(1000)
     }
   end
 
@@ -80,11 +80,11 @@ defmodule RubberDuck.HealthCheck do
 
   @impl true
   def handle_info(:perform_check, state) do
-    new_state = 
+    new_state =
       state
       |> perform_health_check()
       |> schedule_check(@check_interval)
-    
+
     {:noreply, new_state}
   end
 
@@ -107,7 +107,7 @@ defmodule RubberDuck.HealthCheck do
 
   defp perform_health_check(state) do
     Logger.debug("Performing health check...")
-    
+
     checks = %{
       database: check_database(),
       memory: check_memory_usage(),
@@ -118,11 +118,11 @@ defmodule RubberDuck.HealthCheck do
     }
 
     status = determine_overall_status(checks)
-    
+
     # Emit telemetry events for monitoring
     emit_health_telemetry(checks)
-    
-    %{state | 
+
+    %{state |
       status: status,
       last_check: DateTime.utc_now(),
       checks: checks
@@ -130,17 +130,18 @@ defmodule RubberDuck.HealthCheck do
   end
 
   defp check_database do
-    Task.async(fn ->
+    fn ->
       case RubberDuck.Repo.query("SELECT 1", [], timeout: @timeout) do
-        {:ok, _result} -> 
+        {:ok, _result} ->
           %{status: :healthy, message: "Database connection successful"}
-        {:error, reason} -> 
+        {:error, reason} ->
           %{status: :unhealthy, message: "Database error: #{inspect(reason)}"}
       end
-    end)
+    end
+    |> Task.async()
     |> Task.await(@timeout)
   rescue
-    _e -> 
+    _e ->
       %{status: :unhealthy, message: "Database check timed out"}
   end
 
@@ -148,7 +149,7 @@ defmodule RubberDuck.HealthCheck do
     memory = :erlang.memory()
     total_mb = memory[:total] / 1_048_576
     process_mb = memory[:processes] / 1_048_576
-    
+
     if total_mb > 4000 do  # Over 4GB
       %{
         status: :warning,
@@ -170,7 +171,7 @@ defmodule RubberDuck.HealthCheck do
     count = :erlang.system_info(:process_count)
     limit = :erlang.system_info(:process_limit)
     usage_percent = (count / limit) * 100
-    
+
     if usage_percent > 80 do
       %{
         status: :warning,
@@ -192,7 +193,7 @@ defmodule RubberDuck.HealthCheck do
     count = :erlang.system_info(:atom_count)
     limit = :erlang.system_info(:atom_limit)
     usage_percent = (count / limit) * 100
-    
+
     if usage_percent > 75 do
       %{
         status: :warning,
@@ -243,11 +244,11 @@ defmodule RubberDuck.HealthCheck do
   end
 
   defp determine_overall_status(checks) do
-    statuses = 
+    statuses =
       checks
       |> Map.values()
       |> Enum.map(& &1.status)
-    
+
     cond do
       :unhealthy in statuses -> :unhealthy
       :warning in statuses -> :degraded
@@ -267,13 +268,13 @@ defmodule RubberDuck.HealthCheck do
     )
 
     # Emit overall health
-    overall_value = 
+    overall_value =
       case determine_overall_status(checks) do
         :healthy -> 1
         :degraded -> 0.5
         _ -> 0
       end
-    
+
     :telemetry.execute(
       [:rubber_duck, :health, :services],
       %{value: overall_value},

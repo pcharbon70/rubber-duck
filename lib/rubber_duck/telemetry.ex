@@ -1,7 +1,7 @@
 defmodule RubberDuck.Telemetry do
   @moduledoc """
   Telemetry supervisor and metrics definitions for RubberDuck application.
-  
+
   Manages VM metrics collection, custom application measurements, and telemetry reporters.
   """
 
@@ -16,8 +16,8 @@ defmodule RubberDuck.Telemetry do
   def init(_arg) do
     children = [
       # Polls VM metrics and custom measurements periodically
-      {:telemetry_poller, 
-       measurements: periodic_measurements(), 
+      {:telemetry_poller,
+       measurements: periodic_measurements(),
        period: 10_000,
        name: :rubber_duck_poller}
     ]
@@ -57,7 +57,7 @@ defmodule RubberDuck.Telemetry do
       ),
 
       # Authentication Metrics
-      counter("authentication.sign_in.success", 
+      counter("authentication.sign_in.success",
         tags: [:strategy],
         description: "Successful sign-in attempts"
       ),
@@ -102,7 +102,7 @@ defmodule RubberDuck.Telemetry do
   @doc false
   def dispatch_health_check do
     health_status = if database_healthy?(), do: 1, else: 0
-    
+
     :telemetry.execute(
       [:rubber_duck, :health, :database],
       %{value: health_status},
@@ -119,7 +119,7 @@ defmodule RubberDuck.Telemetry do
   @doc false
   def dispatch_repo_metrics do
     case Process.whereis(RubberDuck.Repo) do
-      nil -> 
+      nil ->
         :ok
       pid ->
         # Get pool info using DBConnection
@@ -131,7 +131,7 @@ defmodule RubberDuck.Telemetry do
               %{value: 0},
               %{}
             )
-            
+
             :telemetry.execute(
               [:rubber_duck, :repo, :pool_size],
               %{value: 10},  # Default pool size

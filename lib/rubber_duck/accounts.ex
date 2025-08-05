@@ -1,7 +1,7 @@
 defmodule RubberDuck.Accounts do
   @moduledoc """
   Domain for user account management and authentication in RubberDuck.
-  
+
   Provides operations for user registration, authentication, and
   account management using username-based authentication.
   """
@@ -11,7 +11,7 @@ defmodule RubberDuck.Accounts do
 
   resources do
     resource RubberDuck.Accounts.Token
-    
+
     resource RubberDuck.Accounts.User do
       define :register_user, action: :register_with_password
       define :sign_in_user, action: :sign_in_with_password

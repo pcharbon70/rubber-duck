@@ -1,7 +1,7 @@
 defmodule RubberDuck.Signal do
   @moduledoc """
   Simple signal system for inter-agent communication.
-  
+
   This module provides a pub/sub mechanism for agents to communicate
   through signals without direct coupling.
   """
