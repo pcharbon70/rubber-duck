@@ -47,7 +47,8 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     end)
 
     # Find projects in agent but not in domain
-    agent_only_projects = Map.keys(agent_state.monitored_projects)
+    agent_only_projects = agent_state.monitored_projects
+      |> Map.keys()
       |> Enum.reject(fn id ->
         Enum.any?(projects, & &1.id == id)
       end)
@@ -212,14 +213,21 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
       |> Enum.map(& Path.extname(&1[:path] || ""))
       |> Enum.frequencies()
 
-    cond do
-      extensions[".ex"] || extensions[".exs"] -> "elixir"
-      extensions[".js"] || extensions[".ts"] -> "javascript"
-      extensions[".py"] -> "python"
-      extensions[".rb"] -> "ruby"
-      extensions[".go"] -> "go"
-      true -> "unknown"
-    end
+    detect_by_extension(extensions)
+  end
+
+  defp detect_by_extension(extensions) do
+    language_map = %{
+      {[".ex", ".exs"], "elixir"},
+      {[".js", ".ts"], "javascript"},
+      {[".py"], "python"},
+      {[".rb"], "ruby"},
+      {[".go"], "go"}
+    }
+
+    Enum.find_value(language_map, "unknown", fn {exts, lang} ->
+      if Enum.any?(exts, &extensions[&1]), do: lang
+    end)
   end
 
   defp build_project_metadata(agent_data) do
@@ -471,17 +479,24 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
 
   defp find_common_imports(files) do
     files
-    |> Enum.flat_map(fn file ->
-      if file.content && file.language == "elixir" do
-        Regex.scan(~r/(?:import|alias|use)\s+([\w\.]+)/, file.content)
-        |> Enum.map(fn [_, module] -> module end)
-      else
-        []
-      end
-    end)
+    |> Enum.flat_map(&extract_file_imports/1)
     |> Enum.frequencies()
     |> Enum.sort_by(fn {_, count} -> -count end)
     |> Enum.take(10)
+  end
+
+  defp extract_file_imports(file) do
+    if file.content && file.language == "elixir" do
+      extract_module_references(file.content)
+    else
+      []
+    end
+  end
+
+  defp extract_module_references(content) do
+    content
+    |> then(&Regex.scan(~r/(?:import|alias|use)\s+([\w\.]+)/, &1))
+    |> Enum.map(fn [_, module] -> module end)
   end
 
   defp detect_file_patterns(files) do

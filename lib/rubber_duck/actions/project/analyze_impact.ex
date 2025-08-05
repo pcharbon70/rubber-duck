@@ -87,17 +87,20 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
   end
 
   defp extract_imports(content) do
-    Regex.scan(~r/import\s+([\w\.]+)/, content)
+    content
+    |> then(&Regex.scan(~r/import\s+([\w\.]+)/, &1))
     |> Enum.map(fn [_, module] -> module end)
   end
 
   defp extract_aliases(content) do
-    Regex.scan(~r/alias\s+([\w\.]+)/, content)
+    content
+    |> then(&Regex.scan(~r/alias\s+([\w\.]+)/, &1))
     |> Enum.map(fn [_, module] -> module end)
   end
 
   defp extract_uses(content) do
-    Regex.scan(~r/use\s+([\w\.]+)/, content)
+    content
+    |> then(&Regex.scan(~r/use\s+([\w\.]+)/, &1))
     |> Enum.map(fn [_, module] -> module end)
   end
 
@@ -123,26 +126,35 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     files
     |> Enum.filter(& &1.language == "elixir" && &1.content)
     |> Enum.reduce(%{}, fn file, acc ->
-      functions = extract_functions(file.content)
-      module_name = extract_module_name(file.content)
+      process_file_functions(file, acc)
+    end)
+  end
 
-      if module_name do
-        Enum.reduce(functions, acc, fn func, inner_acc ->
-          key = "#{module_name}.#{func.name}/#{func.arity}"
-          Map.put(inner_acc, key, %{
-            file: file.path,
-            function: func,
-            module: module_name
-          })
-        end)
-      else
-        acc
-      end
+  defp process_file_functions(file, acc) do
+    functions = extract_functions(file.content)
+    module_name = extract_module_name(file.content)
+
+    if module_name do
+      add_module_functions(functions, module_name, file.path, acc)
+    else
+      acc
+    end
+  end
+
+  defp add_module_functions(functions, module_name, file_path, acc) do
+    Enum.reduce(functions, acc, fn func, inner_acc ->
+      key = "#{module_name}.#{func.name}/#{func.arity}"
+      Map.put(inner_acc, key, %{
+        file: file_path,
+        function: func,
+        module: module_name
+      })
     end)
   end
 
   defp extract_functions(content) do
-    Regex.scan(~r/def(?:p?)\s+(\w+)(?:\(([^)]*)\))?/, content)
+    content
+    |> then(&Regex.scan(~r/def(?:p?)\s+(\w+)(?:\(([^)]*)\))?/, &1))
     |> Enum.map(fn
       [_, name, args] ->
         arity = if args && args != "" do
@@ -485,7 +497,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     multipliers = [
       {Map.get(impact, :caller_count, 0) > 10, 2.0},
       {Map.get(impact, :dependent_count, 0) > 5, 1.5},
-      {Map.get(impact, :ripple_effects, []) |> length() > 10, 1.8},
+      {length(Map.get(impact, :ripple_effects, [])) > 10, 1.8},
       {get_in(impact, [:api_changes, :has_api_changes]) == true, 2.5},
       {get_in(impact, [:database_impact, :migration_required]) == true, 3.0}
     ]
@@ -614,7 +626,8 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
   end
 
   defp generate_recommendations(impact_analysis, risk_assessment) do
-    Enum.zip(impact_analysis, risk_assessment)
+    impact_analysis
+    |> Enum.zip(risk_assessment)
     |> Enum.map(fn {impact, risk} ->
       %{
         change: impact.change,

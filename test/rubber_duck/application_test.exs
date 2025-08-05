@@ -1,6 +1,6 @@
 defmodule RubberDuck.ApplicationTest do
   use ExUnit.Case
-  
+
   describe "Application supervision tree" do
     test "application starts successfully" do
       # The application is already started by ExUnit

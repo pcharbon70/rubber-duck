@@ -1,6 +1,6 @@
 defmodule RubberDuck.TelemetryTest do
   use ExUnit.Case
-  
+
   describe "Telemetry supervisor" do
     test "telemetry supervisor starts successfully" do
       assert Process.whereis(RubberDuck.Telemetry) != nil
@@ -10,14 +10,14 @@ defmodule RubberDuck.TelemetryTest do
       metrics = RubberDuck.Telemetry.metrics()
       assert is_list(metrics)
       assert length(metrics) > 0
-      
+
       # Check for key metric types
       metric_names = Enum.map(metrics, & &1.name)
-      
+
       # VM metrics
       assert [:vm, :memory, :total] in metric_names
       assert [:vm, :total_run_queue_lengths, :total] in metric_names
-      
+
       # Application metrics
       assert [:rubber_duck, :health, :database] in metric_names
       assert [:rubber_duck, :repo, :queue_size] in metric_names
@@ -37,7 +37,7 @@ defmodule RubberDuck.TelemetryTest do
         [:rubber_duck, :health, :database],
         [:rubber_duck, :health, :services]
       ]
-      
+
       :telemetry.attach_many(
         handler_id,
         events,
@@ -46,14 +46,14 @@ defmodule RubberDuck.TelemetryTest do
         end,
         %{test_pid: self()}
       )
-      
+
       # Trigger health check
       RubberDuck.Telemetry.dispatch_health_check()
-      
+
       # Verify events were received
       assert_receive {:telemetry_event, [:rubber_duck, :health, :database], %{value: _}}, 1000
       assert_receive {:telemetry_event, [:rubber_duck, :health, :services], %{value: _}}, 1000
-      
+
       # Cleanup
       :telemetry.detach(handler_id)
     end

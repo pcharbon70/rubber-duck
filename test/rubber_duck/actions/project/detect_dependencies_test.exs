@@ -9,7 +9,7 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
       language: "elixir",
       status: :active
     })
-    
+
     %{project: project}
   end
 
@@ -22,14 +22,14 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         content: """
         defmodule MyApp.MixProject do
           use Mix.Project
-          
+
           def project do
             [
               app: :my_app,
               deps: deps()
             ]
           end
-          
+
           defp deps do
             [
               {:phoenix, "~> 1.7.0"},
@@ -43,21 +43,21 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "elixir",
         size_bytes: 300
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: true
       }
-      
+
       assert {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       assert length(result.dependencies) == 4
       assert Enum.any?(result.dependencies, & &1.name == "phoenix")
       assert Enum.any?(result.dependencies, & &1.name == "ecto_sql")
     end
-    
+
     test "excludes dev dependencies when requested", %{project: project} do
       {:ok, _} = Projects.create_code_file(%{
         project_id: project.id,
@@ -65,7 +65,7 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         content: """
         defmodule MyApp.MixProject do
           use Mix.Project
-          
+
           defp deps do
             [
               {:phoenix, "~> 1.7.0"},
@@ -77,21 +77,21 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "elixir",
         size_bytes: 200
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: false,
         check_versions: false
       }
-      
+
       {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       # Should only include phoenix, not credo
       assert length(result.dependencies) == 1
       assert hd(result.dependencies).name == "phoenix"
     end
-    
+
     test "detects git dependencies", %{project: project} do
       {:ok, _} = Projects.create_code_file(%{
         project_id: project.id,
@@ -99,7 +99,7 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         content: """
         defmodule MyApp.MixProject do
           use Mix.Project
-          
+
           defp deps do
             [
               {:my_dep, git: "https://github.com/example/my_dep.git"},
@@ -111,16 +111,16 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "elixir",
         size_bytes: 250
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: false
       }
-      
+
       {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       git_deps = Enum.filter(result.dependencies, & &1.type == :git)
       assert length(git_deps) == 2
       assert Enum.all?(git_deps, & &1.git_url != nil)
@@ -131,7 +131,7 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
     test "detects npm dependencies", %{project: project} do
       # Update project language
       Projects.update_project(project, %{language: "javascript"})
-      
+
       {:ok, _} = Projects.create_code_file(%{
         project_id: project.id,
         path: "package.json",
@@ -153,21 +153,21 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "json",
         size_bytes: 300
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: true
       }
-      
+
       {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       assert length(result.dependencies) == 5
-      
+
       prod_deps = Enum.filter(result.dependencies, & &1.scope == :runtime)
       assert length(prod_deps) == 3
-      
+
       dev_deps = Enum.filter(result.dependencies, & &1.scope == :dev)
       assert length(dev_deps) == 2
     end
@@ -176,7 +176,7 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
   describe "run/2 - Python projects" do
     test "detects pip dependencies", %{project: project} do
       Projects.update_project(project, %{language: "python"})
-      
+
       {:ok, _} = Projects.create_code_file(%{
         project_id: project.id,
         path: "requirements.txt",
@@ -191,16 +191,16 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "text",
         size_bytes: 150
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: true
       }
-      
+
       {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       assert length(result.dependencies) == 5
       assert Enum.any?(result.dependencies, & &1.name == "Django")
       assert Enum.any?(result.dependencies, & &1.name == "pytest")
@@ -215,7 +215,7 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         content: """
         defmodule MyApp.MixProject do
           use Mix.Project
-          
+
           defp deps do
             [
               {:phoenix, "~> 1.7.0"},
@@ -228,21 +228,21 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "elixir",
         size_bytes: 200
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: true
       }
-      
+
       {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       # Health score should be reduced due to old dependencies
       assert result.analysis.health_score < 100
       assert length(result.analysis.outdated) > 0
     end
-    
+
     test "detects duplicate dependencies", %{project: project} do
       # Create multiple config files that might have duplicates
       {:ok, _} = Projects.create_code_file(%{
@@ -258,7 +258,7 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "elixir",
         size_bytes: 100
       })
-      
+
       {:ok, _} = Projects.create_code_file(%{
         project_id: project.id,
         path: "other_mix.exs",
@@ -272,20 +272,20 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "elixir",
         size_bytes: 100
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: true
       }
-      
+
       {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       # Should detect phoenix appears with different versions
       assert length(result.analysis.duplicates) > 0
     end
-    
+
     test "builds dependency graph", %{project: project} do
       {:ok, _} = Projects.create_code_file(%{
         project_id: project.id,
@@ -304,16 +304,16 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "elixir",
         size_bytes: 200
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: false
       }
-      
+
       {:ok, result} = DetectDependencies.run(params, %{})
-      
+
       assert map_size(result.dependency_graph) == 3
       assert Map.has_key?(result.dependency_graph, "phoenix")
       assert Map.has_key?(result.dependency_graph, "ecto")
@@ -328,10 +328,10 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         include_dev: true,
         check_versions: true
       }
-      
+
       assert {:error, _} = DetectDependencies.run(params, %{})
     end
-    
+
     test "handles malformed dependency files", %{project: project} do
       {:ok, _} = Projects.create_code_file(%{
         project_id: project.id,
@@ -340,14 +340,14 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
         language: "json",
         size_bytes: 20
       })
-      
+
       params = %{
         project_id: project.id,
         scan_depth: :full,
         include_dev: true,
         check_versions: true
       }
-      
+
       # Should still succeed but with no dependencies from the malformed file
       assert {:ok, result} = DetectDependencies.run(params, %{})
       assert result.dependencies == []

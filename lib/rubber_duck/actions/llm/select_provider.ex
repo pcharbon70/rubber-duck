@@ -138,7 +138,7 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
   defp gather_score_components(provider, params) do
     metrics = HealthMonitor.get_metrics(provider.name)
     history = Map.get(params.performance_history, provider.name, %{})
-    
+
     %{
       base: 100.0,
       availability: calculate_availability_score(provider),
@@ -167,19 +167,19 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
   end
 
   defp calculate_cost_optimized_score(components) do
-    components.base + components.availability + 
-    (components.performance * 0.5) + (components.response_time * 0.3) + 
+    components.base + components.availability +
+    (components.performance * 0.5) + (components.response_time * 0.3) +
     (components.cost * 2.0) + components.historical
   end
 
   defp calculate_quality_optimized_score(components) do
-    components.base + components.availability + 
-    (components.performance * 1.5) + (components.response_time * 1.2) + 
+    components.base + components.availability +
+    (components.performance * 1.5) + (components.response_time * 1.2) +
     (components.cost * 0.3) + components.historical
   end
 
   defp calculate_balanced_score(components) do
-    components.base + components.availability + components.performance + 
+    components.base + components.availability + components.performance +
     components.response_time + components.cost + components.historical
   end
 

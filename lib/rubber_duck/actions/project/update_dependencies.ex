@@ -19,20 +19,33 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
   @impl true
   def run(params, _context) do
     with {:ok, project} <- Projects.get_project(params.project_id),
-         {:ok, config_files} <- load_config_files(project),
+         {:ok, update_result} <- execute_update_process(project, params) do
+      {:ok, build_result(update_result)}
+    end
+  end
+
+  defp execute_update_process(project, params) do
+    with {:ok, config_files} <- load_config_files(project),
          update_plan <- create_update_plan(params.dependencies, params.update_strategy),
          {:ok, updated_files} <- apply_updates(config_files, update_plan),
          {:ok, test_results} <- run_tests_if_enabled(project, params),
          {:ok, pr_info} <- create_pr_if_enabled(project, updated_files, update_plan, params) do
-
       {:ok, %{
-        updated_dependencies: length(update_plan),
         update_plan: update_plan,
         test_results: test_results,
-        pull_request: pr_info,
-        updated_at: DateTime.utc_now()
+        pull_request: pr_info
       }}
     end
+  end
+
+  defp build_result(update_result) do
+    %{
+      updated_dependencies: length(update_result.update_plan),
+      update_plan: update_result.update_plan,
+      test_results: update_result.test_results,
+      pull_request: update_result.pull_request,
+      updated_at: DateTime.utc_now()
+    }
   end
 
   defp load_config_files(project) do
@@ -66,18 +79,21 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
   end
 
   defp detect_dependency_file_type(path) do
-    cond do
-      String.ends_with?(path, "mix.exs") -> :mix_config
-      String.ends_with?(path, "mix.lock") -> :mix_lock
-      String.ends_with?(path, "package.json") -> :npm_package
-      String.ends_with?(path, "package-lock.json") -> :npm_lock
-      String.ends_with?(path, "yarn.lock") -> :yarn_lock
-      String.ends_with?(path, "requirements.txt") -> :pip_requirements
-      String.ends_with?(path, "Pipfile") -> :pipfile
-      String.ends_with?(path, "Gemfile") -> :gemfile
-      String.ends_with?(path, "go.mod") -> :go_mod
-      true -> :unknown
-    end
+    file_type_mappings = [
+      {"mix.exs", :mix_config},
+      {"mix.lock", :mix_lock},
+      {"package.json", :npm_package},
+      {"package-lock.json", :npm_lock},
+      {"yarn.lock", :yarn_lock},
+      {"requirements.txt", :pip_requirements},
+      {"Pipfile", :pipfile},
+      {"Gemfile", :gemfile},
+      {"go.mod", :go_mod}
+    ]
+
+    Enum.find_value(file_type_mappings, :unknown, fn {suffix, type} ->
+      if String.ends_with?(path, suffix), do: type
+    end)
   end
 
   defp create_update_plan(dependencies, strategy) do
@@ -114,36 +130,52 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
   defp find_patch_update(current, available) do
     case Version.parse(current) do
       {:ok, current_version} ->
-        available
-        |> Enum.filter(fn v ->
-          case Version.parse(v) do
-            {:ok, version} ->
-              Version.match?(version, "~> #{current_version.major}.#{current_version.minor}.0") &&
-              Version.compare(version, current_version) == :gt
-            _ -> false
-          end
-        end)
-        |> Enum.sort(&version_sort/2)
-        |> List.last()
-      _ -> nil
+        find_matching_version(available, current_version, :patch)
+      _ ->
+        nil
+    end
+  end
+
+  defp find_matching_version(available, current_version, :patch) do
+    available
+    |> Enum.filter(&is_valid_patch_update?(&1, current_version))
+    |> Enum.sort(&version_sort/2)
+    |> List.last()
+  end
+
+  defp is_valid_patch_update?(version_string, current_version) do
+    case Version.parse(version_string) do
+      {:ok, version} ->
+        Version.match?(version, "~> #{current_version.major}.#{current_version.minor}.0") &&
+        Version.compare(version, current_version) == :gt
+      _ ->
+        false
     end
   end
 
   defp find_minor_update(current, available) do
     case Version.parse(current) do
       {:ok, current_version} ->
-        available
-        |> Enum.filter(fn v ->
-          case Version.parse(v) do
-            {:ok, version} ->
-              version.major == current_version.major &&
-              Version.compare(version, current_version) == :gt
-            _ -> false
-          end
-        end)
-        |> Enum.sort(&version_sort/2)
-        |> List.last()
-      _ -> nil
+        find_matching_minor_version(available, current_version)
+      _ ->
+        nil
+    end
+  end
+
+  defp find_matching_minor_version(available, current_version) do
+    available
+    |> Enum.filter(&is_valid_minor_update?(&1, current_version))
+    |> Enum.sort(&version_sort/2)
+    |> List.last()
+  end
+
+  defp is_valid_minor_update?(version_string, current_version) do
+    case Version.parse(version_string) do
+      {:ok, version} ->
+        version.major == current_version.major &&
+        Version.compare(version, current_version) == :gt
+      _ ->
+        false
     end
   end
 
@@ -283,42 +315,50 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
   defp update_npm_file(content, updates) do
     case Jason.decode(content) do
       {:ok, package} ->
-        updated_package = Enum.reduce(updates, package, fn update, acc ->
-          # Update in dependencies or devDependencies
-          acc = if Map.has_key?(acc["dependencies"] || %{}, update.name) do
-            put_in(acc, ["dependencies", update.name], update.target_version)
-          else
-            acc
-          end
-
-          if Map.has_key?(acc["devDependencies"] || %{}, update.name) do
-            put_in(acc, ["devDependencies", update.name], update.target_version)
-          else
-            acc
-          end
-        end)
-
+        updated_package = apply_npm_updates(package, updates)
         Jason.encode!(updated_package, pretty: true)
-      _ -> content
+      _ ->
+        content
+    end
+  end
+
+  defp apply_npm_updates(package, updates) do
+    Enum.reduce(updates, package, &apply_single_npm_update/2)
+  end
+
+  defp apply_single_npm_update(update, package) do
+    package
+    |> update_if_exists(["dependencies", update.name], update.target_version)
+    |> update_if_exists(["devDependencies", update.name], update.target_version)
+  end
+
+  defp update_if_exists(package, path, value) do
+    if get_in(package, path) do
+      put_in(package, path, value)
+    else
+      package
     end
   end
 
   defp update_pip_file(content, updates) do
-    lines = String.split(content, "\n")
+    content
+    |> String.split("\n")
+    |> Enum.map(&update_pip_line(&1, updates))
+    |> Enum.join("\n")
+  end
 
-    updated_lines = Enum.map(lines, fn line ->
-      trimmed = String.trim(line)
+  defp update_pip_line(line, updates) do
+    find_pip_update(line, updates) || line
+  end
 
-      updated = Enum.find_value(updates, fn update ->
-        if String.starts_with?(trimmed, "#{update.name}==") do
-          "#{update.name}==#{update.target_version}"
-        end
-      end)
+  defp find_pip_update(line, updates) do
+    trimmed = String.trim(line)
 
-      updated || line
+    Enum.find_value(updates, fn update ->
+      if String.starts_with?(trimmed, "#{update.name}==") do
+        "#{update.name}==#{update.target_version}"
+      end
     end)
-
-    Enum.join(updated_lines, "\n")
   end
 
   defp run_tests_if_enabled(project, params) do

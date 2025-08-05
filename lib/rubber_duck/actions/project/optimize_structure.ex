@@ -210,35 +210,7 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
 
     case Projects.list_code_files_by_project(project.id) do
       {:ok, files} ->
-        dir_files = Enum.filter(files, &String.starts_with?(&1.path, directory))
-
-        # Group files by their characteristics
-        grouped = group_files_for_splitting(dir_files)
-
-        # Create new subdirectories and move files
-        results = Enum.map(grouped, fn {subdir_name, group_files} ->
-          new_subdir = Path.join(directory, subdir_name)
-
-          moved = Enum.map(group_files, fn file ->
-            new_path = Path.join(new_subdir, Path.basename(file.path))
-            move_file(file, new_path)
-          end)
-
-          %{
-            subdirectory: new_subdir,
-            files_moved: length(moved),
-            success: Enum.all?(moved, & &1.success)
-          }
-        end)
-
-        %{
-          optimization: optimization,
-          success: Enum.all?(results, & &1.success),
-          original_file_count: file_count,
-          new_directories: length(results),
-          details: results
-        }
-
+        process_directory_split(files, directory, file_count, optimization)
       _ ->
         %{
           optimization: optimization,
@@ -248,6 +220,41 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
     end
   end
 
+  defp process_directory_split(files, directory, file_count, optimization) do
+    dir_files = Enum.filter(files, &String.starts_with?(&1.path, directory))
+    grouped = group_files_for_splitting(dir_files)
+    results = create_subdirectories_and_move(grouped, directory)
+
+    %{
+      optimization: optimization,
+      success: Enum.all?(results, & &1.success),
+      original_file_count: file_count,
+      new_directories: length(results),
+      details: results
+    }
+  end
+
+  defp create_subdirectories_and_move(grouped_files, base_directory) do
+    Enum.map(grouped_files, fn {subdir_name, group_files} ->
+      move_files_to_subdirectory(subdir_name, group_files, base_directory)
+    end)
+  end
+
+  defp move_files_to_subdirectory(subdir_name, files, base_directory) do
+    new_subdir = Path.join(base_directory, subdir_name)
+
+    moved = Enum.map(files, fn file ->
+      new_path = Path.join(new_subdir, Path.basename(file.path))
+      move_file(file, new_path)
+    end)
+
+    %{
+      subdirectory: new_subdir,
+      files_moved: length(moved),
+      success: Enum.all?(moved, & &1.success)
+    }
+  end
+
   defp group_files_for_splitting(files) do
     files
     |> Enum.group_by(&categorize_file/1)
@@ -255,19 +262,53 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   end
 
   defp categorize_file(file) do
-    basename = Path.basename(file.path, Path.extname(file.path))
+    file.path
+    |> extract_basename()
+    |> find_category()
+  end
 
-    cond do
-      String.ends_with?(basename, "_test") -> "tests"
-      String.ends_with?(basename, "_spec") -> "specs"
-      String.contains?(basename, "controller") -> "controllers"
-      String.contains?(basename, "view") -> "views"
-      String.contains?(basename, "model") -> "models"
-      String.contains?(basename, "service") -> "services"
-      String.contains?(basename, "helper") || String.contains?(basename, "util") -> "helpers"
-      String.contains?(basename, "config") -> "config"
-      true -> "core"
-    end
+  defp extract_basename(path) do
+    Path.basename(path, Path.extname(path))
+  end
+
+  defp find_category(basename) do
+    suffix_categories = [
+      {"_test", "tests"},
+      {"_spec", "specs"}
+    ]
+
+    contains_categories = [
+      {"controller", "controllers"},
+      {"view", "views"},
+      {"model", "models"},
+      {"service", "services"},
+      {"config", "config"}
+    ]
+
+    find_by_suffix(basename, suffix_categories) ||
+      find_by_contains(basename, contains_categories) ||
+      find_special_category(basename) ||
+      "core"
+  end
+
+  defp find_by_suffix(basename, patterns) do
+    Enum.find_value(patterns, fn {suffix, category} ->
+      if String.ends_with?(basename, suffix), do: category
+    end)
+  end
+
+  defp find_by_contains(basename, patterns) do
+    Enum.find_value(patterns, fn {pattern, category} ->
+      if String.contains?(basename, pattern), do: category
+    end)
+  end
+
+  defp find_special_category(basename) do
+    if category_is_helper?(basename), do: "helpers"
+  end
+
+  defp category_is_helper?(basename) do
+    String.contains?(basename, "helper") || String.contains?(basename, "util")
   end
 
   defp reorganize_module_structure(project, optimization) do
@@ -350,47 +391,62 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
 
   defp rename_file(project, file_info, convention) do
     current_path = file_info.path
-    basename = Path.basename(current_path, Path.extname(current_path))
+    new_path = calculate_new_path(current_path, convention)
 
+    if current_path == new_path do
+      skip_rename_result(current_path)
+    else
+      perform_rename(project, current_path, new_path)
+    end
+  end
+
+  defp calculate_new_path(current_path, convention) do
+    basename = Path.basename(current_path, Path.extname(current_path))
     new_basename = apply_naming_convention(basename, convention)
-    new_path = Path.join(
+
+    Path.join(
       Path.dirname(current_path),
       new_basename <> Path.extname(current_path)
     )
+  end
 
-    if current_path == new_path do
-      %{
-        file: current_path,
-        success: true,
-        skipped: true,
-        reason: "Already follows convention"
-      }
-    else
-      case Projects.get_code_file_by_path(project.id, current_path) do
-        {:ok, file} ->
-          case Projects.update_code_file(file, %{path: new_path}) do
-            {:ok, _} ->
-              %{
-                file: current_path,
-                success: true,
-                old_name: Path.basename(current_path),
-                new_name: Path.basename(new_path)
-              }
-            error ->
-              %{
-                file: current_path,
-                success: false,
-                error: error
-              }
-          end
+  defp skip_rename_result(path) do
+    %{
+      file: path,
+      success: true,
+      skipped: true,
+      reason: "Already follows convention"
+    }
+  end
 
-        _ ->
-          %{
-            file: current_path,
-            success: false,
-            error: "File not found"
-          }
-      end
+  defp perform_rename(project, current_path, new_path) do
+    case Projects.get_code_file_by_path(project.id, current_path) do
+      {:ok, file} ->
+        update_file_path(file, current_path, new_path)
+      _ ->
+        %{
+          file: current_path,
+          success: false,
+          error: "File not found"
+        }
+    end
+  end
+
+  defp update_file_path(file, current_path, new_path) do
+    case Projects.update_code_file(file, %{path: new_path}) do
+      {:ok, _} ->
+        %{
+          file: current_path,
+          success: true,
+          old_name: Path.basename(current_path),
+          new_name: Path.basename(new_path)
+        }
+      error ->
+        %{
+          file: current_path,
+          success: false,
+          error: error
+        }
     end
   end
 

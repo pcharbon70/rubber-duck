@@ -22,7 +22,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
          {:ok, files} <- get_analyzable_files(project),
          suggestions <- generate_suggestions(files, params),
          prioritized <- prioritize_suggestions(suggestions, params.max_suggestions) do
-      
+
       {:ok, %{
         suggestions: prioritized,
         total_found: length(suggestions),
@@ -33,7 +33,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp get_analyzable_files(project) do
     case Projects.list_code_files_by_project(project.id) do
-      {:ok, files} -> 
+      {:ok, files} ->
         filtered = files
           |> Enum.filter(& &1.content && &1.language == "elixir")
         {:ok, filtered}
@@ -51,54 +51,54 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp analyze_file_for_refactoring(file, params) do
     suggestions = []
-    
+
     # Analyze based on focus areas
     focus_areas = if :all in params.focus_areas do
       [:complexity, :duplication, :naming, :structure, :patterns]
     else
       params.focus_areas
     end
-    
+
     suggestions = if :complexity in focus_areas do
       suggestions ++ analyze_complexity_refactorings(file)
     else
       suggestions
     end
-    
+
     suggestions = if :duplication in focus_areas do
       suggestions ++ analyze_duplication_refactorings(file)
     else
       suggestions
     end
-    
+
     suggestions = if :naming in focus_areas do
       suggestions ++ analyze_naming_refactorings(file)
     else
       suggestions
     end
-    
+
     suggestions = if :structure in focus_areas do
       suggestions ++ analyze_structure_refactorings(file)
     else
       suggestions
     end
-    
+
     suggestions = if :patterns in focus_areas do
       suggestions ++ analyze_pattern_refactorings(file)
     else
       suggestions
     end
-    
+
     suggestions
   end
 
   defp analyze_complexity_refactorings(file) do
     content = file.content
     suggestions = []
-    
+
     # Find complex functions
     functions = extract_functions(content)
-    
+
     complex_functions = functions
       |> Enum.filter(& &1.complexity > 10)
       |> Enum.map(fn func ->
@@ -116,10 +116,10 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           suggested_changes: suggest_function_extraction(func)
         }
       end)
-    
+
     # Find deeply nested code
     nested_blocks = find_nested_blocks(content)
-    
+
     deep_nesting = nested_blocks
       |> Enum.filter(& &1.depth > 4)
       |> Enum.map(fn block ->
@@ -136,14 +136,14 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           suggested_changes: suggest_nesting_reduction(block)
         }
       end)
-    
+
     suggestions ++ complex_functions ++ deep_nesting
   end
 
   defp analyze_duplication_refactorings(file) do
     content = file.content
     duplicates = find_duplicate_code(content)
-    
+
     duplicates
     |> Enum.map(fn dup ->
       %{
@@ -164,26 +164,26 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp analyze_naming_refactorings(file) do
     content = file.content
     suggestions = []
-    
+
     # Check module naming
     module_issues = check_module_naming(file.path, content)
     suggestions = suggestions ++ module_issues
-    
+
     # Check function naming
     function_issues = check_function_naming(content)
     suggestions = suggestions ++ function_issues
-    
+
     # Check variable naming
     variable_issues = check_variable_naming(content)
     suggestions = suggestions ++ variable_issues
-    
+
     suggestions
   end
 
   defp analyze_structure_refactorings(file) do
     content = file.content
     suggestions = []
-    
+
     # Check for large modules
     module_size = count_module_lines(content)
     if module_size > 300 do
@@ -199,7 +199,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
         suggested_changes: suggest_module_split(file, content)
       } | suggestions]
     end
-    
+
     # Check for misplaced functions
     misplaced = find_misplaced_functions(content)
     suggestions = suggestions ++ Enum.map(misplaced, fn func ->
@@ -215,65 +215,60 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
         suggested_changes: %{suggested_module: func.suggested_module}
       }
     end)
-    
+
     suggestions
   end
 
   defp analyze_pattern_refactorings(file) do
     content = file.content
     suggestions = []
-    
+
     # Check for pattern matching opportunities
     pattern_opportunities = find_pattern_matching_opportunities(content)
     suggestions = suggestions ++ pattern_opportunities
-    
+
     # Check for pipeline opportunities
     pipeline_opportunities = find_pipeline_opportunities(content)
     suggestions = suggestions ++ pipeline_opportunities
-    
+
     # Check for with statement opportunities
     with_opportunities = find_with_opportunities(content)
     suggestions = suggestions ++ with_opportunities
-    
+
     suggestions
   end
 
   defp extract_functions(content) do
     # Extract function definitions with their complexity
     lines = String.split(content, "\n")
-    
+
     content
     |> then(&Regex.scan(~r/def(?:p?)\s+(\w+)(?:\(([^)]*)\))?/, &1))
-    |> Enum.map(fn 
-      [full, name, args] ->
-        arity = if args && args != "" do
-          length(String.split(args, ","))
-        else
-          0
-        end
-        
-        location = find_line_number(lines, full)
-        body = extract_function_body(content, name)
-        
-        %{
-          name: name,
-          arity: arity,
-          location: location,
-          complexity: calculate_function_complexity(body),
-          length: count_function_lines(body)
-        }
-      [full, name] ->
-        location = find_line_number(lines, full)
-        body = extract_function_body(content, name)
-        
-        %{
-          name: name,
-          arity: 0,
-          location: location,
-          complexity: calculate_function_complexity(body),
-          length: count_function_lines(body)
-        }
-    end)
+    |> Enum.map(&build_function_info(&1, lines, content))
+  end
+
+  defp build_function_info([full, name, args], lines, content) do
+    build_function_map(name, calculate_arity(args), full, lines, content)
+  end
+
+  defp build_function_info([full, name], lines, content) do
+    build_function_map(name, 0, full, lines, content)
+  end
+
+  defp calculate_arity(nil), do: 0
+  defp calculate_arity(""), do: 0
+  defp calculate_arity(args), do: length(String.split(args, ","))
+
+  defp build_function_map(name, arity, full_match, lines, content) do
+    body = extract_function_body(content, name)
+
+    %{
+      name: name,
+      arity: arity,
+      location: find_line_number(lines, full_match),
+      complexity: calculate_function_complexity(body),
+      length: count_function_lines(body)
+    }
   end
 
   defp find_line_number(lines, text) do
@@ -294,7 +289,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
       ~r/\bif\b/, ~r/\bunless\b/, ~r/\bcase\b/, ~r/\bcond\b/,
       ~r/\bwith\b/, ~r/\band\b/, ~r/\bor\b/, ~r/->/, ~r/\&\&/, ~r/\|\|/
     ]
-    
+
     1 + Enum.sum(Enum.map(patterns, fn pattern ->
       length(Regex.scan(pattern, body))
     end))
@@ -333,7 +328,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp find_nested_blocks(content) do
     lines = String.split(content, "\n")
-    
+
     lines
     |> Enum.with_index()
     |> Enum.map(fn {line, index} ->
@@ -387,7 +382,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
         end
       end
     end
-    
+
     # Use:
     def process(data) do
       with :ok <- validate(data),
@@ -400,10 +395,10 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp find_duplicate_code(content) do
     lines = String.split(content, "\n")
-    
+
     # Find sequences of similar lines
     sequences = find_similar_sequences(lines, 3) # Min 3 lines
-    
+
     sequences
     |> Enum.map(fn seq ->
       %{
@@ -417,7 +412,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp find_similar_sequences(lines, min_length) do
     # Simple duplicate detection - find exact matches
     indexed_lines = Enum.with_index(lines)
-    
+
     indexed_lines
     |> Enum.chunk_every(min_length, 1, :discard)
     |> Enum.group_by(fn chunk ->
@@ -442,7 +437,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     base = 0.7
     length_bonus = min(0.2, dup.line_count * 0.02)
     occurrence_bonus = min(0.1, (length(dup.locations) - 2) * 0.05)
-    
+
     base + length_bonus + occurrence_bonus
   end
 
@@ -456,7 +451,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp check_module_naming(file_path, content) do
     expected_module = path_to_module_name(file_path)
-    
+
     case Regex.run(~r/defmodule\s+([\w\.]+)/, content) do
       [_, actual_module] ->
         if actual_module != expected_module do
@@ -493,11 +488,11 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp check_function_naming(content) do
     functions = Regex.scan(~r/def(?:p?)\s+(\w+)/, content)
-    
+
     functions
     |> Enum.flat_map(fn [_, name] ->
       issues = []
-      
+
       # Check for non-snake_case
       if name =~ ~r/[A-Z]/ do
         issues = [%{
@@ -511,7 +506,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           effort: :low
         } | issues]
       end
-      
+
       # Check for unclear abbreviations
       if has_unclear_abbreviation?(name) do
         issues = [%{
@@ -524,7 +519,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           effort: :low
         } | issues]
       end
-      
+
       issues
     end)
   end
@@ -537,7 +532,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp check_variable_naming(content) do
     # Find variable assignments
     variables = Regex.scan(~r/(\w+)\s*=/, content)
-    
+
     variables
     |> Enum.flat_map(fn [_, var_name] ->
       if String.length(var_name) == 1 && var_name != "_" do
@@ -564,10 +559,10 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp suggest_module_split(file, content) do
     functions = extract_functions(content)
-    
+
     # Group functions by potential responsibility
     grouped = group_functions_by_responsibility(functions)
-    
+
     %{
       suggested_modules: Enum.map(grouped, fn {group_name, funcs} ->
         %{
@@ -583,17 +578,24 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp group_functions_by_responsibility(functions) do
     # Simple grouping by name patterns
     functions
-    |> Enum.group_by(fn func ->
-      cond do
-        String.contains?(func.name, "create") || String.contains?(func.name, "new") -> "creation"
-        String.contains?(func.name, "update") || String.contains?(func.name, "change") -> "modification"
-        String.contains?(func.name, "delete") || String.contains?(func.name, "remove") -> "deletion"
-        String.contains?(func.name, "get") || String.contains?(func.name, "find") -> "queries"
-        String.contains?(func.name, "validate") || String.contains?(func.name, "check") -> "validation"
-        true -> "core"
-      end
-    end)
+    |> Enum.group_by(&categorize_function_responsibility/1)
     |> Enum.filter(fn {_, funcs} -> length(funcs) > 2 end)
+  end
+
+  defp categorize_function_responsibility(func) do
+    name = func.name
+
+    responsibility_patterns = [
+      {["create", "new"], "creation"},
+      {["update", "change"], "modification"},
+      {["delete", "remove"], "deletion"},
+      {["get", "find"], "queries"},
+      {["validate", "check"], "validation"}
+    ]
+
+    Enum.find_value(responsibility_patterns, "core", fn {patterns, category} ->
+      if Enum.any?(patterns, &String.contains?(name, &1)), do: category
+    end)
   end
 
   defp find_misplaced_functions(content) do
@@ -604,10 +606,10 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
   defp find_pattern_matching_opportunities(content) do
     opportunities = []
-    
+
     # Find if-else chains that could be pattern matching
     if_else_chains = Regex.scan(~r/if\s+.*?do.*?else.*?end/s, content)
-    
+
     opportunities = opportunities ++ Enum.map(if_else_chains, fn [chain] ->
       %{
         type: :use_pattern_matching,
@@ -619,7 +621,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
         example: generate_pattern_matching_example()
       }
     end)
-    
+
     opportunities
   end
 
@@ -631,7 +633,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     else
       handle_error()
     end
-    
+
     # Use:
     case result do
       :ok -> handle_success()
@@ -643,7 +645,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp find_pipeline_opportunities(content) do
     # Find nested function calls that could be pipelines
     nested_calls = Regex.scan(~r/(\w+\(.*\w+\(.*\).*\))/, content)
-    
+
     Enum.map(nested_calls, fn [call] ->
       %{
         type: :use_pipeline,
@@ -660,7 +662,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp find_with_opportunities(content) do
     # Find sequential error handling that could use 'with'
     case_sequences = Regex.scan(~r/case\s+.*?do.*?{:ok.*?case\s+.*?do/s, content)
-    
+
     Enum.map(case_sequences, fn [sequence] ->
       %{
         type: :use_with,
@@ -685,7 +687,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
         end
       error -> error
     end
-    
+
     # Use with:
     with {:ok, user} <- fetch_user(id),
          {:ok, _} <- authorize(user) do
@@ -703,11 +705,11 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp calculate_priority_score(suggestion) do
     impact_scores = %{high: 3, medium: 2, low: 1}
     effort_scores = %{low: 3, medium: 2, high: 1}
-    
+
     impact_score = Map.get(impact_scores, suggestion.impact, 1)
     effort_score = Map.get(effort_scores, suggestion.effort, 1)
     confidence_score = suggestion.confidence
-    
+
     # Weighted score: high impact + low effort + high confidence = high priority
     (impact_score * 0.4) + (effort_score * 0.3) + (confidence_score * 0.3)
   end

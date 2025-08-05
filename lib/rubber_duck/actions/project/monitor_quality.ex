@@ -27,7 +27,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
          file_metrics <- analyze_files(files, params.metrics_config),
          project_metrics <- aggregate_metrics(file_metrics),
          issues <- detect_quality_issues(file_metrics, params.metrics_config) do
-      
+
       {:ok, %{
         project_metrics: project_metrics,
         file_metrics: file_metrics,
@@ -40,7 +40,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
 
   defp get_project_files(project, params) do
     case Projects.list_code_files_by_project(project.id) do
-      {:ok, files} -> 
+      {:ok, files} ->
         filtered = files
           |> Enum.filter(&matches_patterns?(&1.path, params.include_patterns))
           |> Enum.reject(&matches_patterns?(&1.path, params.exclude_patterns))
@@ -68,7 +68,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
 
   defp analyze_file_content(file, _metrics_config) do
     lines = String.split(file.content, "\n")
-    
+
     %{
       total_lines: length(lines),
       code_lines: count_code_lines(lines),
@@ -111,8 +111,9 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp analyze_functions(content) do
     # Extract function definitions
     def_regex = ~r/def(?:p?)\s+(\w+)/
-    
-    functions = Regex.scan(def_regex, content)
+
+    functions = content
+      |> then(&Regex.scan(def_regex, &1))
       |> Enum.map(fn [_, name] -> name end)
       |> Enum.map(fn name ->
         %{
@@ -121,7 +122,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
           complexity: estimate_function_complexity(content, name)
         }
       end)
-    
+
     %{
       count: length(functions),
       functions: functions,
@@ -133,11 +134,11 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp estimate_function_length(content, function_name) do
     # Simple heuristic: count lines from function def to next def or end of module
     lines = String.split(content, "\n")
-    
+
     start_index = Enum.find_index(lines, fn line ->
       line =~ ~r/def(?:p?)\s+#{function_name}/
     end)
-    
+
     if start_index do
       end_index = find_function_end(lines, start_index)
       end_index - start_index + 1
@@ -149,11 +150,11 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp find_function_end(lines, start_index) do
     # Look for the matching 'end' or next 'def'
     indent_level = get_indent_level(Enum.at(lines, start_index))
-    
+
     Enum.find_index(lines, start_index + 1, length(lines) - 1, fn line ->
       current_indent = get_indent_level(line)
       trimmed = String.trim(line)
-      
+
       (current_indent <= indent_level && trimmed == "end") ||
       (line =~ ~r/^\s*def(?:p?)\s+/)
     end) || length(lines) - 1
@@ -168,12 +169,12 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp estimate_function_complexity(content, function_name) do
     # Count control flow statements within the function
     function_body = extract_function_body(content, function_name)
-    
+
     complexity = 1 # Base complexity
-    
+
     # Count control flow keywords
     control_flow = ["if", "unless", "case", "cond", "with", "for", "while"]
-    
+
     Enum.reduce(control_flow, complexity, fn keyword, acc ->
       matches = Regex.scan(~r/\b#{keyword}\b/, function_body)
       acc + length(matches)
@@ -183,11 +184,11 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp extract_function_body(content, function_name) do
     # Simple extraction - would be more sophisticated in production
     lines = String.split(content, "\n")
-    
+
     start_index = Enum.find_index(lines, fn line ->
       line =~ ~r/def(?:p?)\s+#{function_name}/
     end)
-    
+
     if start_index do
       end_index = find_function_end(lines, start_index)
       lines
@@ -220,7 +221,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp calculate_complexity(content) do
     # Cyclomatic complexity calculation
     base_complexity = 1
-    
+
     # Count decision points
     decision_patterns = [
       ~r/\bif\b/,
@@ -233,7 +234,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
       ~r/\|\|/,
       ~r/->/  # Function clauses
     ]
-    
+
     Enum.reduce(decision_patterns, base_complexity, fn pattern, acc ->
       matches = Regex.scan(pattern, content)
       acc + length(matches)
@@ -250,14 +251,14 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     # Count nesting based on indentation and keywords
     indent = get_indent_level(line)
     indent_nesting = div(indent, 2) # Assuming 2-space indentation
-    
+
     # Additional nesting for certain keywords
     keyword_nesting = cond do
       line =~ ~r/\bdo\b/ -> 1
       line =~ ~r/->/ -> 1
       true -> 0
     end
-    
+
     indent_nesting + keyword_nesting
   end
 
@@ -267,11 +268,11 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
       |> Enum.frequencies()
-    
+
     duplicated_lines = line_counts
       |> Enum.filter(fn {_, count} -> count > 1 end)
       |> Enum.map(fn {line, count} -> %{line: line, count: count} end)
-    
+
     %{
       duplicated_line_count: length(duplicated_lines),
       duplication_ratio: calculate_duplication_ratio(line_counts),
@@ -283,9 +284,9 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     total_lines = line_counts
       |> Enum.map(fn {_, count} -> count end)
       |> Enum.sum()
-    
+
     unique_lines = map_size(line_counts)
-    
+
     if total_lines > 0 do
       1.0 - (unique_lines / total_lines)
     else
@@ -295,7 +296,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
 
   defp analyze_line_lengths(lines) do
     lengths = Enum.map(lines, &String.length/1)
-    
+
     %{
       max_length: Enum.max(lengths, fn -> 0 end),
       average_length: if length(lengths) > 0 do
@@ -309,7 +310,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
 
   defp aggregate_metrics(file_metrics) do
     total_files = length(file_metrics)
-    
+
     if total_files == 0 do
       default_metrics()
     else
@@ -356,7 +357,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     values = file_metrics
       |> Enum.map(&get_in(&1, path))
       |> Enum.filter(& &1)
-    
+
     if length(values) > 0 do
       Enum.sum(values) / length(values)
     else
@@ -382,7 +383,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp detect_file_issues(file, config) do
     issues = []
     metrics = file.metrics
-    
+
     # Complexity issues
     issues = if metrics.complexity > config.max_complexity do
       [{:high_complexity, %{
@@ -395,7 +396,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     else
       issues
     end
-    
+
     # Nesting depth issues
     issues = if metrics.nesting_depth > config.max_nesting do
       [{:deep_nesting, %{
@@ -408,7 +409,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     else
       issues
     end
-    
+
     # Long lines
     issues = if metrics.line_lengths.max_length > config.max_line_length do
       [{:long_lines, %{
@@ -421,7 +422,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     else
       issues
     end
-    
+
     # Long functions
     issues = if metrics.functions.max_length > config.max_function_length do
       [{:long_functions, %{
@@ -434,7 +435,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     else
       issues
     end
-    
+
     # Duplication
     issues = if metrics.duplication.duplication_ratio > 0.1 do
       [{:code_duplication, %{
@@ -446,7 +447,7 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     else
       issues
     end
-    
+
     Enum.map(issues, fn {type, data} ->
       Map.merge(data, %{type: type})
     end)
@@ -460,24 +461,24 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
 
   defp calculate_quality_score(metrics, issues) do
     base_score = 100.0
-    
+
     # Deduct points based on issues
     issue_deductions = %{
       high: 10,
       medium: 5,
       low: 2
     }
-    
+
     total_deduction = issues
       |> Enum.map(& Map.get(issue_deductions, &1.severity, 0))
       |> Enum.sum()
-    
+
     # Additional deductions based on metrics
     complexity_deduction = if metrics.average_complexity > 15, do: 10, else: 0
     duplication_deduction = metrics.duplication_ratio * 20
-    
+
     score = base_score - total_deduction - complexity_deduction - duplication_deduction
-    
+
     max(0, min(100, score))
   end
 end

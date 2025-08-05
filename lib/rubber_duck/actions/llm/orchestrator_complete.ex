@@ -36,7 +36,7 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
       agent = context[:agent]
       request = params.request
       start_time = System.monotonic_time(:millisecond)
-      
+
       process_completion_with_cache(agent, request, start_time)
     rescue
       exception ->
@@ -46,7 +46,7 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
 
   defp process_completion_with_cache(agent, request, start_time) do
     cache_key = generate_cache_key(request)
-    
+
     case maybe_get_from_cache(agent, cache_key) do
       {:ok, cached_response} ->
         handle_cache_hit_response(request, cache_key, cached_response)
@@ -64,7 +64,7 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
     with {:ok, provider} <- select_optimal_provider(agent, request),
          _ = emit_provider_selection_signal(provider, request),
          {:ok, response} <- execute_completion(agent, provider, request) do
-      
+
       finalize_completion_success(provider, request, response, start_time)
     else
       {:error, reason} ->
@@ -82,14 +82,14 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
 
   defp finalize_completion_success(provider, request, response, start_time) do
     duration = System.monotonic_time(:millisecond) - start_time
-    
+
     emit_signal(@signal_request_completed, %{
       provider: provider.name,
       request_id: request[:id],
       duration: duration,
       tokens: response.usage.total_tokens
     })
-    
+
     {:ok, response}
   end
 

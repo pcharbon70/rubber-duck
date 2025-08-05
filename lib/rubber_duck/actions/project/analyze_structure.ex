@@ -22,7 +22,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
          structure <- analyze_file_structure(files, params.depth_limit),
          metrics <- calculate_structure_metrics(structure),
          optimizations <- suggest_structure_optimizations(structure, metrics) do
-      
+
       {:ok, %{
         structure: structure,
         metrics: metrics,
@@ -34,7 +34,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
 
   defp get_project_files(project, params) do
     case Projects.list_code_files_by_project(project.id) do
-      {:ok, files} -> 
+      {:ok, files} ->
         filtered = files
           |> Enum.filter(&matches_patterns?(&1.path, params.include_files))
           |> Enum.reject(&matches_patterns?(&1.path, params.exclude_patterns))
@@ -58,7 +58,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
 
   defp parse_file_structure(file) do
     path_parts = Path.split(file.path)
-    
+
     %{
       path: file.path,
       directory: Path.dirname(file.path),
@@ -203,7 +203,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
 
   defp calculate_structure_metrics(structure) do
     tree = structure.tree
-    
+
     %{
       total_files: Enum.sum(Enum.map(tree, & &1.file_count)),
       total_directories: length(tree),
@@ -234,12 +234,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
 
   defp calculate_complexity_score(structure) do
     patterns = structure.patterns
-    
+
     deep_nesting_score = length(patterns.deep_nesting) * 2
     large_dir_score = length(patterns.large_directories) * 3
     naming_score = length(patterns.naming_inconsistencies)
     module_score = length(patterns.module_organization.misplaced_modules) * 2
-    
+
     deep_nesting_score + large_dir_score + naming_score + module_score
   end
 

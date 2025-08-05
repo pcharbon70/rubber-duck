@@ -82,20 +82,20 @@ defmodule RubberDuck.LLM.ServiceTest do
     unless Process.whereis(ProviderRegistry) do
       {:ok, _} = ProviderRegistry.start_link()
     end
-    
+
     unless Process.whereis(HealthMonitor) do
       {:ok, _} = HealthMonitor.start_link()
     end
-    
+
     unless Process.whereis(Service) do
       {:ok, _} = Service.start_link()
     end
-    
+
     # Register mock provider
     provider_name = :mock_provider_#{System.unique_integer([:positive])}
     Service.register_provider(provider_name, MockProvider, %{api_key: "test"})
     Process.sleep(10)
-    
+
     {:ok, provider_name: provider_name}
   end
 
@@ -106,7 +106,7 @@ defmodule RubberDuck.LLM.ServiceTest do
         messages: [%{role: :user, content: "Hello"}],
         max_tokens: 100
       }
-      
+
       assert {:ok, response} = Service.complete(request, provider: provider_name)
       assert response.id == "test_completion"
       assert [choice | _] = response.choices
@@ -118,7 +118,7 @@ defmodule RubberDuck.LLM.ServiceTest do
         model: "test_model",
         messages: [%{role: :user, content: "Hello"}]
       }
-      
+
       assert {:error, :provider_not_found} = Service.complete(request, provider: :nonexistent)
     end
   end
@@ -130,7 +130,7 @@ defmodule RubberDuck.LLM.ServiceTest do
         messages: [%{role: :user, content: "Hello"}],
         stream: true
       }
-      
+
       assert {:ok, stream} = Service.stream(request, provider: provider_name)
       chunks = Enum.to_list(stream)
       assert chunks == ["chunk_0", "chunk_1", "chunk_2"]
@@ -143,7 +143,7 @@ defmodule RubberDuck.LLM.ServiceTest do
         model: "test_model",
         input: "Test text"
       }
-      
+
       assert {:ok, response} = Service.embed(request, provider: provider_name)
       assert [embedding | _] = response.data
       assert embedding.embedding == [0.1, 0.2, 0.3]
@@ -154,9 +154,9 @@ defmodule RubberDuck.LLM.ServiceTest do
     test "registers valid provider" do
       provider_name = :new_provider_#{System.unique_integer([:positive])}
       config = %{api_key: "test_key"}
-      
+
       assert :ok = Service.register_provider(provider_name, MockProvider, config)
-      
+
       # Verify provider is registered
       assert {:ok, _} = ProviderRegistry.get(provider_name)
     end
@@ -165,11 +165,11 @@ defmodule RubberDuck.LLM.ServiceTest do
       defmodule InvalidProvider do
         # Not implementing the behavior
       end
-      
+
       provider_name = :invalid_provider_#{System.unique_integer([:positive])}
       config = %{api_key: "test_key"}
-      
-      assert {:error, :invalid_provider_module} = 
+
+      assert {:error, :invalid_provider_module} =
         Service.register_provider(provider_name, InvalidProvider, config)
     end
   end
@@ -177,10 +177,10 @@ defmodule RubberDuck.LLM.ServiceTest do
   describe "provider_status/0" do
     test "returns status of all providers", %{provider_name: provider_name} do
       status = Service.provider_status()
-      
+
       assert is_list(status)
       provider_status = Enum.find(status, & &1.name == provider_name)
-      
+
       assert provider_status != nil
       assert provider_status.available == true
       assert is_number(provider_status.error_rate)
@@ -191,7 +191,7 @@ defmodule RubberDuck.LLM.ServiceTest do
   describe "metrics/1" do
     test "returns global metrics when no provider specified" do
       metrics = Service.metrics()
-      
+
       assert Map.has_key?(metrics, :total_requests)
       assert Map.has_key?(metrics, :uptime_seconds)
       assert Map.has_key?(metrics, :providers)
@@ -203,14 +203,14 @@ defmodule RubberDuck.LLM.ServiceTest do
         model: "test_model",
         messages: [%{role: :user, content: "Hello"}]
       }
-      
+
       Service.complete(request, provider: provider_name)
       Service.complete(request, provider: provider_name)
-      
+
       Process.sleep(20)
-      
+
       metrics = Service.metrics(provider_name)
-      
+
       assert metrics.total_count >= 0
       assert metrics.success_count >= 0
       assert metrics.error_count >= 0
