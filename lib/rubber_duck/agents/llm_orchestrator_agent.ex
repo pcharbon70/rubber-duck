@@ -13,6 +13,23 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     name: "llm_orchestrator",
     description: "Orchestrates LLM operations with autonomous provider selection",
     schema: [
+      # Base agent fields
+      goals: [type: {:list, :map}, default: []],
+      completed_goals: [type: {:list, :map}, default: []],
+      experience: [type: {:list, :map}, default: []],
+      learning_enabled: [type: :boolean, default: true],
+      performance_metrics: [type: :map, default: %{}],
+      learned_insights: [type: :map, default: %{}],
+      learning_interval: [type: :pos_integer, default: 100],
+      last_learning_at: [type: {:or, [:naive_datetime, :nil]}, default: nil],
+      persistence_enabled: [type: :boolean, default: false],
+      checkpoint_interval: [type: :pos_integer, default: 300_000],
+      experience_retention_days: [type: :pos_integer, default: 30],
+      max_memory_experiences: [type: :pos_integer, default: 1000],
+      agent_state_id: [type: {:or, [:string, :nil]}, default: nil],
+      last_checkpoint: [type: {:or, [:utc_datetime, :nil]}, default: nil],
+      
+      # LLM Orchestrator specific fields
       provider_performance: [type: :map, default: %{}],
       cost_budget: [type: :float, default: nil],
       quality_threshold: [type: :float, default: 0.8],
