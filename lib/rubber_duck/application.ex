@@ -28,12 +28,33 @@ defmodule RubberDuck.Application do
       RubberDuck.Telemetry,
       
       # Health check monitoring
-      RubberDuck.HealthCheck
+      RubberDuck.HealthCheck,
+      
+      # Phoenix PubSub for signal system
+      {Phoenix.PubSub, name: RubberDuck.PubSub},
+      
+      # Signal system for inter-agent communication
+      RubberDuck.Signal,
+      
+      # LLM Provider Registry (needed by agents)
+      RubberDuck.LLM.ProviderRegistry,
+      
+      # Agent Supervisor for dynamic agent management
+      {DynamicSupervisor, name: RubberDuck.AgentSupervisor, strategy: :one_for_one},
+      
+      # Sensor Supervisor for monitoring sensors
+      {DynamicSupervisor, name: RubberDuck.SensorSupervisor, strategy: :one_for_one},
+      
+      # LLM Health Sensor
+      {RubberDuck.Sensors.LLMHealthSensor, [pubsub: RubberDuck.PubSub]},
+      
+      # Core Agents
+      {RubberDuck.Agents.LLMOrchestratorAgent, id: "llm_orchestrator"},
+      {RubberDuck.Agents.LLMMonitoringAgent, id: "llm_monitoring"}
       
       # Future children:
       # - Phoenix endpoint (when added)
-      # - Job processing (Oban or similar)
-      # - Cache (when needed)
+      # - Additional agents as needed
     ]
 
     # Using rest_for_one: if a child process terminates, 
@@ -45,10 +66,17 @@ defmodule RubberDuck.Application do
     case Supervisor.start_link(children, opts) do
       {:ok, pid} ->
         Logger.info("RubberDuck application started successfully")
+        configure_jido_signal_system()
         {:ok, pid}
       {:error, reason} = error ->
         Logger.error("Failed to start RubberDuck application: #{inspect(reason)}")
         error
     end
+  end
+  
+  # Configure Jido signal system if needed
+  defp configure_jido_signal_system do
+    # Any global Jido configuration can go here
+    Logger.info("Jido signal system configured")
   end
 end
