@@ -64,15 +64,17 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
     issues = issues ++ detect_formatting_issues(content)
 
     # Normal depth checks
-    if depth in [:normal, :deep] do
-      issues = issues ++ detect_complexity_issues(content)
-      issues = issues ++ detect_naming_issues(content)
+    issues = if depth in [:normal, :deep] do
+      issues ++ detect_complexity_issues(content) ++ detect_naming_issues(content)
+    else
+      issues
     end
 
     # Deep analysis
-    if depth == :deep do
-      issues = issues ++ detect_security_issues(content)
-      issues = issues ++ detect_performance_issues(content)
+    issues = if depth == :deep do
+      issues ++ detect_security_issues(content) ++ detect_performance_issues(content)
+    else
+      issues
     end
 
     {:ok, issues}
@@ -184,14 +186,14 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     # Check for common syntax issues
     if String.contains?(content, "  end") do
-      issues = [%{
+      [%{
         type: :syntax,
         severity: :minor,
         message: "Inconsistent indentation before 'end'"
       } | issues]
+    else
+      issues
     end
-
-    issues
   end
 
   defp detect_formatting_issues(content) do
@@ -204,14 +206,14 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
       |> Enum.filter(fn {line, _} -> String.length(line) > 120 end)
 
     if length(long_lines) > 0 do
-      issues = [%{
+      [%{
         type: :formatting,
         severity: :minor,
         message: "#{length(long_lines)} lines exceed 120 characters"
       } | issues]
+    else
+      issues
     end
-
-    issues
   end
 
   defp detect_complexity_issues(content) do
@@ -219,14 +221,14 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
     complexity = calculate_cyclomatic_complexity(content)
 
     if complexity > 10 do
-      issues = [%{
+      [%{
         type: :complexity,
         severity: if(complexity > 20, do: :major, else: :moderate),
         message: "High cyclomatic complexity: #{complexity}"
       } | issues]
+    else
+      issues
     end
-
-    issues
   end
 
   defp detect_naming_issues(content) do
@@ -234,37 +236,39 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     # Check for non-snake_case function names
     if Regex.match?(~r/def\s+[A-Z]/, content) do
-      issues = [%{
+      [%{
         type: :naming,
         severity: :minor,
         message: "Function names should use snake_case"
       } | issues]
+    else
+      issues
     end
-
-    issues
   end
 
   defp detect_security_issues(content) do
     issues = []
 
     # Check for potential security issues
-    if String.contains?(content, "eval(") do
-      issues = [%{
+    issues = if String.contains?(content, "eval(") do
+      [%{
         type: :security,
         severity: :critical,
         message: "Potential code injection vulnerability: eval() usage"
       } | issues]
+    else
+      issues
     end
 
     if Regex.match?(~r/password\s*=\s*"[^"]+"/i, content) do
-      issues = [%{
+      [%{
         type: :security,
         severity: :critical,
         message: "Hardcoded password detected"
       } | issues]
+    else
+      issues
     end
-
-    issues
   end
 
   defp detect_performance_issues(content) do
@@ -272,14 +276,14 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     # Check for performance anti-patterns
     if String.contains?(content, "Enum.map") && String.contains?(content, "|> Enum.filter") do
-      issues = [%{
+      [%{
         type: :performance,
         severity: :minor,
         message: "Consider using Stream for chained operations"
       } | issues]
+    else
+      issues
     end
-
-    issues
   end
 
   defp calculate_risk_level(changes) do
@@ -299,7 +303,7 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
     |> Enum.map(fn [_, name] -> name end)
   end
 
-  defp detect_breaking_changes(content) do
+  defp detect_breaking_changes(_content) do
     # Check for removed public functions or changed signatures
     []
   end

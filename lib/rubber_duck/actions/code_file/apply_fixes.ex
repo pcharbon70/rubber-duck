@@ -246,7 +246,7 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
     |> Enum.join("\n")
   end
 
-  defp wrap_line(line, max_length) do
+  defp wrap_line(line, _max_length) do
     # Simple line wrapping at logical break points
     if String.contains?(line, ",") do
       parts = String.split(line, ",", parts: 2)

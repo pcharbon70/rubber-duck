@@ -306,37 +306,45 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     insights = []
 
     # Large project insight
-    if aggregated.total_files > 100 do
-      insights = [%{
+    insights = if aggregated.total_files > 100 do
+      [%{
         type: :scale,
         message: "Large project with #{aggregated.total_files} files",
         recommendation: "Consider modularization"
       } | insights]
+    else
+      insights
     end
 
     # Language diversity insight
-    if map_size(aggregated.languages) > 3 do
-      insights = [%{
+    insights = if map_size(aggregated.languages) > 3 do
+      [%{
         type: :diversity,
         message: "Multi-language project detected",
         recommendation: "Ensure consistent tooling across languages"
       } | insights]
+    else
+      insights
     end
 
     {:ok, insights}
   end
 
-  defp generate_project_recommendations(aggregated, insights) do
+  defp generate_project_recommendations(aggregated, _insights) do
     recommendations = []
 
     # Size-based recommendations
-    if aggregated.average_file_size > 500 do
-      recommendations = ["Consider splitting large files" | recommendations]
+    recommendations = if aggregated.average_file_size > 500 do
+      ["Consider splitting large files" | recommendations]
+    else
+      recommendations
     end
 
     # Status-based recommendations
-    if aggregated.status_distribution[:modified] > aggregated.total_files * 0.5 do
-      recommendations = ["Many modified files - consider committing changes" | recommendations]
+    recommendations = if aggregated.status_distribution[:modified] > aggregated.total_files * 0.5 do
+      ["Many modified files - consider committing changes" | recommendations]
+    else
+      recommendations
     end
 
     {:ok, recommendations}

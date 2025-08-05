@@ -52,19 +52,25 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
     suggestions = []
 
     # Generate moduledoc if missing
-    if not analysis.has_moduledoc and params.auto_generate do
-      suggestions = [generate_moduledoc_suggestion(params) | suggestions]
+    suggestions = if not analysis.has_moduledoc and params.auto_generate do
+      [generate_moduledoc_suggestion(params) | suggestions]
+    else
+      suggestions
     end
 
     # Generate function docs for undocumented functions
-    if length(analysis.missing_docs) > 0 and params.auto_generate do
+    suggestions = if length(analysis.missing_docs) > 0 and params.auto_generate do
       func_suggestions = Enum.map(analysis.missing_docs, &generate_function_doc_suggestion(&1, params))
-      suggestions = suggestions ++ func_suggestions
+      suggestions ++ func_suggestions
+    else
+      suggestions
     end
 
     # Add type specs if missing
-    if not analysis.has_type_specs do
-      suggestions = [suggest_type_specs(params) | suggestions]
+    suggestions = if not analysis.has_type_specs do
+      [suggest_type_specs(params) | suggestions]
+    else
+      suggestions
     end
 
     {:ok, suggestions}

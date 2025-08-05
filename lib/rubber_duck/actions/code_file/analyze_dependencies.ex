@@ -180,7 +180,7 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
     not String.starts_with?(module, "Elixir.")
   end
 
-  defp check_dependency_health(module) do
+  defp check_dependency_health(_module) do
     # Would check for deprecated modules, security issues, etc.
     %{
       status: :healthy,
@@ -238,13 +238,17 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
   defp generate_impact_suggestions(dependencies, dependents) do
     suggestions = []
 
-    if length(dependents) > 5 do
-      suggestions = ["Consider creating an interface module to reduce coupling" | suggestions]
+    suggestions = if length(dependents) > 5 do
+      ["Consider creating an interface module to reduce coupling" | suggestions]
+    else
+      suggestions
     end
 
     external_deps = Enum.filter(dependencies, & &1.is_external)
-    if length(external_deps) > 3 do
-      suggestions = ["Review external dependencies for potential consolidation" | suggestions]
+    suggestions = if length(external_deps) > 3 do
+      ["Review external dependencies for potential consolidation" | suggestions]
+    else
+      suggestions
     end
 
     suggestions

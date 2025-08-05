@@ -49,7 +49,7 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     {:ok, analysis}
   end
 
-  defp detect_optimization_opportunities(analysis, params) do
+  defp detect_optimization_opportunities(_analysis, params) do
     optimizations = []
 
     # Check for common optimization opportunities
@@ -400,21 +400,23 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
   defp count_nested_loops(content) do
     # Simplified nested loop detection
     lines = String.split(content, "\n")
-    max_nesting = 0
-    current_nesting = 0
 
-    Enum.each(lines, fn line ->
-      if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
-        current_nesting = current_nesting + 1
-        max_nesting = max(max_nesting, current_nesting)
+    Enum.reduce(lines, {0, 0}, fn line, {current, max_n} ->
+      new_current = if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
+        current + 1
+      else
+        current
       end
 
-      if String.contains?(line, "end") do
-        current_nesting = max(0, current_nesting - 1)
+      new_current = if String.contains?(line, "end") do
+        max(0, new_current - 1)
+      else
+        new_current
       end
+
+      {new_current, max(max_n, new_current)}
     end)
-
-    max_nesting
+    |> elem(1)
   end
 
   defp count_recursive_patterns(content) do
