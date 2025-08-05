@@ -200,7 +200,7 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
     issue_counts = Enum.map(history, fn h -> length(h[:issues] || []) end)
 
     %{
-      direction: if List.last(issue_counts) > List.first(issue_counts), do: :worsening, else: :improving,
+      direction: (if List.last(issue_counts) > List.first(issue_counts), do: :worsening, else: :improving),
       average_issues: Enum.sum(issue_counts) / length(issue_counts),
       recent_issues: List.last(issue_counts) || 0
     }
