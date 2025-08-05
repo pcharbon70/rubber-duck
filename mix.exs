@@ -47,6 +47,8 @@ defmodule RubberDuck.MixProject do
       {:tokenizers, "~> 0.5"},
       # Vector support for semantic search
       {:pgvector, "~> 0.3"},
+      # RAG (Retrieval-Augmented Generation) library
+      {:rag, "~> 0.1"},
       # Template engine dependencies
       {:solid, "~> 1.0.1"},
       {:earmark, "~> 1.4.48"},
