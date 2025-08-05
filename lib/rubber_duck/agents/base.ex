@@ -14,24 +14,6 @@ defmodule RubberDuck.Agents.Base do
       use Jido.Agent, unquote(opts)
       require Logger
 
-      # Common schema fields for all agents
-      @base_schema [
-        goals: [type: {:list, :map}, default: []],
-        completed_goals: [type: {:list, :map}, default: []],
-        experience: [type: {:list, :map}, default: []],
-        learning_enabled: [type: :boolean, default: true],
-        performance_metrics: [type: :map, default: %{}],
-        learned_insights: [type: :map, default: %{}],
-        learning_interval: [type: :pos_integer, default: 100],
-        last_learning_at: [type: {:or, [:naive_datetime, :nil]}, default: nil],
-        # Persistence settings
-        persistence_enabled: [type: :boolean, default: true],
-        checkpoint_interval: [type: :pos_integer, default: 300_000], # 5 minutes
-        experience_retention_days: [type: :pos_integer, default: 30],
-        max_memory_experiences: [type: :pos_integer, default: 1000],
-        agent_state_id: [type: {:or, [:string, :nil]}, default: nil],
-        last_checkpoint: [type: {:or, [:utc_datetime, :nil]}, default: nil]
-      ]
 
       # Import the learning and persistence actions
       alias RubberDuck.Actions.Agent.{Learn, SaveAgentState, LoadAgentState}
@@ -53,11 +35,12 @@ defmodule RubberDuck.Agents.Base do
         # Extract the id for process registration
         id = Keyword.get(opts, :id)
 
-        # Create the agent instance
-        agent = __MODULE__.new(id)
+        # Create the agent instance with merged options
+        agent_opts = if id, do: [id: id], else: []
+        agent = __MODULE__.new(agent_opts)
 
         # Load persisted state if enabled
-        agent = if agent.state.persistence_enabled do
+        agent = if Map.get(agent.state, :persistence_enabled, false) do
           case load_persisted_state(agent) do
             {:ok, loaded_agent} ->
               Logger.info("Loaded persisted state for agent #{agent.name}")
@@ -85,11 +68,6 @@ defmodule RubberDuck.Agents.Base do
         Jido.Agent.Server.start_link(server_opts)
       end
 
-      # Merge base schema with agent-specific schema
-      def schema do
-        agent_schema = Module.get_attribute(__MODULE__, :schema, [])
-        Keyword.merge(@base_schema, agent_schema)
-      end
 
       # Common callbacks that can be overridden
 
@@ -263,7 +241,7 @@ defmodule RubberDuck.Agents.Base do
 
         case map_size(insights) do
           0 -> {:ok, agent}
-          _ -> apply_learned_insights(agent, insights)
+          _ -> store_learned_insights(agent, insights)
         end
       end
 
@@ -288,7 +266,7 @@ defmodule RubberDuck.Agents.Base do
         end
       end
 
-      defp apply_learned_insights(agent, insights) do
+      defp store_learned_insights(agent, insights) do
         Logger.info("Agent #{agent.name} learned new insights: #{inspect(Map.keys(insights))}")
 
         updated_state =
