@@ -22,16 +22,20 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
          {:ok, insights} <- generate_insights(patterns, trends, correlations, params),
          {:ok, learning} <- apply_learning(insights, params.user_feedback) do
 
-      {:ok, %{
-        insights: insights,
-        patterns: patterns,
-        trends: trends,
-        correlations: correlations,
-        learning_outcomes: learning,
-        confidence_scores: calculate_confidence_scores(insights, learning),
-        actionable_items: extract_actionable_items(insights)
-      }}
+      {:ok, build_result(insights, patterns, trends, correlations, learning)}
     end
+  end
+
+  defp build_result(insights, patterns, trends, correlations, learning) do
+    %{
+      insights: insights,
+      patterns: patterns,
+      trends: trends,
+      correlations: correlations,
+      learning_outcomes: learning,
+      confidence_scores: calculate_confidence_scores(insights, learning),
+      actionable_items: extract_actionable_items(insights)
+    }
   end
 
   defp analyze_code_patterns(params) do
@@ -475,17 +479,21 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
   defp calculate_confidence_scores(insights, learning) do
     Enum.map(insights, fn insight ->
       base_confidence = insight.confidence
-      learning_adjustment = if learning.validated_insights do
-        if insight[:validated] == true, do: 0.1, else: -0.1
-      else
-        0
-      end
+      learning_adjustment = calculate_learning_adjustment(learning, insight)
 
       %{
         insight_id: insight.title,
         confidence: min(1.0, max(0.0, base_confidence + learning_adjustment))
       }
     end)
+  end
+
+  defp calculate_learning_adjustment(learning, insight) do
+    if learning.validated_insights do
+      if insight[:validated] == true, do: 0.1, else: -0.1
+    else
+      0
+    end
   end
 
   defp extract_actionable_items(insights) do

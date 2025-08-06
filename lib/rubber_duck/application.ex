@@ -46,7 +46,8 @@ defmodule RubberDuck.Application do
       {DynamicSupervisor, name: RubberDuck.SensorSupervisor, strategy: :one_for_one},
 
       # LLM Health Sensor
-      {RubberDuck.Sensors.LLMHealthSensor, [pubsub: RubberDuck.PubSub]},
+      # Note: The sensor requires a target PID but we'll use DynamicSupervisor for now
+      # {RubberDuck.Sensors.LLMHealthSensor, target: RubberDuck.SensorSupervisor},
 
       # Core Agents
       {RubberDuck.Agents.LLMOrchestratorAgent, id: "llm_orchestrator"},

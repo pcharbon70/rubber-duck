@@ -359,13 +359,7 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     case :ets.lookup(@cache_stats_table, :puts) do
       [{:puts, put_count}] ->
         if rem(put_count, 100) == 0 do
-          Task.start(fn ->
-            try do
-              cleanup_expired_entries()
-            rescue
-              e -> Logger.warning("Cleanup task failed: #{inspect(e)}")
-            end
-          end)
+          start_cleanup_task()
         end
       _ ->
         :ok
@@ -374,6 +368,16 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     exception ->
       Logger.warning("Failed to check cleanup: #{inspect(exception)}")
       :ok
+  end
+
+  defp start_cleanup_task do
+    Task.start(fn ->
+      try do
+        cleanup_expired_entries()
+      rescue
+        e -> Logger.warning("Cleanup task failed: #{inspect(e)}")
+      end
+    end)
   end
 
   defp cleanup_expired_entries do

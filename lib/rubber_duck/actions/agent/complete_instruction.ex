@@ -27,29 +27,7 @@ defmodule RubberDuck.Actions.Agent.CompleteInstruction do
 
         # Check if the agent module implements handle_instruction
         if function_exported?(agent_module, :handle_instruction, 2) do
-          # Call the agent's handle_instruction function
-          case apply(agent_module, :handle_instruction, [instruction, %{state: agent_state}]) do
-            {:ok, result, updated_agent} ->
-              {:ok, %{
-                result: result,
-                state: updated_agent.state,
-                instruction_type: elem(instruction, 0)
-              }}
-
-            {:ok, updated_agent} ->
-              {:ok, %{
-                state: updated_agent.state,
-                instruction_type: elem(instruction, 0)
-              }}
-
-            {:error, reason} = error ->
-              Logger.warning("Instruction failed: #{inspect(reason)}, instruction: #{inspect(instruction)}")
-              error
-
-            other ->
-              Logger.error("Unexpected response from handle_instruction: #{inspect(other)}")
-              {:error, %{reason: :unexpected_response, response: other}}
-          end
+          execute_agent_instruction(agent_module, instruction, agent_state)
         else
           {:error, %{
             reason: :handle_instruction_not_implemented,
@@ -69,6 +47,31 @@ defmodule RubberDuck.Actions.Agent.CompleteInstruction do
         message: Exception.message(exception),
         instruction: params.instruction
       }}
+  end
+
+  defp execute_agent_instruction(agent_module, instruction, agent_state) do
+    case apply(agent_module, :handle_instruction, [instruction, %{state: agent_state}]) do
+      {:ok, result, updated_agent} ->
+        {:ok, %{
+          result: result,
+          state: updated_agent.state,
+          instruction_type: elem(instruction, 0)
+        }}
+
+      {:ok, updated_agent} ->
+        {:ok, %{
+          state: updated_agent.state,
+          instruction_type: elem(instruction, 0)
+        }}
+
+      {:error, reason} = error ->
+        Logger.warning("Instruction failed: #{inspect(reason)}, instruction: #{inspect(instruction)}")
+        error
+
+      other ->
+        Logger.error("Unexpected response from handle_instruction: #{inspect(other)}")
+        {:error, %{reason: :unexpected_response, response: other}}
+    end
   end
 
   defp validate_instruction_params(params) do

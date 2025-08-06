@@ -167,12 +167,12 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
         metrics_summary: summarize_metrics(metrics)
       }
     rescue
-      error -> 
+      error ->
         response_time = System.monotonic_time(:millisecond) - start_time
         result = {:error, {:exception, error}}
         metrics = Map.get(state.metrics, provider.name, default_metrics())
         health_status = determine_health_status(result, response_time, metrics, state)
-        
+
         %{
           status: health_status,
           response_time_ms: response_time,
@@ -180,12 +180,12 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
           metrics_summary: summarize_metrics(metrics)
         }
     catch
-      :exit, reason -> 
+      :exit, reason ->
         response_time = System.monotonic_time(:millisecond) - start_time
         result = {:error, {:exit, reason}}
         metrics = Map.get(state.metrics, provider.name, default_metrics())
         health_status = determine_health_status(result, response_time, metrics, state)
-        
+
         %{
           status: health_status,
           response_time_ms: response_time,

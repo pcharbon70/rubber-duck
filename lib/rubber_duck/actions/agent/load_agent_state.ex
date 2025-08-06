@@ -33,24 +33,14 @@ defmodule RubberDuck.Actions.Agent.LoadAgentState do
             }
 
             # Load experiences if requested
-            restored_state = if params.load_experiences do
-              experiences = load_experiences(agent_state, params.experience_limit)
-              Map.put(restored_state, :experiences, experiences)
-            else
-              restored_state
-            end
+            restored_state = maybe_load_experiences(restored_state, agent_state, params)
 
             # Load insights
             insights = load_insights(agent_state, params.load_all_insights)
             restored_state = Map.put(restored_state, :insights, insights)
 
             # Load provider performance
-            provider_performance = load_provider_performance(agent_state)
-            restored_state = if map_size(provider_performance) > 0 do
-              Map.put(restored_state, :provider_performance, provider_performance)
-            else
-              restored_state
-            end
+            restored_state = add_provider_performance(restored_state, agent_state)
 
             {:ok, restored_state}
 
@@ -70,6 +60,24 @@ defmodule RubberDuck.Actions.Agent.LoadAgentState do
         message: Exception.message(exception),
         agent_name: params.agent_name
       }}
+  end
+
+  defp maybe_load_experiences(restored_state, agent_state, params) do
+    if params.load_experiences do
+      experiences = load_experiences(agent_state, params.experience_limit)
+      Map.put(restored_state, :experiences, experiences)
+    else
+      restored_state
+    end
+  end
+
+  defp add_provider_performance(restored_state, agent_state) do
+    provider_performance = load_provider_performance(agent_state)
+    if map_size(provider_performance) > 0 do
+      Map.put(restored_state, :provider_performance, provider_performance)
+    else
+      restored_state
+    end
   end
 
   defp validate_load_params(params) do
