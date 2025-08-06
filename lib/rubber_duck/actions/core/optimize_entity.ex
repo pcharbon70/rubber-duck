@@ -23,7 +23,11 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       max_iterations: [type: :integer, default: 3],
       target_improvement: [type: :float, default: 0.1],
       rollback_threshold: [type: :float, default: -0.05],
-      optimization_strategy: [type: :atom, default: :balanced, values: [:aggressive, :balanced, :conservative]]
+      optimization_strategy: [
+        type: :atom,
+        default: :balanced,
+        values: [:aggressive, :balanced, :conservative]
+      ]
     ]
 
   # Aliases reserved for future integration with actual contexts
@@ -36,22 +40,27 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
          {:ok, optimization_plan} <- create_optimization_plan(entity, params, context),
          {:ok, _safety_validation} <- perform_safety_checks(entity, optimization_plan, params),
          {:ok, optimized_entity} <- apply_optimizations(entity, optimization_plan, params),
-         {:ok, performance_results} <- measure_optimization_results(optimized_entity, baseline_metrics),
-         {:ok, validation_results} <- validate_optimization(optimized_entity, performance_results, params),
-         {:ok, final_entity} <- finalize_optimization(optimized_entity, validation_results, entity),
-         {:ok, learning_data} <- track_optimization_outcome(optimization_plan, performance_results, context) do
-
-      {:ok, %{
-        entity: final_entity,
-        baseline_metrics: baseline_metrics,
-        performance_results: performance_results,
-        optimization_plan: optimization_plan,
-        improvement_percentage: calculate_improvement_percentage(baseline_metrics, performance_results),
-        validation_results: validation_results,
-        learning_data: learning_data,
-        rollback_performed: validation_results[:rollback_performed] || false,
-        metadata: build_metadata(params, context)
-      }}
+         {:ok, performance_results} <-
+           measure_optimization_results(optimized_entity, baseline_metrics),
+         {:ok, validation_results} <-
+           validate_optimization(optimized_entity, performance_results, params),
+         {:ok, final_entity} <-
+           finalize_optimization(optimized_entity, validation_results, entity),
+         {:ok, learning_data} <-
+           track_optimization_outcome(optimization_plan, performance_results, context) do
+      {:ok,
+       %{
+         entity: final_entity,
+         baseline_metrics: baseline_metrics,
+         performance_results: performance_results,
+         optimization_plan: optimization_plan,
+         improvement_percentage:
+           calculate_improvement_percentage(baseline_metrics, performance_results),
+         validation_results: validation_results,
+         learning_data: learning_data,
+         rollback_performed: validation_results[:rollback_performed] || false,
+         metadata: build_metadata(params, context)
+       }}
     end
   end
 
@@ -66,54 +75,58 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp fetch_user_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :user,
-      response_time: 250,
-      memory_usage: 100,
-      session_duration: 300,
-      error_rate: 0.02,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :user,
+       response_time: 250,
+       memory_usage: 100,
+       session_duration: 300,
+       error_rate: 0.02,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_project_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :project,
-      build_time: 5_000,
-      test_coverage: 0.65,
-      code_quality_score: 0.75,
-      complexity: 85,
-      dependencies_count: 42,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :project,
+       build_time: 5_000,
+       test_coverage: 0.65,
+       code_quality_score: 0.75,
+       complexity: 85,
+       dependencies_count: 42,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_code_file_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :code_file,
-      path: "/lib/example.ex",
-      content: generate_sample_code(),
-      execution_time: 150,
-      memory_footprint: 50,
-      cyclomatic_complexity: 12,
-      lines_of_code: 250,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :code_file,
+       path: "/lib/example.ex",
+       content: generate_sample_code(),
+       execution_time: 150,
+       memory_footprint: 50,
+       cyclomatic_complexity: 12,
+       lines_of_code: 250,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_analysis_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :analysis,
-      processing_time: 2_000,
-      accuracy: 0.85,
-      confidence: 0.90,
-      data_points_processed: 10_000,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :analysis,
+       processing_time: 2_000,
+       accuracy: 0.85,
+       confidence: 0.90,
+       data_points_processed: 10_000,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp generate_sample_code do
@@ -137,9 +150,10 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       entity_type: entity.type
     }
 
-    goal_metrics = Enum.reduce(optimization_goals, %{}, fn goal, acc ->
-      Map.merge(acc, capture_goal_metrics(entity, goal))
-    end)
+    goal_metrics =
+      Enum.reduce(optimization_goals, %{}, fn goal, acc ->
+        Map.merge(acc, capture_goal_metrics(entity, goal))
+      end)
 
     {:ok, Map.merge(metrics, goal_metrics)}
   end
@@ -211,7 +225,7 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     loc = entity[:lines_of_code] || 100
 
     # Simple maintainability index
-    base_score = 1.0 - (complexity / 100.0)
+    base_score = 1.0 - complexity / 100.0
     size_penalty = if loc > 500, do: 0.1, else: 0
 
     max(0, base_score - size_penalty)
@@ -222,7 +236,7 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     cpu = estimate_cpu_usage(entity)
 
     # Efficiency score (lower resource usage = higher efficiency)
-    1.0 - ((memory + cpu) / 400.0)
+    1.0 - (memory + cpu) / 400.0
   end
 
   # Optimization planning
@@ -236,13 +250,15 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       target_improvement: params.target_improvement
     }
 
-    adapted_plan = if params.learning_enabled do
-      adapt_plan_from_learning(base_plan, context, entity)
-    else
-      base_plan
-    end
+    adapted_plan =
+      if params.learning_enabled do
+        adapt_plan_from_learning(base_plan, context, entity)
+      else
+        base_plan
+      end
 
-    detailed_plan = adapted_plan
+    detailed_plan =
+      adapted_plan
       |> add_optimization_steps(entity, params)
       |> prioritize_optimizations(params.optimization_goals)
       |> estimate_optimization_impact()
@@ -251,16 +267,20 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp select_optimization_techniques(entity_type, params) do
-    base_techniques = case entity_type do
-      :user ->
-        [:session_optimization, :cache_optimization, :query_optimization]
-      :project ->
-        [:dependency_optimization, :build_optimization, :structure_refactoring]
-      :code_file ->
-        [:algorithm_optimization, :memory_optimization, :parallel_processing]
-      :analysis ->
-        [:algorithm_selection, :data_preprocessing, :result_caching]
-    end
+    base_techniques =
+      case entity_type do
+        :user ->
+          [:session_optimization, :cache_optimization, :query_optimization]
+
+        :project ->
+          [:dependency_optimization, :build_optimization, :structure_refactoring]
+
+        :code_file ->
+          [:algorithm_optimization, :memory_optimization, :parallel_processing]
+
+        :analysis ->
+          [:algorithm_selection, :data_preprocessing, :result_caching]
+      end
 
     filter_techniques_by_strategy(base_techniques, params.optimization_strategy)
   end
@@ -268,9 +288,11 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   defp filter_techniques_by_strategy(techniques, :aggressive) do
     techniques
   end
+
   defp filter_techniques_by_strategy(techniques, :conservative) do
     Enum.take(techniques, 1)
   end
+
   defp filter_techniques_by_strategy(techniques, :balanced) do
     Enum.take(techniques, 2)
   end
@@ -281,13 +303,15 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     successful_techniques = learning_data[:successful_techniques] || []
     failed_techniques = learning_data[:failed_techniques] || []
 
-    adapted_techniques = plan.techniques
-      |> Enum.reject(& &1 in failed_techniques)
+    adapted_techniques =
+      plan.techniques
+      |> Enum.reject(&(&1 in failed_techniques))
       |> maybe_add_successful_techniques(successful_techniques)
 
-    %{plan |
-      techniques: adapted_techniques,
-      confidence: calculate_plan_confidence(adapted_techniques, learning_data)
+    %{
+      plan
+      | techniques: adapted_techniques,
+        confidence: calculate_plan_confidence(adapted_techniques, learning_data)
     }
   end
 
@@ -300,14 +324,16 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     if learning_data[:historical_success_rate] do
       learning_data.historical_success_rate
     else
-      0.7  # Default confidence
+      # Default confidence
+      0.7
     end
   end
 
   defp add_optimization_steps(plan, entity, params) do
-    steps = Enum.flat_map(plan.techniques, fn technique ->
-      generate_optimization_steps(technique, entity, params)
-    end)
+    steps =
+      Enum.flat_map(plan.techniques, fn technique ->
+        generate_optimization_steps(technique, entity, params)
+      end)
 
     Map.put(plan, :steps, steps)
   end
@@ -351,19 +377,22 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp prioritize_optimizations(plan, goals) do
-    prioritized_steps = plan.steps
+    prioritized_steps =
+      plan.steps
       |> Enum.sort_by(fn step ->
-        impact_score = case step.impact do
-          :high -> 3
-          :medium -> 2
-          :low -> 1
-        end
+        impact_score =
+          case step.impact do
+            :high -> 3
+            :medium -> 2
+            :low -> 1
+          end
 
-        risk_score = case step.risk do
-          :high -> 3
-          :medium -> 2
-          :low -> 1
-        end
+        risk_score =
+          case step.risk do
+            :high -> 3
+            :medium -> 2
+            :low -> 1
+          end
 
         goal_alignment = if step_aligns_with_goals?(step, goals), do: 2, else: 1
 
@@ -386,7 +415,8 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp estimate_optimization_impact(plan) do
-    total_impact = plan.steps
+    total_impact =
+      plan.steps
       |> Enum.map(fn step ->
         case step.impact do
           :high -> 0.15
@@ -412,17 +442,19 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       all_passed = checks |> Map.values() |> Enum.all?(& &1.passed)
 
       if all_passed do
-        {:ok, %{
-          passed: true,
-          checks: checks,
-          confidence: calculate_safety_confidence(checks)
-        }}
+        {:ok,
+         %{
+           passed: true,
+           checks: checks,
+           confidence: calculate_safety_confidence(checks)
+         }}
       else
-        {:error, %{
-          reason: :safety_check_failed,
-          failed_checks: extract_failed_checks(checks),
-          recommendation: "Address safety concerns before proceeding"
-        }}
+        {:error,
+         %{
+           reason: :safety_check_failed,
+           failed_checks: extract_failed_checks(checks),
+           recommendation: "Address safety concerns before proceeding"
+         }}
       end
     else
       {:ok, %{passed: true, skipped: true}}
@@ -435,12 +467,12 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     %{
       passed: deps_count < 100,
       message: "Dependency count: #{deps_count}",
-      risk_level: (if deps_count > 50, do: :medium, else: :low)
+      risk_level: if(deps_count > 50, do: :medium, else: :low)
     }
   end
 
   defp check_compatibility(_entity, plan) do
-    high_risk_steps = Enum.filter(plan.steps, & &1.risk == :high)
+    high_risk_steps = Enum.filter(plan.steps, &(&1.risk == :high))
 
     %{
       passed: length(high_risk_steps) <= 2,
@@ -450,7 +482,8 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp check_resource_requirements(plan) do
-    estimated_resources = length(plan.steps) * 50  # MB per optimization
+    # MB per optimization
+    estimated_resources = length(plan.steps) * 50
 
     %{
       passed: estimated_resources < 500,
@@ -460,28 +493,31 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp assess_optimization_risks(plan) do
-    risk_scores = Enum.map(plan.steps, fn step ->
-      case step.risk do
-        :high -> 3
-        :medium -> 2
-        :low -> 1
-      end
-    end)
+    risk_scores =
+      Enum.map(plan.steps, fn step ->
+        case step.risk do
+          :high -> 3
+          :medium -> 2
+          :low -> 1
+        end
+      end)
 
-    avg_risk = if length(risk_scores) > 0 do
-      Enum.sum(risk_scores) / length(risk_scores)
-    else
-      1
-    end
+    avg_risk =
+      if length(risk_scores) > 0 do
+        Enum.sum(risk_scores) / length(risk_scores)
+      else
+        1
+      end
 
     %{
       passed: avg_risk < 2.5,
       average_risk: avg_risk,
-      risk_level: (cond do
-        avg_risk > 2.5 -> :high
-        avg_risk > 1.5 -> :medium
-        true -> :low
-      end)
+      risk_level:
+        cond do
+          avg_risk > 2.5 -> :high
+          avg_risk > 1.5 -> :medium
+          true -> :low
+        end
     }
   end
 
@@ -490,11 +526,12 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
 
     base_confidence = 0.8
 
-    risk_adjustment = case risk_level do
-      :low -> 0.1
-      :medium -> 0
-      :high -> -0.2
-    end
+    risk_adjustment =
+      case risk_level do
+        :low -> 0.1
+        :medium -> 0
+        :high -> -0.2
+      end
 
     max(0.3, min(1.0, base_confidence + risk_adjustment))
   end
@@ -507,11 +544,13 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
 
   # Apply optimizations
   defp apply_optimizations(entity, plan, params) do
-    optimized = Enum.reduce(plan.steps, entity, fn step, acc ->
-      apply_optimization_step(acc, step, params)
-    end)
+    optimized =
+      Enum.reduce(plan.steps, entity, fn step, acc ->
+        apply_optimization_step(acc, step, params)
+      end)
 
-    optimized = optimized
+    optimized =
+      optimized
       |> Map.put(:optimization_applied, true)
       |> Map.put(:optimization_timestamp, DateTime.utc_now())
       |> Map.put(:optimization_version, generate_version())
@@ -523,14 +562,19 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     case step.type do
       :algorithm_replacement ->
         optimize_algorithm(entity, params.optimization_strategy)
+
       :cache_warming ->
         add_cache_warming(entity)
+
       :loop_optimization ->
         optimize_loops(entity)
+
       :session_pooling ->
         enable_session_pooling(entity)
+
       :dependency_pruning ->
         prune_dependencies(entity)
+
       _ ->
         apply_generic_optimization(entity, step)
     end
@@ -538,45 +582,46 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
 
   defp optimize_algorithm(entity, :aggressive) do
     entity
-    |> Map.update(:execution_time, 100, & &1 * 0.6)
-    |> Map.update(:cyclomatic_complexity, 10, & max(5, &1 - 3))
+    |> Map.update(:execution_time, 100, &(&1 * 0.6))
+    |> Map.update(:cyclomatic_complexity, 10, &max(5, &1 - 3))
   end
+
   defp optimize_algorithm(entity, _) do
     entity
-    |> Map.update(:execution_time, 100, & &1 * 0.8)
-    |> Map.update(:cyclomatic_complexity, 10, & max(5, &1 - 1))
+    |> Map.update(:execution_time, 100, &(&1 * 0.8))
+    |> Map.update(:cyclomatic_complexity, 10, &max(5, &1 - 1))
   end
 
   defp add_cache_warming(entity) do
     entity
-    |> Map.update(:response_time, 100, & &1 * 0.7)
+    |> Map.update(:response_time, 100, &(&1 * 0.7))
     |> Map.put(:cache_enabled, true)
   end
 
   defp optimize_loops(entity) do
     entity
-    |> Map.update(:execution_time, 100, & &1 * 0.85)
-    |> Map.update(:cpu_usage, 50, & &1 * 0.9)
+    |> Map.update(:execution_time, 100, &(&1 * 0.85))
+    |> Map.update(:cpu_usage, 50, &(&1 * 0.9))
   end
 
   defp enable_session_pooling(entity) do
     entity
-    |> Map.update(:response_time, 100, & &1 * 0.8)
-    |> Map.update(:memory_usage, 100, & &1 * 1.1)
+    |> Map.update(:response_time, 100, &(&1 * 0.8))
+    |> Map.update(:memory_usage, 100, &(&1 * 1.1))
     |> Map.put(:session_pooling, true)
   end
 
   defp prune_dependencies(entity) do
     entity
-    |> Map.update(:dependencies_count, 0, & max(0, &1 - 5))
-    |> Map.update(:build_time, 1_000, & &1 * 0.9)
+    |> Map.update(:dependencies_count, 0, &max(0, &1 - 5))
+    |> Map.update(:build_time, 1_000, &(&1 * 0.9))
   end
 
   defp apply_generic_optimization(entity, _step) do
     # Generic 5% improvement
     entity
-    |> Map.update(:execution_time, 100, & &1 * 0.95)
-    |> Map.update(:response_time, 100, & &1 * 0.95)
+    |> Map.update(:execution_time, 100, &(&1 * 0.95))
+    |> Map.update(:response_time, 100, &(&1 * 0.95))
   end
 
   defp generate_version do
@@ -589,12 +634,13 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
 
     improvements = calculate_improvements(baseline_metrics, current_metrics)
 
-    {:ok, %{
-      current_metrics: current_metrics,
-      improvements: improvements,
-      overall_improvement: calculate_overall_improvement(improvements),
-      goal_achievements: assess_goal_achievements(improvements, baseline_metrics)
-    }}
+    {:ok,
+     %{
+       current_metrics: current_metrics,
+       improvements: improvements,
+       overall_improvement: calculate_overall_improvement(improvements),
+       goal_achievements: assess_goal_achievements(improvements, baseline_metrics)
+     }}
   end
 
   defp capture_current_metrics(entity, metric_keys) do
@@ -641,12 +687,14 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     end)
   end
 
-  defp calculate_metric_improvement(baseline, current) when is_map(baseline) and is_map(current) do
+  defp calculate_metric_improvement(baseline, current)
+       when is_map(baseline) and is_map(current) do
     Enum.reduce(current, %{}, fn {metric, current_val}, acc ->
       baseline_val = baseline[metric]
       calculate_single_metric_improvement(acc, metric, baseline_val, current_val)
     end)
   end
+
   defp calculate_metric_improvement(_baseline, _current), do: %{}
 
   defp calculate_single_metric_improvement(acc, _metric, baseline_val, current_val)
@@ -658,11 +706,12 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     improvement_pct = (current_val - baseline_val) / abs(baseline_val)
 
     # Invert for metrics where lower is better
-    improvement_pct = if metric in [:response_time, :execution_time, :complexity, :error_rate, :memory_usage] do
-      -improvement_pct
-    else
-      improvement_pct
-    end
+    improvement_pct =
+      if metric in [:response_time, :execution_time, :complexity, :error_rate, :memory_usage] do
+        -improvement_pct
+      else
+        improvement_pct
+      end
 
     Map.put(acc, metric, %{
       baseline: baseline_val,
@@ -672,7 +721,8 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp calculate_overall_improvement(improvements) do
-    all_improvements = improvements
+    all_improvements =
+      improvements
       |> Map.values()
       |> Enum.flat_map(fn imp when is_map(imp) ->
         imp
@@ -695,19 +745,22 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       achievement = calculate_goal_achievement(metrics)
       status = determine_achievement_status(achievement)
 
-      {goal, %{
-        achievement_rate: achievement,
-        status: status
-      }}
+      {goal,
+       %{
+         achievement_rate: achievement,
+         status: status
+       }}
     end)
     |> Map.new()
   end
 
   defp calculate_goal_achievement(metrics) when is_map(metrics) do
     metric_values = Map.values(metrics)
-    positive_improvements = metric_values
+
+    positive_improvements =
+      metric_values
       |> Enum.filter(&is_map/1)
-      |> Enum.count(& &1[:improvement_percentage] && &1.improvement_percentage > 0)
+      |> Enum.count(&(&1[:improvement_percentage] && &1.improvement_percentage > 0))
 
     total_metrics = Enum.count(metric_values, &is_map/1)
 
@@ -717,6 +770,7 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       0
     end
   end
+
   defp calculate_goal_achievement(_metrics), do: 0
 
   defp determine_achievement_status(achievement) do
@@ -739,12 +793,13 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
 
     should_rollback = should_rollback?(validations, performance_results, params)
 
-    {:ok, %{
-      valid: not should_rollback,
-      validations: validations,
-      rollback_required: should_rollback,
-      validation_score: calculate_validation_score(validations)
-    }}
+    {:ok,
+     %{
+       valid: not should_rollback,
+       validations: validations,
+       rollback_required: should_rollback,
+       validation_score: calculate_validation_score(validations)
+     }}
   end
 
   defp validate_performance(results, params) do
@@ -759,7 +814,8 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp check_for_regressions(results) do
-    regressions = results.improvements
+    regressions =
+      results.improvements
       |> Enum.flat_map(fn {_goal, metrics} ->
         extract_regressions_from_metrics(metrics)
       end)
@@ -778,10 +834,11 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     end)
     |> Enum.map(fn {metric, data} -> {metric, data.improvement_percentage} end)
   end
+
   defp extract_regressions_from_metrics(_metrics), do: []
 
   defp is_regression?(data) do
-    is_map(data) and data[:improvement_percentage] && data.improvement_percentage < -10
+    (is_map(data) and data[:improvement_percentage]) && data.improvement_percentage < -10
   end
 
   defp check_stability(entity) do
@@ -798,15 +855,17 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   defp validate_goal_achievement(results, params) do
     achievements = results.goal_achievements
 
-    achieved_goals = achievements
+    achieved_goals =
+      achievements
       |> Enum.filter(fn {_goal, data} -> data.status in [:met, :exceeded] end)
       |> Enum.map(fn {goal, _} -> goal end)
 
-    achievement_rate = if map_size(achievements) > 0 do
-      length(achieved_goals) / map_size(achievements)
-    else
-      0
-    end
+    achievement_rate =
+      if map_size(achievements) > 0 do
+        length(achieved_goals) / map_size(achievements)
+      else
+        0
+      end
 
     %{
       passed: achievement_rate >= 0.5,
@@ -843,14 +902,16 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     if validation_results.rollback_required do
       Logger.warning("Optimization rollback required due to validation failures")
 
-      {:ok, original_entity
-        |> Map.put(:optimization_attempted, true)
-        |> Map.put(:optimization_rolled_back, true)
-        |> Map.put(:rollback_reason, extract_rollback_reason(validation_results))}
+      {:ok,
+       original_entity
+       |> Map.put(:optimization_attempted, true)
+       |> Map.put(:optimization_rolled_back, true)
+       |> Map.put(:rollback_reason, extract_rollback_reason(validation_results))}
     else
-      {:ok, optimized_entity
-        |> Map.put(:optimization_successful, true)
-        |> Map.put(:optimization_score, validation_results.validation_score)}
+      {:ok,
+       optimized_entity
+       |> Map.put(:optimization_successful, true)
+       |> Map.put(:optimization_score, validation_results.validation_score)}
     end
   end
 
@@ -860,12 +921,16 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     cond do
       not validations.stability_check.passed ->
         "Entity stability compromised"
+
       not validations.performance_validation.passed ->
         "Performance degraded below threshold"
+
       not validations.regression_check.passed ->
         "Too many performance regressions"
+
       not validations.goal_validation.passed ->
         "Failed to achieve optimization goals"
+
       true ->
         "Unknown validation failure"
     end

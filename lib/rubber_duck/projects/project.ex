@@ -102,5 +102,4 @@ defmodule RubberDuck.Projects.Project do
       authorize_if relates_to_actor_via(:owner)
     end
   end
-
 end

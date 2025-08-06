@@ -68,7 +68,8 @@ defmodule RubberDuck.LLM.Service do
   def init(_opts) do
     # Load and register providers from configuration
     Task.start_link(fn ->
-      Process.sleep(100)  # Allow dependencies to start
+      # Allow dependencies to start
+      Process.sleep(100)
       load_configured_providers()
     end)
 
@@ -87,12 +88,13 @@ defmodule RubberDuck.LLM.Service do
 
     result =
       with {:ok, provider} <- get_available_provider(provider_name),
-           {:ok, response} <- execute_with_fallback(
-             fn -> provider.module.complete(request, provider.config) end,
-             :complete,
-             request,
-             opts
-           ) do
+           {:ok, response} <-
+             execute_with_fallback(
+               fn -> provider.module.complete(request, provider.config) end,
+               :complete,
+               request,
+               opts
+             ) do
         {:ok, response}
       else
         error -> handle_provider_error(error, provider_name)
@@ -109,12 +111,13 @@ defmodule RubberDuck.LLM.Service do
     result =
       with {:ok, provider} <- get_available_provider(provider_name),
            true <- implements_streaming?(provider.module),
-           {:ok, stream} <- execute_with_fallback(
-             fn -> provider.module.stream(request, provider.config) end,
-             :stream,
-             request,
-             opts
-           ) do
+           {:ok, stream} <-
+             execute_with_fallback(
+               fn -> provider.module.stream(request, provider.config) end,
+               :stream,
+               request,
+               opts
+             ) do
         {:ok, stream}
       else
         false -> {:error, :streaming_not_supported}
@@ -132,12 +135,13 @@ defmodule RubberDuck.LLM.Service do
     result =
       with {:ok, provider} <- get_available_provider(provider_name),
            true <- implements_embeddings?(provider.module),
-           {:ok, response} <- execute_with_fallback(
-             fn -> provider.module.embed(request, provider.config) end,
-             :embed,
-             request,
-             opts
-           ) do
+           {:ok, response} <-
+             execute_with_fallback(
+               fn -> provider.module.embed(request, provider.config) end,
+               :embed,
+               request,
+               opts
+             ) do
         {:ok, response}
       else
         false -> {:error, :embeddings_not_supported}
@@ -153,7 +157,6 @@ defmodule RubberDuck.LLM.Service do
     with :ok <- validate_provider_module(module),
          :ok <- module.validate_config(config),
          :ok <- ProviderRegistry.register(name, module, config) do
-
       Logger.info("Successfully registered provider: #{name}")
       {:reply, :ok, state}
     else
@@ -252,7 +255,8 @@ defmodule RubberDuck.LLM.Service do
           {:error, :provider_unavailable}
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -295,7 +299,7 @@ defmodule RubberDuck.LLM.Service do
 
     available_providers =
       ProviderRegistry.list_available()
-      |> Enum.reject(& &1.name == failed_provider)
+      |> Enum.reject(&(&1.name == failed_provider))
 
     case available_providers do
       [] ->
@@ -323,6 +327,7 @@ defmodule RubberDuck.LLM.Service do
   end
 
   defp handle_provider_error({:error, _} = error, _provider_name), do: error
+
   defp handle_provider_error(error, provider_name) do
     Logger.error("Provider #{provider_name} error: #{inspect(error)}")
     {:error, :provider_error}

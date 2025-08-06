@@ -25,7 +25,13 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
       preferred_skills: [type: {:list, :atom}, default: []]
     ]
 
-  alias RubberDuck.Skills.{UserManagementSkill, ProjectManagementSkill, CodeAnalysisSkill, LearningSkill}
+  alias RubberDuck.Skills.{
+    UserManagementSkill,
+    ProjectManagementSkill,
+    CodeAnalysisSkill,
+    LearningSkill
+  }
+
   require Logger
 
   @impl true
@@ -34,24 +40,25 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
          {:ok, enriched_entity} <- enrich_with_history(entity, params.historical_data),
          {:ok, analysis_plan} <- create_adaptive_analysis_plan(enriched_entity, params, context),
          {:ok, analysis_results} <- execute_analysis(enriched_entity, analysis_plan, context),
-         {:ok, insights} <- generate_goal_driven_insights(analysis_results, params.analysis_goals),
+         {:ok, insights} <-
+           generate_goal_driven_insights(analysis_results, params.analysis_goals),
          {:ok, patterns} <- detect_patterns(analysis_results, params.historical_data),
          {:ok, predictions} <- generate_predictions(patterns, analysis_results),
          {:ok, recommendations} <- generate_recommendations(insights, patterns, predictions),
          {:ok, learning_data} <- track_analysis_outcome(analysis_results, insights, context) do
-
-      {:ok, %{
-        entity: entity,
-        analysis_results: analysis_results,
-        insights: insights,
-        patterns: patterns,
-        predictions: predictions,
-        recommendations: recommendations,
-        learning_data: learning_data,
-        analysis_plan: analysis_plan,
-        confidence_score: calculate_analysis_confidence(analysis_results, learning_data),
-        metadata: build_metadata(params, context)
-      }}
+      {:ok,
+       %{
+         entity: entity,
+         analysis_results: analysis_results,
+         insights: insights,
+         patterns: patterns,
+         predictions: predictions,
+         recommendations: recommendations,
+         learning_data: learning_data,
+         analysis_plan: analysis_plan,
+         confidence_score: calculate_analysis_confidence(analysis_results, learning_data),
+         metadata: build_metadata(params, context)
+       }}
     end
   end
 
@@ -67,57 +74,62 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp fetch_user_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :user,
-      email: "user@example.com",
-      username: "testuser",
-      sessions: [],
-      activity_level: :moderate,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :user,
+       email: "user@example.com",
+       username: "testuser",
+       sessions: [],
+       activity_level: :moderate,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_project_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :project,
-      name: "Test Project",
-      description: "A test project",
-      status: :active,
-      quality_score: 0.75,
-      complexity: 50,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :project,
+       name: "Test Project",
+       description: "A test project",
+       status: :active,
+       quality_score: 0.75,
+       complexity: 50,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_code_file_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :code_file,
-      path: "/lib/example.ex",
-      content: "defmodule Example do\nend",
-      language: :elixir,
-      lines_of_code: 100,
-      complexity: 10,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :code_file,
+       path: "/lib/example.ex",
+       content: "defmodule Example do\nend",
+       language: :elixir,
+       lines_of_code: 100,
+       complexity: 10,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_analysis_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :analysis,
-      analysis_type: :quality,
-      target: "project_123",
-      status: :completed,
-      results: %{score: 0.8},
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :analysis,
+       analysis_type: :quality,
+       target: "project_123",
+       status: :completed,
+       results: %{score: 0.8},
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp enrich_with_history(entity, historical_data) do
-    enriched = entity
+    enriched =
+      entity
       |> Map.put(:history_count, length(historical_data))
       |> Map.put(:has_history, length(historical_data) > 0)
       |> Map.put(:historical_trends, calculate_historical_trends(historical_data))
@@ -129,6 +141,7 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   defp calculate_historical_trends(historical_data) when length(historical_data) < 2 do
     %{insufficient_data: true}
   end
+
   defp calculate_historical_trends(historical_data) do
     %{
       quality_trend: extract_trend(historical_data, :quality),
@@ -138,7 +151,8 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp extract_trend(data, field) do
-    values = data
+    values =
+      data
       |> Enum.map(fn d -> d[field] end)
       |> Enum.filter(& &1)
 
@@ -160,8 +174,10 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp calculate_change_frequency(historical_data) when length(historical_data) < 2, do: 0
+
   defp calculate_change_frequency(historical_data) do
-    changes = historical_data
+    changes =
+      historical_data
       |> Enum.chunk_every(2, 1, :discard)
       |> Enum.count(fn [prev, curr] -> significantly_changed?(prev, curr) end)
 
@@ -171,26 +187,27 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   defp significantly_changed?(prev, curr) do
     # Check if significant fields have changed
     prev[:quality] != curr[:quality] or
-    prev[:status] != curr[:status] or
-    abs((prev[:complexity] || 0) - (curr[:complexity] || 0)) > 10
+      prev[:status] != curr[:status] or
+      abs((prev[:complexity] || 0) - (curr[:complexity] || 0)) > 10
   end
 
   # Adaptive analysis planning
   defp create_adaptive_analysis_plan(entity, params, _context) do
     base_plan = create_base_analysis_plan(entity.type, params.analysis_depth)
 
-    adapted_plan = if params.adaptive_analysis do
-      adapt_plan_from_learning(base_plan, params.learning_context, entity)
-    else
-      base_plan
-    end
+    adapted_plan =
+      if params.adaptive_analysis do
+        adapt_plan_from_learning(base_plan, params.learning_context, entity)
+      else
+        base_plan
+      end
 
     final_plan = %{
-      adapted_plan |
-      skills: select_analysis_skills(entity.type, params),
-      focus_areas: determine_focus_areas(entity, params.analysis_goals),
-      metrics_to_collect: determine_metrics(entity.type, params.analysis_depth),
-      analysis_techniques: select_techniques(entity.type, params.analysis_depth)
+      adapted_plan
+      | skills: select_analysis_skills(entity.type, params),
+        focus_areas: determine_focus_areas(entity, params.analysis_goals),
+        metrics_to_collect: determine_metrics(entity.type, params.analysis_depth),
+        analysis_techniques: select_techniques(entity.type, params.analysis_depth)
     }
 
     {:ok, final_plan}
@@ -260,11 +277,12 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     additional = []
 
     # Add checks based on recent failures
-    additional = if learning_context[:recent_failures] do
-      [:deep_integrity_check | additional]
-    else
-      additional
-    end
+    additional =
+      if learning_context[:recent_failures] do
+        [:deep_integrity_check | additional]
+      else
+        additional
+      end
 
     # Add trend analysis if entity has history
     if entity[:has_history] do
@@ -288,12 +306,13 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp get_optional_checks(entity_type, depth) do
-    base_checks = case entity_type do
-      :user -> [:preferences, :behavior_patterns]
-      :project -> [:performance, :security]
-      :code_file -> [:test_coverage, :documentation]
-      :analysis -> [:confidence, :alternatives]
-    end
+    base_checks =
+      case entity_type do
+        :user -> [:preferences, :behavior_patterns]
+        :project -> [:performance, :security]
+        :code_file -> [:test_coverage, :documentation]
+        :analysis -> [:confidence, :alternatives]
+      end
 
     case depth do
       :shallow -> []
@@ -316,12 +335,13 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp determine_focus_areas(entity, analysis_goals) do
-    base_areas = case entity.type do
-      :user -> [:engagement, :satisfaction]
-      :project -> [:quality, :maintainability]
-      :code_file -> [:correctness, :performance]
-      :analysis -> [:accuracy, :insights]
-    end
+    base_areas =
+      case entity.type do
+        :user -> [:engagement, :satisfaction]
+        :project -> [:quality, :maintainability]
+        :code_file -> [:correctness, :performance]
+        :analysis -> [:accuracy, :insights]
+      end
 
     # Combine with specific goals
     goal_areas = Enum.map(analysis_goals, &goal_to_focus_area/1)
@@ -336,12 +356,13 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   defp goal_to_focus_area(_), do: :general
 
   defp determine_metrics(entity_type, depth) do
-    base_metrics = case entity_type do
-      :user -> [:session_count, :activity_frequency, :engagement_score]
-      :project -> [:loc, :complexity_score, :test_coverage]
-      :code_file -> [:cyclomatic_complexity, :coupling, :cohesion]
-      :analysis -> [:execution_time, :accuracy_score, :confidence_level]
-    end
+    base_metrics =
+      case entity_type do
+        :user -> [:session_count, :activity_frequency, :engagement_score]
+        :project -> [:loc, :complexity_score, :test_coverage]
+        :code_file -> [:cyclomatic_complexity, :coupling, :cohesion]
+        :analysis -> [:execution_time, :accuracy_score, :confidence_level]
+      end
 
     case depth do
       :shallow -> Enum.take(base_metrics, 1)
@@ -351,12 +372,13 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp select_techniques(entity_type, depth) do
-    techniques = case entity_type do
-      :user -> [:behavioral_analysis, :pattern_matching, :anomaly_detection]
-      :project -> [:dependency_analysis, :complexity_analysis, :quality_assessment]
-      :code_file -> [:static_analysis, :pattern_detection, :smell_detection]
-      :analysis -> [:result_validation, :trend_analysis, :correlation_analysis]
-    end
+    techniques =
+      case entity_type do
+        :user -> [:behavioral_analysis, :pattern_matching, :anomaly_detection]
+        :project -> [:dependency_analysis, :complexity_analysis, :quality_assessment]
+        :code_file -> [:static_analysis, :pattern_detection, :smell_detection]
+        :analysis -> [:result_validation, :trend_analysis, :correlation_analysis]
+      end
 
     case depth do
       :shallow -> [List.first(techniques)]
@@ -368,42 +390,47 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   # Analysis execution
   defp execute_analysis(entity, plan, context) do
     # Execute required checks
-    required_results = plan.required_checks
+    required_results =
+      plan.required_checks
       |> Enum.map(fn check ->
         {check, execute_check(check, entity, context)}
       end)
       |> Map.new()
 
     # Execute optional checks
-    optional_results = (plan.optional_checks || [])
+    optional_results =
+      (plan.optional_checks || [])
       |> Enum.map(fn check ->
         {check, execute_check(check, entity, context)}
       end)
       |> Map.new()
 
     # Execute analysis techniques
-    technique_results = plan.analysis_techniques
+    technique_results =
+      plan.analysis_techniques
       |> Enum.map(fn technique ->
         {technique, apply_technique(technique, entity, context)}
       end)
       |> Map.new()
 
     # Collect metrics
-    metrics = plan.metrics_to_collect
+    metrics =
+      plan.metrics_to_collect
       |> Enum.map(fn metric ->
         {metric, collect_metric(metric, entity)}
       end)
       |> Map.new()
 
-    {:ok, %{
-      required_checks: required_results,
-      optional_checks: optional_results,
-      techniques_applied: technique_results,
-      metrics: metrics,
-      entity_score: calculate_entity_score(required_results, metrics),
-      analysis_quality: assess_analysis_quality(required_results, optional_results),
-      completeness: calculate_completeness(required_results, optional_results)
-    }}
+    {:ok,
+     %{
+       required_checks: required_results,
+       optional_checks: optional_results,
+       techniques_applied: technique_results,
+       metrics: metrics,
+       entity_score: calculate_entity_score(required_results, metrics),
+       analysis_quality: assess_analysis_quality(required_results, optional_results),
+       completeness: calculate_completeness(required_results, optional_results)
+     }}
   end
 
   defp execute_check(check, entity, _context) do
@@ -423,12 +450,16 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     case technique do
       :behavioral_analysis ->
         %{patterns: ["regular_usage", "power_user"], anomalies: []}
+
       :dependency_analysis ->
         %{direct: 5, transitive: 12, circular: 0}
+
       :static_analysis ->
         %{issues: [], warnings: ["unused_variable"], suggestions: ["use_pattern_matching"]}
+
       :result_validation ->
         %{valid: true, confidence: 0.95}
+
       _ ->
         %{result: "Technique applied", status: :success}
     end
@@ -470,27 +501,30 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp calculate_entity_score(checks, metrics) do
-    check_score = checks
+    check_score =
+      checks
       |> Map.values()
       |> Enum.count(& &1[:passed])
       |> Kernel./(max(map_size(checks), 1))
 
-    metric_score = if map_size(metrics) > 0 do
-      normalized_metrics = metrics
-        |> Map.values()
-        |> Enum.filter(&is_number/1)
-        |> Enum.map(&normalize_metric/1)
+    metric_score =
+      if map_size(metrics) > 0 do
+        normalized_metrics =
+          metrics
+          |> Map.values()
+          |> Enum.filter(&is_number/1)
+          |> Enum.map(&normalize_metric/1)
 
-      if length(normalized_metrics) > 0 do
-        Enum.sum(normalized_metrics) / length(normalized_metrics)
+        if length(normalized_metrics) > 0 do
+          Enum.sum(normalized_metrics) / length(normalized_metrics)
+        else
+          0.5
+        end
       else
         0.5
       end
-    else
-      0.5
-    end
 
-    (check_score * 0.6 + metric_score * 0.4)
+    check_score * 0.6 + metric_score * 0.4
   end
 
   defp normalize_metric(value) when value < 0, do: 0.0
@@ -501,9 +535,10 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     total_checks = map_size(required_results) + map_size(optional_results)
 
     if total_checks > 0 do
-      detailed_checks = Enum.count(required_results ++ optional_results, fn {_, result} ->
-        Map.has_key?(result, :details) or Map.has_key?(result, :issues)
-      end)
+      detailed_checks =
+        Enum.count(required_results ++ optional_results, fn {_, result} ->
+          Map.has_key?(result, :details) or Map.has_key?(result, :issues)
+        end)
 
       %{
         detail_level: detailed_checks / total_checks,
@@ -524,9 +559,10 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
 
   defp calculate_reliability_score(results) do
     if map_size(results) > 0 do
-      confident_results = Enum.count(results, fn {_, r} ->
-        r[:confidence] && r.confidence > 0.8
-      end)
+      confident_results =
+        Enum.count(results, fn {_, r} ->
+          r[:confidence] && r.confidence > 0.8
+        end)
 
       confident_results / map_size(results)
     else
@@ -536,14 +572,17 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
 
   defp calculate_completeness(required_results, optional_results) do
     required_complete = Enum.all?(required_results, fn {_, r} -> r[:passed] != nil end)
-    optional_ratio = if map_size(optional_results) > 0 do
-      Enum.count(optional_results, fn {_, r} -> r[:passed] != nil end) / map_size(optional_results)
-    else
-      1.0
-    end
+
+    optional_ratio =
+      if map_size(optional_results) > 0 do
+        Enum.count(optional_results, fn {_, r} -> r[:passed] != nil end) /
+          map_size(optional_results)
+      else
+        1.0
+      end
 
     if required_complete do
-      0.7 + (optional_ratio * 0.3)
+      0.7 + optional_ratio * 0.3
     else
       optional_ratio * 0.5
     end
@@ -556,42 +595,51 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
 
     all_insights = base_insights ++ goal_insights
 
-    {:ok, %{
-      insights: prioritize_insights(all_insights),
-      insight_count: length(all_insights),
-      high_priority_count: Enum.count(all_insights, & &1.priority == :high)
-    }}
+    {:ok,
+     %{
+       insights: prioritize_insights(all_insights),
+       insight_count: length(all_insights),
+       high_priority_count: Enum.count(all_insights, &(&1.priority == :high))
+     }}
   end
 
   defp generate_base_insights(results) do
     insights = []
 
     # Check for failed checks
-    failed_checks = results.required_checks
+    failed_checks =
+      results.required_checks
       |> Enum.filter(fn {_, r} -> r[:passed] == false end)
       |> Enum.map(fn {check, _} -> check end)
 
-    insights = if length(failed_checks) > 0 do
-      [%{
-        type: :critical,
-        priority: :high,
-        title: "Failed critical checks",
-        description: "The following checks failed: #{Enum.join(failed_checks, ", ")}",
-        recommendation: "Address these issues immediately"
-      } | insights]
-    else
-      insights
-    end
+    insights =
+      if length(failed_checks) > 0 do
+        [
+          %{
+            type: :critical,
+            priority: :high,
+            title: "Failed critical checks",
+            description: "The following checks failed: #{Enum.join(failed_checks, ", ")}",
+            recommendation: "Address these issues immediately"
+          }
+          | insights
+        ]
+      else
+        insights
+      end
 
     # Check for low scores
     if results.entity_score < 0.5 do
-      [%{
-        type: :warning,
-        priority: :medium,
-        title: "Low entity score",
-        description: "Entity score is #{Float.round(results.entity_score, 2)}",
-        recommendation: "Review entity configuration and quality"
-      } | insights]
+      [
+        %{
+          type: :warning,
+          priority: :medium,
+          title: "Low entity score",
+          description: "Entity score is #{Float.round(results.entity_score, 2)}",
+          recommendation: "Review entity configuration and quality"
+        }
+        | insights
+      ]
     else
       insights
     end
@@ -602,10 +650,13 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
       case goal do
         :quality ->
           analyze_quality_insights(results)
+
         :performance ->
           analyze_performance_insights(results)
+
         :security ->
           analyze_security_insights(results)
+
         _ ->
           []
       end
@@ -615,19 +666,22 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   defp analyze_quality_insights(results) do
     quality_metrics = [:complexity_score, :test_coverage, :code_quality]
 
-    quality_issues = Enum.filter(quality_metrics, fn metric ->
-      value = get_in(results, [:metrics, metric])
-      value && value < 0.6
-    end)
+    quality_issues =
+      Enum.filter(quality_metrics, fn metric ->
+        value = get_in(results, [:metrics, metric])
+        value && value < 0.6
+      end)
 
     if length(quality_issues) > 0 do
-      [%{
-        type: :quality,
-        priority: :medium,
-        title: "Quality concerns detected",
-        description: "Low scores in: #{Enum.join(quality_issues, ", ")}",
-        recommendation: "Focus on improving code quality metrics"
-      }]
+      [
+        %{
+          type: :quality,
+          priority: :medium,
+          title: "Quality concerns detected",
+          description: "Low scores in: #{Enum.join(quality_issues, ", ")}",
+          recommendation: "Focus on improving code quality metrics"
+        }
+      ]
     else
       []
     end
@@ -636,13 +690,15 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   defp analyze_performance_insights(results) do
     if execution_time = get_in(results, [:metrics, :execution_time]) do
       if execution_time > 1_000 do
-        [%{
-          type: :performance,
-          priority: :high,
-          title: "High execution time",
-          description: "Execution took #{execution_time}ms",
-          recommendation: "Optimize performance bottlenecks"
-        }]
+        [
+          %{
+            type: :performance,
+            priority: :high,
+            title: "High execution time",
+            description: "Execution took #{execution_time}ms",
+            recommendation: "Optimize performance bottlenecks"
+          }
+        ]
       else
         []
       end
@@ -652,16 +708,19 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp analyze_security_insights(results) do
-    security_issues = get_in(results, [:techniques_applied, :security_scan, :vulnerabilities]) || []
+    security_issues =
+      get_in(results, [:techniques_applied, :security_scan, :vulnerabilities]) || []
 
     if length(security_issues) > 0 do
-      [%{
-        type: :security,
-        priority: :critical,
-        title: "Security vulnerabilities found",
-        description: "#{length(security_issues)} security issues detected",
-        recommendation: "Address security vulnerabilities immediately"
-      }]
+      [
+        %{
+          type: :security,
+          priority: :critical,
+          title: "Security vulnerabilities found",
+          description: "#{length(security_issues)} security issues detected",
+          recommendation: "Address security vulnerabilities immediately"
+        }
+      ]
     else
       []
     end
@@ -669,12 +728,13 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
 
   defp prioritize_insights(insights) do
     Enum.sort_by(insights, fn insight ->
-      priority_value = case insight.priority do
-        :critical -> 0
-        :high -> 1
-        :medium -> 2
-        :low -> 3
-      end
+      priority_value =
+        case insight.priority do
+          :critical -> 0
+          :high -> 1
+          :medium -> 2
+          :low -> 3
+        end
 
       {priority_value, insight.type}
     end)
@@ -698,7 +758,8 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     else
       current_issues = extract_issues(current_results)
 
-      historical_issues = historical_data
+      historical_issues =
+        historical_data
         |> Enum.take(-5)
         |> Enum.flat_map(&extract_historical_issues/1)
         |> Enum.frequencies()
@@ -716,7 +777,8 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp extract_issues(results) do
-    failed_checks = results.required_checks
+    failed_checks =
+      results.required_checks
       |> Enum.filter(fn {_, r} -> r[:passed] == false end)
       |> Enum.map(fn {check, _} -> check end)
 
@@ -734,23 +796,25 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
       []
     else
       current_score = current_results.entity_score
-      historical_scores = Enum.map(historical_data, & &1[:score] || 0.5)
+      historical_scores = Enum.map(historical_data, &(&1[:score] || 0.5))
 
       avg_historical = Enum.sum(historical_scores) / max(length(historical_scores), 1)
 
       areas = []
 
-      areas = if current_score < avg_historical * 0.9 do
-        ["Overall quality declining" | areas]
-      else
-        areas
-      end
+      areas =
+        if current_score < avg_historical * 0.9 do
+          ["Overall quality declining" | areas]
+        else
+          areas
+        end
 
-      areas = if get_in(current_results, [:metrics, :complexity_score]) > 50 do
-        ["High complexity needs attention" | areas]
-      else
-        areas
-      end
+      areas =
+        if get_in(current_results, [:metrics, :complexity_score]) > 50 do
+          ["High complexity needs attention" | areas]
+        else
+          areas
+        end
 
       areas
     end
@@ -760,11 +824,11 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     if length(historical_data) < 5 do
       %{status: :insufficient_data}
     else
-      scores = Enum.map(historical_data, & &1[:score] || 0.5)
+      scores = Enum.map(historical_data, &(&1[:score] || 0.5))
       variance = calculate_variance(scores)
 
       %{
-        stability: (if variance < 0.1, do: :stable, else: :volatile),
+        stability: if(variance < 0.1, do: :stable, else: :volatile),
         variance: variance,
         trend: calculate_trend(scores)
       }
@@ -772,10 +836,12 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp calculate_variance([]), do: 0
+
   defp calculate_variance(values) do
     mean = Enum.sum(values) / length(values)
 
-    sum_squared_diff = values
+    sum_squared_diff =
+      values
       |> Enum.map(fn v -> :math.pow(v - mean, 2) end)
       |> Enum.sum()
 
@@ -783,9 +849,19 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp calculate_trend(values) when length(values) < 2, do: :unknown
+
   defp calculate_trend(values) do
-    first_half_avg = values |> Enum.take(div(length(values), 2)) |> Enum.sum() |> Kernel./(max(div(length(values), 2), 1))
-    second_half_avg = values |> Enum.drop(div(length(values), 2)) |> Enum.sum() |> Kernel./(max(length(values) - div(length(values), 2), 1))
+    first_half_avg =
+      values
+      |> Enum.take(div(length(values), 2))
+      |> Enum.sum()
+      |> Kernel./(max(div(length(values), 2), 1))
+
+    second_half_avg =
+      values
+      |> Enum.drop(div(length(values), 2))
+      |> Enum.sum()
+      |> Kernel./(max(length(values) - div(length(values), 2), 1))
 
     cond do
       second_half_avg > first_half_avg * 1.1 -> :improving
@@ -798,7 +874,7 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     if length(historical_data) < 5 do
       []
     else
-      historical_scores = Enum.map(historical_data, & &1[:score] || 0.5)
+      historical_scores = Enum.map(historical_data, &(&1[:score] || 0.5))
       mean = Enum.sum(historical_scores) / length(historical_scores)
       std_dev = :math.sqrt(calculate_variance(historical_scores))
 
@@ -806,12 +882,15 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
 
       # Check if current score is an anomaly
       if abs(current_results.entity_score - mean) > 2 * std_dev do
-        [%{
-          type: :score_anomaly,
-          value: current_results.entity_score,
-          expected_range: {mean - std_dev, mean + std_dev},
-          severity: :high
-        } | anomalies]
+        [
+          %{
+            type: :score_anomaly,
+            value: current_results.entity_score,
+            expected_range: {mean - std_dev, mean + std_dev},
+            severity: :high
+          }
+          | anomalies
+        ]
       else
         anomalies
       end
@@ -823,47 +902,59 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     predictions = []
 
     # Predict based on patterns
-    predictions = if patterns.stability_patterns[:trend] == :declining do
-      [%{
-        type: :quality_degradation,
-        probability: 0.7,
-        timeframe: "next 2 weeks",
-        impact: :medium,
-        preventive_action: "Implement quality gates"
-      } | predictions]
-    else
-      predictions
-    end
-
-    # Predict based on recurring issues
-    predictions = if length(patterns.recurring_issues) > 2 do
-      [%{
-        type: :issue_persistence,
-        probability: 0.8,
-        timeframe: "ongoing",
-        impact: :high,
-        preventive_action: "Address root causes of recurring issues"
-      } | predictions]
-    else
-      predictions
-    end
-
-    # Predict based on current metrics
-    predictions = if complexity = get_in(analysis_results, [:metrics, :complexity_score]) do
-      if complexity > 75 do
-        [%{
-          type: :maintainability_risk,
-          probability: 0.6,
-          timeframe: "next month",
-          impact: :medium,
-          preventive_action: "Refactor complex components"
-        } | predictions]
+    predictions =
+      if patterns.stability_patterns[:trend] == :declining do
+        [
+          %{
+            type: :quality_degradation,
+            probability: 0.7,
+            timeframe: "next 2 weeks",
+            impact: :medium,
+            preventive_action: "Implement quality gates"
+          }
+          | predictions
+        ]
       else
         predictions
       end
-    else
-      predictions
-    end
+
+    # Predict based on recurring issues
+    predictions =
+      if length(patterns.recurring_issues) > 2 do
+        [
+          %{
+            type: :issue_persistence,
+            probability: 0.8,
+            timeframe: "ongoing",
+            impact: :high,
+            preventive_action: "Address root causes of recurring issues"
+          }
+          | predictions
+        ]
+      else
+        predictions
+      end
+
+    # Predict based on current metrics
+    predictions =
+      if complexity = get_in(analysis_results, [:metrics, :complexity_score]) do
+        if complexity > 75 do
+          [
+            %{
+              type: :maintainability_risk,
+              probability: 0.6,
+              timeframe: "next month",
+              impact: :medium,
+              preventive_action: "Refactor complex components"
+            }
+            | predictions
+          ]
+        else
+          predictions
+        end
+      else
+        predictions
+      end
 
     {:ok, predictions}
   end
@@ -873,7 +964,8 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     _recommendations = []
 
     # Recommendations from insights
-    insight_recommendations = insights.insights
+    insight_recommendations =
+      insights.insights
       |> Enum.filter(& &1[:recommendation])
       |> Enum.map(fn i ->
         %{
@@ -885,35 +977,41 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
       end)
 
     # Recommendations from patterns
-    pattern_recommendations = if length(patterns.recurring_issues) > 0 do
-      [%{
-        source: :pattern,
-        priority: :high,
-        action: "Implement systematic fix for recurring issues",
-        rationale: "Issues are recurring across multiple analyses"
-      }]
-    else
-      []
-    end
+    pattern_recommendations =
+      if length(patterns.recurring_issues) > 0 do
+        [
+          %{
+            source: :pattern,
+            priority: :high,
+            action: "Implement systematic fix for recurring issues",
+            rationale: "Issues are recurring across multiple analyses"
+          }
+        ]
+      else
+        []
+      end
 
     # Recommendations from predictions
-    prediction_recommendations = predictions
-      |> Enum.filter(& &1.probability > 0.6)
+    prediction_recommendations =
+      predictions
+      |> Enum.filter(&(&1.probability > 0.6))
       |> Enum.map(fn p ->
         %{
           source: :prediction,
-          priority: (if p.impact == :high, do: :high, else: :medium),
+          priority: if(p.impact == :high, do: :high, else: :medium),
           action: p.preventive_action,
           rationale: "#{p.probability * 100}% chance of #{p.type}"
         }
       end)
 
-    all_recommendations = insight_recommendations ++ pattern_recommendations ++ prediction_recommendations
+    all_recommendations =
+      insight_recommendations ++ pattern_recommendations ++ prediction_recommendations
 
-    {:ok, %{
-      recommendations: Enum.take(all_recommendations, 5),
-      total_count: length(all_recommendations)
-    }}
+    {:ok,
+     %{
+       recommendations: Enum.take(all_recommendations, 5),
+       total_count: length(all_recommendations)
+     }}
   end
 
   # Learning tracking
@@ -958,18 +1056,20 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     base_confidence = analysis_results.completeness
 
     # Adjust based on analysis quality
-    quality_adjustment = if analysis_results.analysis_quality[:reliability] do
-      analysis_results.analysis_quality.reliability * 0.2
-    else
-      0
-    end
+    quality_adjustment =
+      if analysis_results.analysis_quality[:reliability] do
+        analysis_results.analysis_quality.reliability * 0.2
+      else
+        0
+      end
 
     # Adjust based on learning data
-    learning_adjustment = if learning_data.techniques_used && length(learning_data.techniques_used) > 2 do
-      0.1
-    else
-      0
-    end
+    learning_adjustment =
+      if learning_data.techniques_used && length(learning_data.techniques_used) > 2 do
+        0.1
+      else
+        0
+      end
 
     min(1.0, base_confidence + quality_adjustment + learning_adjustment)
   end

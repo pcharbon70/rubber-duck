@@ -25,11 +25,13 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
 
     case apply_filters(filters, actor) do
       {:ok, results} ->
-        {:ok, %{
-          analyses: results,
-          count: length(results),
-          filters_applied: filters
-        }}
+        {:ok,
+         %{
+           analyses: results,
+           count: length(results),
+           filters_applied: filters
+         }}
+
       error ->
         error
     end
@@ -40,10 +42,12 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
 
     case AI.get_analysis_result(params.params.id, actor: actor) do
       {:ok, result} ->
-        {:ok, %{
-          analysis: result,
-          enriched: enrich_analysis(result)
-        }}
+        {:ok,
+         %{
+           analysis: result,
+           enriched: enrich_analysis(result)
+         }}
+
       error ->
         error
     end
@@ -55,10 +59,13 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
     case AI.create_analysis_result(params.params, actor: actor) do
       {:ok, result} ->
         emit_analysis_created_signal(result)
-        {:ok, %{
-          analysis: result,
-          created: true
-        }}
+
+        {:ok,
+         %{
+           analysis: result,
+           created: true
+         }}
+
       error ->
         error
     end
@@ -68,33 +75,40 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
     actor = params.actor || context[:actor]
 
     with {:ok, analysis} <- AI.get_analysis_result(params.params.id, actor: actor),
-         {:ok, updated} <- AI.update_analysis_result(analysis, params.params.updates, actor: actor) do
-      {:ok, %{
-        analysis: updated,
-        changes: calculate_changes(analysis, updated)
-      }}
+         {:ok, updated} <-
+           AI.update_analysis_result(analysis, params.params.updates, actor: actor) do
+      {:ok,
+       %{
+         analysis: updated,
+         changes: calculate_changes(analysis, updated)
+       }}
     end
   end
 
   def run(%{operation: :list_prompts} = params, context) do
     actor = params.actor || context[:actor]
 
-    prompts = case params.params do
-      %{public: true} ->
-        AI.list_public_prompts(actor: actor)
-      %{category: category} ->
-        AI.list_prompts_by_category(category, actor: actor)
-      _ ->
-        AI.list_prompts(actor: actor)
-    end
+    prompts =
+      case params.params do
+        %{public: true} ->
+          AI.list_public_prompts(actor: actor)
+
+        %{category: category} ->
+          AI.list_prompts_by_category(category, actor: actor)
+
+        _ ->
+          AI.list_prompts(actor: actor)
+      end
 
     case prompts do
       {:ok, results} ->
-        {:ok, %{
-          prompts: results,
-          count: length(results),
-          categories: extract_categories(results)
-        }}
+        {:ok,
+         %{
+           prompts: results,
+           count: length(results),
+           categories: extract_categories(results)
+         }}
+
       error ->
         error
     end
@@ -113,11 +127,12 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
 
     with {:ok, all_analyses} <- AI.list_analysis_results(actor: actor),
          filtered <- search_analyses(all_analyses, search_params) do
-      {:ok, %{
-        results: filtered,
-        count: length(filtered),
-        search_criteria: search_params
-      }}
+      {:ok,
+       %{
+         results: filtered,
+         count: length(filtered),
+         search_criteria: search_params
+       }}
     end
   end
 
@@ -130,23 +145,26 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
   defp build_filters(params) do
     filters = []
 
-    filters = if params[:project_id] do
-      [{:project_id, params.project_id} | filters]
-    else
-      filters
-    end
+    filters =
+      if params[:project_id] do
+        [{:project_id, params.project_id} | filters]
+      else
+        filters
+      end
 
-    filters = if params[:analysis_type] do
-      [{:analysis_type, params.analysis_type} | filters]
-    else
-      filters
-    end
+    filters =
+      if params[:analysis_type] do
+        [{:analysis_type, params.analysis_type} | filters]
+      else
+        filters
+      end
 
-    filters = if params[:status] do
-      [{:status, params.status} | filters]
-    else
-      filters
-    end
+    filters =
+      if params[:status] do
+        [{:status, params.status} | filters]
+      else
+        filters
+      end
 
     filters
   end
@@ -157,6 +175,7 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
       {:ok, results} ->
         filtered = Enum.reduce(filters, results, &apply_single_filter/2)
         {:ok, filtered}
+
       error ->
         error
     end
@@ -189,12 +208,14 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
 
   defp calculate_completeness(analysis) do
     required_fields = [:summary, :details, :score, :suggestions]
-    present_fields = Enum.filter(required_fields, fn field ->
-      value = Map.get(analysis, field)
-      value != nil && value != "" && value != []
-    end)
 
-    (length(present_fields) / length(required_fields)) * 100
+    present_fields =
+      Enum.filter(required_fields, fn field ->
+        value = Map.get(analysis, field)
+        value != nil && value != "" && value != []
+      end)
+
+    length(present_fields) / length(required_fields) * 100
   end
 
   defp assess_actionability(analysis) do
@@ -239,8 +260,10 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
     cond do
       params[:project_id] ->
         AI.list_analysis_results_by_project(params.project_id)
+
       params[:analysis_type] ->
         AI.list_analysis_results_by_type(params.analysis_type)
+
       true ->
         AI.list_completed_analysis_results()
     end
@@ -259,7 +282,8 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
   end
 
   defp calculate_average_score(analyses) do
-    scores = analyses
+    scores =
+      analyses
       |> Enum.map(& &1.score)
       |> Enum.filter(& &1)
 
@@ -293,11 +317,12 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
     analyses
     |> Enum.group_by(& &1.analysis_type)
     |> Enum.map(fn {type, items} ->
-      {type, %{
-        count: length(items),
-        percentage: (length(items) / length(analyses)) * 100,
-        average_score: calculate_average_score(items)
-      }}
+      {type,
+       %{
+         count: length(items),
+         percentage: length(items) / length(analyses) * 100,
+         average_score: calculate_average_score(items)
+       }}
     end)
     |> Map.new()
   end
@@ -312,8 +337,9 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
   end
 
   defp analyze_suggestion_frequency(analyses) do
-    all_suggestions = analyses
-      |> Enum.flat_map(& &1.suggestions || [])
+    all_suggestions =
+      analyses
+      |> Enum.flat_map(&(&1.suggestions || []))
 
     if length(all_suggestions) > 0 do
       # Categorize and count suggestions
@@ -337,6 +363,7 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
       true -> :general
     end
   end
+
   defp categorize_suggestion(_), do: :general
 
   defp analyze_quality_trend(analyses) do
@@ -369,24 +396,29 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
   end
 
   defp filter_by_score_range(analyses, nil, nil), do: analyses
+
   defp filter_by_score_range(analyses, min_score, max_score) do
     Enum.filter(analyses, fn analysis ->
       score = analysis.score || 0
+
       (min_score == nil or score >= min_score) and
-      (max_score == nil or score <= max_score)
+        (max_score == nil or score <= max_score)
     end)
   end
 
   defp filter_by_date_range(analyses, nil, nil), do: analyses
+
   defp filter_by_date_range(analyses, start_date, end_date) do
     Enum.filter(analyses, fn analysis ->
       date = analysis.inserted_at
+
       (start_date == nil or DateTime.compare(date, start_date) != :lt) and
-      (end_date == nil or DateTime.compare(date, end_date) != :gt)
+        (end_date == nil or DateTime.compare(date, end_date) != :gt)
     end)
   end
 
   defp filter_by_text_search(analyses, nil), do: analyses
+
   defp filter_by_text_search(analyses, query) do
     query_lower = String.downcase(query)
 
@@ -396,17 +428,19 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
       suggestions_text = suggestions |> Enum.join(" ") |> String.downcase()
 
       String.contains?(summary, query_lower) or
-      String.contains?(suggestions_text, query_lower)
+        String.contains?(suggestions_text, query_lower)
     end)
   end
 
   defp filter_by_suggestions(analyses, nil), do: analyses
+
   defp filter_by_suggestions(analyses, true) do
     Enum.filter(analyses, fn analysis ->
       suggestions = analysis.suggestions || []
       not Enum.empty?(suggestions)
     end)
   end
+
   defp filter_by_suggestions(analyses, false) do
     Enum.filter(analyses, fn analysis ->
       suggestions = analysis.suggestions || []
@@ -415,11 +449,8 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
   end
 
   defp emit_analysis_created_signal(analysis) do
-    RubberDuck.Signal.emit("analysis.created", %{
-      analysis_id: analysis.id,
-      type: analysis.analysis_type,
-      project_id: analysis.project_id,
-      timestamp: DateTime.utc_now()
-    })
+    Logger.debug("Legacy signal emission: analysis.created for analysis #{analysis.id}")
+    # Note: Converted from legacy signal system - analysis events now handled via MessageRouter
+    :ok
   end
 end

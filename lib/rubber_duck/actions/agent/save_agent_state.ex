@@ -39,12 +39,16 @@ defmodule RubberDuck.Actions.Agent.SaveAgentState do
     {:ok, results}
   rescue
     exception ->
-      Logger.error("Failed to save agent state: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-      {:error, %{
-        reason: {:exception, exception},
-        message: Exception.message(exception),
-        agent_name: params.agent[:name]
-      }}
+      Logger.error(
+        "Failed to save agent state: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+      )
+
+      {:error,
+       %{
+         reason: {:exception, exception},
+         message: Exception.message(exception),
+         agent_name: params.agent[:name]
+       }}
   end
 
   defp build_save_results(agent_state, agent, params) do
@@ -94,10 +98,13 @@ defmodule RubberDuck.Actions.Agent.SaveAgentState do
     cond do
       not is_map(params) ->
         {:error, :invalid_params}
+
       not is_map(params[:agent]) ->
         {:error, :invalid_agent}
+
       not is_map(params[:agent][:state]) ->
         {:error, :invalid_agent_state}
+
       true ->
         :ok
     end
@@ -127,31 +134,42 @@ defmodule RubberDuck.Actions.Agent.SaveAgentState do
     # Extract relevant metadata, excluding transient data
     agent.state
     |> Map.drop([:experience, :request_cache, :provider_performance, :learned_insights])
-    |> Map.take([:goals, :completed_goals, :learning_enabled, :performance_metrics,
-                 :monitoring_active, :auto_recovery_enabled, :alert_threshold,
-                 :optimization_preference, :quality_threshold, :cost_budget])
+    |> Map.take([
+      :goals,
+      :completed_goals,
+      :learning_enabled,
+      :performance_metrics,
+      :monitoring_active,
+      :auto_recovery_enabled,
+      :alert_threshold,
+      :optimization_preference,
+      :quality_threshold,
+      :cost_budget
+    ])
   end
 
   defp save_experiences(agent_state, agent, batch_size) do
     experiences = agent.state[:experience] || []
 
     # Save in batches
-    results = experiences
-    |> Enum.take(1000)  # Only save most recent 1000
-    |> Enum.chunk_every(batch_size)
-    |> Enum.map(fn batch ->
-      Enum.map(batch, fn exp ->
-        Agents.create_experience(%{
-          agent_state_id: agent_state.id,
-          experience_type: determine_experience_type(exp),
-          goal: exp[:goal],
-          result: exp[:result],
-          metadata: Map.drop(exp, [:goal, :result, :timestamp]),
-          timestamp: exp[:timestamp] || DateTime.utc_now()
-        })
+    results =
+      experiences
+      # Only save most recent 1000
+      |> Enum.take(1000)
+      |> Enum.chunk_every(batch_size)
+      |> Enum.map(fn batch ->
+        Enum.map(batch, fn exp ->
+          Agents.create_experience(%{
+            agent_state_id: agent_state.id,
+            experience_type: determine_experience_type(exp),
+            goal: exp[:goal],
+            result: exp[:result],
+            metadata: Map.drop(exp, [:goal, :result, :timestamp]),
+            timestamp: exp[:timestamp] || DateTime.utc_now()
+          })
+        end)
       end)
-    end)
-    |> List.flatten()
+      |> List.flatten()
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
 
@@ -170,15 +188,16 @@ defmodule RubberDuck.Actions.Agent.SaveAgentState do
   defp save_insights(agent_state, agent) do
     insights = agent.state[:learned_insights] || %{}
 
-    results = Enum.map(insights, fn {type, insight_data} ->
-      Agents.create_insight(%{
-        agent_state_id: agent_state.id,
-        insight_type: to_string(type),
-        insights: insight_data,
-        confidence: calculate_confidence(insight_data),
-        applicable_scenarios: extract_scenarios(insight_data)
-      })
-    end)
+    results =
+      Enum.map(insights, fn {type, insight_data} ->
+        Agents.create_insight(%{
+          agent_state_id: agent_state.id,
+          insight_type: to_string(type),
+          insights: insight_data,
+          confidence: calculate_confidence(insight_data),
+          applicable_scenarios: extract_scenarios(insight_data)
+        })
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
 
@@ -204,17 +223,18 @@ defmodule RubberDuck.Actions.Agent.SaveAgentState do
   defp save_provider_performance(agent_state, agent) do
     performances = agent.state[:provider_performance] || %{}
 
-    results = Enum.map(performances, fn {provider_name, stats} ->
-      Agents.upsert_performance(%{
-        agent_state_id: agent_state.id,
-        provider_name: to_string(provider_name),
-        success_count: stats[:success_count] || 0,
-        failure_count: stats[:failure_count] || 0,
-        total_duration: stats[:total_duration] || 0,
-        total_tokens: stats[:total_tokens] || 0,
-        quality_sum: stats[:quality_sum] || 0.0
-      })
-    end)
+    results =
+      Enum.map(performances, fn {provider_name, stats} ->
+        Agents.upsert_performance(%{
+          agent_state_id: agent_state.id,
+          provider_name: to_string(provider_name),
+          success_count: stats[:success_count] || 0,
+          failure_count: stats[:failure_count] || 0,
+          total_duration: stats[:total_duration] || 0,
+          total_tokens: stats[:total_tokens] || 0,
+          quality_sum: stats[:quality_sum] || 0.0
+        })
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
 

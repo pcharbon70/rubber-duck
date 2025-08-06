@@ -29,11 +29,12 @@ defmodule RubberDuck.Actions.Agent.CompleteInstruction do
         if function_exported?(agent_module, :handle_instruction, 2) do
           execute_agent_instruction(agent_module, instruction, agent_state)
         else
-          {:error, %{
-            reason: :handle_instruction_not_implemented,
-            agent_module: agent_module,
-            available_functions: get_exported_functions(agent_module)
-          }}
+          {:error,
+           %{
+             reason: :handle_instruction_not_implemented,
+             agent_module: agent_module,
+             available_functions: get_exported_functions(agent_module)
+           }}
         end
 
       {:error, reason} ->
@@ -41,31 +42,40 @@ defmodule RubberDuck.Actions.Agent.CompleteInstruction do
     end
   rescue
     exception ->
-      Logger.error("Instruction execution crashed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-      {:error, %{
-        reason: {:exception, exception},
-        message: Exception.message(exception),
-        instruction: params.instruction
-      }}
+      Logger.error(
+        "Instruction execution crashed: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+      )
+
+      {:error,
+       %{
+         reason: {:exception, exception},
+         message: Exception.message(exception),
+         instruction: params.instruction
+       }}
   end
 
   defp execute_agent_instruction(agent_module, instruction, agent_state) do
     case apply(agent_module, :handle_instruction, [instruction, %{state: agent_state}]) do
       {:ok, result, updated_agent} ->
-        {:ok, %{
-          result: result,
-          state: updated_agent.state,
-          instruction_type: elem(instruction, 0)
-        }}
+        {:ok,
+         %{
+           result: result,
+           state: updated_agent.state,
+           instruction_type: elem(instruction, 0)
+         }}
 
       {:ok, updated_agent} ->
-        {:ok, %{
-          state: updated_agent.state,
-          instruction_type: elem(instruction, 0)
-        }}
+        {:ok,
+         %{
+           state: updated_agent.state,
+           instruction_type: elem(instruction, 0)
+         }}
 
       {:error, reason} = error ->
-        Logger.warning("Instruction failed: #{inspect(reason)}, instruction: #{inspect(instruction)}")
+        Logger.warning(
+          "Instruction failed: #{inspect(reason)}, instruction: #{inspect(instruction)}"
+        )
+
         error
 
       other ->

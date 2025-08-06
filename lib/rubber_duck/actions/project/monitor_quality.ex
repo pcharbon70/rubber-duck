@@ -10,12 +10,15 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
       project_id: [type: :string, required: true],
       include_patterns: [type: {:list, :string}, default: ["**/*.ex", "**/*.exs"]],
       exclude_patterns: [type: {:list, :string}, default: ["deps/", "_build/", "test/"]],
-      metrics_config: [type: :map, default: %{
-        max_complexity: 10,
-        max_nesting: 4,
-        max_line_length: 120,
-        max_function_length: 50
-      }]
+      metrics_config: [
+        type: :map,
+        default: %{
+          max_complexity: 10,
+          max_nesting: 4,
+          max_line_length: 120,
+          max_function_length: 50
+        }
+      ]
     ]
 
   alias RubberDuck.Projects
@@ -27,33 +30,39 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
          file_metrics <- analyze_files(files, params.metrics_config),
          project_metrics <- aggregate_metrics(file_metrics),
          issues <- detect_quality_issues(file_metrics, params.metrics_config) do
-
-      {:ok, %{
-        project_metrics: project_metrics,
-        file_metrics: file_metrics,
-        issues: issues,
-        quality_score: calculate_quality_score(project_metrics, issues),
-        analyzed_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         project_metrics: project_metrics,
+         file_metrics: file_metrics,
+         issues: issues,
+         quality_score: calculate_quality_score(project_metrics, issues),
+         analyzed_at: DateTime.utc_now()
+       }}
     end
   end
 
   defp get_project_files(project, params) do
     case Projects.list_code_files_by_project(project.id) do
       {:ok, files} ->
-        filtered = files
+        filtered =
+          files
           |> Enum.filter(&matches_patterns?(&1.path, params.include_patterns))
           |> Enum.reject(&matches_patterns?(&1.path, params.exclude_patterns))
-          |> Enum.filter(& &1.content) # Only files with content
+          # Only files with content
+          |> Enum.filter(& &1.content)
+
         {:ok, filtered}
-      error -> error
+
+      error ->
+        error
     end
   end
 
   defp matches_patterns?(path, patterns) do
     Enum.any?(patterns, fn pattern ->
       # Simple pattern matching using wildcards
-      pattern_regex = pattern
+      pattern_regex =
+        pattern
         |> String.replace("*", ".*")
         |> String.replace("?", ".")
         |> Regex.compile!()
@@ -118,7 +127,8 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     # Extract function definitions
     def_regex = ~r/def(?:p?)\s+(\w+)/
 
-    functions = content
+    functions =
+      content
       |> then(&Regex.scan(def_regex, &1))
       |> Enum.map(fn [_, name] -> name end)
       |> Enum.map(fn name ->
@@ -141,9 +151,10 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     # Simple heuristic: count lines from function def to next def or end of module
     lines = String.split(content, "\n")
 
-    start_index = Enum.find_index(lines, fn line ->
-      line =~ ~r/def(?:p?)\s+#{function_name}/
-    end)
+    start_index =
+      Enum.find_index(lines, fn line ->
+        line =~ ~r/def(?:p?)\s+#{function_name}/
+      end)
 
     if start_index do
       end_index = find_function_end(lines, start_index)
@@ -158,15 +169,16 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     indent_level = get_indent_level(Enum.at(lines, start_index))
 
     # Search from start_index + 1 to end of lines
-    result = lines
-    |> Enum.slice((start_index + 1)..(length(lines) - 1))
-    |> Enum.find_index(fn line ->
-      current_indent = get_indent_level(line)
-      trimmed = String.trim(line)
+    result =
+      lines
+      |> Enum.slice((start_index + 1)..(length(lines) - 1))
+      |> Enum.find_index(fn line ->
+        current_indent = get_indent_level(line)
+        trimmed = String.trim(line)
 
-      (current_indent <= indent_level && trimmed == "end") ||
-      (line =~ ~r/^\s*def(?:p?)\s+/)
-    end)
+        (current_indent <= indent_level && trimmed == "end") ||
+          line =~ ~r/^\s*def(?:p?)\s+/
+      end)
 
     case result do
       nil -> length(lines) - 1
@@ -184,7 +196,8 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     # Count control flow statements within the function
     function_body = extract_function_body(content, function_name)
 
-    complexity = 1 # Base complexity
+    # Base complexity
+    complexity = 1
 
     # Count control flow keywords
     control_flow = ["if", "unless", "case", "cond", "with", "for", "while"]
@@ -199,12 +212,14 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     # Simple extraction - would be more sophisticated in production
     lines = String.split(content, "\n")
 
-    start_index = Enum.find_index(lines, fn line ->
-      line =~ ~r/def(?:p?)\s+#{function_name}/
-    end)
+    start_index =
+      Enum.find_index(lines, fn line ->
+        line =~ ~r/def(?:p?)\s+#{function_name}/
+      end)
 
     if start_index do
       end_index = find_function_end(lines, start_index)
+
       lines
       |> Enum.slice(start_index..end_index)
       |> Enum.join("\n")
@@ -246,7 +261,8 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
       ~r/\bor\b/,
       ~r/\&\&/,
       ~r/\|\|/,
-      ~r/->/  # Function clauses
+      # Function clauses
+      ~r/->/
     ]
 
     Enum.reduce(decision_patterns, base_complexity, fn pattern, acc ->
@@ -264,45 +280,51 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   defp calculate_nesting_level(line) do
     # Count nesting based on indentation and keywords
     indent = get_indent_level(line)
-    indent_nesting = div(indent, 2) # Assuming 2-space indentation
+    # Assuming 2-space indentation
+    indent_nesting = div(indent, 2)
 
     # Additional nesting for certain keywords
-    keyword_nesting = cond do
-      line =~ ~r/\bdo\b/ -> 1
-      line =~ ~r/->/ -> 1
-      true -> 0
-    end
+    keyword_nesting =
+      cond do
+        line =~ ~r/\bdo\b/ -> 1
+        line =~ ~r/->/ -> 1
+        true -> 0
+      end
 
     indent_nesting + keyword_nesting
   end
 
   defp detect_duplication(lines) do
     # Simple duplication detection - count repeated lines
-    line_counts = lines
+    line_counts =
+      lines
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
       |> Enum.frequencies()
 
-    duplicated_lines = line_counts
+    duplicated_lines =
+      line_counts
       |> Enum.filter(fn {_, count} -> count > 1 end)
       |> Enum.map(fn {line, count} -> %{line: line, count: count} end)
 
     %{
       duplicated_line_count: length(duplicated_lines),
       duplication_ratio: calculate_duplication_ratio(line_counts),
-      duplicated_lines: Enum.take(duplicated_lines, 5) # Top 5
+      # Top 5
+      duplicated_lines: Enum.take(duplicated_lines, 5)
     }
   end
 
   defp calculate_duplication_ratio(line_counts) do
-    total_lines = line_counts
+    total_lines =
+      line_counts
       |> Enum.map(fn {_, count} -> count end)
       |> Enum.sum()
 
     unique_lines = map_size(line_counts)
 
     if total_lines > 0 do
-      1.0 - (unique_lines / total_lines)
+      1.0 - unique_lines / total_lines
     else
       0.0
     end
@@ -313,12 +335,13 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
 
     %{
       max_length: Enum.max(lengths, fn -> 0 end),
-      average_length: if length(lengths) > 0 do
-        Enum.sum(lengths) / length(lengths)
-      else
-        0
-      end,
-      long_lines: Enum.count(lengths, & &1 > 120)
+      average_length:
+        if length(lengths) > 0 do
+          Enum.sum(lengths) / length(lengths)
+        else
+          0
+        end,
+      long_lines: Enum.count(lengths, &(&1 > 120))
     }
   end
 
@@ -339,7 +362,8 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
         max_complexity: max_metric(file_metrics, [:metrics, :complexity]),
         average_nesting: average_metric(file_metrics, [:metrics, :nesting_depth]),
         max_nesting: max_metric(file_metrics, [:metrics, :nesting_depth]),
-        duplication_ratio: average_metric(file_metrics, [:metrics, :duplication, :duplication_ratio])
+        duplication_ratio:
+          average_metric(file_metrics, [:metrics, :duplication, :duplication_ratio])
       }
     end
   end
@@ -368,7 +392,8 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
   end
 
   defp average_metric(file_metrics, path) do
-    values = file_metrics
+    values =
+      file_metrics
       |> Enum.map(&get_in(&1, path))
       |> Enum.filter(& &1)
 
@@ -399,68 +424,96 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     metrics = file.metrics
 
     # Complexity issues
-    issues = if metrics.complexity > config.max_complexity do
-      [{:high_complexity, %{
-        file: file.path,
-        complexity: metrics.complexity,
-        threshold: config.max_complexity,
-        severity: :high,
-        message: "File complexity (#{metrics.complexity}) exceeds threshold (#{config.max_complexity})"
-      }} | issues]
-    else
-      issues
-    end
+    issues =
+      if metrics.complexity > config.max_complexity do
+        [
+          {:high_complexity,
+           %{
+             file: file.path,
+             complexity: metrics.complexity,
+             threshold: config.max_complexity,
+             severity: :high,
+             message:
+               "File complexity (#{metrics.complexity}) exceeds threshold (#{config.max_complexity})"
+           }}
+          | issues
+        ]
+      else
+        issues
+      end
 
     # Nesting depth issues
-    issues = if metrics.nesting_depth > config.max_nesting do
-      [{:deep_nesting, %{
-        file: file.path,
-        nesting: metrics.nesting_depth,
-        threshold: config.max_nesting,
-        severity: :medium,
-        message: "Maximum nesting depth (#{metrics.nesting_depth}) exceeds threshold (#{config.max_nesting})"
-      }} | issues]
-    else
-      issues
-    end
+    issues =
+      if metrics.nesting_depth > config.max_nesting do
+        [
+          {:deep_nesting,
+           %{
+             file: file.path,
+             nesting: metrics.nesting_depth,
+             threshold: config.max_nesting,
+             severity: :medium,
+             message:
+               "Maximum nesting depth (#{metrics.nesting_depth}) exceeds threshold (#{config.max_nesting})"
+           }}
+          | issues
+        ]
+      else
+        issues
+      end
 
     # Long lines
-    issues = if metrics.line_lengths.max_length > config.max_line_length do
-      [{:long_lines, %{
-        file: file.path,
-        max_length: metrics.line_lengths.max_length,
-        threshold: config.max_line_length,
-        severity: :low,
-        message: "Found lines longer than #{config.max_line_length} characters"
-      }} | issues]
-    else
-      issues
-    end
+    issues =
+      if metrics.line_lengths.max_length > config.max_line_length do
+        [
+          {:long_lines,
+           %{
+             file: file.path,
+             max_length: metrics.line_lengths.max_length,
+             threshold: config.max_line_length,
+             severity: :low,
+             message: "Found lines longer than #{config.max_line_length} characters"
+           }}
+          | issues
+        ]
+      else
+        issues
+      end
 
     # Long functions
-    issues = if metrics.functions.max_length > config.max_function_length do
-      [{:long_functions, %{
-        file: file.path,
-        max_length: metrics.functions.max_length,
-        threshold: config.max_function_length,
-        severity: :medium,
-        message: "Found functions longer than #{config.max_function_length} lines"
-      }} | issues]
-    else
-      issues
-    end
+    issues =
+      if metrics.functions.max_length > config.max_function_length do
+        [
+          {:long_functions,
+           %{
+             file: file.path,
+             max_length: metrics.functions.max_length,
+             threshold: config.max_function_length,
+             severity: :medium,
+             message: "Found functions longer than #{config.max_function_length} lines"
+           }}
+          | issues
+        ]
+      else
+        issues
+      end
 
     # Duplication
-    issues = if metrics.duplication.duplication_ratio > 0.1 do
-      [{:code_duplication, %{
-        file: file.path,
-        ratio: metrics.duplication.duplication_ratio,
-        severity: :medium,
-        message: "High code duplication ratio: #{Float.round(metrics.duplication.duplication_ratio * 100, 1)}%"
-      }} | issues]
-    else
-      issues
-    end
+    issues =
+      if metrics.duplication.duplication_ratio > 0.1 do
+        [
+          {:code_duplication,
+           %{
+             file: file.path,
+             ratio: metrics.duplication.duplication_ratio,
+             severity: :medium,
+             message:
+               "High code duplication ratio: #{Float.round(metrics.duplication.duplication_ratio * 100, 1)}%"
+           }}
+          | issues
+        ]
+      else
+        issues
+      end
 
     Enum.map(issues, fn {type, data} ->
       Map.merge(data, %{type: type})
@@ -483,8 +536,9 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
       low: 2
     }
 
-    total_deduction = issues
-      |> Enum.map(& Map.get(issue_deductions, &1.severity, 0))
+    total_deduction =
+      issues
+      |> Enum.map(&Map.get(issue_deductions, &1.severity, 0))
       |> Enum.sum()
 
     # Additional deductions based on metrics

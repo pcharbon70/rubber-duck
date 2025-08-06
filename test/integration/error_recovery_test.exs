@@ -5,7 +5,8 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
   Tests system resilience, process recovery, and error propagation.
   """
 
-  use RubberDuck.DataCase, async: false  # Not async due to process manipulation
+  # Not async due to process manipulation
+  use RubberDuck.DataCase, async: false
 
   alias RubberDuck.Accounts
   alias RubberDuck.HealthCheck
@@ -14,11 +15,15 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
   describe "Error handling and recovery" do
     setup do
       # Create a test user
-      {:ok, user} = Accounts.register_user(%{
-        username: "error_test_user",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      }, authorize?: false)
+      {:ok, user} =
+        Accounts.register_user(
+          %{
+            username: "error_test_user",
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          },
+          authorize?: false
+        )
 
       %{user: user}
     end
@@ -29,16 +34,19 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
 
       # Test with invalid data that triggers database constraints
       invalid_attrs = %{
-        username: nil,  # Required field
+        # Required field
+        username: nil,
         password: "test",
         password_confirmation: "test"
       }
 
       assert {:error, error} = Accounts.register_user(invalid_attrs, authorize?: false)
       assert %Ash.Error.Invalid{} = error
-      assert error.errors |> Enum.any?(fn e ->
-        e.field == :username || e.message =~ "required"
-      end)
+
+      assert error.errors
+             |> Enum.any?(fn e ->
+               e.field == :username || e.message =~ "required"
+             end)
 
       # System should still be functional after error
       valid_attrs = %{
@@ -46,6 +54,7 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
         password: "Password123!",
         password_confirmation: "Password123!"
       }
+
       assert {:ok, _user} = Accounts.register_user(valid_attrs, authorize?: false)
     end
 
@@ -70,45 +79,67 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
       assert %HealthCheck{} = status
 
       # Other processes should not be affected
-      assert {:ok, project} = Projects.create_project(%{
-        name: "Post-Recovery Project",
-        language: "elixir"
-      }, actor: user)
+      assert {:ok, project} =
+               Projects.create_project(
+                 %{
+                   name: "Post-Recovery Project",
+                   language: "elixir"
+                 },
+                 actor: user
+               )
+
       assert project.name == "Post-Recovery Project"
     end
 
     test "invalid data is rejected with proper error messages", %{user: user} do
       # Project with missing required fields
       assert {:error, error} = Projects.create_project(%{}, actor: user)
-      assert error.errors |> Enum.any?(fn e ->
-        Map.get(e, :field) == :name || Map.get(e, :fields) == [:name]
-      end)
+
+      assert error.errors
+             |> Enum.any?(fn e ->
+               Map.get(e, :field) == :name || Map.get(e, :fields) == [:name]
+             end)
 
       # Project with invalid language (currently accepts any string)
       # The system currently accepts any language string
-      assert {:ok, project} = Projects.create_project(%{
-        name: "Test",
-        language: "invalid_language_xyz"
-      }, actor: user)
+      assert {:ok, project} =
+               Projects.create_project(
+                 %{
+                   name: "Test",
+                   language: "invalid_language_xyz"
+                 },
+                 actor: user
+               )
+
       assert project.language == "invalid_language_xyz"
 
       # Code file with invalid project reference
-      assert {:error, error} = Projects.create_code_file(%{
-        project_id: Ash.UUID.generate(),  # Non-existent project
-        path: "/test.ex",
-        content: "test",
-        language: "elixir"
-      }, actor: user)
+      assert {:error, error} =
+               Projects.create_code_file(
+                 %{
+                   # Non-existent project
+                   project_id: Ash.UUID.generate(),
+                   path: "/test.ex",
+                   content: "test",
+                   language: "elixir"
+                 },
+                 actor: user
+               )
+
       # This should fail with authorization or invalid reference error
       assert error.class in [:forbidden, :invalid]
     end
 
     test "concurrent operations handle race conditions", %{user: user} do
       # Create a project
-      {:ok, project} = Projects.create_project(%{
-        name: "Race Condition Test",
-        language: "elixir"
-      }, actor: user)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Race Condition Test",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Spawn multiple concurrent updates
       tasks =
@@ -127,16 +158,18 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
       # All updates should either succeed or fail gracefully
       # No crashes or undefined behavior
       assert Enum.all?(results, fn
-        {:ok, _} -> true
-        {:error, _} -> true
-        _ -> false
-      end)
+               {:ok, _} -> true
+               {:error, _} -> true
+               _ -> false
+             end)
 
       # At least some should succeed
-      successful = Enum.count(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+      successful =
+        Enum.count(results, fn
+          {:ok, _} -> true
+          _ -> false
+        end)
+
       assert successful > 0
 
       # Final state should be consistent
@@ -147,61 +180,84 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
 
     test "authorization errors are handled properly", %{user: user} do
       # Create another user
-      {:ok, other_user} = Accounts.register_user(%{
-        username: "unauthorized_user",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      }, authorize?: false)
+      {:ok, other_user} =
+        Accounts.register_user(
+          %{
+            username: "unauthorized_user",
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          },
+          authorize?: false
+        )
 
       # Create a project as first user
-      {:ok, project} = Projects.create_project(%{
-        name: "Auth Test Project",
-        language: "elixir"
-      }, actor: user)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Auth Test Project",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Other user tries unauthorized operations
       assert {:error, %Ash.Error.Forbidden{}} =
-        Projects.update_project(project, %{name: "Hacked"}, actor: other_user)
+               Projects.update_project(project, %{name: "Hacked"}, actor: other_user)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        Projects.delete_project(project, actor: other_user)
+               Projects.delete_project(project, actor: other_user)
 
       # Original user operations should still work
       assert {:ok, updated} =
-        Projects.update_project(project, %{name: "Legitimate Update"}, actor: user)
+               Projects.update_project(project, %{name: "Legitimate Update"}, actor: user)
+
       assert updated.name == "Legitimate Update"
     end
 
     test "validation errors provide clear feedback", %{user: _user} do
       # Password validation
-      password_error = Accounts.register_user(%{
-        username: "validation_test",
-        password: "short",
-        password_confirmation: "short"
-      }, authorize?: false)
+      password_error =
+        Accounts.register_user(
+          %{
+            username: "validation_test",
+            password: "short",
+            password_confirmation: "short"
+          },
+          authorize?: false
+        )
 
       assert {:error, error} = password_error
       # Password validation errors exist in some form
       assert is_list(error.errors) && length(error.errors) > 0
 
       # Username uniqueness
-      {:ok, _} = Accounts.register_user(%{
-        username: "unique_test",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      }, authorize?: false)
+      {:ok, _} =
+        Accounts.register_user(
+          %{
+            username: "unique_test",
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          },
+          authorize?: false
+        )
 
-      duplicate_error = Accounts.register_user(%{
-        username: "unique_test",
-        password: "Password456!",
-        password_confirmation: "Password456!"
-      }, authorize?: false)
+      duplicate_error =
+        Accounts.register_user(
+          %{
+            username: "unique_test",
+            password: "Password456!",
+            password_confirmation: "Password456!"
+          },
+          authorize?: false
+        )
 
       assert {:error, error} = duplicate_error
-      assert error.errors |> Enum.any?(fn e ->
-        e.message =~ "taken" || e.message =~ "already exists" ||
-        Map.get(e, :field) == :username || Map.get(e, :fields) == [:username]
-      end)
+
+      assert error.errors
+             |> Enum.any?(fn e ->
+               e.message =~ "taken" || e.message =~ "already exists" ||
+                 Map.get(e, :field) == :username || Map.get(e, :fields) == [:username]
+             end)
     end
 
     test "health check system reports errors correctly" do
@@ -269,28 +325,41 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
 
     test "system maintains data consistency after errors", %{user: user} do
       # Start a series of operations
-      {:ok, project} = Projects.create_project(%{
-        name: "Consistency Test",
-        language: "elixir"
-      }, actor: user)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Consistency Test",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Try to create an invalid code file
-      invalid_file = Projects.create_code_file(%{
-        project_id: project.id,
-        path: nil,  # Invalid - path is required
-        content: "test",
-        language: "elixir"
-      }, actor: user)
+      invalid_file =
+        Projects.create_code_file(
+          %{
+            project_id: project.id,
+            # Invalid - path is required
+            path: nil,
+            content: "test",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       assert {:error, _} = invalid_file
 
       # Valid operations should still work
-      {:ok, valid_file} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "/lib/valid.ex",
-        content: "defmodule Valid do\nend",
-        language: "elixir"
-      }, actor: user)
+      {:ok, valid_file} =
+        Projects.create_code_file(
+          %{
+            project_id: project.id,
+            path: "/lib/valid.ex",
+            content: "defmodule Valid do\nend",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Verify data consistency
       {:ok, project_with_files} = Projects.get_project(project.id, actor: user)

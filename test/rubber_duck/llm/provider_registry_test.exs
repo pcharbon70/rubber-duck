@@ -9,6 +9,7 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
       nil ->
         {:ok, pid} = ProviderRegistry.start_link()
         on_exit(fn -> Process.exit(pid, :normal) end)
+
       _ ->
         :ok
     end
@@ -18,7 +19,8 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
 
   describe "register/3" do
     test "registers a provider successfully" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
       module = TestModule
       config = %{api_key: "test_key"}
 
@@ -35,7 +37,8 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
 
   describe "unregister/1" do
     test "unregisters a provider" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
       ProviderRegistry.register(provider_name, TestModule, %{})
 
       assert :ok = ProviderRegistry.unregister(provider_name)
@@ -45,7 +48,8 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
 
   describe "get/1" do
     test "returns provider data when provider exists" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
       module = TestModule
       config = %{api_key: "test_key"}
 
@@ -63,8 +67,10 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
 
   describe "list/0" do
     test "returns all registered providers" do
-      provider1 = :test_provider_#{System.unique_integer([:positive])}
-      provider2 = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider1 = :test_provider_
+      # {System.unique_integer([:positive])}
+      provider2 = :test_provider_
 
       ProviderRegistry.register(provider1, TestModule, %{})
       ProviderRegistry.register(provider2, TestModule, %{})
@@ -79,8 +85,10 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
 
   describe "list_available/0" do
     test "returns only available providers" do
-      available_provider = :available_#{System.unique_integer([:positive])}
-      unavailable_provider = :unavailable_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      available_provider = :available_
+      # {System.unique_integer([:positive])}
+      unavailable_provider = :unavailable_
 
       ProviderRegistry.register(available_provider, TestModule, %{})
       ProviderRegistry.register(unavailable_provider, TestModule, %{})
@@ -101,7 +109,8 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
 
   describe "update_health/2" do
     test "updates provider health status" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
       ProviderRegistry.register(provider_name, TestModule, %{})
 
       health_status = %{
@@ -122,7 +131,8 @@ defmodule RubberDuck.LLM.ProviderRegistryTest do
 
   describe "mark_unavailable/1 and mark_available/1" do
     test "toggles provider availability" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
       ProviderRegistry.register(provider_name, TestModule, %{})
 
       # Initially available

@@ -51,6 +51,7 @@ defmodule RubberDuck.Actions.LLM.Embed do
     case results do
       {:ok, embeddings} ->
         handle_successful_embeddings(embeddings, provider, start_time)
+
       {:error, reason} ->
         handle_embedding_failure(reason, provider, start_time)
     end
@@ -77,7 +78,10 @@ defmodule RubberDuck.Actions.LLM.Embed do
   defp handle_embedding_failure(reason, provider, start_time) do
     duration = System.monotonic_time(:millisecond) - start_time
     HealthMonitor.record_failure(provider.name, reason)
-    Logger.warning("Embedding generation failed for provider #{provider.name}: #{inspect(reason)}")
+
+    Logger.warning(
+      "Embedding generation failed for provider #{provider.name}: #{inspect(reason)}"
+    )
 
     {:error, build_error_response(reason, provider, duration)}
   end
@@ -85,7 +89,10 @@ defmodule RubberDuck.Actions.LLM.Embed do
   defp handle_embedding_exception(exception, provider, start_time) do
     duration = System.monotonic_time(:millisecond) - start_time
     HealthMonitor.record_failure(provider.name, exception)
-    Logger.error("Embedding generation crashed for provider #{provider.name}: #{inspect(exception)}")
+
+    Logger.error(
+      "Embedding generation crashed for provider #{provider.name}: #{inspect(exception)}"
+    )
 
     {:error, build_error_response({:exception, exception}, provider, duration)}
   end
@@ -99,11 +106,12 @@ defmodule RubberDuck.Actions.LLM.Embed do
   end
 
   defp handle_unsupported_provider(provider) do
-    {:error, %{
-      reason: :embeddings_not_supported,
-      provider: provider.name,
-      message: "Provider #{provider.name} does not support embeddings"
-    }}
+    {:error,
+     %{
+       reason: :embeddings_not_supported,
+       provider: provider.name,
+       message: "Provider #{provider.name} does not support embeddings"
+     }}
   end
 
   def describe do
@@ -163,20 +171,22 @@ defmodule RubberDuck.Actions.LLM.Embed do
     # Process texts in parallel batches
     batches = Enum.chunk_every(texts, batch_size)
 
-    tasks = Enum.map(batches, fn batch ->
-      Task.async(fn ->
-        process_single_batch(batch, provider, params)
+    tasks =
+      Enum.map(batches, fn batch ->
+        Task.async(fn ->
+          process_single_batch(batch, provider, params)
+        end)
       end)
-    end)
 
     # Wait for all tasks with timeout
     results = Task.await_many(tasks, params.timeout)
 
     # Check if all succeeded
-    errors = Enum.filter(results, fn
-      {:ok, _} -> false
-      {:error, _} -> true
-    end)
+    errors =
+      Enum.filter(results, fn
+        {:ok, _} -> false
+        {:error, _} -> true
+      end)
 
     if Enum.empty?(errors) do
       # Combine all embeddings
@@ -242,5 +252,6 @@ defmodule RubberDuck.Actions.LLM.Embed do
   defp get_embedding_dimensions([first | _]) when is_list(first) do
     length(first)
   end
+
   defp get_embedding_dimensions(_), do: 0
 end

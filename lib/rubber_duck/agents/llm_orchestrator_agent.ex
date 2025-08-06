@@ -21,19 +21,23 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       performance_metrics: [type: :map, default: %{}],
       learned_insights: [type: :map, default: %{}],
       learning_interval: [type: :pos_integer, default: 100],
-      last_learning_at: [type: {:or, [:naive_datetime, :nil]}, default: nil],
+      last_learning_at: [type: {:or, [:naive_datetime, nil]}, default: nil],
       persistence_enabled: [type: :boolean, default: false],
       checkpoint_interval: [type: :pos_integer, default: 300_000],
       experience_retention_days: [type: :pos_integer, default: 30],
       max_memory_experiences: [type: :pos_integer, default: 1000],
-      agent_state_id: [type: {:or, [:string, :nil]}, default: nil],
-      last_checkpoint: [type: {:or, [:utc_datetime, :nil]}, default: nil],
+      agent_state_id: [type: {:or, [:string, nil]}, default: nil],
+      last_checkpoint: [type: {:or, [:utc_datetime, nil]}, default: nil],
 
       # LLM Orchestrator specific fields
       provider_performance: [type: :map, default: %{}],
       cost_budget: [type: :float, default: nil],
       quality_threshold: [type: :float, default: 0.8],
-      optimization_preference: [type: :atom, values: [:cost, :quality, :balanced], default: :balanced],
+      optimization_preference: [
+        type: :atom,
+        values: [:cost, :quality, :balanced],
+        default: :balanced
+      ],
       fallback_enabled: [type: :boolean, default: true],
       cache_enabled: [type: :boolean, default: true],
       request_cache: [type: :map, default: %{}]
@@ -48,6 +52,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     ]
 
   alias RubberDuck.LLM.{HealthMonitor, ProviderRegistry}
+  alias RubberDuck.Routing.MessageRouter
   require Logger
 
   # Signal definitions
@@ -58,10 +63,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   @signal_cache_hit "llm.cache.hit"
 
   def init(opts) do
-    # Subscribe to relevant signals
-    :ok = RubberDuck.Signal.subscribe(@signal_request_completed)
-    :ok = RubberDuck.Signal.subscribe(@signal_request_failed)
-
+    # No longer need to subscribe to signals - messages are routed directly
     {:ok, opts}
   rescue
     exception ->
@@ -104,6 +106,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     case maybe_get_from_cache(agent, cache_key) do
       {:ok, cached_response} ->
         handle_cache_hit(request, cache_key, cached_response, agent)
+
       :miss ->
         execute_fresh_completion(agent, request, start_time, cache_key)
     end
@@ -118,7 +121,6 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     with {:ok, provider} <- select_optimal_provider(agent, request),
          _ = emit_provider_selected_signal(provider, request),
          {:ok, response} <- execute_completion(agent, provider, request) do
-
       finalize_successful_completion(agent, provider, request, response, start_time, cache_key)
     else
       {:error, reason} ->
@@ -137,12 +139,13 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   defp finalize_successful_completion(agent, provider, request, response, start_time, cache_key) do
     duration = System.monotonic_time(:millisecond) - start_time
 
-    updated_agent = update_provider_performance(agent, provider.name, %{
-      success: true,
-      duration: duration,
-      tokens_used: response.usage.total_tokens,
-      quality_score: estimate_quality(response)
-    })
+    updated_agent =
+      update_provider_performance(agent, provider.name, %{
+        success: true,
+        duration: duration,
+        tokens_used: response.usage.total_tokens,
+        quality_score: estimate_quality(response)
+      })
 
     final_agent = maybe_cache_response(updated_agent, cache_key, response)
 
@@ -160,7 +163,10 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp handle_completion_exception(exception, agent) do
-    Logger.error("Orchestrator complete failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+    Logger.error(
+      "Orchestrator complete failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+    )
+
     {{:error, {:exception, exception}}, agent}
   end
 
@@ -173,7 +179,6 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   defp process_streaming_request(agent, request) do
     with {:ok, provider} <- select_optimal_provider(agent, request),
          {:ok, stream} <- execute_streaming(agent, provider, request) do
-
       tracked_stream = create_tracked_stream(stream)
       {:ok, tracked_stream, agent}
     else
@@ -190,7 +195,8 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     new_count = token_count + estimate_tokens(chunk)
     {[chunk], new_count}
   rescue
-    _ -> {[chunk], token_count}  # Continue on error
+    # Continue on error
+    _ -> {[chunk], token_count}
   end
 
   defp handle_streaming_error(agent, request, reason, error) do
@@ -202,7 +208,10 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp handle_streaming_exception(exception, agent) do
-    Logger.error("Orchestrator stream failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+    Logger.error(
+      "Orchestrator stream failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+    )
+
     {{:error, {:exception, exception}}, agent}
   end
 
@@ -230,9 +239,10 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
           payload.provider,
           %{success_count: 1, total_duration: payload.duration},
           fn stats ->
-            %{stats |
-              success_count: stats.success_count + 1,
-              total_duration: stats.total_duration + payload.duration
+            %{
+              stats
+              | success_count: stats.success_count + 1,
+                total_duration: stats.total_duration + payload.duration
             }
           end
         )
@@ -271,11 +281,12 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       {:error, :no_providers_available}
     else
       # Apply learned insights to provider selection
-      insights = apply_learned_insights(agent, %{
-        request_type: :complete,
-        providers: available_providers,
-        request: request
-      })
+      insights =
+        apply_learned_insights(agent, %{
+          request_type: :complete,
+          providers: available_providers,
+          request: request
+        })
 
       # Score each provider based on agent's learning
       scored_providers =
@@ -319,8 +330,10 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     case agent.state.optimization_preference do
       :cost ->
         base_score + success_factor + cost_factor * 2
+
       :quality ->
         base_score + success_factor * 2 + speed_factor
+
       :balanced ->
         base_score + success_factor + speed_factor * 0.5 + cost_factor * 0.5
     end
@@ -329,29 +342,36 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   defp calculate_provider_success_rate(performance) do
     s = Map.get(performance, :success_count, 0)
     f = Map.get(performance, :failure_count, 0)
+
     if s + f > 0 do
       s / (s + f)
     else
-      0.95  # Optimistic default
+      # Optimistic default
+      0.95
     end
   end
 
   defp calculate_provider_average_duration(performance) do
     total = Map.get(performance, :total_duration, 0)
     count = Map.get(performance, :success_count, 0)
+
     if count > 0 do
       total / count
     else
-      1000  # 1 second default
+      # 1 second default
+      1000
     end
   end
 
   defp estimate_cost_factor(provider, _request) do
     # Simplified cost estimation
     case provider.name do
-      :openai -> 20.0  # More expensive
-      :anthropic -> 25.0  # Most expensive
-      :local -> 100.0  # Free
+      # More expensive
+      :openai -> 20.0
+      # Most expensive
+      :anthropic -> 25.0
+      # Free
+      :local -> 100.0
       _ -> 50.0
     end
   end
@@ -369,6 +389,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       {true, true} ->
         first_recommendation = get_first_recommendation(insights.recommendations)
         base_reason <> " (Learning: " <> first_recommendation <> ")"
+
       _ ->
         base_reason
     end
@@ -377,6 +398,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   defp has_valid_recommendations?(recommendations) when is_list(recommendations) do
     length(recommendations) > 0
   end
+
   defp has_valid_recommendations?(_), do: false
 
   defp get_first_recommendation(recommendations) do
@@ -422,7 +444,10 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
 
   defp attempt_fallback(agent, request, original_error) do
     # Try next best provider
-    case select_optimal_provider(agent, Map.put(request, :exclude_providers, [request[:attempted_provider]])) do
+    case select_optimal_provider(
+           agent,
+           Map.put(request, :exclude_providers, [request[:attempted_provider]])
+         ) do
       {:ok, fallback_provider} ->
         emit_signal(@signal_fallback_triggered, %{
           request_id: request[:id],
@@ -460,7 +485,8 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       updated_cache =
         agent.state.request_cache
         |> Map.put(cache_key, response)
-        |> limit_cache_size(100)  # Keep only 100 most recent
+        # Keep only 100 most recent
+        |> limit_cache_size(100)
 
       %{agent | state: Map.put(agent.state, :request_cache, updated_cache)}
     else
@@ -481,6 +507,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp limit_cache_size(cache, max_size) when map_size(cache) <= max_size, do: cache
+
   defp limit_cache_size(cache, max_size) do
     # Remove oldest entries (simplified - in production use LRU)
     cache
@@ -503,7 +530,32 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp emit_signal(signal_type, payload) do
-    RubberDuck.Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
+    # Use typed LLM messages
+    case signal_type do
+      @signal_provider_selected ->
+        message = %RubberDuck.Messages.LLM.ProviderSelect{
+          request_type: :completion,
+          preferred_providers: [payload[:provider]],
+          metadata: payload
+        }
+        MessageRouter.route(message)
+      
+      @signal_request_completed ->
+        Logger.debug("LLM request completed: #{inspect(payload)}")
+        :ok
+        
+      @signal_request_failed ->
+        message = %RubberDuck.Messages.LLM.Fallback{
+          original_provider: payload[:provider],
+          reason: payload[:error] || :error,
+          metadata: payload
+        }
+        MessageRouter.route(message)
+        
+      _ ->
+        Logger.debug("Would emit signal: #{signal_type}, payload: #{inspect(payload)}")
+        :ok
+    end
   rescue
     exception ->
       Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")
@@ -522,11 +574,12 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
           quality_sum: metrics.quality_score
         },
         fn stats ->
-          %{stats |
-            success_count: stats.success_count + 1,
-            total_duration: stats.total_duration + metrics.duration,
-            total_tokens: Map.get(stats, :total_tokens, 0) + metrics.tokens_used,
-            quality_sum: Map.get(stats, :quality_sum, 0) + metrics.quality_score
+          %{
+            stats
+            | success_count: stats.success_count + 1,
+              total_duration: stats.total_duration + metrics.duration,
+              total_tokens: Map.get(stats, :total_tokens, 0) + metrics.tokens_used,
+              quality_sum: Map.get(stats, :quality_sum, 0) + metrics.quality_score
           }
         end
       )
@@ -538,17 +591,21 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     # Apply learning-based adjustments to provider scores
     case {insights.applicable, insights.confidence > 0.5} do
       {true, true} ->
-        adjustment = calculate_provider_adjustment(provider, insights.recommendations, insights.confidence)
+        adjustment =
+          calculate_provider_adjustment(provider, insights.recommendations, insights.confidence)
+
         base_score + adjustment
+
       _ ->
         base_score
     end
   end
 
   defp calculate_provider_adjustment(provider, recommendations, confidence) do
-    adjustments = Enum.map(recommendations, fn rec ->
-      calculate_recommendation_score(rec, provider)
-    end)
+    adjustments =
+      Enum.map(recommendations, fn rec ->
+        calculate_recommendation_score(rec, provider)
+      end)
 
     Enum.sum(adjustments) * confidence
   end
@@ -557,8 +614,10 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     cond do
       provider_specific_recommendation?(rec, provider) ->
         calculate_provider_specific_score(rec, provider)
+
       general_recommendation?(rec, provider) ->
         calculate_general_recommendation_score(rec, provider)
+
       true ->
         0.0
     end

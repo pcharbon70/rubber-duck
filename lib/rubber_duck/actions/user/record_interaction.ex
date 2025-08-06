@@ -44,6 +44,7 @@ defmodule RubberDuck.Actions.User.RecordInteraction do
 
   defp get_time_category do
     hour = DateTime.utc_now().hour
+
     cond do
       hour >= 5 && hour < 12 -> :morning
       hour >= 12 && hour < 17 -> :afternoon

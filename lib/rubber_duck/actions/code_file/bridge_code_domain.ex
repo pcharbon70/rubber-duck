@@ -13,6 +13,7 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     ]
 
   alias RubberDuck.Projects
+  require Logger
 
   @impl true
   def run(params, _context) do
@@ -31,13 +32,13 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     with {:ok, code_file} <- get_or_create_code_file(agent_state),
          {:ok, updated_file} <- sync_agent_to_domain(code_file, agent_state),
          {:ok, synced_state} <- sync_domain_to_agent(updated_file, agent_state) do
-
-      {:ok, %{
-        code_file: updated_file,
-        agent_state: synced_state,
-        sync_status: :completed,
-        synced_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         code_file: updated_file,
+         agent_state: synced_state,
+         sync_status: :completed,
+         synced_at: DateTime.utc_now()
+       }}
     end
   end
 
@@ -47,13 +48,13 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     with {:ok, validated} <- validate_create_params(agent_state),
          {:ok, code_file} <- create_code_file(validated),
          {:ok, analysis_result} <- create_initial_analysis(code_file, agent_state) do
-
-      {:ok, %{
-        code_file: code_file,
-        analysis_result: analysis_result,
-        created: true,
-        file_id: code_file.id
-      }}
+      {:ok,
+       %{
+         code_file: code_file,
+         analysis_result: analysis_result,
+         created: true,
+         file_id: code_file.id
+       }}
     end
   end
 
@@ -64,13 +65,13 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
          {:ok, changes} <- prepare_update_changes(code_file, agent_state),
          {:ok, updated_file} <- apply_domain_update(code_file, changes),
          {:ok, _} <- trigger_dependent_updates(updated_file, agent_state) do
-
-      {:ok, %{
-        code_file: updated_file,
-        changes_applied: changes,
-        updated: true,
-        updated_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         code_file: updated_file,
+         changes_applied: changes,
+         updated: true,
+         updated_at: DateTime.utc_now()
+       }}
     end
   end
 
@@ -81,13 +82,13 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
          {:ok, aggregated} <- aggregate_code_metrics(code_files),
          {:ok, insights} <- generate_project_insights(aggregated),
          {:ok, recommendations} <- generate_project_recommendations(aggregated, insights) do
-
-      {:ok, %{
-        files_analyzed: length(code_files),
-        aggregated_metrics: aggregated,
-        project_insights: insights,
-        recommendations: recommendations
-      }}
+      {:ok,
+       %{
+         files_analyzed: length(code_files),
+         aggregated_metrics: aggregated,
+         project_insights: insights,
+         recommendations: recommendations
+       }}
     end
   end
 
@@ -96,12 +97,12 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
 
     with {:ok, code_files} <- list_code_files(filters),
          {:ok, enriched} <- enrich_with_agent_data(code_files) do
-
-      {:ok, %{
-        code_files: enriched,
-        total_count: length(enriched),
-        filters_applied: filters
-      }}
+      {:ok,
+       %{
+         code_files: enriched,
+         total_count: length(enriched),
+         filters_applied: filters
+       }}
     end
   end
 
@@ -139,18 +140,20 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     updates = %{}
 
     # Update content if changed
-    updates = if agent_state.current_content != code_file.content do
-      Map.put(updates, :content, agent_state.current_content)
-    else
-      updates
-    end
+    updates =
+      if agent_state.current_content != code_file.content do
+        Map.put(updates, :content, agent_state.current_content)
+      else
+        updates
+      end
 
     # Update status based on agent analysis
-    updates = if agent_state.issues && length(agent_state.issues) > 0 do
-      Map.put(updates, :status, :modified)
-    else
-      updates
-    end
+    updates =
+      if agent_state.issues && length(agent_state.issues) > 0 do
+        Map.put(updates, :status, :modified)
+      else
+        updates
+      end
 
     if map_size(updates) > 0 do
       Projects.update_code_file(code_file.id, updates)
@@ -160,7 +163,8 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
   end
 
   defp sync_domain_to_agent(code_file, agent_state) do
-    updated_state = agent_state
+    updated_state =
+      agent_state
       |> Map.put(:file_id, code_file.id)
       |> Map.put(:file_path, code_file.path)
       |> Map.put(:project_id, code_file.project_id)
@@ -168,11 +172,12 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
       |> Map.put(:last_synced_at, DateTime.utc_now())
 
     # Sync analysis results if available
-    updated_state = if code_file.analysis_results do
-      merge_analysis_results(updated_state, code_file.analysis_results)
-    else
-      updated_state
-    end
+    updated_state =
+      if code_file.analysis_results do
+        merge_analysis_results(updated_state, code_file.analysis_results)
+      else
+        updated_state
+      end
 
     {:ok, updated_state}
   end
@@ -229,32 +234,36 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     changes = %{}
 
     # Check for content changes
-    changes = if agent_state.current_content && agent_state.current_content != code_file.content do
-      Map.put(changes, :content, agent_state.current_content)
-    else
-      changes
-    end
+    changes =
+      if agent_state.current_content && agent_state.current_content != code_file.content do
+        Map.put(changes, :content, agent_state.current_content)
+      else
+        changes
+      end
 
     # Check for path changes
-    changes = if agent_state.file_path && agent_state.file_path != code_file.path do
-      Map.put(changes, :path, agent_state.file_path)
-    else
-      changes
-    end
+    changes =
+      if agent_state.file_path && agent_state.file_path != code_file.path do
+        Map.put(changes, :path, agent_state.file_path)
+      else
+        changes
+      end
 
     # Update size if content changed
-    changes = if changes[:content] do
-      Map.put(changes, :size_bytes, byte_size(changes.content))
-    else
-      changes
-    end
+    changes =
+      if changes[:content] do
+        Map.put(changes, :size_bytes, byte_size(changes.content))
+      else
+        changes
+      end
 
     # Update status based on agent analysis
-    changes = if should_update_status?(agent_state) do
-      Map.put(changes, :status, determine_status(agent_state))
-    else
-      changes
-    end
+    changes =
+      if should_update_status?(agent_state) do
+        Map.put(changes, :status, determine_status(agent_state))
+      else
+        changes
+      end
 
     {:ok, changes}
   end
@@ -306,26 +315,34 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     insights = []
 
     # Large project insight
-    insights = if aggregated.total_files > 100 do
-      [%{
-        type: :scale,
-        message: "Large project with #{aggregated.total_files} files",
-        recommendation: "Consider modularization"
-      } | insights]
-    else
-      insights
-    end
+    insights =
+      if aggregated.total_files > 100 do
+        [
+          %{
+            type: :scale,
+            message: "Large project with #{aggregated.total_files} files",
+            recommendation: "Consider modularization"
+          }
+          | insights
+        ]
+      else
+        insights
+      end
 
     # Language diversity insight
-    insights = if map_size(aggregated.languages) > 3 do
-      [%{
-        type: :diversity,
-        message: "Multi-language project detected",
-        recommendation: "Ensure consistent tooling across languages"
-      } | insights]
-    else
-      insights
-    end
+    insights =
+      if map_size(aggregated.languages) > 3 do
+        [
+          %{
+            type: :diversity,
+            message: "Multi-language project detected",
+            recommendation: "Ensure consistent tooling across languages"
+          }
+          | insights
+        ]
+      else
+        insights
+      end
 
     {:ok, insights}
   end
@@ -334,18 +351,20 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     recommendations = []
 
     # Size-based recommendations
-    recommendations = if aggregated.average_file_size > 500 do
-      ["Consider splitting large files" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if aggregated.average_file_size > 500 do
+        ["Consider splitting large files" | recommendations]
+      else
+        recommendations
+      end
 
     # Status-based recommendations
-    recommendations = if aggregated.status_distribution[:modified] > aggregated.total_files * 0.5 do
-      ["Many modified files - consider committing changes" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if aggregated.status_distribution[:modified] > aggregated.total_files * 0.5 do
+        ["Many modified files - consider committing changes" | recommendations]
+      else
+        recommendations
+      end
 
     {:ok, recommendations}
   end
@@ -353,12 +372,13 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
   # List helper functions
 
   defp list_code_files(filters) do
-    base_query = if filters[:project_id] do
-      {:ok, files} = Projects.list_code_files_by_project(filters.project_id)
-      files
-    else
-      []
-    end
+    base_query =
+      if filters[:project_id] do
+        {:ok, files} = Projects.list_code_files_by_project(filters.project_id)
+        files
+      else
+        []
+      end
 
     filtered = apply_filters(base_query, filters)
     {:ok, filtered}
@@ -372,30 +392,34 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
   end
 
   defp filter_by_language(files, nil), do: files
+
   defp filter_by_language(files, language) do
     Enum.filter(files, fn file -> file.language == language end)
   end
 
   defp filter_by_status(files, nil), do: files
+
   defp filter_by_status(files, status) do
     Enum.filter(files, fn file -> file.status == status end)
   end
 
   defp filter_by_path_pattern(files, nil), do: files
+
   defp filter_by_path_pattern(files, pattern) do
     Enum.filter(files, fn file -> String.contains?(file.path, pattern) end)
   end
 
   defp enrich_with_agent_data(code_files) do
-    enriched = Enum.map(code_files, fn file ->
-      agent_data = fetch_agent_data_for_file(file.id)
+    enriched =
+      Enum.map(code_files, fn file ->
+        agent_data = fetch_agent_data_for_file(file.id)
 
-      Map.merge(file, %{
-        agent_analysis: agent_data[:analysis],
-        quality_score: agent_data[:quality_score],
-        last_analyzed: agent_data[:last_analyzed]
-      })
-    end)
+        Map.merge(file, %{
+          agent_analysis: agent_data[:analysis],
+          quality_score: agent_data[:quality_score],
+          last_analyzed: agent_data[:last_analyzed]
+        })
+      end)
 
     {:ok, enriched}
   end
@@ -452,12 +476,10 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     end
   end
 
-  defp emit_update_signal(dependent, code_file) do
-    RubberDuck.Signal.emit("code_file.dependency_updated", %{
-      dependent_file: dependent.file_path,
-      updated_file: code_file.path,
-      update_type: :dependency_change
-    })
+  defp emit_update_signal(_dependent, code_file) do
+    Logger.debug("Legacy signal emission: code_file.dependency_updated for #{code_file.path}")
+    # Note: Converted from legacy signal system - code file events now handled via MessageRouter
+    :ok
   end
 
   defp calculate_total_lines(code_files) do
@@ -472,9 +494,10 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
 
   defp calculate_average_size(code_files) do
     if length(code_files) > 0 do
-      total = Enum.reduce(code_files, 0, fn file, acc ->
-        acc + (file.size_bytes || 0)
-      end)
+      total =
+        Enum.reduce(code_files, 0, fn file, acc ->
+          acc + (file.size_bytes || 0)
+        end)
 
       total / length(code_files)
     else

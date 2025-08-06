@@ -19,36 +19,38 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
     with {:ok, applicable_fixes} <- filter_applicable_fixes(params.fixes, params),
          {:ok, fixed_content} <- apply_fixes_to_content(params.content, applicable_fixes),
          {:ok, validation} <- validate_fixes(fixed_content, params) do
-
-      {:ok, %{
-        original_content: params.content,
-        fixed_content: fixed_content,
-        applied_fixes: applicable_fixes,
-        skipped_fixes: get_skipped_fixes(params.fixes, applicable_fixes),
-        validation_results: validation,
-        improvement_metrics: calculate_improvement_metrics(params.content, fixed_content)
-      }}
+      {:ok,
+       %{
+         original_content: params.content,
+         fixed_content: fixed_content,
+         applied_fixes: applicable_fixes,
+         skipped_fixes: get_skipped_fixes(params.fixes, applicable_fixes),
+         validation_results: validation,
+         improvement_metrics: calculate_improvement_metrics(params.content, fixed_content)
+       }}
     end
   end
 
   defp filter_applicable_fixes(fixes, params) do
-    applicable = if params.auto_apply do
-      # Only apply safe, automated fixes
-      Enum.filter(fixes, fn fix ->
-        fix.auto_applicable && fix.risk_level in [:low, :minimal]
-      end)
-    else
-      # Apply all requested fixes
-      fixes
-    end
+    applicable =
+      if params.auto_apply do
+        # Only apply safe, automated fixes
+        Enum.filter(fixes, fn fix ->
+          fix.auto_applicable && fix.risk_level in [:low, :minimal]
+        end)
+      else
+        # Apply all requested fixes
+        fixes
+      end
 
     {:ok, applicable}
   end
 
   defp apply_fixes_to_content(content, fixes) do
-    fixed = Enum.reduce(fixes, content, fn fix, acc ->
-      apply_single_fix(acc, fix)
-    end)
+    fixed =
+      Enum.reduce(fixes, content, fn fix, acc ->
+        apply_single_fix(acc, fix)
+      end)
 
     {:ok, fixed}
   end
@@ -67,9 +69,15 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
 
   defp fix_syntax_issue(content, fix) do
     case fix.issue do
-      :missing_comma -> add_missing_commas(content)
-      :unclosed_bracket -> fix_unclosed_brackets(content)
-      :incorrect_indentation -> fix_indentation(content)
+      :missing_comma ->
+        add_missing_commas(content)
+
+      :unclosed_bracket ->
+        fix_unclosed_brackets(content)
+
+      :incorrect_indentation ->
+        fix_indentation(content)
+
       _ ->
         if fix[:pattern] && fix[:replacement] do
           String.replace(content, fix.pattern, fix.replacement)
@@ -183,8 +191,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
 
   defp fix_unclosed_brackets(content) do
     # Count and balance brackets
-    open_count = content |> String.graphemes() |> Enum.count(& &1 in ["[", "{", "("])
-    close_count = content |> String.graphemes() |> Enum.count(& &1 in ["]", "}", ")"])
+    open_count = content |> String.graphemes() |> Enum.count(&(&1 in ["[", "{", "("]))
+    close_count = content |> String.graphemes() |> Enum.count(&(&1 in ["]", "}", ")"]))
 
     if open_count > close_count do
       # Add closing brackets at the end
@@ -198,7 +206,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
   defp fix_indentation(content) do
     lines = String.split(content, "\n")
 
-    fixed_lines = lines
+    fixed_lines =
+      lines
       |> Enum.map(fn line ->
         # Ensure consistent 2-space indentation
         indent_level = detect_indent_level(line)
@@ -251,6 +260,7 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
     # Simple line wrapping at logical break points
     if String.contains?(line, ",") do
       parts = String.split(line, ",", parts: 2)
+
       if length(parts) == 2 do
         Enum.at(parts, 0) <> ",\n  " <> String.trim(Enum.at(parts, 1))
       else
@@ -326,7 +336,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
   defp add_input_validation(content, _fix) do
     # Add basic input validation
     if String.contains?(content, "def ") and not String.contains?(content, "validate") do
-      content <> "\n\n  defp validate_input(input) do\n    # TODO: Add validation logic\n    {:ok, input}\n  end"
+      content <>
+        "\n\n  defp validate_input(input) do\n    # TODO: Add validation logic\n    {:ok, input}\n  end"
     else
       content
     end
@@ -336,7 +347,11 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
     if String.contains?(content, "@moduledoc") do
       content
     else
-      String.replace(content, ~r/(defmodule\s+[\w.]+\s+do)/, "\\1\n  @moduledoc \"\"\"\n  Module documentation\n  \"\"\"")
+      String.replace(
+        content,
+        ~r/(defmodule\s+[\w.]+\s+do)/,
+        "\\1\n  @moduledoc \"\"\"\n  Module documentation\n  \"\"\""
+      )
     end
   end
 
@@ -398,7 +413,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
     issues = issues + if Regex.match?(~r/def [A-Z]/, content), do: 1, else: 0
 
     # Count formatting issues
-    long_lines = content
+    long_lines =
+      content
       |> String.split("\n")
       |> Enum.count(fn line -> String.length(line) > 120 end)
 
@@ -429,10 +445,12 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
     decision_points = ["if ", "unless ", "case ", "cond ", "and ", "or "]
 
     Enum.reduce(decision_points, 1, fn point, acc ->
-      count = content
+      count =
+        content
         |> String.split(point)
         |> length()
         |> Kernel.-(1)
+
       acc + count
     end)
   end
@@ -446,12 +464,14 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
 
   defp calculate_readability_score(content) do
     lines = String.split(content, "\n")
-    avg_line_length = if length(lines) > 0 do
-      total = Enum.reduce(lines, 0, fn line, acc -> acc + String.length(line) end)
-      total / length(lines)
-    else
-      0
-    end
+
+    avg_line_length =
+      if length(lines) > 0 do
+        total = Enum.reduce(lines, 0, fn line, acc -> acc + String.length(line) end)
+        total / length(lines)
+      else
+        0
+      end
 
     # Simple readability score based on line length
     if avg_line_length < 80 do

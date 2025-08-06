@@ -16,10 +16,16 @@ defmodule RubberDuck.Agents.Base do
 
       # Import the learning and persistence actions
       alias RubberDuck.Actions.Agent.{Learn, LoadAgentState, SaveAgentState}
+      
+      # Import message routing support
+      alias RubberDuck.Routing.MessageRouter
+      alias RubberDuck.Adapters.SignalAdapter
+      alias RubberDuck.Messages
 
       # Define child_spec for supervision
       def child_spec(opts) do
         id = Keyword.get(opts, :id, __MODULE__)
+
         %{
           id: id,
           start: {__MODULE__, :start_link, [opts]},
@@ -39,22 +45,27 @@ defmodule RubberDuck.Agents.Base do
         agent = __MODULE__.new(agent_opts)
 
         # Load persisted state if enabled
-        agent = if Map.get(agent.state, :persistence_enabled, false) do
-          case load_persisted_state(agent) do
-            {:ok, loaded_agent} ->
-              Logger.info("Loaded persisted state for agent #{agent.name}")
-              # Schedule first checkpoint
-              schedule_checkpoint(loaded_agent)
-              loaded_agent
-            {:error, reason} ->
-              Logger.warning("Failed to load persisted state for agent #{agent.name}: #{inspect(reason)}")
-              # Schedule checkpoint for new agent
-              schedule_checkpoint(agent)
-              agent
+        agent =
+          if Map.get(agent.state, :persistence_enabled, false) do
+            case load_persisted_state(agent) do
+              {:ok, loaded_agent} ->
+                Logger.info("Loaded persisted state for agent #{agent.name}")
+                # Schedule first checkpoint
+                schedule_checkpoint(loaded_agent)
+                loaded_agent
+
+              {:error, reason} ->
+                Logger.warning(
+                  "Failed to load persisted state for agent #{agent.name}: #{inspect(reason)}"
+                )
+
+                # Schedule checkpoint for new agent
+                schedule_checkpoint(agent)
+                agent
+            end
+          else
+            agent
           end
-        else
-          agent
-        end
 
         # Build server options
         server_opts = [
@@ -129,11 +140,13 @@ defmodule RubberDuck.Agents.Base do
       rescue
         exception ->
           Logger.error("Experience recording failed: #{inspect(exception)}")
-          {:ok, agent}  # Continue with unchanged agent
+          # Continue with unchanged agent
+          {:ok, agent}
       catch
         {:error, reason} ->
           Logger.warning("Failed to record experience: #{inspect(reason)}")
-          {:ok, agent}  # Continue with unchanged agent
+          # Continue with unchanged agent
+          {:ok, agent}
       end
 
       @doc """
@@ -147,7 +160,8 @@ defmodule RubberDuck.Agents.Base do
       rescue
         exception ->
           Logger.warning("Experience analysis failed: #{inspect(exception)}")
-          %{}  # Return empty analysis on error
+          # Return empty analysis on error
+          %{}
       end
 
       defp filter_valid_experiences(experiences) do
@@ -169,11 +183,12 @@ defmodule RubberDuck.Agents.Base do
       end
 
       defp build_experience_metrics({type, experiences}) do
-        {type, %{
-          success_rate: calculate_success_rate(experiences),
-          avg_duration: calculate_average_duration(experiences),
-          sample_size: length(experiences)
-        }}
+        {type,
+         %{
+           success_rate: calculate_success_rate(experiences),
+           avg_duration: calculate_average_duration(experiences),
+           sample_size: length(experiences)
+         }}
       end
 
       @doc """
@@ -195,10 +210,11 @@ defmodule RubberDuck.Agents.Base do
 
       defp calculate_success_rate(experiences) do
         total = length(experiences)
+
         if total == 0 do
           0.0
         else
-          successful = Enum.count(experiences, & &1.result[:success] == true)
+          successful = Enum.count(experiences, &(&1.result[:success] == true))
           successful / total
         end
       end
@@ -248,13 +264,17 @@ defmodule RubberDuck.Agents.Base do
       end
 
       defp collect_insight_for_type(agent, type, acc) do
-        case Learn.run(%{
-          experiences: agent.state.experience,
-          learning_type: type,
-          context: %{agent_name: agent.name}
-        }, %{}) do
+        case Learn.run(
+               %{
+                 experiences: agent.state.experience,
+                 learning_type: type,
+                 context: %{agent_name: agent.name}
+               },
+               %{}
+             ) do
           {:ok, result} when result.learned ->
             Map.put(acc, type, result.insights)
+
           _ ->
             acc
         end
@@ -310,19 +330,22 @@ defmodule RubberDuck.Agents.Base do
         experience_count = length(agent.state.experience)
 
         # Learn when we have enough new experiences
-        since_last_learning = if agent.state.last_learning_at do
-          experiences_since_learning = Enum.count(agent.state.experience, fn exp ->
-            exp[:timestamp] &&
-            NaiveDateTime.compare(exp[:timestamp], agent.state.last_learning_at) == :gt
-          end)
-          experiences_since_learning
-        else
-          experience_count
-        end
+        since_last_learning =
+          if agent.state.last_learning_at do
+            experiences_since_learning =
+              Enum.count(agent.state.experience, fn exp ->
+                exp[:timestamp] &&
+                  NaiveDateTime.compare(exp[:timestamp], agent.state.last_learning_at) == :gt
+              end)
+
+            experiences_since_learning
+          else
+            experience_count
+          end
 
         agent.state.learning_enabled &&
-        experience_count >= 10 &&
-        since_last_learning >= agent.state.learning_interval
+          experience_count >= 10 &&
+          since_last_learning >= agent.state.learning_interval
       end
 
       defp calculate_insight_confidence(insights) do
@@ -330,13 +353,15 @@ defmodule RubberDuck.Agents.Base do
           0.0
         else
           # Average confidence across all insight types
-          confidences = insights
-          |> Map.values()
-          |> Enum.map(fn insight ->
-            insight[:pattern_confidence] ||
-            insight[:prediction_accuracy] ||
-            0.7  # Default confidence
-          end)
+          confidences =
+            insights
+            |> Map.values()
+            |> Enum.map(fn insight ->
+              # Default confidence
+              insight[:pattern_confidence] ||
+                insight[:prediction_accuracy] ||
+                0.7
+            end)
 
           Enum.sum(confidences) / length(confidences)
         end
@@ -344,11 +369,12 @@ defmodule RubberDuck.Agents.Base do
 
       defp insight_applicable?(insights, context) do
         # Check if any insights are relevant to the current context
-        applicable_scenarios = insights
-        |> Map.values()
-        |> Enum.flat_map(fn insight ->
-          insight[:applicable_scenarios] || []
-        end)
+        applicable_scenarios =
+          insights
+          |> Map.values()
+          |> Enum.flat_map(fn insight ->
+            insight[:applicable_scenarios] || []
+          end)
 
         # Simple check - in production would do more sophisticated matching
         length(applicable_scenarios) > 0
@@ -360,23 +386,27 @@ defmodule RubberDuck.Agents.Base do
       Load persisted state for the agent.
       """
       def load_persisted_state(agent) do
-        case LoadAgentState.run(%{
-          agent_name: agent.name,
-          load_experiences: true,
-          experience_limit: agent.state.max_memory_experiences
-        }, %{}) do
+        case LoadAgentState.run(
+               %{
+                 agent_name: agent.name,
+                 load_experiences: true,
+                 experience_limit: agent.state.max_memory_experiences
+               },
+               %{}
+             ) do
           {:ok, state_data} ->
             if state_data[:new_agent] do
               {:ok, agent}
             else
               # Merge loaded state with current agent
-              updated_state = agent.state
-              |> Map.put(:agent_state_id, state_data.agent_state_id)
-              |> Map.put(:last_checkpoint, state_data.last_checkpoint)
-              |> Map.merge(state_data.metadata || %{})
-              |> Map.put(:experience, state_data[:experiences] || [])
-              |> Map.put(:learned_insights, state_data[:insights] || %{})
-              |> maybe_put_provider_performance(state_data)
+              updated_state =
+                agent.state
+                |> Map.put(:agent_state_id, state_data.agent_state_id)
+                |> Map.put(:last_checkpoint, state_data.last_checkpoint)
+                |> Map.merge(state_data.metadata || %{})
+                |> Map.put(:experience, state_data[:experiences] || [])
+                |> Map.put(:learned_insights, state_data[:insights] || %{})
+                |> maybe_put_provider_performance(state_data)
 
               {:ok, %{agent | state: updated_state}}
             end
@@ -401,6 +431,7 @@ defmodule RubberDuck.Agents.Base do
         if agent.state.persistence_enabled && agent.state.checkpoint_interval > 0 do
           Process.send_after(self(), :checkpoint, agent.state.checkpoint_interval)
         end
+
         agent
       end
 
@@ -409,11 +440,14 @@ defmodule RubberDuck.Agents.Base do
       """
       def on_checkpoint(agent) do
         if agent.state.persistence_enabled do
-          case SaveAgentState.run(%{
-            agent: agent,
-            include_experiences: true,
-            experience_batch_size: 100
-          }, %{}) do
+          case SaveAgentState.run(
+                 %{
+                   agent: agent,
+                   include_experiences: true,
+                   experience_batch_size: 100
+                 },
+                 %{}
+               ) do
             {:ok, result} ->
               Logger.debug("Agent #{agent.name} checkpoint completed: #{inspect(result)}")
               # Schedule next checkpoint
@@ -425,7 +459,8 @@ defmodule RubberDuck.Agents.Base do
             {:error, reason} ->
               Logger.error("Agent #{agent.name} checkpoint failed: #{inspect(reason)}")
               # Schedule retry
-              Process.send_after(self(), :checkpoint, 60_000) # Retry in 1 minute
+              # Retry in 1 minute
+              Process.send_after(self(), :checkpoint, 60_000)
               {:ok, agent}
           end
         else
@@ -440,15 +475,21 @@ defmodule RubberDuck.Agents.Base do
         if agent.state.persistence_enabled do
           Logger.info("Saving final state for agent #{agent.name}")
 
-          case SaveAgentState.run(%{
-            agent: agent,
-            include_experiences: true,
-            experience_batch_size: 100
-          }, %{}) do
+          case SaveAgentState.run(
+                 %{
+                   agent: agent,
+                   include_experiences: true,
+                   experience_batch_size: 100
+                 },
+                 %{}
+               ) do
             {:ok, _} ->
               Logger.info("Final state saved for agent #{agent.name}")
+
             {:error, reason} ->
-              Logger.error("Failed to save final state for agent #{agent.name}: #{inspect(reason)}")
+              Logger.error(
+                "Failed to save final state for agent #{agent.name}: #{inspect(reason)}"
+              )
           end
         end
 
@@ -468,20 +509,18 @@ defmodule RubberDuck.Agents.Base do
       end
 
       # Make callbacks overridable
-      defoverridable [
-        on_goal_assigned: 2,
-        on_goal_completed: 3,
-        on_experience_gained: 2,
-        analyze_experience: 1,
-        get_performance_metrics: 1,
-        perform_learning: 1,
-        apply_learned_insights: 2,
-        load_persisted_state: 1,
-        schedule_checkpoint: 1,
-        on_checkpoint: 1,
-        on_shutdown: 1,
-        terminate: 2
-      ]
+      defoverridable on_goal_assigned: 2,
+                     on_goal_completed: 3,
+                     on_experience_gained: 2,
+                     analyze_experience: 1,
+                     get_performance_metrics: 1,
+                     perform_learning: 1,
+                     apply_learned_insights: 2,
+                     load_persisted_state: 1,
+                     schedule_checkpoint: 1,
+                     on_checkpoint: 1,
+                     on_shutdown: 1,
+                     terminate: 2
     end
   end
 end

@@ -19,16 +19,16 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
          {:ok, analysis} <- perform_quality_analysis(metrics, params),
          {:ok, score} <- calculate_quality_score(metrics, analysis),
          {:ok, recommendations} <- generate_quality_recommendations(analysis, score) do
-
-      {:ok, %{
-        quality_score: score.overall,
-        quality_grade: score.grade,
-        metrics: metrics,
-        analysis: analysis,
-        recommendations: recommendations,
-        improvement_roadmap: create_improvement_roadmap(analysis, recommendations),
-        badges: award_quality_badges(score)
-      }}
+      {:ok,
+       %{
+         quality_score: score.overall,
+         quality_grade: score.grade,
+         metrics: metrics,
+         analysis: analysis,
+         recommendations: recommendations,
+         improvement_roadmap: create_improvement_roadmap(analysis, recommendations),
+         badges: award_quality_badges(score)
+       }}
     end
   end
 
@@ -46,11 +46,12 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
       style: calculate_style_metrics(content)
     }
 
-    filtered = if :all in params.include_metrics do
-      metrics
-    else
-      Map.take(metrics, params.include_metrics)
-    end
+    filtered =
+      if :all in params.include_metrics do
+        metrics
+      else
+        Map.take(metrics, params.include_metrics)
+      end
 
     {:ok, filtered}
   end
@@ -79,10 +80,11 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
       documentation: 0.05
     }
 
-    weighted_score = Enum.reduce(weights, 0.0, fn {metric, weight}, acc ->
-      metric_score = get_metric_score(metrics[metric])
-      acc + (metric_score * weight)
-    end)
+    weighted_score =
+      Enum.reduce(weights, 0.0, fn {metric, weight}, acc ->
+        metric_score = get_metric_score(metrics[metric])
+        acc + metric_score * weight
+      end)
 
     # Apply penalties for issues
     penalty = calculate_penalties(analysis)
@@ -108,7 +110,8 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
     recommendations = recommendations ++ generate_code_smell_recommendations(analysis.code_smells)
 
     # Add best practice recommendations
-    recommendations = recommendations ++ generate_best_practice_recommendations(analysis.best_practices)
+    recommendations =
+      recommendations ++ generate_best_practice_recommendations(analysis.best_practices)
 
     # Prioritize recommendations
     prioritized = prioritize_recommendations(recommendations, score)
@@ -251,10 +254,10 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
   defp score_maintainability(metrics) do
     base_score = 1.0
 
-    base_score = base_score + (metrics.modularity * 0.2)
-    base_score = base_score - (metrics.coupling * 0.3)
-    base_score = base_score + (metrics.cohesion * 0.2)
-    base_score = base_score - (metrics.change_risk * 0.3)
+    base_score = base_score + metrics.modularity * 0.2
+    base_score = base_score - metrics.coupling * 0.3
+    base_score = base_score + metrics.cohesion * 0.2
+    base_score = base_score - metrics.change_risk * 0.3
 
     max(0.0, min(1.0, base_score))
   end
@@ -263,10 +266,10 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
     base_score = 1.0
 
     # Penalize high cyclomatic complexity
-    base_score = base_score - (min(metrics.cyclomatic, 20) / 20.0) * 0.5
+    base_score = base_score - min(metrics.cyclomatic, 20) / 20.0 * 0.5
 
     # Penalize deep nesting
-    base_score = base_score - (min(metrics.nesting_depth, 5) / 5.0) * 0.3
+    base_score = base_score - min(metrics.nesting_depth, 5) / 5.0 * 0.3
 
     max(0.0, min(1.0, base_score))
   end
@@ -360,6 +363,7 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
   defp get_metric_score(metric) when is_map(metric) do
     Map.get(metric, :score, 0.5)
   end
+
   defp get_metric_score(_), do: 0.5
 
   defp calculate_penalties(analysis) do
@@ -431,19 +435,21 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
 
   defp prioritize_recommendations(recommendations, _score) do
     Enum.sort_by(recommendations, fn rec ->
-      priority_value = case rec.priority do
-        :high -> 3
-        :medium -> 2
-        :low -> 1
-        _ -> 0
-      end
+      priority_value =
+        case rec.priority do
+          :high -> 3
+          :medium -> 2
+          :low -> 1
+          _ -> 0
+        end
 
-      effort_value = case rec.effort do
-        :low -> 3
-        :medium -> 2
-        :high -> 1
-        _ -> 0
-      end
+      effort_value =
+        case rec.effort do
+          :low -> 3
+          :medium -> 2
+          :high -> 1
+          _ -> 0
+        end
 
       -(priority_value * 2 + effort_value)
     end)
@@ -477,10 +483,13 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
 
   defp calculate_average_line_length(content) do
     lines = String.split(content, "\n")
+
     if length(lines) > 0 do
-      total_length = Enum.reduce(lines, 0, fn line, acc ->
-        acc + String.length(line)
-      end)
+      total_length =
+        Enum.reduce(lines, 0, fn line, acc ->
+          acc + String.length(line)
+        end)
+
       total_length / length(lines)
     else
       0
@@ -489,10 +498,13 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
 
   defp calculate_average_function_length(content) do
     functions = extract_functions(content)
+
     if length(functions) > 0 do
-      total_lines = Enum.reduce(functions, 0, fn func, acc ->
-        acc + count_lines(func.body)
-      end)
+      total_lines =
+        Enum.reduce(functions, 0, fn func, acc ->
+          acc + count_lines(func.body)
+        end)
+
       total_lines / length(functions)
     else
       0
@@ -510,9 +522,11 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
 
   defp check_indentation_consistency(content) do
     lines = String.split(content, "\n")
-    indentations = Enum.map(lines, fn line ->
-      String.length(line) - String.length(String.trim_leading(line))
-    end)
+
+    indentations =
+      Enum.map(lines, fn line ->
+        String.length(line) - String.length(String.trim_leading(line))
+      end)
 
     # Check if all indentations are multiples of 2
     Enum.all?(indentations, fn indent -> rem(indent, 2) == 0 end)
@@ -520,9 +534,11 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
 
   defp calculate_comment_ratio(content) do
     lines = String.split(content, "\n")
-    comment_lines = Enum.count(lines, fn line ->
-      line |> String.trim() |> String.starts_with?("#")
-    end)
+
+    comment_lines =
+      Enum.count(lines, fn line ->
+        line |> String.trim() |> String.starts_with?("#")
+      end)
 
     if length(lines) > 0 do
       comment_lines / length(lines)
@@ -564,10 +580,12 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
     decision_points = ["if ", "unless ", "case ", "cond ", "with ", "and ", "or "]
 
     Enum.reduce(decision_points, 1, fn point, acc ->
-      count = content
+      count =
+        content
         |> String.split(point)
         |> length()
         |> Kernel.-(1)
+
       acc + count
     end)
   end
@@ -678,7 +696,9 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
 
   defp calculate_doc_coverage(content) do
     functions = count_functions(content)
-    docs = content
+
+    docs =
+      content
       |> String.split("\n")
       |> Enum.count(&String.contains?(&1, "@doc"))
 

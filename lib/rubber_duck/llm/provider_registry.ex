@@ -145,7 +145,9 @@ defmodule RubberDuck.LLM.ProviderRegistry do
         :ets.insert(@table_name, {provider_name, updated_data})
 
         if health_status[:available] == false do
-          Logger.warning("Provider #{provider_name} marked as unavailable: #{inspect(health_status[:last_error])}")
+          Logger.warning(
+            "Provider #{provider_name} marked as unavailable: #{inspect(health_status[:last_error])}"
+          )
         end
 
       [] ->
@@ -163,7 +165,8 @@ defmodule RubberDuck.LLM.ProviderRegistry do
     @table_name
     |> :ets.tab2list()
     |> Enum.each(fn {name, data} ->
-      if data.last_health_check && DateTime.compare(data.last_health_check, stale_threshold) == :lt do
+      if data.last_health_check &&
+           DateTime.compare(data.last_health_check, stale_threshold) == :lt do
         Logger.warning("Marking provider #{name} as stale (no health check for 5+ minutes)")
         update_health(name, %{available: false, last_error: :stale})
       end

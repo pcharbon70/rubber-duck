@@ -2,6 +2,7 @@ defmodule RubberDuck.Agents.UserAgentTest do
   use ExUnit.Case, async: true
 
   alias RubberDuck.Agents.UserAgent
+
   alias RubberDuck.Actions.User.{
     AnalyzeBehavior,
     CreateSession,
@@ -54,9 +55,7 @@ defmodule RubberDuck.Agents.UserAgentTest do
       {:ok, session_result} = CreateSession.run(create_params, context)
 
       # Mock the agent state with the session
-      agent = %{agent | state: %{agent.state |
-        active_sessions: %{"user123" => [session_result]}
-      }}
+      agent = %{agent | state: %{agent.state | active_sessions: %{"user123" => [session_result]}}}
       context = %{agent: agent}
 
       # Validate the session
@@ -78,9 +77,7 @@ defmodule RubberDuck.Agents.UserAgentTest do
         last_activity: DateTime.add(DateTime.utc_now(), -3600, :second)
       }
 
-      agent = %{agent | state: %{agent.state |
-        active_sessions: %{"user123" => [old_session]}
-      }}
+      agent = %{agent | state: %{agent.state | active_sessions: %{"user123" => [old_session]}}}
       context = %{agent: agent}
 
       validate_params = %{
@@ -160,13 +157,14 @@ defmodule RubberDuck.Agents.UserAgentTest do
   describe "pattern detection" do
     test "detects temporal patterns" do
       # Create interactions at specific times
-      interactions = for hour <- [9, 9, 9, 14, 14, 14] do
-        %{
-          action: %{type: :query},
-          context: %{time_of_day: :morning, day_of_week: 1},
-          timestamp: %{DateTime.utc_now() | hour: hour}
-        }
-      end
+      interactions =
+        for hour <- [9, 9, 9, 14, 14, 14] do
+          %{
+            action: %{type: :query},
+            context: %{time_of_day: :morning, day_of_week: 1},
+            timestamp: %{DateTime.utc_now() | hour: hour}
+          }
+        end
 
       params = %{
         user_id: "user123",
@@ -184,13 +182,15 @@ defmodule RubberDuck.Agents.UserAgentTest do
     test "detects sequential patterns" do
       # Create a repeating sequence with proper timestamps
       base_time = DateTime.utc_now()
-      interactions = for i <- 0..8 do
-        %{
-          action: %{type: Enum.at([:search, :view, :edit], rem(i, 3))},
-          context: %{day_of_week: 1, time_of_day: :morning},
-          timestamp: DateTime.add(base_time, i * 60, :second)
-        }
-      end
+
+      interactions =
+        for i <- 0..8 do
+          %{
+            action: %{type: Enum.at([:search, :view, :edit], rem(i, 3))},
+            context: %{day_of_week: 1, time_of_day: :morning},
+            timestamp: DateTime.add(base_time, i * 60, :second)
+          }
+        end
 
       params = %{
         user_id: "user123",
@@ -302,7 +302,8 @@ defmodule RubberDuck.Agents.UserAgentTest do
       agent = UserAgent.new()
 
       # First create a session for the user
-      {:ok, _session, agent} = UserAgent.handle_signal("auth.user.signed_in", %{user_id: "user123"}, agent)
+      {:ok, _session, agent} =
+        UserAgent.handle_signal("auth.user.signed_in", %{user_id: "user123"}, agent)
 
       payload = %{
         user_id: "user123",

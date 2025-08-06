@@ -17,9 +17,7 @@ defmodule RubberDuck.Telemetry do
     children = [
       # Polls VM metrics and custom measurements periodically
       {:telemetry_poller,
-       measurements: periodic_measurements(),
-       period: 10_000,
-       name: :rubber_duck_poller}
+       measurements: periodic_measurements(), period: 10_000, name: :rubber_duck_poller}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -121,6 +119,7 @@ defmodule RubberDuck.Telemetry do
     case Process.whereis(RubberDuck.Repo) do
       nil ->
         :ok
+
       pid ->
         # Get pool info using DBConnection
         case :sys.get_state(pid) do
@@ -134,9 +133,11 @@ defmodule RubberDuck.Telemetry do
 
             :telemetry.execute(
               [:rubber_duck, :repo, :pool_size],
-              %{value: 10},  # Default pool size
+              # Default pool size
+              %{value: 10},
               %{}
             )
+
           _ ->
             :ok
         end

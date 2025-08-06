@@ -12,7 +12,11 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
     schema: [
       request: [type: :map, required: true],
       performance_history: [type: :map, default: %{}],
-      optimization_preference: [type: :atom, values: [:cost, :quality, :balanced], default: :balanced],
+      optimization_preference: [
+        type: :atom,
+        values: [:cost, :quality, :balanced],
+        default: :balanced
+      ],
       exclude_providers: [type: {:list, :atom}, default: []],
       required_capabilities: [type: {:list, :atom}, default: []]
     ]
@@ -42,11 +46,12 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
           |> score_providers(params)
           |> select_best_provider()
 
-        {:ok, %{
-          provider: best_provider,
-          selection_reason: determine_selection_reason(best_provider, params),
-          alternatives: Enum.take(suitable_providers -- [best_provider], 2)
-        }}
+        {:ok,
+         %{
+           provider: best_provider,
+           selection_reason: determine_selection_reason(best_provider, params),
+           alternatives: Enum.take(suitable_providers -- [best_provider], 2)
+         }}
       end
     end
   end
@@ -82,6 +87,7 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
   end
 
   defp filter_by_capabilities(providers, []), do: providers
+
   defp filter_by_capabilities(providers, required_capabilities) do
     Enum.filter(providers, fn provider ->
       provider_capabilities = get_provider_capabilities(provider)
@@ -98,6 +104,7 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
   defp meets_request_requirements?(provider, request) do
     # Check if provider supports the requested model
     model = request[:model]
+
     if model do
       capabilities = provider.module.capabilities()
       model in capabilities.models || String.contains?(model, "compatible")
@@ -110,18 +117,27 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
     capabilities = provider.module.capabilities()
     capability_list = []
 
-    capability_list = if capabilities.completion, do: [:completion | capability_list], else: capability_list
-    capability_list = if capabilities.streaming, do: [:streaming | capability_list], else: capability_list
-    capability_list = if capabilities.embeddings, do: [:embeddings | capability_list], else: capability_list
+    capability_list =
+      if capabilities.completion, do: [:completion | capability_list], else: capability_list
+
+    capability_list =
+      if capabilities.streaming, do: [:streaming | capability_list], else: capability_list
+
+    capability_list =
+      if capabilities.embeddings, do: [:embeddings | capability_list], else: capability_list
+
     capability_list =
       if capabilities.function_calling,
         do: [:function_calling | capability_list],
         else: capability_list
-    capability_list = if capabilities.vision, do: [:vision | capability_list], else: capability_list
+
+    capability_list =
+      if capabilities.vision, do: [:vision | capability_list], else: capability_list
 
     capability_list
   rescue
-    _ -> [:completion]  # Assume basic completion capability
+    # Assume basic completion capability
+    _ -> [:completion]
   end
 
   defp score_providers(providers, params) do
@@ -169,19 +185,19 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
 
   defp calculate_cost_optimized_score(components) do
     components.base + components.availability +
-    (components.performance * 0.5) + (components.response_time * 0.3) +
-    (components.cost * 2.0) + components.historical
+      components.performance * 0.5 + components.response_time * 0.3 +
+      components.cost * 2.0 + components.historical
   end
 
   defp calculate_quality_optimized_score(components) do
     components.base + components.availability +
-    (components.performance * 1.5) + (components.response_time * 1.2) +
-    (components.cost * 0.3) + components.historical
+      components.performance * 1.5 + components.response_time * 1.2 +
+      components.cost * 0.3 + components.historical
   end
 
   defp calculate_balanced_score(components) do
     components.base + components.availability + components.performance +
-    components.response_time + components.cost + components.historical
+      components.response_time + components.cost + components.historical
   end
 
   defp calculate_response_time_score(avg_response_time) do
@@ -197,10 +213,14 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
   defp calculate_cost_score(provider, _request) do
     # Simplified cost scoring - in production, calculate based on token usage
     case provider.name do
-      :openai -> 10.0      # Medium cost
-      :anthropic -> 8.0    # Higher cost
-      :local -> 20.0       # Free
-      _ -> 12.0            # Default medium cost
+      # Medium cost
+      :openai -> 10.0
+      # Higher cost
+      :anthropic -> 8.0
+      # Free
+      :local -> 20.0
+      # Default medium cost
+      _ -> 12.0
     end
   end
 
@@ -230,14 +250,20 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
     reasons = []
 
     reasons = if provider.available, do: ["available" | reasons], else: reasons
-    reasons = if metrics.error_rate < 0.1, do: ["reliable (#{Float.round((1 - metrics.error_rate) * 100, 1)}% success)" | reasons], else: reasons
+
+    reasons =
+      if metrics.error_rate < 0.1,
+        do: ["reliable (#{Float.round((1 - metrics.error_rate) * 100, 1)}% success)" | reasons],
+        else: reasons
+
     reasons = if metrics.avg_response_time < 1000, do: ["fast response" | reasons], else: reasons
 
-    optimization_reason = case params.optimization_preference do
-      :cost -> "optimized for cost"
-      :quality -> "optimized for quality"
-      :balanced -> "balanced selection"
-    end
+    optimization_reason =
+      case params.optimization_preference do
+        :cost -> "optimized for cost"
+        :quality -> "optimized for quality"
+        :balanced -> "balanced selection"
+      end
 
     reasons = [optimization_reason | reasons]
 

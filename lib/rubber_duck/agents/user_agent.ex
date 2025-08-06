@@ -21,17 +21,18 @@ defmodule RubberDuck.Agents.UserAgent do
       performance_metrics: [type: :map, default: %{}],
       learned_insights: [type: :map, default: %{}],
       learning_interval: [type: :pos_integer, default: 100],
-      last_learning_at: [type: {:or, [:naive_datetime, :nil]}, default: nil],
+      last_learning_at: [type: {:or, [:naive_datetime, nil]}, default: nil],
       persistence_enabled: [type: :boolean, default: false],
       checkpoint_interval: [type: :pos_integer, default: 300_000],
       experience_retention_days: [type: :pos_integer, default: 30],
       max_memory_experiences: [type: :pos_integer, default: 1000],
-      agent_state_id: [type: {:or, [:string, :nil]}, default: nil],
-      last_checkpoint: [type: {:or, [:utc_datetime, :nil]}, default: nil],
+      agent_state_id: [type: {:or, [:string, nil]}, default: nil],
+      last_checkpoint: [type: {:or, [:utc_datetime, nil]}, default: nil],
 
       # Session management
       active_sessions: [type: :map, default: %{}],
-      session_timeout: [type: :pos_integer, default: 1800], # 30 minutes
+      # 30 minutes
+      session_timeout: [type: :pos_integer, default: 1800],
       max_concurrent_sessions: [type: :pos_integer, default: 5],
 
       # Behavioral learning
@@ -46,14 +47,15 @@ defmodule RubberDuck.Agents.UserAgent do
 
       # Pattern recognition
       recognized_patterns: [type: :map, default: %{}],
-      pattern_detection_window: [type: :pos_integer, default: 100], # last N interactions
+      # last N interactions
+      pattern_detection_window: [type: :pos_integer, default: 100],
       min_pattern_occurrences: [type: :pos_integer, default: 3],
 
       # Proactive assistance
       suggestion_queue: [type: {:list, :map}, default: []],
       suggestion_confidence_threshold: [type: :float, default: 0.8],
       max_suggestions_per_session: [type: :pos_integer, default: 3],
-      last_suggestion_time: [type: {:or, [:utc_datetime, :nil]}, default: nil]
+      last_suggestion_time: [type: {:or, [:utc_datetime, nil]}, default: nil]
     ],
     actions: [
       RubberDuck.Actions.User.CreateSession,
@@ -65,7 +67,8 @@ defmodule RubberDuck.Agents.UserAgent do
       RubberDuck.Actions.User.GenerateSuggestions
     ]
 
-  alias RubberDuck.Signal
+  alias RubberDuck.Routing.MessageRouter
+  alias RubberDuck.Messages.User.{ValidateSession, UpdatePreferences, TrackActivity, GenerateSuggestions}
   require Logger
 
   # Signal definitions
@@ -76,11 +79,7 @@ defmodule RubberDuck.Agents.UserAgent do
   @signal_suggestion_generated "user.suggestion.generated"
 
   def init(opts) do
-    # Subscribe to relevant signals
-    :ok = Signal.subscribe("auth.user.signed_in")
-    :ok = Signal.subscribe("auth.user.signed_out")
-    :ok = Signal.subscribe("user.action.performed")
-
+    # No longer need to subscribe to signals - messages are routed directly
     # Schedule periodic session cleanup
     schedule_session_cleanup()
 
@@ -100,10 +99,15 @@ defmodule RubberDuck.Agents.UserAgent do
     end
   end
 
-  def handle_instruction({:record_interaction, %{user_id: user_id, action: action, context: context}}, agent) do
+  def handle_instruction(
+        {:record_interaction, %{user_id: user_id, action: action, context: context}},
+        agent
+      ) do
     if valid_session?(agent, user_id) do
       interaction = build_interaction(user_id, action, context)
-      updated_agent = agent
+
+      updated_agent =
+        agent
         |> record_interaction_history(interaction)
         |> analyze_for_patterns(user_id)
         |> update_user_preferences(user_id, interaction)
@@ -158,6 +162,7 @@ defmodule RubberDuck.Agents.UserAgent do
         last_activity: DateTime.utc_now(),
         interaction_count: 0
       }
+
       {:ok, session}
     else
       {:error, :max_sessions_reached}
@@ -178,8 +183,12 @@ defmodule RubberDuck.Agents.UserAgent do
 
   defp valid_session?(agent, user_id) do
     case Map.get(agent.state.active_sessions, user_id) do
-      nil -> false
-      [] -> false
+      nil ->
+        false
+
+      [] ->
+        false
+
       sessions ->
         Enum.any?(sessions, &session_active?(&1, agent.state.session_timeout))
     end
@@ -213,6 +222,7 @@ defmodule RubberDuck.Agents.UserAgent do
 
   defp get_time_category do
     hour = DateTime.utc_now().hour
+
     cond do
       hour >= 5 && hour < 12 -> :morning
       hour >= 12 && hour < 17 -> :afternoon
@@ -222,14 +232,15 @@ defmodule RubberDuck.Agents.UserAgent do
   end
 
   defp record_interaction_history(agent, interaction) do
-    history = [interaction | agent.state.interaction_history]
+    history =
+      [interaction | agent.state.interaction_history]
       |> Enum.take(agent.state.pattern_detection_window)
 
     %{agent | state: %{agent.state | interaction_history: history}}
   end
 
   defp analyze_for_patterns(agent, user_id) do
-    user_interactions = Enum.filter(agent.state.interaction_history, & &1.user_id == user_id)
+    user_interactions = Enum.filter(agent.state.interaction_history, &(&1.user_id == user_id))
 
     patterns = detect_behavior_patterns(user_interactions, agent.state.min_pattern_occurrences)
 
@@ -243,7 +254,7 @@ defmodule RubberDuck.Agents.UserAgent do
 
   defp detect_behavior_patterns(interactions, min_occurrences) do
     interactions
-    |> Enum.group_by(& {&1.action, &1.session_context.time_of_day})
+    |> Enum.group_by(&{&1.action, &1.session_context.time_of_day})
     |> Enum.filter(fn {_, group} -> length(group) >= min_occurrences end)
     |> Enum.map(fn {{action, time}, group} ->
       pattern = %{
@@ -252,6 +263,7 @@ defmodule RubberDuck.Agents.UserAgent do
         frequency: length(group),
         confidence: calculate_pattern_confidence(group, interactions)
       }
+
       {action, pattern}
     end)
     |> Map.new()
@@ -271,7 +283,8 @@ defmodule RubberDuck.Agents.UserAgent do
   defp update_user_preferences(agent, user_id, interaction) do
     current_prefs = Map.get(agent.state.user_preferences, user_id, %{})
 
-    updated_prefs = learn_from_interaction(current_prefs, interaction, agent.state.adaptation_rate)
+    updated_prefs =
+      learn_from_interaction(current_prefs, interaction, agent.state.adaptation_rate)
 
     if prefs_changed?(current_prefs, updated_prefs) do
       emit_signal(@signal_preference_learned, %{user_id: user_id, preferences: updated_prefs})
@@ -308,18 +321,26 @@ defmodule RubberDuck.Agents.UserAgent do
     patterns = Map.get(agent.state.recognized_patterns, user_id, %{})
     preferences = Map.get(agent.state.user_preferences, user_id, %{})
 
-    suggestions = build_suggestions(patterns, preferences, agent.state.suggestion_confidence_threshold)
+    suggestions =
+      build_suggestions(patterns, preferences, agent.state.suggestion_confidence_threshold)
 
     if length(suggestions) > 0 do
       emit_signal(@signal_suggestion_generated, %{user_id: user_id, count: length(suggestions)})
 
-      updated_queue = Enum.take(suggestions ++ agent.state.suggestion_queue,
-                                agent.state.max_suggestions_per_session)
+      updated_queue =
+        Enum.take(
+          suggestions ++ agent.state.suggestion_queue,
+          agent.state.max_suggestions_per_session
+        )
 
-      %{agent | state: %{agent.state |
-        suggestion_queue: updated_queue,
-        last_suggestion_time: DateTime.utc_now()
-      }}
+      %{
+        agent
+        | state: %{
+            agent.state
+            | suggestion_queue: updated_queue,
+              last_suggestion_time: DateTime.utc_now()
+          }
+      }
     else
       agent
     end
@@ -342,12 +363,12 @@ defmodule RubberDuck.Agents.UserAgent do
 
   defp get_user_suggestions(agent, user_id) do
     agent.state.suggestion_queue
-    |> Enum.filter(& &1.user_id == user_id)
+    |> Enum.filter(&(&1.user_id == user_id))
     |> Enum.take(agent.state.max_suggestions_per_session)
   end
 
   defp analyze_user_behavior(agent, user_id) do
-    interactions = Enum.filter(agent.state.interaction_history, & &1.user_id == user_id)
+    interactions = Enum.filter(agent.state.interaction_history, &(&1.user_id == user_id))
     patterns = Map.get(agent.state.recognized_patterns, user_id, %{})
     _preferences = Map.get(agent.state.user_preferences, user_id, %{})
 
@@ -386,13 +407,17 @@ defmodule RubberDuck.Agents.UserAgent do
   end
 
   defp remove_user_session(agent, user_id) do
-    %{agent | state: %{agent.state | active_sessions: Map.delete(agent.state.active_sessions, user_id)}}
+    %{
+      agent
+      | state: %{agent.state | active_sessions: Map.delete(agent.state.active_sessions, user_id)}
+    }
   end
 
   defp cleanup_expired_sessions(agent) do
     timeout = agent.state.session_timeout
 
-    cleaned_sessions = agent.state.active_sessions
+    cleaned_sessions =
+      agent.state.active_sessions
       |> Enum.map(fn {user_id, sessions} ->
         active_sessions = Enum.filter(sessions, &session_active?(&1, timeout))
         expired_count = length(sessions) - length(active_sessions)
@@ -410,16 +435,67 @@ defmodule RubberDuck.Agents.UserAgent do
   end
 
   defp schedule_session_cleanup do
-    Process.send_after(self(), :cleanup_sessions, 60_000) # Every minute
+    # Every minute
+    Process.send_after(self(), :cleanup_sessions, 60_000)
   end
 
   defp generate_session_id do
     "session_#{System.unique_integer([:positive])}_#{System.os_time(:nanosecond)}"
   end
 
+  # Use typed messages instead of string-based signals
+  defp emit_signal(@signal_session_created, payload) do
+    message = %ValidateSession{
+      user_id: payload.user_id,
+      session_id: payload.session_id,
+      check_expiry: false,
+      refresh_if_valid: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_session_expired, payload) do
+    # For expired sessions, use GenerateSuggestions to suggest re-authentication
+    message = %GenerateSuggestions{
+      user_id: payload.user_id,
+      context: %{session_expired: true, count: payload[:count] || 1},
+      max_suggestions: 1
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_pattern_detected, payload) do
+    # Track pattern detection as navigation activity
+    message = %TrackActivity{
+      user_id: payload.user_id,
+      activity_type: :navigation,
+      activity_data: %{patterns: payload.patterns},
+      timestamp: DateTime.utc_now()
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_preference_learned, payload) do
+    message = %UpdatePreferences{
+      user_id: payload.user_id,
+      preferences: payload.preferences,
+      merge_strategy: :deep
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_suggestion_generated, payload) do
+    message = %GenerateSuggestions{
+      user_id: payload.user_id,
+      context: %{count: payload.count},
+      max_suggestions: 5
+    }
+    MessageRouter.route(message)
+  end
+  
+  # Fallback for unmapped signals
   defp emit_signal(signal_type, payload) do
-    Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
-  rescue
-    e -> Logger.warning("Failed to emit signal #{signal_type}: #{inspect(e)}")
+    Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")
+    :ok
   end
 end

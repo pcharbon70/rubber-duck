@@ -35,19 +35,25 @@ defmodule RubberDuck.Actions.Agent.PruneExperiences do
     end
   rescue
     exception ->
-      Logger.error("Failed to prune experiences: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-      {:error, %{
-        reason: {:exception, exception},
-        message: Exception.message(exception)
-      }}
+      Logger.error(
+        "Failed to prune experiences: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+      )
+
+      {:error,
+       %{
+         reason: {:exception, exception},
+         message: Exception.message(exception)
+       }}
   end
 
   defp validate_prune_params(params) do
     cond do
       not is_map(params) ->
         {:error, :invalid_params}
+
       params[:retention_days] && params.retention_days < 1 ->
         {:error, :invalid_retention_days}
+
       true ->
         :ok
     end
@@ -56,46 +62,53 @@ defmodule RubberDuck.Actions.Agent.PruneExperiences do
   defp perform_dry_run(params) do
     cutoff_date = calculate_cutoff_date(params.retention_days)
 
-    count = if params[:agent_name] do
-      # Count for specific agent
-      case Agents.get_agent_state_by_name(params.agent_name) do
-        {:ok, agent_state} ->
-          count_experiences_to_prune(agent_state.id, cutoff_date)
-        {:error, _} ->
-          0
-      end
-    else
-      # Count for all agents
-      count_all_experiences_to_prune(cutoff_date)
-    end
+    count =
+      if params[:agent_name] do
+        # Count for specific agent
+        case Agents.get_agent_state_by_name(params.agent_name) do
+          {:ok, agent_state} ->
+            count_experiences_to_prune(agent_state.id, cutoff_date)
 
-    {:ok, %{
-      dry_run: true,
-      would_delete: count,
-      retention_days: params.retention_days,
-      cutoff_date: cutoff_date
-    }}
+          {:error, _} ->
+            0
+        end
+      else
+        # Count for all agents
+        count_all_experiences_to_prune(cutoff_date)
+      end
+
+    {:ok,
+     %{
+       dry_run: true,
+       would_delete: count,
+       retention_days: params.retention_days,
+       cutoff_date: cutoff_date
+     }}
   end
 
   defp perform_prune(params) do
     start_time = System.monotonic_time(:millisecond)
 
-    result = case Agents.prune_old_experiences(%{retention_days: params.retention_days}) do
-      {:ok, deleted_count} ->
-        duration = System.monotonic_time(:millisecond) - start_time
+    result =
+      case Agents.prune_old_experiences(%{retention_days: params.retention_days}) do
+        {:ok, deleted_count} ->
+          duration = System.monotonic_time(:millisecond) - start_time
 
-        Logger.info("Pruned #{deleted_count} experiences older than #{params.retention_days} days in #{duration}ms")
+          Logger.info(
+            "Pruned #{deleted_count} experiences older than #{params.retention_days} days in #{duration}ms"
+          )
 
-        {:ok, %{
-          deleted_count: deleted_count,
-          retention_days: params.retention_days,
-          duration_ms: duration,
-          cutoff_date: calculate_cutoff_date(params.retention_days)
-        }}
+          {:ok,
+           %{
+             deleted_count: deleted_count,
+             retention_days: params.retention_days,
+             duration_ms: duration,
+             cutoff_date: calculate_cutoff_date(params.retention_days)
+           }}
 
-      {:error, reason} ->
-        {:error, %{reason: reason, stage: :deletion}}
-    end
+        {:error, reason} ->
+          {:error, %{reason: reason, stage: :deletion}}
+      end
 
     # Also clean up orphaned insights if any
     clean_orphaned_data()
@@ -115,6 +128,7 @@ defmodule RubberDuck.Actions.Agent.PruneExperiences do
         Enum.count(experiences, fn exp ->
           DateTime.compare(exp.timestamp, cutoff_date) == :lt
         end)
+
       {:error, _} ->
         0
     end

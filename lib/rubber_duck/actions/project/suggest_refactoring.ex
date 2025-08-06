@@ -22,22 +22,26 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
          {:ok, files} <- get_analyzable_files(project),
          suggestions <- generate_suggestions(files, params),
          prioritized <- prioritize_suggestions(suggestions, params.max_suggestions) do
-
-      {:ok, %{
-        suggestions: prioritized,
-        total_found: length(suggestions),
-        suggested_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         suggestions: prioritized,
+         total_found: length(suggestions),
+         suggested_at: DateTime.utc_now()
+       }}
     end
   end
 
   defp get_analyzable_files(project) do
     case Projects.list_code_files_by_project(project.id) do
       {:ok, files} ->
-        filtered = files
-          |> Enum.filter(& &1.content && &1.language == "elixir")
+        filtered =
+          files
+          |> Enum.filter(&(&1.content && &1.language == "elixir"))
+
         {:ok, filtered}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -46,48 +50,54 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     |> Enum.flat_map(fn file ->
       analyze_file_for_refactoring(file, params)
     end)
-    |> Enum.filter(& &1.confidence >= params.confidence_threshold)
+    |> Enum.filter(&(&1.confidence >= params.confidence_threshold))
   end
 
   defp analyze_file_for_refactoring(file, params) do
     suggestions = []
 
     # Analyze based on focus areas
-    focus_areas = if :all in params.focus_areas do
-      [:complexity, :duplication, :naming, :structure, :patterns]
-    else
-      params.focus_areas
-    end
+    focus_areas =
+      if :all in params.focus_areas do
+        [:complexity, :duplication, :naming, :structure, :patterns]
+      else
+        params.focus_areas
+      end
 
-    suggestions = if :complexity in focus_areas do
-      suggestions ++ analyze_complexity_refactorings(file)
-    else
-      suggestions
-    end
+    suggestions =
+      if :complexity in focus_areas do
+        suggestions ++ analyze_complexity_refactorings(file)
+      else
+        suggestions
+      end
 
-    suggestions = if :duplication in focus_areas do
-      suggestions ++ analyze_duplication_refactorings(file)
-    else
-      suggestions
-    end
+    suggestions =
+      if :duplication in focus_areas do
+        suggestions ++ analyze_duplication_refactorings(file)
+      else
+        suggestions
+      end
 
-    suggestions = if :naming in focus_areas do
-      suggestions ++ analyze_naming_refactorings(file)
-    else
-      suggestions
-    end
+    suggestions =
+      if :naming in focus_areas do
+        suggestions ++ analyze_naming_refactorings(file)
+      else
+        suggestions
+      end
 
-    suggestions = if :structure in focus_areas do
-      suggestions ++ analyze_structure_refactorings(file)
-    else
-      suggestions
-    end
+    suggestions =
+      if :structure in focus_areas do
+        suggestions ++ analyze_structure_refactorings(file)
+      else
+        suggestions
+      end
 
-    suggestions = if :patterns in focus_areas do
-      suggestions ++ analyze_pattern_refactorings(file)
-    else
-      suggestions
-    end
+    suggestions =
+      if :patterns in focus_areas do
+        suggestions ++ analyze_pattern_refactorings(file)
+      else
+        suggestions
+      end
 
     suggestions
   end
@@ -99,8 +109,9 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     # Find complex functions
     functions = extract_functions(content)
 
-    complex_functions = functions
-      |> Enum.filter(& &1.complexity > 10)
+    complex_functions =
+      functions
+      |> Enum.filter(&(&1.complexity > 10))
       |> Enum.map(fn func ->
         %{
           type: :extract_function,
@@ -109,7 +120,8 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           function_name: func.name,
           current_complexity: func.complexity,
           title: "Extract sub-functions from #{func.name}/#{func.arity}",
-          description: "Function has cyclomatic complexity of #{func.complexity}. Consider extracting helper functions.",
+          description:
+            "Function has cyclomatic complexity of #{func.complexity}. Consider extracting helper functions.",
           confidence: calculate_complexity_confidence(func.complexity),
           impact: :high,
           effort: :medium,
@@ -120,8 +132,9 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     # Find deeply nested code
     nested_blocks = find_nested_blocks(content)
 
-    deep_nesting = nested_blocks
-      |> Enum.filter(& &1.depth > 4)
+    deep_nesting =
+      nested_blocks
+      |> Enum.filter(&(&1.depth > 4))
       |> Enum.map(fn block ->
         %{
           type: :reduce_nesting,
@@ -129,7 +142,8 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           location: block.location,
           current_depth: block.depth,
           title: "Reduce nesting depth",
-          description: "Code block has nesting depth of #{block.depth}. Consider using guard clauses or extracting functions.",
+          description:
+            "Code block has nesting depth of #{block.depth}. Consider using guard clauses or extracting functions.",
           confidence: 0.8,
           impact: :medium,
           effort: :low,
@@ -152,7 +166,8 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
         locations: dup.locations,
         duplicate_lines: dup.line_count,
         title: "Extract duplicate code",
-        description: "Found #{dup.line_count} lines of duplicate code in #{length(dup.locations)} locations",
+        description:
+          "Found #{dup.line_count} lines of duplicate code in #{length(dup.locations)} locations",
         confidence: calculate_duplication_confidence(dup),
         impact: :medium,
         effort: :low,
@@ -186,35 +201,44 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
 
     # Check for large modules
     module_size = count_module_lines(content)
+
     if module_size > 300 do
-      [%{
-        type: :split_module,
-        file_path: file.path,
-        current_size: module_size,
-        title: "Split large module",
-        description: "Module has #{module_size} lines. Consider splitting into smaller, focused modules.",
-        confidence: 0.9,
-        impact: :high,
-        effort: :high,
-        suggested_changes: suggest_module_split(file, content)
-      } | suggestions]
+      [
+        %{
+          type: :split_module,
+          file_path: file.path,
+          current_size: module_size,
+          title: "Split large module",
+          description:
+            "Module has #{module_size} lines. Consider splitting into smaller, focused modules.",
+          confidence: 0.9,
+          impact: :high,
+          effort: :high,
+          suggested_changes: suggest_module_split(file, content)
+        }
+        | suggestions
+      ]
     end
 
     # Check for misplaced functions
     misplaced = find_misplaced_functions(content)
-    suggestions = suggestions ++ Enum.map(misplaced, fn func ->
-      %{
-        type: :move_function,
-        file_path: file.path,
-        function_name: func.name,
-        title: "Move #{func.name}/#{func.arity} to appropriate module",
-        description: "Function appears to belong in a different module based on its responsibilities",
-        confidence: func.confidence,
-        impact: :medium,
-        effort: :low,
-        suggested_changes: %{suggested_module: func.suggested_module}
-      }
-    end)
+
+    suggestions =
+      suggestions ++
+        Enum.map(misplaced, fn func ->
+          %{
+            type: :move_function,
+            file_path: file.path,
+            function_name: func.name,
+            title: "Move #{func.name}/#{func.arity} to appropriate module",
+            description:
+              "Function appears to belong in a different module based on its responsibilities",
+            confidence: func.confidence,
+            impact: :medium,
+            effort: :low,
+            suggested_changes: %{suggested_module: func.suggested_module}
+          }
+        end)
 
     suggestions
   end
@@ -286,13 +310,24 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp calculate_function_complexity(body) do
     # Count decision points
     patterns = [
-      ~r/\bif\b/, ~r/\bunless\b/, ~r/\bcase\b/, ~r/\bcond\b/,
-      ~r/\bwith\b/, ~r/\band\b/, ~r/\bor\b/, ~r/->/, ~r/\&\&/, ~r/\|\|/
+      ~r/\bif\b/,
+      ~r/\bunless\b/,
+      ~r/\bcase\b/,
+      ~r/\bcond\b/,
+      ~r/\bwith\b/,
+      ~r/\band\b/,
+      ~r/\bor\b/,
+      ~r/->/,
+      ~r/\&\&/,
+      ~r/\|\|/
     ]
 
-    1 + Enum.sum(Enum.map(patterns, fn pattern ->
-      length(Regex.scan(pattern, body))
-    end))
+    1 +
+      Enum.sum(
+        Enum.map(patterns, fn pattern ->
+          length(Regex.scan(pattern, body))
+        end)
+      )
   end
 
   defp count_function_lines(body) do
@@ -333,21 +368,24 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     |> Enum.with_index()
     |> Enum.map(fn {line, index} ->
       depth = calculate_nesting_depth(line, lines, index)
+
       %{
         location: index + 1,
         depth: depth,
         line: line
       }
     end)
-    |> Enum.filter(& &1.depth > 0)
+    |> Enum.filter(&(&1.depth > 0))
     |> Enum.group_by(& &1.depth)
     |> Enum.flat_map(fn {depth, blocks} ->
       if depth > 4 do
-        [%{
-          location: hd(blocks).location,
-          depth: depth,
-          block_size: length(blocks)
-        }]
+        [
+          %{
+            location: hd(blocks).location,
+            depth: depth,
+            block_size: length(blocks)
+          }
+        ]
       else
         []
       end
@@ -357,7 +395,8 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
   defp calculate_nesting_depth(line, _lines, _index) do
     # Simple nesting calculation based on indentation
     indent = String.length(line) - String.length(String.trim_leading(line))
-    div(indent, 2) # Assuming 2-space indentation
+    # Assuming 2-space indentation
+    div(indent, 2)
   end
 
   defp suggest_nesting_reduction(_block) do
@@ -397,7 +436,8 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     lines = String.split(content, "\n")
 
     # Find sequences of similar lines
-    sequences = find_similar_sequences(lines, 3) # Min 3 lines
+    # Min 3 lines
+    sequences = find_similar_sequences(lines, 3)
 
     sequences
     |> Enum.map(fn seq ->
@@ -425,10 +465,11 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
       %{
         content: content,
         length: min_length,
-        locations: Enum.map(occurrences, fn chunk ->
-          {_, index} = hd(chunk)
-          index + 1
-        end)
+        locations:
+          Enum.map(occurrences, fn chunk ->
+            {_, index} = hd(chunk)
+            index + 1
+          end)
       }
     end)
   end
@@ -455,25 +496,29 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     case Regex.run(~r/defmodule\s+([\w\.]+)/, content) do
       [_, actual_module] ->
         if actual_module != expected_module do
-          [%{
-            type: :rename_module,
-            file_path: file_path,
-            current_name: actual_module,
-            suggested_name: expected_module,
-            title: "Rename module to match file path",
-            description: "Module name doesn't match file path convention",
-            confidence: 0.9,
-            impact: :low,
-            effort: :low,
-            suggested_changes: %{
-              from: actual_module,
-              to: expected_module
+          [
+            %{
+              type: :rename_module,
+              file_path: file_path,
+              current_name: actual_module,
+              suggested_name: expected_module,
+              title: "Rename module to match file path",
+              description: "Module name doesn't match file path convention",
+              confidence: 0.9,
+              impact: :low,
+              effort: :low,
+              suggested_changes: %{
+                from: actual_module,
+                to: expected_module
+              }
             }
-          }]
+          ]
         else
           []
         end
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -494,35 +539,43 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
       issues = []
 
       # Check for non-snake_case
-      issues = if name =~ ~r/[A-Z]/ do
-        [%{
-          type: :rename_function,
-          current_name: name,
-          suggested_name: Macro.underscore(name),
-          title: "Use snake_case for function names",
-          description: "Function '#{name}' should use snake_case naming",
-          confidence: 0.95,
-          impact: :low,
-          effort: :low
-        } | issues]
-      else
-        issues
-      end
+      issues =
+        if name =~ ~r/[A-Z]/ do
+          [
+            %{
+              type: :rename_function,
+              current_name: name,
+              suggested_name: Macro.underscore(name),
+              title: "Use snake_case for function names",
+              description: "Function '#{name}' should use snake_case naming",
+              confidence: 0.95,
+              impact: :low,
+              effort: :low
+            }
+            | issues
+          ]
+        else
+          issues
+        end
 
       # Check for unclear abbreviations
-      issues = if has_unclear_abbreviation?(name) do
-        [%{
-          type: :clarify_naming,
-          current_name: name,
-          title: "Expand unclear abbreviation in '#{name}'",
-          description: "Consider using more descriptive names",
-          confidence: 0.7,
-          impact: :low,
-          effort: :low
-        } | issues]
-      else
-        issues
-      end
+      issues =
+        if has_unclear_abbreviation?(name) do
+          [
+            %{
+              type: :clarify_naming,
+              current_name: name,
+              title: "Expand unclear abbreviation in '#{name}'",
+              description: "Consider using more descriptive names",
+              confidence: 0.7,
+              impact: :low,
+              effort: :low
+            }
+            | issues
+          ]
+        else
+          issues
+        end
 
       issues
     end)
@@ -540,15 +593,17 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     variables
     |> Enum.flat_map(fn [_, var_name] ->
       if String.length(var_name) == 1 && var_name != "_" do
-        [%{
-          type: :rename_variable,
-          current_name: var_name,
-          title: "Use descriptive variable name instead of '#{var_name}'",
-          description: "Single letter variables reduce code readability",
-          confidence: 0.8,
-          impact: :low,
-          effort: :low
-        }]
+        [
+          %{
+            type: :rename_variable,
+            current_name: var_name,
+            title: "Use descriptive variable name instead of '#{var_name}'",
+            description: "Single letter variables reduce code readability",
+            confidence: 0.8,
+            impact: :low,
+            effort: :low
+          }
+        ]
       else
         []
       end
@@ -568,13 +623,14 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     grouped = group_functions_by_responsibility(functions)
 
     %{
-      suggested_modules: Enum.map(grouped, fn {group_name, funcs} ->
-        %{
-          name: "#{Path.basename(file.path, ".ex")}_#{group_name}",
-          functions: Enum.map(funcs, & &1.name),
-          estimated_size: Enum.sum(Enum.map(funcs, & &1.length))
-        }
-      end),
+      suggested_modules:
+        Enum.map(grouped, fn {group_name, funcs} ->
+          %{
+            name: "#{Path.basename(file.path, ".ex")}_#{group_name}",
+            functions: Enum.map(funcs, & &1.name),
+            estimated_size: Enum.sum(Enum.map(funcs, & &1.length))
+          }
+        end),
       splitting_strategy: "Group by responsibility/feature"
     }
   end
@@ -614,17 +670,19 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     # Find if-else chains that could be pattern matching
     if_else_chains = Regex.scan(~r/if\s+.*?do.*?else.*?end/s, content)
 
-    opportunities = opportunities ++ Enum.map(if_else_chains, fn [_chain] ->
-      %{
-        type: :use_pattern_matching,
-        title: "Replace if-else with pattern matching",
-        description: "Consider using case or function heads with pattern matching",
-        confidence: 0.7,
-        impact: :low,
-        effort: :low,
-        example: generate_pattern_matching_example()
-      }
-    end)
+    opportunities =
+      opportunities ++
+        Enum.map(if_else_chains, fn [_chain] ->
+          %{
+            type: :use_pattern_matching,
+            title: "Replace if-else with pattern matching",
+            description: "Consider using case or function heads with pattern matching",
+            confidence: 0.7,
+            impact: :low,
+            effort: :low,
+            example: generate_pattern_matching_example()
+          }
+        end)
 
     opportunities
   end
@@ -715,6 +773,6 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     confidence_score = suggestion.confidence
 
     # Weighted score: high impact + low effort + high confidence = high priority
-    (impact_score * 0.4) + (effort_score * 0.3) + (confidence_score * 0.3)
+    impact_score * 0.4 + effort_score * 0.3 + confidence_score * 0.3
   end
 end

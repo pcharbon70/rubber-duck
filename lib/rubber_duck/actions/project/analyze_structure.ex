@@ -22,31 +22,36 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
          structure <- analyze_file_structure(files, params.depth_limit),
          metrics <- calculate_structure_metrics(structure),
          optimizations <- suggest_structure_optimizations(structure, metrics) do
-
-      {:ok, %{
-        structure: structure,
-        metrics: metrics,
-        optimizations: optimizations,
-        analyzed_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         structure: structure,
+         metrics: metrics,
+         optimizations: optimizations,
+         analyzed_at: DateTime.utc_now()
+       }}
     end
   end
 
   defp get_project_files(project, params) do
     case Projects.list_code_files_by_project(project.id) do
       {:ok, files} ->
-        filtered = files
+        filtered =
+          files
           |> Enum.filter(&matches_patterns?(&1.path, params.include_files))
           |> Enum.reject(&matches_patterns?(&1.path, params.exclude_patterns))
+
         {:ok, filtered}
-      error -> error
+
+      error ->
+        error
     end
   end
 
   defp matches_patterns?(path, patterns) do
     Enum.any?(patterns, fn pattern ->
       # Simple pattern matching using wildcards
-      pattern_regex = pattern
+      pattern_regex =
+        pattern
         |> String.replace("*", ".*")
         |> String.replace("?", ".")
         |> Regex.compile!()
@@ -100,7 +105,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
         subdirectories: count_subdirectories(dir, file_structures)
       }
     end)
-    |> Enum.filter(& &1.depth <= depth_limit)
+    |> Enum.filter(&(&1.depth <= depth_limit))
   end
 
   defp count_subdirectories(dir, all_structures) do
@@ -126,13 +131,13 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
 
   defp detect_deep_nesting(tree) do
     tree
-    |> Enum.filter(& &1.depth > 5)
+    |> Enum.filter(&(&1.depth > 5))
     |> Enum.map(& &1.directory)
   end
 
   defp detect_large_directories(tree) do
     tree
-    |> Enum.filter(& &1.file_count > 20)
+    |> Enum.filter(&(&1.file_count > 20))
     |> Enum.map(fn dir ->
       %{
         directory: dir.directory,
@@ -148,6 +153,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
     |> Enum.group_by(& &1.extension)
     |> Enum.map(fn {ext, files} ->
       naming_styles = detect_naming_styles(files)
+
       if map_size(naming_styles) > 1 do
         %{
           extension: ext,
@@ -161,7 +167,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
 
   defp detect_naming_styles(files) do
     files
-    |> Enum.map(& Path.basename(&1.filename, Path.extname(&1.filename)))
+    |> Enum.map(&Path.basename(&1.filename, Path.extname(&1.filename)))
     |> Enum.group_by(&categorize_naming_style/1)
     |> Enum.map(fn {style, names} -> {style, length(names)} end)
     |> Map.new()
@@ -178,7 +184,8 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
   end
 
   defp analyze_module_organization(tree) do
-    modules = tree
+    modules =
+      tree
       |> Enum.flat_map(& &1.files)
       |> Enum.filter(& &1.module_name)
       |> Enum.map(fn file ->
@@ -189,9 +196,10 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
         }
       end)
 
-    misplaced = Enum.filter(modules, fn m ->
-      !String.ends_with?(m.path, m.expected_path)
-    end)
+    misplaced =
+      Enum.filter(modules, fn m ->
+        !String.ends_with?(m.path, m.expected_path)
+      end)
 
     %{
       total_modules: length(modules),
@@ -230,7 +238,8 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
   end
 
   defp calculate_average_files_per_dir(tree) do
-    dirs_with_files = Enum.filter(tree, & &1.file_count > 0)
+    dirs_with_files = Enum.filter(tree, &(&1.file_count > 0))
+
     if length(dirs_with_files) > 0 do
       Enum.sum(Enum.map(dirs_with_files, & &1.file_count)) / length(dirs_with_files)
     else
@@ -253,46 +262,62 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
     optimizations = []
 
     # Suggest based on deep nesting
-    optimizations = if length(structure.patterns.deep_nesting) > 0 do
-      [{:flatten_structure, %{
-        directories: structure.patterns.deep_nesting,
-        reason: "Deep nesting makes navigation difficult",
-        impact: :medium
-      }} | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if length(structure.patterns.deep_nesting) > 0 do
+        [
+          {:flatten_structure,
+           %{
+             directories: structure.patterns.deep_nesting,
+             reason: "Deep nesting makes navigation difficult",
+             impact: :medium
+           }}
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     # Suggest based on large directories
-    optimizations = optimizations ++ Enum.map(structure.patterns.large_directories, fn dir ->
-      {:split_directory, %{
-        directory: dir.directory,
-        file_count: dir.file_count,
-        suggestion: dir.suggestion,
-        impact: :high
-      }}
-    end)
+    optimizations =
+      optimizations ++
+        Enum.map(structure.patterns.large_directories, fn dir ->
+          {:split_directory,
+           %{
+             directory: dir.directory,
+             file_count: dir.file_count,
+             suggestion: dir.suggestion,
+             impact: :high
+           }}
+        end)
 
     # Suggest module reorganization
-    optimizations = if length(structure.patterns.module_organization.misplaced_modules) > 0 do
-      [{:reorganize_modules, %{
-        modules: structure.patterns.module_organization.misplaced_modules,
-        reason: "Module paths don't match module names",
-        impact: :medium
-      }} | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if length(structure.patterns.module_organization.misplaced_modules) > 0 do
+        [
+          {:reorganize_modules,
+           %{
+             modules: structure.patterns.module_organization.misplaced_modules,
+             reason: "Module paths don't match module names",
+             impact: :medium
+           }}
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     # Suggest naming standardization
-    optimizations = optimizations ++ Enum.map(structure.patterns.naming_inconsistencies, fn issue ->
-      {:standardize_naming, %{
-        extension: issue.extension,
-        current_styles: issue.styles,
-        suggestion: issue.suggestion,
-        impact: :low
-      }}
-    end)
+    optimizations =
+      optimizations ++
+        Enum.map(structure.patterns.naming_inconsistencies, fn issue ->
+          {:standardize_naming,
+           %{
+             extension: issue.extension,
+             current_styles: issue.styles,
+             suggestion: issue.suggestion,
+             impact: :low
+           }}
+        end)
 
     optimizations
   end

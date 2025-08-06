@@ -33,6 +33,7 @@ defmodule RubberDuck.TelemetryTest do
     test "health check telemetry is emitted" do
       # Set up telemetry handler
       handler_id = :test_health_handler
+
       events = [
         [:rubber_duck, :health, :database],
         [:rubber_duck, :health, :services]

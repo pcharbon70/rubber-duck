@@ -21,26 +21,29 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
          {:ok, dependencies} <- analyze_dependencies(imports, params),
          {:ok, dependents} <- find_dependents(exports, params),
          {:ok, impact} <- calculate_change_impact(dependencies, dependents),
-         {:ok, result} <- build_analysis_result(imports, exports, dependencies, dependents, impact, params) do
+         {:ok, result} <-
+           build_analysis_result(imports, exports, dependencies, dependents, impact, params) do
       {:ok, result}
     end
   end
 
   defp build_analysis_result(imports, exports, dependencies, dependents, impact, params) do
-    {:ok, %{
-      imports: imports,
-      exports: exports,
-      dependencies: dependencies,
-      dependents: dependents,
-      dependency_graph: build_dependency_graph(dependencies, dependents),
-      impact_analysis: impact,
-      circular_dependencies: detect_circular_dependencies(dependencies, params.file_path),
-      unused_imports: detect_unused_imports(imports, params.content)
-    }}
+    {:ok,
+     %{
+       imports: imports,
+       exports: exports,
+       dependencies: dependencies,
+       dependents: dependents,
+       dependency_graph: build_dependency_graph(dependencies, dependents),
+       impact_analysis: impact,
+       circular_dependencies: detect_circular_dependencies(dependencies, params.file_path),
+       unused_imports: detect_unused_imports(imports, params.content)
+     }}
   end
 
   defp extract_imports(content) do
-    imports = content
+    imports =
+      content
       |> extract_import_statements()
       |> extract_alias_statements()
       |> extract_use_statements()
@@ -62,22 +65,24 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
   end
 
   defp analyze_dependencies(imports, params) do
-    dependencies = Enum.map(imports, fn import_module ->
-      %{
-        module: import_module,
-        type: categorize_dependency(import_module),
-        version: get_dependency_version(import_module),
-        usage_count: count_usage_in_file(import_module, params.content),
-        is_external: is_external_dependency?(import_module),
-        health: check_dependency_health(import_module)
-      }
-    end)
+    dependencies =
+      Enum.map(imports, fn import_module ->
+        %{
+          module: import_module,
+          type: categorize_dependency(import_module),
+          version: get_dependency_version(import_module),
+          usage_count: count_usage_in_file(import_module, params.content),
+          is_external: is_external_dependency?(import_module),
+          health: check_dependency_health(import_module)
+        }
+      end)
 
     {:ok, dependencies}
   end
 
   defp find_dependents(exports, params) do
-    dependents = params.project_files
+    dependents =
+      params.project_files
       |> Enum.filter(&file_depends_on_exports?(&1, exports, params.file_path))
       |> Enum.map(fn file ->
         %{
@@ -177,7 +182,7 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
 
   defp is_external_dependency?(module) do
     not String.starts_with?(module, "RubberDuck.") and
-    not String.starts_with?(module, "Elixir.")
+      not String.starts_with?(module, "Elixir.")
   end
 
   defp check_dependency_health(_module) do
@@ -238,18 +243,21 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
   defp generate_impact_suggestions(dependencies, dependents) do
     suggestions = []
 
-    suggestions = if length(dependents) > 5 do
-      ["Consider creating an interface module to reduce coupling" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if length(dependents) > 5 do
+        ["Consider creating an interface module to reduce coupling" | suggestions]
+      else
+        suggestions
+      end
 
     external_deps = Enum.filter(dependencies, & &1.is_external)
-    suggestions = if length(external_deps) > 3 do
-      ["Review external dependencies for potential consolidation" | suggestions]
-    else
-      suggestions
-    end
+
+    suggestions =
+      if length(external_deps) > 3 do
+        ["Review external dependencies for potential consolidation" | suggestions]
+      else
+        suggestions
+      end
 
     suggestions
   end
@@ -267,31 +275,36 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
   end
 
   defp build_graph_nodes(dependencies, dependents) do
-    dep_nodes = Enum.map(dependencies, fn dep ->
-      %{id: dep.module, type: :dependency}
-    end)
+    dep_nodes =
+      Enum.map(dependencies, fn dep ->
+        %{id: dep.module, type: :dependency}
+      end)
 
-    dependent_nodes = Enum.map(dependents, fn dep ->
-      %{id: dep.file_path, type: :dependent}
-    end)
+    dependent_nodes =
+      Enum.map(dependents, fn dep ->
+        %{id: dep.file_path, type: :dependent}
+      end)
 
     dep_nodes ++ dependent_nodes
   end
 
   defp build_graph_edges(dependencies, dependents) do
-    dep_edges = Enum.map(dependencies, fn dep ->
-      %{from: dep.module, to: :current_file, type: :imports}
-    end)
+    dep_edges =
+      Enum.map(dependencies, fn dep ->
+        %{from: dep.module, to: :current_file, type: :imports}
+      end)
 
-    dependent_edges = Enum.map(dependents, fn dep ->
-      %{from: :current_file, to: dep.file_path, type: :exports_to}
-    end)
+    dependent_edges =
+      Enum.map(dependents, fn dep ->
+        %{from: :current_file, to: dep.file_path, type: :exports_to}
+      end)
 
     dep_edges ++ dependent_edges
   end
 
   defp calculate_coupling_factor(dependencies, dependents) do
     total = length(dependencies) + length(dependents)
+
     if total > 0 do
       total / 10.0
     else
@@ -312,7 +325,8 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
       short_name = import_module |> String.split(".") |> List.last()
 
       # Check if the import is actually used in the code
-      usage_count = content
+      usage_count =
+        content
         |> String.replace(~r/import\s+#{Regex.escape(import_module)}/, "")
         |> String.replace(~r/alias\s+#{Regex.escape(import_module)}/, "")
         |> then(&Regex.scan(~r/\b#{short_name}\b/, &1))

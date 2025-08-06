@@ -33,17 +33,17 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
          {:ok, entity} <- create_entity(validated_data, context),
          {:ok, post_validation} <- post_creation_validation(entity, params),
          {:ok, learning_data} <- track_creation_outcome(entity, params, context) do
-
-      {:ok, %{
-        entity: entity,
-        entity_type: params.entity_type,
-        validation_results: validated_data,
-        impact_assessment: pre_assessment,
-        post_validation: post_validation,
-        learning_data: learning_data,
-        goal_alignment_score: calculate_goal_alignment(entity, params.agent_goals),
-        metadata: build_metadata(params, context)
-      }}
+      {:ok,
+       %{
+         entity: entity,
+         entity_type: params.entity_type,
+         validation_results: validated_data,
+         impact_assessment: pre_assessment,
+         post_validation: post_validation,
+         learning_data: learning_data,
+         goal_alignment_score: calculate_goal_alignment(entity, params.agent_goals),
+         metadata: build_metadata(params, context)
+       }}
     end
   end
 
@@ -58,39 +58,44 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
     }
 
     # Check if all validations passed
-    all_valid = validation_results
+    all_valid =
+      validation_results
       |> Map.values()
       |> Enum.all?(& &1.valid)
 
     if all_valid do
-      {:ok, %{
-        data: enrich_entity_data(params.entity_data, validation_results),
-        validations: validation_results,
-        confidence: calculate_validation_confidence(validation_results)
-      }}
+      {:ok,
+       %{
+         data: enrich_entity_data(params.entity_data, validation_results),
+         validations: validation_results,
+         confidence: calculate_validation_confidence(validation_results)
+       }}
     else
-      {:error, %{
-        reason: :validation_failed,
-        failures: extract_validation_failures(validation_results),
-        suggestions: generate_correction_suggestions(validation_results, params)
-      }}
+      {:error,
+       %{
+         reason: :validation_failed,
+         failures: extract_validation_failures(validation_results),
+         suggestions: generate_correction_suggestions(validation_results, params)
+       }}
     end
   end
 
   defp validate_basic_requirements(data, entity_type) do
-    required_fields = case entity_type do
-      :user -> [:email, :username]
-      :project -> [:name, :description]
-      :code_file -> [:path, :content]
-      :analysis -> [:type, :target]
-    end
+    required_fields =
+      case entity_type do
+        :user -> [:email, :username]
+        :project -> [:name, :description]
+        :code_file -> [:path, :content]
+        :analysis -> [:type, :target]
+      end
 
     missing_fields = required_fields -- Map.keys(data)
 
     %{
       valid: Enum.empty?(missing_fields),
       missing_fields: missing_fields,
-      data_completeness: (length(required_fields) - length(missing_fields)) / length(required_fields)
+      data_completeness:
+        (length(required_fields) - length(missing_fields)) / length(required_fields)
     }
   end
 
@@ -98,21 +103,23 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
     if Enum.empty?(agent_goals) do
       %{valid: true, score: 1.0, reason: :no_goals_specified}
     else
-      alignment_scores = Enum.map(agent_goals, fn goal ->
-        evaluate_goal_alignment(data, goal)
-      end)
+      alignment_scores =
+        Enum.map(agent_goals, fn goal ->
+          evaluate_goal_alignment(data, goal)
+        end)
 
-      avg_score = if length(alignment_scores) > 0 do
-        Enum.sum(alignment_scores) / length(alignment_scores)
-      else
-        1.0
-      end
+      avg_score =
+        if length(alignment_scores) > 0 do
+          Enum.sum(alignment_scores) / length(alignment_scores)
+        else
+          1.0
+        end
 
       %{
         valid: avg_score >= 0.7,
         score: avg_score,
         goal_count: length(agent_goals),
-        aligned_goals: Enum.count(alignment_scores, & &1 >= 0.7)
+        aligned_goals: Enum.count(alignment_scores, &(&1 >= 0.7))
       }
     end
   end
@@ -122,12 +129,16 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
     case goal.type do
       :quality ->
         evaluate_quality_goal(data, goal)
+
       :performance ->
         evaluate_performance_goal(data, goal)
+
       :learning ->
         evaluate_learning_goal(data, goal)
+
       _ ->
-        0.5  # Neutral score for unknown goal types
+        # Neutral score for unknown goal types
+        0.5
     end
   end
 
@@ -163,13 +174,14 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   defp validate_constraints(data, config) do
     constraints = config[:constraints] || %{}
 
-    violations = Enum.reduce(constraints, [], fn {field, constraint}, acc ->
-      if violates_constraint?(data[field], constraint) do
-        [{field, constraint} | acc]
-      else
-        acc
-      end
-    end)
+    violations =
+      Enum.reduce(constraints, [], fn {field, constraint}, acc ->
+        if violates_constraint?(data[field], constraint) do
+          [{field, constraint} | acc]
+        else
+          acc
+        end
+      end)
 
     %{
       valid: Enum.empty?(violations),
@@ -181,24 +193,30 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   defp violates_constraint?(nil, %{required: true}), do: true
   defp violates_constraint?(value, %{min: min}) when is_number(value), do: value < min
   defp violates_constraint?(value, %{max: max}) when is_number(value), do: value > max
+
   defp violates_constraint?(value, %{pattern: pattern}) when is_binary(value) do
     not Regex.match?(pattern, value)
   end
+
   defp violates_constraint?(_, _), do: false
 
   defp validate_with_skills(params) do
     # Use appropriate skill for validation based on entity type
-    skill_result = case params.entity_type do
-      :user ->
-        # Simulate skill validation via signals
-        %{valid: true, skill: :user_management, confidence: 0.9}
-      :project ->
-        %{valid: true, skill: :project_management, confidence: 0.85}
-      :code_file ->
-        %{valid: true, skill: :code_analysis, confidence: 0.88}
-      :analysis ->
-        %{valid: true, skill: :ai_analysis, confidence: 0.92}
-    end
+    skill_result =
+      case params.entity_type do
+        :user ->
+          # Simulate skill validation via signals
+          %{valid: true, skill: :user_management, confidence: 0.9}
+
+        :project ->
+          %{valid: true, skill: :project_management, confidence: 0.85}
+
+        :code_file ->
+          %{valid: true, skill: :code_analysis, confidence: 0.88}
+
+        :analysis ->
+          %{valid: true, skill: :ai_analysis, confidence: 0.92}
+      end
 
     skill_result
   end
@@ -234,23 +252,26 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   defp extract_validation_failures(results) do
     failures = []
 
-    failures = if results.basic.valid do
-      failures
-    else
-      [{:basic, results.basic.missing_fields} | failures]
-    end
+    failures =
+      if results.basic.valid do
+        failures
+      else
+        [{:basic, results.basic.missing_fields} | failures]
+      end
 
-    failures = if results.goals.valid do
-      failures
-    else
-      [{:goals, "Low goal alignment: #{results.goals.score}"} | failures]
-    end
+    failures =
+      if results.goals.valid do
+        failures
+      else
+        [{:goals, "Low goal alignment: #{results.goals.score}"} | failures]
+      end
 
-    failures = if results.constraints.valid do
-      failures
-    else
-      [{:constraints, results.constraints.violations} | failures]
-    end
+    failures =
+      if results.constraints.valid do
+        failures
+      else
+        [{:constraints, results.constraints.violations} | failures]
+      end
 
     failures
   end
@@ -258,17 +279,19 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   defp generate_correction_suggestions(results, _params) do
     suggestions = []
 
-    suggestions = if results.basic.valid do
-      suggestions
-    else
-      ["Add missing fields: #{Enum.join(results.basic.missing_fields, ", ")}" | suggestions]
-    end
+    suggestions =
+      if results.basic.valid do
+        suggestions
+      else
+        ["Add missing fields: #{Enum.join(results.basic.missing_fields, ", ")}" | suggestions]
+      end
 
-    suggestions = if results.goals[:score] && results.goals.score < 0.7 do
-      ["Improve goal alignment by adjusting entity properties" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if results.goals[:score] && results.goals.score < 0.7 do
+        ["Improve goal alignment by adjusting entity properties" | suggestions]
+      else
+        suggestions
+      end
 
     suggestions
   end
@@ -287,12 +310,20 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   end
 
   defp estimate_resource_usage(entity_type, data) do
-    base_usage = case entity_type do
-      :user -> %{memory: 1, cpu: 1, storage: 10}
-      :project -> %{memory: 5, cpu: 2, storage: 100}
-      :code_file -> %{memory: 2, cpu: 3, storage: data[:content] && byte_size(data.content) || 1_000}
-      :analysis -> %{memory: 10, cpu: 8, storage: 50}
-    end
+    base_usage =
+      case entity_type do
+        :user ->
+          %{memory: 1, cpu: 1, storage: 10}
+
+        :project ->
+          %{memory: 5, cpu: 2, storage: 100}
+
+        :code_file ->
+          %{memory: 2, cpu: 3, storage: (data[:content] && byte_size(data.content)) || 1_000}
+
+        :analysis ->
+          %{memory: 10, cpu: 8, storage: 50}
+      end
 
     %{
       estimated: base_usage,
@@ -303,17 +334,19 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   defp identify_dependencies(params) do
     deps = []
 
-    deps = if params[:parent_entity] do
-      [{:parent, params.parent_entity.type, params.parent_entity.id} | deps]
-    else
-      deps
-    end
+    deps =
+      if params[:parent_entity] do
+        [{:parent, params.parent_entity.type, params.parent_entity.id} | deps]
+      else
+        deps
+      end
 
-    deps = case params.entity_type do
-      :code_file -> [{:project, :required} | deps]
-      :analysis -> [{:target, :required} | deps]
-      _ -> deps
-    end
+    deps =
+      case params.entity_type do
+        :code_file -> [{:project, :required} | deps]
+        :analysis -> [{:target, :required} | deps]
+        _ -> deps
+      end
 
     deps
   end
@@ -339,17 +372,19 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   defp assess_risk_level(params) do
     risk_factors = []
 
-    risk_factors = if params[:validation_config][:skip_validation] do
-      [:validation_skipped | risk_factors]
-    else
-      risk_factors
-    end
+    risk_factors =
+      if params[:validation_config][:skip_validation] do
+        [:validation_skipped | risk_factors]
+      else
+        risk_factors
+      end
 
-    risk_factors = if params[:learning_enabled] == false do
-      [:learning_disabled | risk_factors]
-    else
-      risk_factors
-    end
+    risk_factors =
+      if params[:learning_enabled] == false do
+        [:learning_disabled | risk_factors]
+      else
+        risk_factors
+      end
 
     cond do
       length(risk_factors) >= 2 -> :high
@@ -362,22 +397,28 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   defp create_entity(validated_data, context) do
     entity_data = validated_data.data
 
-    result = case entity_data[:entity_type] || determine_entity_type(entity_data) do
-      :user ->
-        create_user_entity(entity_data, context)
-      :project ->
-        create_project_entity(entity_data, context)
-      :code_file ->
-        create_code_file_entity(entity_data, context)
-      :analysis ->
-        create_analysis_entity(entity_data, context)
-      _ ->
-        {:error, :unknown_entity_type}
-    end
+    result =
+      case entity_data[:entity_type] || determine_entity_type(entity_data) do
+        :user ->
+          create_user_entity(entity_data, context)
+
+        :project ->
+          create_project_entity(entity_data, context)
+
+        :code_file ->
+          create_code_file_entity(entity_data, context)
+
+        :analysis ->
+          create_analysis_entity(entity_data, context)
+
+        _ ->
+          {:error, :unknown_entity_type}
+      end
 
     case result do
       {:ok, entity} ->
         {:ok, add_entity_metadata(entity, validated_data)}
+
       error ->
         error
     end
@@ -395,52 +436,56 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
 
   defp create_user_entity(data, context) do
     # Simulate user creation (would integrate with Accounts context)
-    {:ok, %{
-      id: generate_entity_id(),
-      type: :user,
-      email: data.email,
-      username: data.username,
-      created_by: context[:actor],
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: generate_entity_id(),
+       type: :user,
+       email: data.email,
+       username: data.username,
+       created_by: context[:actor],
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp create_project_entity(data, context) do
     # Simulate project creation
-    {:ok, %{
-      id: generate_entity_id(),
-      type: :project,
-      name: data.name,
-      description: data.description,
-      owner_id: context[:actor] && context.actor.id,
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: generate_entity_id(),
+       type: :project,
+       name: data.name,
+       description: data.description,
+       owner_id: context[:actor] && context.actor.id,
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp create_code_file_entity(data, _context) do
     # Simulate code file creation
-    {:ok, %{
-      id: generate_entity_id(),
-      type: :code_file,
-      path: data.path,
-      content: data.content,
-      language: detect_language(data.path),
-      project_id: data[:project_id],
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: generate_entity_id(),
+       type: :code_file,
+       path: data.path,
+       content: data.content,
+       language: detect_language(data.path),
+       project_id: data[:project_id],
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp create_analysis_entity(data, context) do
     # Simulate analysis creation
-    {:ok, %{
-      id: generate_entity_id(),
-      type: :analysis,
-      analysis_type: data.type,
-      target: data.target,
-      status: :pending,
-      created_by: context[:actor],
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: generate_entity_id(),
+       type: :analysis,
+       analysis_type: data.type,
+       target: data.target,
+       status: :pending,
+       created_by: context[:actor],
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp generate_entity_id do
@@ -458,6 +503,7 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
       true -> :unknown
     end
   end
+
   defp detect_language(_), do: :unknown
 
   defp add_entity_metadata(entity, validated_data) do
@@ -477,11 +523,12 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
 
     all_valid = validations |> Map.values() |> Enum.all?(& &1)
 
-    {:ok, %{
-      valid: all_valid,
-      checks: validations,
-      entity_id: entity.id
-    }}
+    {:ok,
+     %{
+       valid: all_valid,
+       checks: validations,
+       entity_id: entity.id
+     }}
   end
 
   defp verify_entity_exists(entity) do
@@ -494,12 +541,13 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   end
 
   defp verify_entity_complete(entity, entity_type) do
-    required_fields = case entity_type do
-      :user -> [:id, :email, :username]
-      :project -> [:id, :name, :description]
-      :code_file -> [:id, :path, :content]
-      :analysis -> [:id, :type, :target]
-    end
+    required_fields =
+      case entity_type do
+        :user -> [:id, :email, :username]
+        :project -> [:id, :name, :description]
+        :code_file -> [:id, :path, :content]
+        :analysis -> [:id, :type, :target]
+      end
 
     Enum.all?(required_fields, &Map.has_key?(entity, &1))
   end
@@ -549,11 +597,13 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
   # Goal alignment calculation
   defp calculate_goal_alignment(entity, agent_goals) do
     if Enum.empty?(agent_goals) do
-      1.0  # Perfect alignment when no goals specified
+      # Perfect alignment when no goals specified
+      1.0
     else
-      scores = Enum.map(agent_goals, fn goal ->
-        calculate_entity_goal_alignment(entity, goal)
-      end)
+      scores =
+        Enum.map(agent_goals, fn goal ->
+          calculate_entity_goal_alignment(entity, goal)
+        end)
 
       if length(scores) > 0 do
         Enum.sum(scores) / length(scores)
@@ -568,10 +618,14 @@ defmodule RubberDuck.Actions.Core.CreateEntity do
     case goal.type do
       :quality ->
         entity[:validation_score] || 0.8
+
       :performance ->
-        0.7  # Default performance alignment
+        # Default performance alignment
+        0.7
+
       :learning ->
         if entity[:learning_enabled], do: 1.0, else: 0.3
+
       _ ->
         0.5
     end

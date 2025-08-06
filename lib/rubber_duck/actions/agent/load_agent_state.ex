@@ -54,12 +54,16 @@ defmodule RubberDuck.Actions.Agent.LoadAgentState do
     end
   rescue
     exception ->
-      Logger.error("Failed to load agent state: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-      {:error, %{
-        reason: {:exception, exception},
-        message: Exception.message(exception),
-        agent_name: params.agent_name
-      }}
+      Logger.error(
+        "Failed to load agent state: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+      )
+
+      {:error,
+       %{
+         reason: {:exception, exception},
+         message: Exception.message(exception),
+         agent_name: params.agent_name
+       }}
   end
 
   defp maybe_load_experiences(restored_state, agent_state, params) do
@@ -73,6 +77,7 @@ defmodule RubberDuck.Actions.Agent.LoadAgentState do
 
   defp add_provider_performance(restored_state, agent_state) do
     provider_performance = load_provider_performance(agent_state)
+
     if map_size(provider_performance) > 0 do
       Map.put(restored_state, :provider_performance, provider_performance)
     else
@@ -84,8 +89,10 @@ defmodule RubberDuck.Actions.Agent.LoadAgentState do
     cond do
       not is_map(params) ->
         {:error, :invalid_params}
+
       not is_binary(params[:agent_name]) ->
         {:error, :invalid_agent_name}
+
       true ->
         :ok
     end
@@ -117,11 +124,12 @@ defmodule RubberDuck.Actions.Agent.LoadAgentState do
   defp maybe_add_field(map, key, value), do: Map.put(map, key, value)
 
   defp load_insights(agent_state, load_all) do
-    insights_query = if load_all do
-      Agents.list_insights(%{agent_state_id: agent_state.id})
-    else
-      Agents.get_latest_insights(%{agent_state_id: agent_state.id})
-    end
+    insights_query =
+      if load_all do
+        Agents.list_insights(%{agent_state_id: agent_state.id})
+      else
+        Agents.get_latest_insights(%{agent_state_id: agent_state.id})
+      end
 
     case insights_query do
       {:ok, insights} ->

@@ -23,19 +23,20 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
 
   @impl true
   def run(params, _context) do
-    with {:ok, metrics} <- analyze_current_performance(params.current_config, params.performance_data),
+    with {:ok, metrics} <-
+           analyze_current_performance(params.current_config, params.performance_data),
          {:ok, bottlenecks} <- identify_bottlenecks(metrics),
          {:ok, optimizations} <- generate_optimizations(bottlenecks, params.optimization_goals),
          {:ok, validated} <- validate_optimizations(optimizations, params.constraints),
          {:ok, config} <- apply_optimizations(params.current_config, validated) do
-
-      {:ok, %{
-        optimized_config: config,
-        improvements: calculate_improvements(metrics, config),
-        applied_optimizations: validated,
-        performance_forecast: forecast_performance(config, metrics),
-        recommendations: generate_optimization_recommendations(validated)
-      }}
+      {:ok,
+       %{
+         optimized_config: config,
+         improvements: calculate_improvements(metrics, config),
+         applied_optimizations: validated,
+         performance_forecast: forecast_performance(config, metrics),
+         recommendations: generate_optimization_recommendations(validated)
+       }}
     end
   end
 
@@ -67,7 +68,7 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
     successful = Map.get(performance_data, :successful_analyses, 0)
 
     if total > 0 do
-      (successful / total) * 100
+      successful / total * 100
     else
       0
     end
@@ -82,7 +83,8 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
   end
 
   defp estimate_cpu_usage(config) do
-    base_usage = 20  # Base CPU percentage
+    # Base CPU percentage
+    base_usage = 20
 
     # Adjust based on config
     adjustments = 0
@@ -98,11 +100,13 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
     # Adjust based on config
     adjustments = 0
     adjustments = if config[:cache_enabled], do: adjustments + 512, else: adjustments
-    adjustments = if config[:batch_size] do
-      adjustments + (config.batch_size * 10)
-    else
-      adjustments
-    end
+
+    adjustments =
+      if config[:batch_size] do
+        adjustments + config.batch_size * 10
+      else
+        adjustments
+      end
 
     base_mb + adjustments
   end
@@ -116,7 +120,8 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
     analyses_count = Map.get(performance_data, :total_analyses, 0)
 
     if time_window > 0 do
-      analyses_count / (time_window / 3600)  # Analyses per hour
+      # Analyses per hour
+      analyses_count / (time_window / 3600)
     else
       0
     end
@@ -141,46 +146,56 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
     bottlenecks = []
 
     # Duration bottleneck
-    bottlenecks = if metrics.average_duration > 30_000 do  # 30 seconds
-      [%{type: :duration, severity: :high, value: metrics.average_duration} | bottlenecks]
-    else
-      bottlenecks
-    end
+    # 30 seconds
+    bottlenecks =
+      if metrics.average_duration > 30_000 do
+        [%{type: :duration, severity: :high, value: metrics.average_duration} | bottlenecks]
+      else
+        bottlenecks
+      end
 
     # Success rate bottleneck
-    bottlenecks = if metrics.success_rate < 80 do
-      [%{type: :success_rate, severity: :critical, value: metrics.success_rate} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if metrics.success_rate < 80 do
+        [%{type: :success_rate, severity: :critical, value: metrics.success_rate} | bottlenecks]
+      else
+        bottlenecks
+      end
 
     # Resource bottlenecks
-    bottlenecks = if metrics.resource_usage.cpu_usage > 80 do
-      [%{type: :cpu, severity: :high, value: metrics.resource_usage.cpu_usage} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if metrics.resource_usage.cpu_usage > 80 do
+        [%{type: :cpu, severity: :high, value: metrics.resource_usage.cpu_usage} | bottlenecks]
+      else
+        bottlenecks
+      end
 
-    bottlenecks = if metrics.resource_usage.memory_usage > 2048 do
-      [%{type: :memory, severity: :medium, value: metrics.resource_usage.memory_usage} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if metrics.resource_usage.memory_usage > 2048 do
+        [
+          %{type: :memory, severity: :medium, value: metrics.resource_usage.memory_usage}
+          | bottlenecks
+        ]
+      else
+        bottlenecks
+      end
 
     # Throughput bottleneck
-    bottlenecks = if metrics.throughput < 10 do
-      [%{type: :throughput, severity: :medium, value: metrics.throughput} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if metrics.throughput < 10 do
+        [%{type: :throughput, severity: :medium, value: metrics.throughput} | bottlenecks]
+      else
+        bottlenecks
+      end
 
     {:ok, bottlenecks}
   end
 
   defp generate_optimizations(bottlenecks, goals) do
-    optimizations = Enum.flat_map(bottlenecks, fn bottleneck ->
-      generate_bottleneck_optimizations(bottleneck, goals)
-    end)
+    optimizations =
+      Enum.flat_map(bottlenecks, fn bottleneck ->
+        generate_bottleneck_optimizations(bottleneck, goals)
+      end)
 
     # Add goal-specific optimizations
     goal_optimizations = Enum.flat_map(goals, &generate_goal_optimizations/1)
@@ -192,14 +207,19 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
     case bottleneck.type do
       :duration ->
         duration_optimizations(bottleneck, goals)
+
       :success_rate ->
         success_rate_optimizations(bottleneck)
+
       :cpu ->
         cpu_optimizations(bottleneck)
+
       :memory ->
         memory_optimizations(bottleneck)
+
       :throughput ->
         throughput_optimizations(bottleneck, goals)
+
       _ ->
         []
     end
@@ -208,38 +228,44 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
   defp duration_optimizations(bottleneck, goals) do
     optimizations = []
 
-    optimizations = if :speed in goals do
-      [
-        %{
-          type: :config,
-          key: :timeout,
-          action: :reduce,
-          value: 20_000,
-          impact: :high
-        },
-        %{
-          type: :config,
-          key: :analysis_depth,
-          action: :reduce,
-          value: :shallow,
-          impact: :medium
-        }
-      | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if :speed in goals do
+        [
+          %{
+            type: :config,
+            key: :timeout,
+            action: :reduce,
+            value: 20_000,
+            impact: :high
+          },
+          %{
+            type: :config,
+            key: :analysis_depth,
+            action: :reduce,
+            value: :shallow,
+            impact: :medium
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
-    optimizations = if bottleneck.severity == :high do
-      [%{
-        type: :config,
-        key: :parallel_processing,
-        action: :enable,
-        value: true,
-        impact: :high
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if bottleneck.severity == :high do
+        [
+          %{
+            type: :config,
+            key: :parallel_processing,
+            action: :enable,
+            value: true,
+            impact: :high
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -290,7 +316,8 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
         type: :runtime,
         key: :cpu_throttling,
         action: :enable,
-        value: 70,  # Max 70% CPU
+        # Max 70% CPU
+        value: 70,
         impact: :medium
       }
     ]
@@ -309,7 +336,8 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
         type: :config,
         key: :result_retention,
         action: :reduce,
-        value: 3600,  # 1 hour
+        # 1 hour
+        value: 3600,
         impact: :low
       },
       %{
@@ -325,26 +353,28 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
   defp throughput_optimizations(_bottleneck, goals) do
     optimizations = []
 
-    optimizations = if :speed in goals do
-      [
-        %{
-          type: :config,
-          key: :batch_processing,
-          action: :enable,
-          value: true,
-          impact: :high
-        },
-        %{
-          type: :config,
-          key: :queue_size,
-          action: :increase,
-          value: 100,
-          impact: :medium
-        }
-      | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if :speed in goals do
+        [
+          %{
+            type: :config,
+            key: :batch_processing,
+            action: :enable,
+            value: true,
+            impact: :high
+          },
+          %{
+            type: :config,
+            key: :queue_size,
+            action: :increase,
+            value: 100,
+            impact: :medium
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -409,9 +439,10 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
   defp generate_goal_optimizations(_), do: []
 
   defp validate_optimizations(optimizations, constraints) do
-    validated = Enum.filter(optimizations, fn opt ->
-      validate_single_optimization(opt, constraints)
-    end)
+    validated =
+      Enum.filter(optimizations, fn opt ->
+        validate_single_optimization(opt, constraints)
+      end)
 
     # Resolve conflicts
     resolved = resolve_optimization_conflicts(validated)
@@ -423,8 +454,10 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
     case optimization.type do
       :config ->
         validate_config_optimization(optimization, constraints)
+
       :runtime ->
         validate_runtime_optimization(optimization, constraints)
+
       _ ->
         true
     end
@@ -463,7 +496,7 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
 
     # Resolve conflicts by choosing highest impact
     Enum.map(grouped, fn {_key, opts} ->
-      Enum.max_by(opts, & impact_score(&1.impact))
+      Enum.max_by(opts, &impact_score(&1.impact))
     end)
   end
 
@@ -474,9 +507,10 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
   defp impact_score(_), do: 0
 
   defp apply_optimizations(current_config, optimizations) do
-    config = Enum.reduce(optimizations, current_config, fn opt, acc ->
-      apply_single_optimization(acc, opt)
-    end)
+    config =
+      Enum.reduce(optimizations, current_config, fn opt, acc ->
+        apply_single_optimization(acc, opt)
+      end)
 
     {:ok, config}
   end
@@ -515,59 +549,67 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
     base_improvement = 0
 
     # Parallel processing improvement
-    base_improvement = if config[:parallel_processing] do
-      base_improvement + 30
-    else
-      base_improvement
-    end
+    base_improvement =
+      if config[:parallel_processing] do
+        base_improvement + 30
+      else
+        base_improvement
+      end
 
     # Caching improvement
-    base_improvement = if config[:caching] do
-      base_improvement + 20
-    else
-      base_improvement
-    end
+    base_improvement =
+      if config[:caching] do
+        base_improvement + 20
+      else
+        base_improvement
+      end
 
     # Depth reduction improvement
-    base_improvement = if config[:analysis_depth] == :shallow do
-      base_improvement + 25
-    else
-      base_improvement
-    end
+    base_improvement =
+      if config[:analysis_depth] == :shallow do
+        base_improvement + 25
+      else
+        base_improvement
+      end
 
-    min(70, base_improvement)  # Cap at 70% improvement
+    # Cap at 70% improvement
+    min(70, base_improvement)
   end
 
   defp estimate_success_improvement(_metrics, config) do
     base_improvement = 0
 
-    base_improvement = if config[:retry_count] && config.retry_count > 1 do
-      base_improvement + 10
-    else
-      base_improvement
-    end
+    base_improvement =
+      if config[:retry_count] && config.retry_count > 1 do
+        base_improvement + 10
+      else
+        base_improvement
+      end
 
-    base_improvement = if config[:fallback_strategy] do
-      base_improvement + 15
-    else
-      base_improvement
-    end
+    base_improvement =
+      if config[:fallback_strategy] do
+        base_improvement + 15
+      else
+        base_improvement
+      end
 
     min(30, base_improvement)
   end
 
   defp estimate_resource_savings(_metrics, config) do
-    cpu_savings = if config[:cpu_throttling] do
-      100 - (config[:cpu_throttling] || 100)
-    else
-      0
-    end
+    cpu_savings =
+      if config[:cpu_throttling] do
+        100 - (config[:cpu_throttling] || 100)
+      else
+        0
+      end
 
-    memory_savings = if config[:cache_size] && config.cache_size < 500 do
-      20
-    else
-      0
-    end
+    memory_savings =
+      if config[:cache_size] && config.cache_size < 500 do
+        20
+      else
+        0
+      end
 
     %{
       cpu_percentage: cpu_savings,
@@ -578,17 +620,19 @@ defmodule RubberDuck.Actions.AI.OptimizeAnalysis do
   defp estimate_throughput_improvement(_metrics, config) do
     base_improvement = 0
 
-    base_improvement = if config[:batch_processing] do
-      base_improvement + 50
-    else
-      base_improvement
-    end
+    base_improvement =
+      if config[:batch_processing] do
+        base_improvement + 50
+      else
+        base_improvement
+      end
 
-    base_improvement = if config[:async_processing] do
-      base_improvement + 30
-    else
-      base_improvement
-    end
+    base_improvement =
+      if config[:async_processing] do
+        base_improvement + 30
+      else
+        base_improvement
+      end
 
     min(100, base_improvement)
   end

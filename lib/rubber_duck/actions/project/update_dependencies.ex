@@ -9,7 +9,11 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     schema: [
       project_id: [type: :string, required: true],
       dependencies: [type: {:list, :map}, required: true],
-      update_strategy: [type: :atom, default: :conservative, values: [:conservative, :moderate, :aggressive]],
+      update_strategy: [
+        type: :atom,
+        default: :conservative,
+        values: [:conservative, :moderate, :aggressive]
+      ],
       test_updates: [type: :boolean, default: true],
       create_pr: [type: :boolean, default: false]
     ]
@@ -30,11 +34,12 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
          {:ok, updated_files} <- apply_updates(config_files, update_plan),
          {:ok, test_results} <- run_tests_if_enabled(project, params),
          {:ok, pr_info} <- create_pr_if_enabled(project, updated_files, update_plan, params) do
-      {:ok, %{
-        update_plan: update_plan,
-        test_results: test_results,
-        pull_request: pr_info
-      }}
+      {:ok,
+       %{
+         update_plan: update_plan,
+         test_results: test_results,
+         pull_request: pr_info
+       }}
     end
   end
 
@@ -51,7 +56,8 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
   defp load_config_files(project) do
     case Projects.list_code_files_by_project(project.id) do
       {:ok, files} ->
-        config_files = files
+        config_files =
+          files
           |> Enum.filter(&is_dependency_file?/1)
           |> Enum.map(fn file ->
             %{
@@ -61,18 +67,28 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
               file_id: file.id
             }
           end)
+
         {:ok, config_files}
-      error -> error
+
+      error ->
+        error
     end
   end
 
   defp is_dependency_file?(file) do
     dependency_files = [
-      "mix.exs", "mix.lock",
-      "package.json", "package-lock.json", "yarn.lock",
-      "requirements.txt", "Pipfile", "Pipfile.lock",
-      "Gemfile", "Gemfile.lock",
-      "go.mod", "go.sum"
+      "mix.exs",
+      "mix.lock",
+      "package.json",
+      "package-lock.json",
+      "yarn.lock",
+      "requirements.txt",
+      "Pipfile",
+      "Pipfile.lock",
+      "Gemfile",
+      "Gemfile.lock",
+      "go.mod",
+      "go.sum"
     ]
 
     Enum.any?(dependency_files, &String.ends_with?(file.path, &1))
@@ -109,11 +125,12 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     latest = dep.latest_version
     available = dep.available_versions || []
 
-    target_version = case strategy do
-      :conservative -> find_patch_update(current, available)
-      :moderate -> find_minor_update(current, available)
-      :aggressive -> latest
-    end
+    target_version =
+      case strategy do
+        :conservative -> find_patch_update(current, available)
+        :moderate -> find_minor_update(current, available)
+        :aggressive -> latest
+      end
 
     %{
       name: dep.name,
@@ -131,6 +148,7 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     case Version.parse(current) do
       {:ok, current_version} ->
         find_matching_version(available, current_version, :patch)
+
       _ ->
         nil
     end
@@ -147,7 +165,8 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     case Version.parse(version_string) do
       {:ok, version} ->
         Version.match?(version, "~> #{current_version.major}.#{current_version.minor}.0") &&
-        Version.compare(version, current_version) == :gt
+          Version.compare(version, current_version) == :gt
+
       _ ->
         false
     end
@@ -157,6 +176,7 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     case Version.parse(current) do
       {:ok, current_version} ->
         find_matching_minor_version(available, current_version)
+
       _ ->
         nil
     end
@@ -173,7 +193,8 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     case Version.parse(version_string) do
       {:ok, version} ->
         version.major == current_version.major &&
-        Version.compare(version, current_version) == :gt
+          Version.compare(version, current_version) == :gt
+
       _ ->
         false
     end
@@ -195,7 +216,9 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
           cv.patch != tv.patch -> :patch
           true -> :none
         end
-      _ -> :unknown
+
+      _ ->
+        :unknown
     end
   end
 
@@ -210,26 +233,27 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
   end
 
   defp apply_updates(config_files, update_plan) do
-    results = Enum.map(config_files, fn file ->
-      updates_for_file = find_updates_for_file(file, update_plan)
+    results =
+      Enum.map(config_files, fn file ->
+        updates_for_file = find_updates_for_file(file, update_plan)
 
-      if length(updates_for_file) > 0 do
-        updated_content = apply_updates_to_file(file, updates_for_file)
+        if length(updates_for_file) > 0 do
+          updated_content = apply_updates_to_file(file, updates_for_file)
 
-        %{
-          file: file,
-          original_content: file.content,
-          updated_content: updated_content,
-          updates_applied: updates_for_file,
-          changed: true
-        }
-      else
-        %{
-          file: file,
-          changed: false
-        }
-      end
-    end)
+          %{
+            file: file,
+            original_content: file.content,
+            updated_content: updated_content,
+            updates_applied: updates_for_file,
+            changed: true
+          }
+        else
+          %{
+            file: file,
+            changed: false
+          }
+        end
+      end)
 
     {:ok, Enum.filter(results, & &1.changed)}
   end
@@ -248,7 +272,7 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     deps = extract_mix_dependencies(content)
 
     Enum.filter(update_plan, fn update ->
-      Enum.any?(deps, & &1.name == update.name)
+      Enum.any?(deps, &(&1.name == update.name))
     end)
   end
 
@@ -271,19 +295,22 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
         Enum.filter(update_plan, fn update ->
           Map.has_key?(all_deps, update.name)
         end)
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
   defp find_pip_updates(content, update_plan) do
     lines = String.split(content, "\n")
 
-    deps = lines
+    deps =
+      lines
       |> Enum.map(&parse_pip_requirement/1)
       |> Enum.filter(& &1)
 
     Enum.filter(update_plan, fn update ->
-      Enum.any?(deps, & &1.name == update.name)
+      Enum.any?(deps, &(&1.name == update.name))
     end)
   end
 
@@ -317,6 +344,7 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
       {:ok, package} ->
         updated_package = apply_npm_updates(package, updates)
         Jason.encode!(updated_package, pretty: true)
+
       _ ->
         content
     end
@@ -371,28 +399,32 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
 
   defp run_project_tests(project) do
     # Determine test command based on project language
-    test_command = case project.language do
-      "elixir" -> "mix test"
-      "javascript" -> "npm test"
-      "python" -> "python -m pytest"
-      _ -> nil
-    end
+    test_command =
+      case project.language do
+        "elixir" -> "mix test"
+        "javascript" -> "npm test"
+        "python" -> "python -m pytest"
+        _ -> nil
+      end
 
     if test_command do
       case System.cmd(test_command, [], cd: project_directory(project)) do
         {output, 0} ->
-          {:ok, %{
-            success: true,
-            command: test_command,
-            output: output
-          }}
+          {:ok,
+           %{
+             success: true,
+             command: test_command,
+             output: output
+           }}
+
         {output, exit_code} ->
-          {:ok, %{
-            success: false,
-            command: test_command,
-            exit_code: exit_code,
-            output: output
-          }}
+          {:ok,
+           %{
+             success: false,
+             command: test_command,
+             exit_code: exit_code,
+             output: output
+           }}
       end
     else
       {:ok, %{skipped: true, reason: "Unknown project language"}}
@@ -426,12 +458,13 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     pr_title = "Update #{length(update_plan)} dependencies"
     pr_body = generate_pr_description(update_plan)
 
-    {:ok, %{
-      title: pr_title,
-      body: pr_body,
-      branch: "dependency-updates-#{Date.utc_today()}",
-      files_changed: length(updated_files)
-    }}
+    {:ok,
+     %{
+       title: pr_title,
+       body: pr_body,
+       branch: "dependency-updates-#{Date.utc_today()}",
+       files_changed: length(updated_files)
+     }}
   end
 
   defp generate_pr_description(update_plan) do
@@ -470,7 +503,7 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
   end
 
   defp count_by_type(update_plan, type) do
-    Enum.count(update_plan, & &1.update_type == type)
+    Enum.count(update_plan, &(&1.update_type == type))
   end
 
   defp format_breaking_changes(update_plan) do
@@ -480,9 +513,7 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
       """
       The following updates may contain breaking changes:
 
-      #{Enum.map_join(breaking, "\n", fn update ->
-        "- **#{update.name}** (#{update.update_type} update)"
-      end)}
+      #{Enum.map_join(breaking, "\n", fn update -> "- **#{update.name}** (#{update.update_type} update)" end)}
 
       Please review the changelogs for these packages.
       """

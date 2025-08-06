@@ -38,12 +38,13 @@ defmodule RubberDuck.Actions.LLM.Complete do
           # Record success metrics
           HealthMonitor.record_success(provider.name, duration)
 
-          {:ok, %{
-            response: response,
-            provider: provider.name,
-            duration_ms: duration,
-            success: true
-          }}
+          {:ok,
+           %{
+             response: response,
+             provider: provider.name,
+             duration_ms: duration,
+             success: true
+           }}
 
         {:error, reason} ->
           duration = System.monotonic_time(:millisecond) - start_time
@@ -51,28 +52,34 @@ defmodule RubberDuck.Actions.LLM.Complete do
           # Record failure metrics
           HealthMonitor.record_failure(provider.name, reason)
 
-          Logger.warning("LLM completion failed for provider #{provider.name}: #{inspect(reason)}")
+          Logger.warning(
+            "LLM completion failed for provider #{provider.name}: #{inspect(reason)}"
+          )
 
-          {:error, %{
-            reason: reason,
-            provider: provider.name,
-            duration_ms: duration,
-            success: false
-          }}
+          {:error,
+           %{
+             reason: reason,
+             provider: provider.name,
+             duration_ms: duration,
+             success: false
+           }}
       end
     rescue
       exception ->
         # Record failure metrics
         HealthMonitor.record_failure(provider.name, exception)
 
-        Logger.error("LLM completion crashed for provider #{provider.name}: #{inspect(exception)}")
+        Logger.error(
+          "LLM completion crashed for provider #{provider.name}: #{inspect(exception)}"
+        )
 
-        {:error, %{
-          reason: {:exception, exception},
-          provider: provider.name,
-          duration_ms: 0,
-          success: false
-        }}
+        {:error,
+         %{
+           reason: {:exception, exception},
+           provider: provider.name,
+           duration_ms: 0,
+           success: false
+         }}
     end
   end
 

@@ -5,11 +5,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructureTest do
 
   setup do
     # Create test project with files
-    {:ok, project} = Projects.create_project(%{
-      name: "Structure Test Project",
-      language: "elixir",
-      status: :active
-    })
+    {:ok, project} =
+      Projects.create_project(%{
+        name: "Structure Test Project",
+        language: "elixir",
+        status: :active
+      })
 
     # Create a variety of files to test structure analysis
     files = [
@@ -40,13 +41,18 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructureTest do
       }
     ]
 
-    created_files = Enum.map(files, fn file_attrs ->
-      {:ok, file} = Projects.create_code_file(Map.merge(file_attrs, %{
-        project_id: project.id,
-        language: "elixir"
-      }))
-      file
-    end)
+    created_files =
+      Enum.map(files, fn file_attrs ->
+        {:ok, file} =
+          Projects.create_code_file(
+            Map.merge(file_attrs, %{
+              project_id: project.id,
+              language: "elixir"
+            })
+          )
+
+        file
+      end)
 
     %{project: project, files: created_files}
   end
@@ -79,7 +85,8 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructureTest do
       {:ok, result} = AnalyzeStructure.run(params, %{})
 
       # Should not include test files
-      file_paths = result.structure.tree
+      file_paths =
+        result.structure.tree
         |> Enum.flat_map(& &1.files)
         |> Enum.map(& &1.path)
 
@@ -124,9 +131,10 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructureTest do
       assert length(result.optimizations) > 0
 
       # Should suggest splitting the crowded directory
-      split_suggestions = Enum.filter(result.optimizations, fn {type, _} ->
-        type == :split_directory
-      end)
+      split_suggestions =
+        Enum.filter(result.optimizations, fn {type, _} ->
+          type == :split_directory
+        end)
 
       assert length(split_suggestions) > 0
     end
@@ -145,7 +153,8 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructureTest do
       assert metrics.total_files == 5
       assert metrics.total_directories > 0
       assert metrics.average_depth > 0
-      assert metrics.max_depth >= 4  # deeply/nested/module
+      # deeply/nested/module
+      assert metrics.max_depth >= 4
       assert metrics.complexity_score >= 0
     end
 
@@ -172,15 +181,16 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructureTest do
       assert length(misplaced) > 0
 
       # Should detect the Auth.User module is in wrong place
-      assert Enum.any?(misplaced, & &1.module == "MyApp.Auth.User")
+      assert Enum.any?(misplaced, &(&1.module == "MyApp.Auth.User"))
     end
 
     test "handles empty project gracefully", %{} do
-      {:ok, empty_project} = Projects.create_project(%{
-        name: "Empty Project",
-        language: "elixir",
-        status: :active
-      })
+      {:ok, empty_project} =
+        Projects.create_project(%{
+          name: "Empty Project",
+          language: "elixir",
+          status: :active
+        })
 
       params = %{
         project_id: empty_project.id,

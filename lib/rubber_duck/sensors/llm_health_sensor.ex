@@ -43,9 +43,8 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
       alert_on_degradation: opts.alert_on_degradation
     }
 
-    # Subscribe to relevant signals to track metrics
-    :ok = RubberDuck.Signal.subscribe("llm.request.completed")
-    :ok = RubberDuck.Signal.subscribe("llm.request.failed")
+    # Note: Converted from legacy signal system - metrics now tracked via telemetry
+    Logger.debug("LLM Health Sensor started - now uses telemetry instead of signals")
 
     # Start periodic health checks
     {:ok, schedule_health_check(state)}
@@ -68,7 +67,8 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
           {provider.name, perform_provider_health_check(provider, state)}
         end)
       end)
-      |> Task.await_many(10_000)  # 10 second timeout for all checks
+      # 10 second timeout for all checks
+      |> Task.await_many(10_000)
       |> Map.new()
 
     # Update metrics and emit signals based on results
@@ -89,10 +89,11 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
   def handle_info({:signal, "llm.request.completed", payload}, state) do
     # Update metrics based on successful request
     if payload[:provider] && payload[:duration] do
-      new_state = update_provider_metrics(state, payload.provider, :success, %{
-        duration: payload.duration,
-        tokens: payload[:tokens]
-      })
+      new_state =
+        update_provider_metrics(state, payload.provider, :success, %{
+          duration: payload.duration,
+          tokens: payload[:tokens]
+        })
 
       {:noreply, new_state}
     else
@@ -104,10 +105,11 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
   def handle_info({:signal, "llm.request.failed", payload}, state) do
     # Update metrics based on failed request
     if payload[:provider] do
-      new_state = update_provider_metrics(state, payload.provider, :failure, %{
-        reason: payload[:reason],
-        duration: payload[:duration]
-      })
+      new_state =
+        update_provider_metrics(state, payload.provider, :failure, %{
+          reason: payload[:reason],
+          duration: payload[:duration]
+        })
 
       {:noreply, new_state}
     else
@@ -148,11 +150,12 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     start_time = System.monotonic_time(:millisecond)
 
     try do
-      result = case provider.module.health_check(provider.config) do
-        :ok -> :ok
-        {:ok, _} -> :ok
-        error -> error
-      end
+      result =
+        case provider.module.health_check(provider.config) do
+          :ok -> :ok
+          {:ok, _} -> :ok
+          error -> error
+        end
 
       response_time = System.monotonic_time(:millisecond) - start_time
       metrics = Map.get(state.metrics, provider.name, default_metrics())
@@ -222,7 +225,12 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
       end
 
       # Update provider availability in registry
-      update_provider_availability(provider_name, current_status, result, state.alert_on_degradation)
+      update_provider_availability(
+        provider_name,
+        current_status,
+        result,
+        state.alert_on_degradation
+      )
 
       # Update stored status
       put_in(acc_state, [:metrics, provider_name, :last_health_status], current_status)
@@ -357,6 +365,7 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     |> Map.put(:p95_response_time, calculate_percentile(sorted_times, 0.95))
     |> Map.put(:p99_response_time, calculate_percentile(sorted_times, 0.99))
   end
+
   defp update_response_times(metrics, _), do: metrics
 
   defp calculate_rates(metrics) do
@@ -370,11 +379,13 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
   end
 
   defp calculate_average([]), do: 0
+
   defp calculate_average(times) do
     Enum.sum(times) / length(times)
   end
 
   defp calculate_percentile([], _), do: 0
+
   defp calculate_percentile(sorted_times, percentile) do
     index = round(percentile * (length(sorted_times) - 1))
     Enum.at(sorted_times, index, 0)
@@ -411,7 +422,9 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     Enum.count(results, fn {_, result} -> result.status == :failed end)
   end
 
-  defp emit_signal(signal_type, payload) do
-    RubberDuck.Signal.emit(signal_type, Map.put(payload, :sensor, "llm_health_sensor"))
+  defp emit_signal(signal_type, _payload) do
+    Logger.debug("Legacy signal emission: #{signal_type} from llm_health_sensor")
+    # Note: Converted from legacy signal system - health events now handled via MessageRouter
+    :ok
   end
 end

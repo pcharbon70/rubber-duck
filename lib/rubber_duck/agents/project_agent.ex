@@ -22,31 +22,39 @@ defmodule RubberDuck.Agents.ProjectAgent do
       performance_metrics: [type: :map, default: %{}],
       learned_insights: [type: :map, default: %{}],
       learning_interval: [type: :pos_integer, default: 100],
-      last_learning_at: [type: {:or, [:naive_datetime, :nil]}, default: nil],
+      last_learning_at: [type: {:or, [:naive_datetime, nil]}, default: nil],
       persistence_enabled: [type: :boolean, default: false],
       checkpoint_interval: [type: :pos_integer, default: 300_000],
       experience_retention_days: [type: :pos_integer, default: 30],
       max_memory_experiences: [type: :pos_integer, default: 1000],
-      agent_state_id: [type: {:or, [:string, :nil]}, default: nil],
-      last_checkpoint: [type: {:or, [:utc_datetime, :nil]}, default: nil],
+      agent_state_id: [type: {:or, [:string, nil]}, default: nil],
+      last_checkpoint: [type: {:or, [:utc_datetime, nil]}, default: nil],
 
       # Project tracking
-      monitored_projects: [type: :map, default: %{}], # project_id => project_state
-      project_metrics: [type: :map, default: %{}], # project_id => metrics
-      structure_optimizations: [type: :map, default: %{}], # project_id => optimizations
+      # project_id => project_state
+      monitored_projects: [type: :map, default: %{}],
+      # project_id => metrics
+      project_metrics: [type: :map, default: %{}],
+      # project_id => optimizations
+      structure_optimizations: [type: :map, default: %{}],
 
       # Dependency management
-      dependency_graph: [type: :map, default: %{}], # project_id => dependencies
+      # project_id => dependencies
+      dependency_graph: [type: :map, default: %{}],
       dependency_alerts: [type: {:list, :map}, default: []],
       dependency_update_queue: [type: {:list, :map}, default: []],
 
       # Code quality
-      quality_metrics: [type: :map, default: %{}], # project_id => quality_data
-      quality_thresholds: [type: :map, default: %{
-        complexity: 10,
-        duplication: 0.1,
-        test_coverage: 0.8
-      }],
+      # project_id => quality_data
+      quality_metrics: [type: :map, default: %{}],
+      quality_thresholds: [
+        type: :map,
+        default: %{
+          complexity: 10,
+          duplication: 0.1,
+          test_coverage: 0.8
+        }
+      ],
       quality_trends: [type: :map, default: %{}],
 
       # Refactoring
@@ -61,8 +69,9 @@ defmodule RubberDuck.Agents.ProjectAgent do
       optimization_confidence_threshold: [type: :float, default: 0.7],
 
       # Monitoring settings
-      scan_interval: [type: :pos_integer, default: 300_000], # 5 minutes
-      last_scan_time: [type: {:or, [:utc_datetime, :nil]}, default: nil],
+      # 5 minutes
+      scan_interval: [type: :pos_integer, default: 300_000],
+      last_scan_time: [type: {:or, [:utc_datetime, nil]}, default: nil],
       auto_optimization_enabled: [type: :boolean, default: true]
     ],
     actions: [
@@ -77,7 +86,8 @@ defmodule RubberDuck.Agents.ProjectAgent do
     ]
 
   alias RubberDuck.Projects
-  alias RubberDuck.Signal
+  alias RubberDuck.Routing.MessageRouter
+  alias RubberDuck.Messages.Project.{AnalyzeStructure, MonitorHealth, OptimizeResources}
   require Logger
 
   # Signal definitions
@@ -90,12 +100,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
   @signal_optimization_completed "project.optimization.completed"
 
   def init(opts) do
-    # Subscribe to project-related signals
-    :ok = Signal.subscribe("project.created")
-    :ok = Signal.subscribe("project.updated")
-    :ok = Signal.subscribe("project.file.changed")
-    :ok = Signal.subscribe("project.deleted")
-
+    # No longer need to subscribe to signals - messages are routed directly
     # Schedule periodic project scanning
     schedule_project_scan()
 
@@ -105,7 +110,8 @@ defmodule RubberDuck.Agents.ProjectAgent do
   def handle_instruction({:monitor_project, project_id}, agent) do
     case load_project(project_id) do
       {:ok, project} ->
-        updated_agent = agent
+        updated_agent =
+          agent
           |> start_monitoring_project(project)
           |> analyze_project_structure(project_id)
           |> detect_project_dependencies(project_id)
@@ -125,7 +131,8 @@ defmodule RubberDuck.Agents.ProjectAgent do
     if length(optimizations) > 0 && agent.state.auto_optimization_enabled do
       {:ok, results} = apply_structure_optimizations(agent, project_id, optimizations)
 
-      updated_agent = agent
+      updated_agent =
+        agent
         |> record_optimization_results(project_id, results)
         |> learn_from_optimization(results)
 
@@ -143,7 +150,8 @@ defmodule RubberDuck.Agents.ProjectAgent do
   def handle_instruction({:suggest_refactorings, project_id}, agent) do
     quality_data = Map.get(agent.state.quality_metrics, project_id, %{})
 
-    suggestions = agent
+    suggestions =
+      agent
       |> generate_refactoring_suggestions(project_id, quality_data)
       |> prioritize_suggestions()
       |> Enum.take(agent.state.max_refactoring_suggestions)
@@ -172,9 +180,10 @@ defmodule RubberDuck.Agents.ProjectAgent do
         alert_count: length(alerts)
       })
 
-      updated_agent = %{agent | state: %{agent.state |
-        dependency_alerts: alerts ++ agent.state.dependency_alerts
-      }}
+      updated_agent = %{
+        agent
+        | state: %{agent.state | dependency_alerts: alerts ++ agent.state.dependency_alerts}
+      }
 
       {:ok, alerts, updated_agent}
     else
@@ -187,10 +196,15 @@ defmodule RubberDuck.Agents.ProjectAgent do
     handle_instruction({:monitor_project, project_id}, agent)
   end
 
-  def handle_signal("project.file.changed", %{project_id: project_id, file_path: file_path}, agent) do
+  def handle_signal(
+        "project.file.changed",
+        %{project_id: project_id, file_path: file_path},
+        agent
+      ) do
     if Map.has_key?(agent.state.monitored_projects, project_id) do
       # Trigger quality check for the changed file
-      updated_agent = agent
+      updated_agent =
+        agent
         |> update_file_metrics(project_id, file_path)
         |> check_quality_thresholds(project_id)
         |> generate_incremental_suggestions(project_id, file_path)
@@ -208,7 +222,8 @@ defmodule RubberDuck.Agents.ProjectAgent do
   end
 
   def handle_info(:scan_projects, agent) do
-    updated_agent = agent.state.monitored_projects
+    updated_agent =
+      agent.state.monitored_projects
       |> Map.keys()
       |> Enum.reduce(agent, fn project_id, acc ->
         acc
@@ -219,9 +234,9 @@ defmodule RubberDuck.Agents.ProjectAgent do
       end)
 
     schedule_project_scan()
-    {:noreply, %{updated_agent | state: %{updated_agent.state |
-      last_scan_time: DateTime.utc_now()
-    }}}
+
+    {:noreply,
+     %{updated_agent | state: %{updated_agent.state | last_scan_time: DateTime.utc_now()}}}
   end
 
   # Private functions
@@ -246,13 +261,17 @@ defmodule RubberDuck.Agents.ProjectAgent do
   end
 
   defp stop_monitoring_project(agent, project_id) do
-    %{agent | state: %{agent.state |
-      monitored_projects: Map.delete(agent.state.monitored_projects, project_id),
-      project_metrics: Map.delete(agent.state.project_metrics, project_id),
-      quality_metrics: Map.delete(agent.state.quality_metrics, project_id),
-      dependency_graph: Map.delete(agent.state.dependency_graph, project_id),
-      structure_optimizations: Map.delete(agent.state.structure_optimizations, project_id)
-    }}
+    %{
+      agent
+      | state: %{
+          agent.state
+          | monitored_projects: Map.delete(agent.state.monitored_projects, project_id),
+            project_metrics: Map.delete(agent.state.project_metrics, project_id),
+            quality_metrics: Map.delete(agent.state.quality_metrics, project_id),
+            dependency_graph: Map.delete(agent.state.dependency_graph, project_id),
+            structure_optimizations: Map.delete(agent.state.structure_optimizations, project_id)
+        }
+    }
   end
 
   defp analyze_project_structure(agent, _project_id) do
@@ -278,12 +297,21 @@ defmodule RubberDuck.Agents.ProjectAgent do
     thresholds = agent.state.quality_thresholds
 
     violations = []
-    violations = if quality_data[:complexity] > thresholds.complexity,
-      do: [{:complexity, quality_data[:complexity]} | violations], else: violations
-    violations = if quality_data[:duplication] > thresholds.duplication,
-      do: [{:duplication, quality_data[:duplication]} | violations], else: violations
-    violations = if quality_data[:test_coverage] < thresholds.test_coverage,
-      do: [{:test_coverage, quality_data[:test_coverage]} | violations], else: violations
+
+    violations =
+      if quality_data[:complexity] > thresholds.complexity,
+        do: [{:complexity, quality_data[:complexity]} | violations],
+        else: violations
+
+    violations =
+      if quality_data[:duplication] > thresholds.duplication,
+        do: [{:duplication, quality_data[:duplication]} | violations],
+        else: violations
+
+    violations =
+      if quality_data[:test_coverage] < thresholds.test_coverage,
+        do: [{:test_coverage, quality_data[:test_coverage]} | violations],
+        else: violations
 
     if length(violations) > 0 do
       emit_signal(@signal_quality_degraded, %{
@@ -327,18 +355,26 @@ defmodule RubberDuck.Agents.ProjectAgent do
   defp record_optimization_results(agent, _project_id, results) do
     successful = Enum.filter(results, & &1.success)
 
-    %{agent | state: %{agent.state |
-      successful_refactorings: successful ++ agent.state.successful_refactorings
-    }}
+    %{
+      agent
+      | state: %{
+          agent.state
+          | successful_refactorings: successful ++ agent.state.successful_refactorings
+        }
+    }
   end
 
   defp learn_from_optimization(agent, results) do
     # Learn patterns from successful optimizations
     patterns = extract_optimization_patterns(results)
 
-    %{agent | state: %{agent.state |
-      optimization_patterns: Map.merge(agent.state.optimization_patterns, patterns)
-    }}
+    %{
+      agent
+      | state: %{
+          agent.state
+          | optimization_patterns: Map.merge(agent.state.optimization_patterns, patterns)
+        }
+    }
   end
 
   defp extract_optimization_patterns(_results) do
@@ -357,12 +393,51 @@ defmodule RubberDuck.Agents.ProjectAgent do
   end
 
   defp schedule_project_scan do
-    Process.send_after(self(), :scan_projects, 300_000) # 5 minutes
+    # 5 minutes
+    Process.send_after(self(), :scan_projects, 300_000)
   end
 
+  # Use typed messages instead of string-based signals
+  defp emit_signal(@signal_optimization_completed, payload) do
+    message = %OptimizeResources{
+      project_id: payload.project_id,
+      optimization_goal: :balanced,
+      include_recommendations: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_refactoring_suggested, payload) do
+    message = %AnalyzeStructure{
+      project_id: payload.project_id,
+      include_dependencies: true,
+      analyze_complexity: true,
+      depth: :deep
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_dependency_outdated, payload) do
+    message = %MonitorHealth{
+      project_id: payload.project_id,
+      metrics: [:dependencies],
+      threshold_alerts: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_quality_degraded, payload) do
+    message = %MonitorHealth{
+      project_id: payload.project_id,
+      metrics: [:quality, :complexity, :coverage],
+      threshold_alerts: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  # Fallback for unmapped signals
   defp emit_signal(signal_type, payload) do
-    Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
-  rescue
-    e -> Logger.warning("Failed to emit signal #{signal_type}: #{inspect(e)}")
+    Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")
+    :ok
   end
 end

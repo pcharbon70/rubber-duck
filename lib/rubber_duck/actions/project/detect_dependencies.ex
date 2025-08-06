@@ -22,13 +22,13 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
          dependencies <- extract_dependencies(files, params),
          graph <- build_dependency_graph(dependencies),
          analysis <- analyze_dependencies(dependencies, graph, params) do
-
-      {:ok, %{
-        dependencies: dependencies,
-        dependency_graph: graph,
-        analysis: analysis,
-        detected_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         dependencies: dependencies,
+         dependency_graph: graph,
+         analysis: analysis,
+         detected_at: DateTime.utc_now()
+       }}
     end
   end
 
@@ -36,21 +36,32 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
     # Get mix.exs, package.json, requirements.txt etc based on language
     case Projects.list_code_files_by_project(project.id) do
       {:ok, files} ->
-        config_files = files
+        config_files =
+          files
           |> Enum.filter(&is_config_file?/1)
           |> Enum.map(&load_file_content/1)
+
         {:ok, config_files}
-      error -> error
+
+      error ->
+        error
     end
   end
 
   defp is_config_file?(file) do
     config_patterns = [
-      "mix.exs", "mix.lock",
-      "package.json", "package-lock.json", "yarn.lock",
-      "requirements.txt", "Pipfile", "Pipfile.lock",
-      "Gemfile", "Gemfile.lock",
-      "go.mod", "go.sum"
+      "mix.exs",
+      "mix.lock",
+      "package.json",
+      "package-lock.json",
+      "yarn.lock",
+      "requirements.txt",
+      "Pipfile",
+      "Pipfile.lock",
+      "Gemfile",
+      "Gemfile.lock",
+      "go.mod",
+      "go.sum"
     ]
 
     Enum.any?(config_patterns, &String.ends_with?(file.path, &1))
@@ -103,33 +114,39 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
 
     # Extract regular deps
     matches = Regex.scan(~r/{:(\w+),\s*"([^"]+)"/, content)
-    deps = deps ++ Enum.map(matches, fn [_, name, version] ->
-      %{
-        name: name,
-        version: version,
-        type: :hex,
-        scope: :runtime,
-        source: :mix
-      }
-    end)
+
+    deps =
+      deps ++
+        Enum.map(matches, fn [_, name, version] ->
+          %{
+            name: name,
+            version: version,
+            type: :hex,
+            scope: :runtime,
+            source: :mix
+          }
+        end)
 
     # Extract git deps
     git_matches = Regex.scan(~r/{:(\w+),\s*git:\s*"([^"]+)"/, content)
-    deps = deps ++ Enum.map(git_matches, fn [_, name, git_url] ->
-      %{
-        name: name,
-        version: "git",
-        type: :git,
-        scope: :runtime,
-        source: :mix,
-        git_url: git_url
-      }
-    end)
+
+    deps =
+      deps ++
+        Enum.map(git_matches, fn [_, name, git_url] ->
+          %{
+            name: name,
+            version: "git",
+            type: :git,
+            scope: :runtime,
+            source: :mix,
+            git_url: git_url
+          }
+        end)
 
     if include_dev do
       deps
     else
-      Enum.filter(deps, & &1.scope != :dev)
+      Enum.filter(deps, &(&1.scope != :dev))
     end
   end
 
@@ -144,7 +161,9 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
         else
           deps
         end
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -179,7 +198,9 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
           scope: :runtime,
           source: :pip
         }
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -188,11 +209,13 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
     # For now, return a simple adjacency list
     dependencies
     |> Enum.map(fn dep ->
-      {dep.name, %{
-        info: dep,
-        depends_on: [],  # Would need to analyze each dep's dependencies
-        depended_by: []
-      }}
+      {dep.name,
+       %{
+         info: dep,
+         # Would need to analyze each dep's dependencies
+         depends_on: [],
+         depended_by: []
+       }}
     end)
     |> Map.new()
   end
@@ -202,16 +225,18 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
       total_count: length(dependencies),
       by_type: group_by_type(dependencies),
       by_scope: group_by_scope(dependencies),
-      security_issues: if params.check_versions do
-        check_security_issues(dependencies)
-      else
-        []
-      end,
-      outdated: if params.check_versions do
-        check_outdated_versions(dependencies)
-      else
-        []
-      end,
+      security_issues:
+        if params.check_versions do
+          check_security_issues(dependencies)
+        else
+          []
+        end,
+      outdated:
+        if params.check_versions do
+          check_outdated_versions(dependencies)
+        else
+          []
+        end,
       duplicates: find_duplicate_dependencies(dependencies),
       unused: find_unused_dependencies(dependencies, graph),
       circular: detect_circular_dependencies(graph)
@@ -256,7 +281,8 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
       %{
         name: dep.name,
         current_version: dep.version,
-        latest_version: "1.0.0", # Simulated
+        # Simulated
+        latest_version: "1.0.0",
         severity: :minor
       }
     end)
@@ -332,11 +358,12 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
     score = score - length(analysis.circular) * 15
 
     # Deduct for too many dependencies
-    score = if analysis.total_count > 100 do
-      score - 10
-    else
-      score
-    end
+    score =
+      if analysis.total_count > 100 do
+        score - 10
+      else
+        score
+      end
 
     max(0, score)
   end

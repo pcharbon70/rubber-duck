@@ -30,11 +30,17 @@ defmodule RubberDuck.Application do
       # Health check monitoring
       RubberDuck.HealthCheck,
 
-      # Phoenix PubSub for signal system
+      # Phoenix PubSub for legacy compatibility
       {Phoenix.PubSub, name: RubberDuck.PubSub},
 
-      # Signal system for inter-agent communication
-      RubberDuck.Signal,
+      # Message Router for typed message dispatch
+      RubberDuck.Routing.MessageRouter,
+      
+      # Task Supervisor for async message processing
+      {Task.Supervisor, name: RubberDuck.TaskSupervisor},
+      
+      # Message telemetry reporter
+      RubberDuck.Telemetry.MessageReporter,
 
       # LLM Provider Registry (needed by agents)
       RubberDuck.LLM.ProviderRegistry,
@@ -67,14 +73,22 @@ defmodule RubberDuck.Application do
     case Supervisor.start_link(children, opts) do
       {:ok, pid} ->
         Logger.info("RubberDuck application started successfully")
+        configure_message_telemetry()
         configure_jido_signal_system()
         {:ok, pid}
+
       {:error, reason} = error ->
         Logger.error("Failed to start RubberDuck application: #{inspect(reason)}")
         error
     end
   end
 
+  # Configure message telemetry handlers
+  defp configure_message_telemetry do
+    RubberDuck.Telemetry.MessageTelemetry.attach_handlers()
+    Logger.info("Message telemetry handlers attached")
+  end
+  
   # Configure Jido signal system if needed
   defp configure_jido_signal_system do
     # Any global Jido configuration can go here

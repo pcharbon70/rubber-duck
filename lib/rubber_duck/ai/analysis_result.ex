@@ -75,7 +75,15 @@ defmodule RubberDuck.AI.AnalysisResult do
     defaults [:read]
 
     create :create do
-      accept [:analysis_type, :summary, :details, :score, :suggestions, :project_id, :code_file_id]
+      accept [
+        :analysis_type,
+        :summary,
+        :details,
+        :score,
+        :suggestions,
+        :project_id,
+        :code_file_id
+      ]
 
       change relate_actor(:analyzer)
     end
@@ -126,5 +134,4 @@ defmodule RubberDuck.AI.AnalysisResult do
       authorize_if relates_to_actor_via([:project, :owner])
     end
   end
-
 end

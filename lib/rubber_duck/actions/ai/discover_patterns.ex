@@ -28,15 +28,15 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
          {:ok, raw_patterns} <- extract_patterns(data, params),
          {:ok, validated} <- validate_patterns(raw_patterns, params.existing_patterns),
          {:ok, enriched} <- enrich_patterns(validated, data) do
-
-      {:ok, %{
-        patterns: enriched,
-        new_patterns: identify_new_patterns(enriched, params.existing_patterns),
-        pattern_count: length(enriched),
-        scope: params.scope,
-        confidence_scores: calculate_confidence_scores(enriched),
-        insights: generate_pattern_insights(enriched)
-      }}
+      {:ok,
+       %{
+         patterns: enriched,
+         new_patterns: identify_new_patterns(enriched, params.existing_patterns),
+         pattern_count: length(enriched),
+         scope: params.scope,
+         confidence_scores: calculate_confidence_scores(enriched),
+         insights: generate_pattern_insights(enriched)
+       }}
     end
   end
 
@@ -52,12 +52,13 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
     # Gather all available data
     with {:ok, analyses} <- AI.list_analysis_results(),
          {:ok, projects} <- Projects.list_projects() do
-      {:ok, %{
-        type: :workspace,
-        analyses: analyses,
-        projects: projects,
-        file_count: count_all_files(projects)
-      }}
+      {:ok,
+       %{
+         type: :workspace,
+         analyses: analyses,
+         projects: projects,
+         file_count: count_all_files(projects)
+       }}
     end
   end
 
@@ -75,11 +76,12 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
   end
 
   defp extract_patterns(data, params) do
-    patterns = case data.type do
-      :project -> extract_project_patterns(data.data, params)
-      :workspace -> extract_workspace_patterns(data, params)
-      _ -> []
-    end
+    patterns =
+      case data.type do
+        :project -> extract_project_patterns(data.data, params)
+        :workspace -> extract_workspace_patterns(data, params)
+        _ -> []
+      end
 
     {:ok, patterns}
   end
@@ -88,9 +90,10 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
     # Group analyses by type and extract patterns
     grouped = Enum.group_by(analyses, & &1.analysis_type)
 
-    patterns = Enum.flat_map(grouped, fn {type, type_analyses} ->
-      extract_type_patterns(type, type_analyses, params)
-    end)
+    patterns =
+      Enum.flat_map(grouped, fn {type, type_analyses} ->
+        extract_type_patterns(type, type_analyses, params)
+      end)
 
     # Add cross-type patterns
     cross_patterns = extract_cross_type_patterns(analyses, params)
@@ -105,25 +108,31 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
     patterns = []
 
     # High complexity pattern
-    high_complexity = Enum.filter(scores, & &1 < 50)
-    patterns = if length(high_complexity) >= params.min_occurrences do
-      [%{
-        type: :high_complexity,
-        signature: "complexity_score_below_50",
-        occurrences: length(high_complexity),
-        confidence: 0.8,
-        category: :quality
-      } | patterns]
-    else
-      patterns
-    end
+    high_complexity = Enum.filter(scores, &(&1 < 50))
+
+    patterns =
+      if length(high_complexity) >= params.min_occurrences do
+        [
+          %{
+            type: :high_complexity,
+            signature: "complexity_score_below_50",
+            occurrences: length(high_complexity),
+            confidence: 0.8,
+            category: :quality
+          }
+          | patterns
+        ]
+      else
+        patterns
+      end
 
     patterns
   end
 
   defp extract_type_patterns(:security, analyses, params) do
     # Look for security patterns
-    vulnerabilities = analyses
+    vulnerabilities =
+      analyses
       |> Enum.flat_map(fn analysis ->
         analysis.details[:vulnerabilities] || []
       end)
@@ -133,14 +142,16 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
 
     Enum.flat_map(grouped, fn {vuln_type, occurrences} ->
       if length(occurrences) >= params.min_occurrences do
-        [%{
-          type: :security_vulnerability,
-          signature: "vuln_#{vuln_type}",
-          occurrences: length(occurrences),
-          confidence: 0.9,
-          category: :security,
-          details: %{vulnerability_type: vuln_type}
-        }]
+        [
+          %{
+            type: :security_vulnerability,
+            signature: "vuln_#{vuln_type}",
+            occurrences: length(occurrences),
+            confidence: 0.9,
+            category: :security,
+            details: %{vulnerability_type: vuln_type}
+          }
+        ]
       else
         []
       end
@@ -149,22 +160,25 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
 
   defp extract_type_patterns(:quality, analyses, params) do
     # Extract quality patterns
-    suggestions = analyses
-      |> Enum.flat_map(& &1.suggestions || [])
+    suggestions =
+      analyses
+      |> Enum.flat_map(&(&1.suggestions || []))
 
     # Find common suggestions
     grouped = Enum.group_by(suggestions, &categorize_suggestion/1)
 
     Enum.flat_map(grouped, fn {category, items} ->
       if length(items) >= params.min_occurrences do
-        [%{
-          type: :quality_issue,
-          signature: "quality_#{category}",
-          occurrences: length(items),
-          confidence: 0.75,
-          category: :quality,
-          examples: Enum.take(items, 3)
-        }]
+        [
+          %{
+            type: :quality_issue,
+            signature: "quality_#{category}",
+            occurrences: length(items),
+            confidence: 0.75,
+            category: :quality,
+            examples: Enum.take(items, 3)
+          }
+        ]
       else
         []
       end
@@ -182,6 +196,7 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
       true -> :general
     end
   end
+
   defp categorize_suggestion(_), do: :general
 
   defp extract_cross_type_patterns(analyses, params) do
@@ -192,31 +207,35 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
     by_project = Enum.group_by(analyses, & &1.project_id)
 
     # Find projects with consistent issues
-    problem_projects = Enum.flat_map(by_project, fn {project_id, project_analyses} ->
-      avg_score = calculate_average_score(project_analyses)
+    problem_projects =
+      Enum.flat_map(by_project, fn {project_id, project_analyses} ->
+        avg_score = calculate_average_score(project_analyses)
 
-      if avg_score < 60 && length(project_analyses) >= params.min_occurrences do
-        [%{
-          type: :problematic_project,
-          signature: "project_quality_issues_#{project_id}",
-          occurrences: length(project_analyses),
-          confidence: 0.7,
-          category: :project,
-          details: %{
-            project_id: project_id,
-            average_score: avg_score
-          }
-        }]
-      else
-        []
-      end
-    end)
+        if avg_score < 60 && length(project_analyses) >= params.min_occurrences do
+          [
+            %{
+              type: :problematic_project,
+              signature: "project_quality_issues_#{project_id}",
+              occurrences: length(project_analyses),
+              confidence: 0.7,
+              category: :project,
+              details: %{
+                project_id: project_id,
+                average_score: avg_score
+              }
+            }
+          ]
+        else
+          []
+        end
+      end)
 
     patterns ++ problem_projects
   end
 
   defp calculate_average_score(analyses) do
-    scores = analyses
+    scores =
+      analyses
       |> Enum.map(& &1.score)
       |> Enum.filter(& &1)
 
@@ -238,38 +257,45 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
     if data[:projects] do
       language_stats = analyze_language_distribution(data.projects)
 
-      _workspace_patterns = if language_stats[:dominant_language] do
-        [%{
-          type: :language_dominance,
-          signature: "lang_#{language_stats.dominant_language}",
-          occurrences: language_stats.count,
-          confidence: 0.85,
-          category: :workspace,
-          details: language_stats
-        } | workspace_patterns]
-      else
-        workspace_patterns
-      end
+      _workspace_patterns =
+        if language_stats[:dominant_language] do
+          [
+            %{
+              type: :language_dominance,
+              signature: "lang_#{language_stats.dominant_language}",
+              occurrences: language_stats.count,
+              confidence: 0.85,
+              category: :workspace,
+              details: language_stats
+            }
+            | workspace_patterns
+          ]
+        else
+          workspace_patterns
+        end
     end
 
     project_patterns ++ workspace_patterns
   end
 
   defp analyze_language_distribution(projects) do
-    languages = projects
+    languages =
+      projects
       |> Enum.map(& &1.language)
       |> Enum.filter(& &1)
 
     if length(languages) > 0 do
       grouped = Enum.group_by(languages, & &1)
-      {dominant, count} = grouped
+
+      {dominant, count} =
+        grouped
         |> Enum.map(fn {lang, items} -> {lang, length(items)} end)
         |> Enum.max_by(&elem(&1, 1))
 
       %{
         dominant_language: dominant,
         count: count,
-        percentage: (count / length(languages)) * 100
+        percentage: count / length(languages) * 100
       }
     else
       %{}
@@ -278,49 +304,54 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
 
   defp validate_patterns(raw_patterns, existing_patterns) do
     # Remove duplicates and validate confidence
-    validated = raw_patterns
+    validated =
+      raw_patterns
       |> Enum.uniq_by(& &1.signature)
-      |> Enum.filter(& &1.confidence >= 0.5)
+      |> Enum.filter(&(&1.confidence >= 0.5))
       |> merge_with_existing(existing_patterns)
 
     {:ok, validated}
   end
 
   defp merge_with_existing(new_patterns, existing_patterns) do
-    existing_map = Map.new(existing_patterns, & {&1.signature, &1})
+    existing_map = Map.new(existing_patterns, &{&1.signature, &1})
 
     Enum.map(new_patterns, fn pattern ->
       case Map.get(existing_map, pattern.signature) do
         nil ->
           pattern
+
         existing ->
           # Merge and update confidence
-          %{pattern |
-            occurrences: pattern.occurrences + existing.occurrences,
-            confidence: min(1.0, (pattern.confidence + existing.confidence) / 2 + 0.1)
+          %{
+            pattern
+            | occurrences: pattern.occurrences + existing.occurrences,
+              confidence: min(1.0, (pattern.confidence + existing.confidence) / 2 + 0.1)
           }
       end
     end)
   end
 
   defp enrich_patterns(patterns, data) do
-    enriched = Enum.map(patterns, fn pattern ->
-      pattern
-      |> add_context(data)
-      |> add_impact_assessment()
-      |> add_recommendations()
-    end)
+    enriched =
+      Enum.map(patterns, fn pattern ->
+        pattern
+        |> add_context(data)
+        |> add_impact_assessment()
+        |> add_recommendations()
+      end)
 
     {:ok, enriched}
   end
 
   defp add_context(pattern, data) do
-    context = case pattern.category do
-      :quality -> build_quality_context(pattern, data)
-      :security -> build_security_context(pattern, data)
-      :project -> build_project_context(pattern, data)
-      _ -> %{}
-    end
+    context =
+      case pattern.category do
+        :quality -> build_quality_context(pattern, data)
+        :security -> build_security_context(pattern, data)
+        :project -> build_project_context(pattern, data)
+        _ -> %{}
+      end
 
     Map.put(pattern, :context, context)
   end
@@ -329,14 +360,16 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
     %{
       severity: determine_severity(pattern),
       frequency: categorize_frequency(pattern.occurrences),
-      trend: :stable  # Would calculate from historical data
+      # Would calculate from historical data
+      trend: :stable
     }
   end
 
   defp build_security_context(pattern, _data) do
     %{
       risk_level: determine_risk_level(pattern),
-      affected_components: [],  # Would identify from data
+      # Would identify from data
+      affected_components: [],
       mitigation_priority: :high
     }
   end
@@ -416,25 +449,31 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
   end
 
   defp generate_pattern_recommendations(pattern) do
-    base_recommendations = case pattern.type do
-      :high_complexity ->
-        ["Refactor complex code sections", "Break down large functions"]
-      :security_vulnerability ->
-        ["Perform security audit", "Apply security patches"]
-      :quality_issue ->
-        ["Improve code quality metrics", "Add documentation"]
-      :problematic_project ->
-        ["Review project architecture", "Conduct code review"]
-      _ ->
-        []
-    end
+    base_recommendations =
+      case pattern.type do
+        :high_complexity ->
+          ["Refactor complex code sections", "Break down large functions"]
+
+        :security_vulnerability ->
+          ["Perform security audit", "Apply security patches"]
+
+        :quality_issue ->
+          ["Improve code quality metrics", "Add documentation"]
+
+        :problematic_project ->
+          ["Review project architecture", "Conduct code review"]
+
+        _ ->
+          []
+      end
 
     # Add specific recommendations based on pattern details
-    specific = if pattern.details[:vulnerability_type] do
-      ["Fix #{pattern.details.vulnerability_type} vulnerabilities"]
-    else
-      []
-    end
+    specific =
+      if pattern.details[:vulnerability_type] do
+        ["Fix #{pattern.details.vulnerability_type} vulnerabilities"]
+      else
+        []
+      end
 
     base_recommendations ++ specific
   end
@@ -461,23 +500,27 @@ defmodule RubberDuck.Actions.AI.DiscoverPatterns do
     insights = ["Found patterns in #{map_size(by_category)} categories" | insights]
 
     # High confidence patterns
-    high_confidence = Enum.filter(patterns, & &1.confidence > 0.8)
-    insights = if length(high_confidence) > 0 do
-      ["#{length(high_confidence)} high-confidence patterns identified" | insights]
-    else
-      insights
-    end
+    high_confidence = Enum.filter(patterns, &(&1.confidence > 0.8))
+
+    insights =
+      if length(high_confidence) > 0 do
+        ["#{length(high_confidence)} high-confidence patterns identified" | insights]
+      else
+        insights
+      end
 
     # Critical patterns
-    critical = Enum.filter(patterns, fn p ->
-      p[:impact] && p.impact.urgency == :immediate
-    end)
+    critical =
+      Enum.filter(patterns, fn p ->
+        p[:impact] && p.impact.urgency == :immediate
+      end)
 
-    insights = if length(critical) > 0 do
-      ["#{length(critical)} patterns require immediate attention" | insights]
-    else
-      insights
-    end
+    insights =
+      if length(critical) > 0 do
+        ["#{length(critical)} patterns require immediate attention" | insights]
+      else
+        insights
+      end
 
     insights
   end

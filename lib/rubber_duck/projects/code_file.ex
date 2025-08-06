@@ -104,5 +104,4 @@ defmodule RubberDuck.Projects.CodeFile do
       authorize_if relates_to_actor_via([:project, :owner])
     end
   end
-
 end

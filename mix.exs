@@ -63,10 +63,10 @@ defmodule RubberDuck.MixProject do
 
       # Error reporting
       {:tower, "~> 0.6"},
-      
+
       # PubSub for signal system
       {:phoenix_pubsub, "~> 2.1"},
-      
+
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
