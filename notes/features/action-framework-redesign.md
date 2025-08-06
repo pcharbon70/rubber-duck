@@ -134,12 +134,12 @@ lib/rubber_duck/
 - [x] Add version tracking
 - [x] Write unit tests (30 tests passing)
 
-### Step 5: Extract Learner Module ⬜
-- [ ] Create `lib/rubber_duck/actions/core/update_entity/learner.ex`
-- [ ] Move learning/tracking logic
-- [ ] Implement outcome analysis
-- [ ] Add pattern recognition
-- [ ] Write unit tests
+### Step 5: Extract Learner Module ✅
+- [x] Create `lib/rubber_duck/actions/core/update_entity/learner.ex`
+- [x] Move learning/tracking logic
+- [x] Implement outcome analysis
+- [x] Add pattern recognition
+- [x] Write unit tests (40 tests passing)
 
 ### Step 6: Extract Propagator Module ⬜
 - [ ] Create `lib/rubber_duck/actions/core/update_entity/propagator.ex`
@@ -193,9 +193,14 @@ lib/rubber_duck/
 - ✅ Atomic change application with verification
 - ✅ Batch execution and rollback support
 - ✅ All 30 executor tests passing
+- ✅ Learner module with comprehensive learning logic
+- ✅ Outcome tracking and pattern analysis
+- ✅ Prediction accuracy measurement
+- ✅ Model update determination and failure tracking
+- ✅ All 40 learner tests passing
 
 ### What's Next
-- Step 5: Extract Learner Module from UpdateEntity
+- Step 6: Extract Propagator Module from UpdateEntity
 
 ### How to Run
 ```bash
@@ -210,6 +215,9 @@ mix test test/rubber_duck/actions/core/update_entity/impact_analyzer_test.exs
 
 # Run executor tests
 mix test test/rubber_duck/actions/core/update_entity/executor_test.exs
+
+# Run learner tests
+mix test test/rubber_duck/actions/core/update_entity/learner_test.exs
 
 # All tests pass successfully
 ```
