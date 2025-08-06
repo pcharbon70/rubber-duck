@@ -151,7 +151,7 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
     points
   end
 
-  defp extract_feedback_patterns(processed, history) do
+  defp extract_learning_patterns(processed, history) do
     recent_feedback = [processed | Enum.take(history, 50)]
 
     patterns = %{
