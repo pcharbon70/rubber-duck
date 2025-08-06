@@ -147,30 +147,52 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
   defp perform_provider_health_check(provider, state) do
     start_time = System.monotonic_time(:millisecond)
 
-    result = try do
-      case provider.module.health_check(provider.config) do
+    try do
+      result = case provider.module.health_check(provider.config) do
         :ok -> :ok
         {:ok, _} -> :ok
         error -> error
       end
+
+      response_time = System.monotonic_time(:millisecond) - start_time
+      metrics = Map.get(state.metrics, provider.name, default_metrics())
+
+      # Determine health status
+      health_status = determine_health_status(result, response_time, metrics, state)
+
+      %{
+        status: health_status,
+        response_time_ms: response_time,
+        result: result,
+        metrics_summary: summarize_metrics(metrics)
+      }
     rescue
-      error -> {:error, {:exception, error}}
+      error -> 
+        response_time = System.monotonic_time(:millisecond) - start_time
+        result = {:error, {:exception, error}}
+        metrics = Map.get(state.metrics, provider.name, default_metrics())
+        health_status = determine_health_status(result, response_time, metrics, state)
+        
+        %{
+          status: health_status,
+          response_time_ms: response_time,
+          result: result,
+          metrics_summary: summarize_metrics(metrics)
+        }
     catch
-      :exit, reason -> {:error, {:exit, reason}}
+      :exit, reason -> 
+        response_time = System.monotonic_time(:millisecond) - start_time
+        result = {:error, {:exit, reason}}
+        metrics = Map.get(state.metrics, provider.name, default_metrics())
+        health_status = determine_health_status(result, response_time, metrics, state)
+        
+        %{
+          status: health_status,
+          response_time_ms: response_time,
+          result: result,
+          metrics_summary: summarize_metrics(metrics)
+        }
     end
-
-    response_time = System.monotonic_time(:millisecond) - start_time
-    metrics = Map.get(state.metrics, provider.name, default_metrics())
-
-    # Determine health status
-    health_status = determine_health_status(result, response_time, metrics, state)
-
-    %{
-      status: health_status,
-      response_time_ms: response_time,
-      result: result,
-      metrics_summary: summarize_metrics(metrics)
-    }
   end
 
   defp determine_health_status(result, response_time, metrics, state) do

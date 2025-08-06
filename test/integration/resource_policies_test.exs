@@ -8,8 +8,8 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
   use RubberDuck.DataCase, async: true
 
   alias RubberDuck.Accounts
-  alias RubberDuck.Projects
   alias RubberDuck.AI
+  alias RubberDuck.Projects
 
   describe "Resource creation with policy enforcement" do
     setup do

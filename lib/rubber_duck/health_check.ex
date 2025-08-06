@@ -214,14 +214,12 @@ defmodule RubberDuck.HealthCheck do
   defp check_ash_authentication do
     # AshAuthentication.Supervisor starts dynamically with the app
     # Check if the domain is accessible instead
-    try do
-      # Try to access the Accounts domain
-      _ = RubberDuck.Accounts
-      %{status: :healthy, message: "Authentication system available"}
-    rescue
-      _e ->
-        %{status: :unhealthy, message: "Authentication system not available"}
-    end
+    # Try to access the Accounts domain
+    _ = RubberDuck.Accounts
+    %{status: :healthy, message: "Authentication system available"}
+  rescue
+    _e ->
+      %{status: :unhealthy, message: "Authentication system not available"}
   end
 
   defp check_repo_pool do

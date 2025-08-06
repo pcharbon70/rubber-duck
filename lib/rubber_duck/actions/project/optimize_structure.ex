@@ -112,27 +112,25 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   end
 
   defp flatten_directory_structure(project, optimization) do
-    try do
-      directories = optimization.target.directories
+    directories = optimization.target.directories
 
-      results = Enum.map(directories, fn dir ->
-        flatten_single_directory(project, dir)
-      end)
+    results = Enum.map(directories, fn dir ->
+      flatten_single_directory(project, dir)
+    end)
 
+    %{
+      optimization: optimization,
+      success: Enum.all?(results, & &1.success),
+      results: results,
+      files_moved: Enum.sum(Enum.map(results, & Map.get(&1, :files_moved, 0)))
+    }
+  rescue
+    e ->
       %{
         optimization: optimization,
-        success: Enum.all?(results, & &1.success),
-        results: results,
-        files_moved: Enum.sum(Enum.map(results, & Map.get(&1, :files_moved, 0)))
+        success: false,
+        error: Exception.message(e)
       }
-    rescue
-      e ->
-        %{
-          optimization: optimization,
-          success: false,
-          error: Exception.message(e)
-        }
-    end
   end
 
   defp flatten_single_directory(project, directory) do
@@ -180,7 +178,7 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   defp move_file(file, new_path) do
     # Update the file record with new path
     case Projects.update_code_file(file, %{path: new_path}) do
-      {:ok, updated} ->
+      {:ok, _updated} ->
         %{
           original_path: file.path,
           new_path: new_path,
@@ -330,8 +328,19 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
     current_path = module_info.path
     expected_path = module_info.expected_path
 
-    case Projects.get_code_file_by_path(project.id, current_path) do
-      {:ok, file} ->
+    # Query for code file by project_id and path
+    file = project.id
+           |> Projects.list_code_files_by_project()
+           |> Enum.find(fn f -> f.path == current_path end)
+
+    case file do
+      nil ->
+        %{
+          module: module_info.module,
+          success: false,
+          error: "File not found"
+        }
+      file ->
         # Update file path and module declaration
         updated_content = update_module_declaration(file.content, module_info.module)
 
@@ -353,13 +362,6 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
               error: error
             }
         end
-
-      _ ->
-        %{
-          module: module_info.module,
-          success: false,
-          error: "File not found"
-        }
     end
   end
 
@@ -420,15 +422,16 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   end
 
   defp perform_rename(project, current_path, new_path) do
-    case Projects.get_code_file_by_path(project.id, current_path) do
-      {:ok, file} ->
+    # Query for code file by project_id and path
+    file = project.id
+           |> Projects.list_code_files_by_project()
+           |> Enum.find(fn f -> f.path == current_path end)
+
+    case file do
+      nil ->
+        {:error, "File not found at #{current_path}"}
+      file ->
         update_file_path(file, current_path, new_path)
-      _ ->
-        %{
-          file: current_path,
-          success: false,
-          error: "File not found"
-        }
     end
   end
 

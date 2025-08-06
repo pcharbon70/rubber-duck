@@ -227,12 +227,10 @@ defmodule RubberDuck.LLM.Service do
   end
 
   defp load_provider_module(module_name) when is_binary(module_name) do
-    try do
-      module = String.to_existing_atom("Elixir.#{module_name}")
-      load_provider_module(module)
-    rescue
-      ArgumentError -> {:error, :invalid_module_name}
-    end
+    module = String.to_existing_atom("Elixir.#{module_name}")
+    load_provider_module(module)
+  rescue
+    ArgumentError -> {:error, :invalid_module_name}
   end
 
   defp validate_provider_module(module) do
@@ -261,13 +259,7 @@ defmodule RubberDuck.LLM.Service do
   defp execute_with_fallback(fun, operation, request, opts) do
     start_time = System.monotonic_time(:millisecond)
 
-    result =
-      try do
-        fun.()
-      rescue
-        error -> {:error, error}
-      end
-
+    result = fun.()
     response_time = System.monotonic_time(:millisecond) - start_time
 
     case result do
@@ -286,6 +278,16 @@ defmodule RubberDuck.LLM.Service do
           error
         end
     end
+  rescue
+    error ->
+      provider_name = Keyword.get(opts, :provider)
+      HealthMonitor.record_failure(provider_name, error)
+
+      if Keyword.get(opts, :fallback, true) do
+        attempt_fallback(operation, request, opts, provider_name)
+      else
+        {:error, error}
+      end
   end
 
   defp attempt_fallback(operation, request, opts, failed_provider) do

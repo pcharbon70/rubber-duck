@@ -23,51 +23,49 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   def run(params, _context) do
     case validate_optimization_params(params) do
       :ok ->
-        try do
-          request = params.request
-          goals = params.optimization_goals
-          provider_hints = params.provider_hints
+        request = params.request
+        goals = params.optimization_goals
+        provider_hints = params.provider_hints
 
-          optimized_request =
-            request
-            |> optimize_for_goals(goals, provider_hints)
-            |> trim_context_if_needed(params.max_context_tokens)
-            |> add_caching_headers(params.enable_caching)
-            |> optimize_parameters()
-            |> validate_optimized_request()
+        optimized_request =
+          request
+          |> optimize_for_goals(goals, provider_hints)
+          |> trim_context_if_needed(params.max_context_tokens)
+          |> add_caching_headers(params.enable_caching)
+          |> optimize_parameters()
+          |> validate_optimized_request()
 
-          case optimized_request do
-            {:ok, optimized} ->
-              optimizations_applied = detect_optimizations(request, optimized)
+        case optimized_request do
+          {:ok, optimized} ->
+            optimizations_applied = detect_optimizations(request, optimized)
 
-              {:ok, %{
-                optimized_request: optimized,
-                original_request: request,
-                optimizations_applied: optimizations_applied,
-                estimated_savings: estimate_cost_savings(request, optimized),
-                quality_impact: estimate_quality_impact(optimizations_applied)
-              }}
+            {:ok, %{
+              optimized_request: optimized,
+              original_request: request,
+              optimizations_applied: optimizations_applied,
+              estimated_savings: estimate_cost_savings(request, optimized),
+              quality_impact: estimate_quality_impact(optimizations_applied)
+            }}
 
-            {:error, reason} ->
-              {:error, %{
-                reason: reason,
-                original_request: request,
-                stage: :validation
-              }}
-          end
-        rescue
-          exception ->
-            Logger.error("Request optimization failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+          {:error, reason} ->
             {:error, %{
-              reason: {:exception, exception},
-              message: Exception.message(exception),
-              original_request: params.request
+              reason: reason,
+              original_request: request,
+              stage: :validation
             }}
         end
 
       {:error, reason} ->
         {:error, %{reason: reason, stage: :param_validation}}
     end
+  rescue
+    exception ->
+      Logger.error("Request optimization failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+      {:error, %{
+        reason: {:exception, exception},
+        message: Exception.message(exception),
+        original_request: params.request
+      }}
   end
 
   def describe do
@@ -130,23 +128,21 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   defp apply_goal_optimization(request, _, _), do: request
 
   defp trim_context_if_needed(request, max_tokens) do
-    try do
-      messages = request[:messages] || []
+    messages = request[:messages] || []
 
-      estimated_tokens = estimate_message_tokens(messages)
+    estimated_tokens = estimate_message_tokens(messages)
 
-      if estimated_tokens > max_tokens do
-        Logger.debug("Trimming context from ~#{estimated_tokens} to ~#{max_tokens} tokens")
-        trimmed_messages = trim_messages_to_fit(messages, max_tokens)
-        Map.put(request, :messages, trimmed_messages)
-      else
-        request
-      end
-    rescue
-      exception ->
-        Logger.warning("Failed to trim context: #{inspect(exception)}. Using original request.")
-        request
+    if estimated_tokens > max_tokens do
+      Logger.debug("Trimming context from ~#{estimated_tokens} to ~#{max_tokens} tokens")
+      trimmed_messages = trim_messages_to_fit(messages, max_tokens)
+      Map.put(request, :messages, trimmed_messages)
+    else
+      request
     end
+  rescue
+    exception ->
+      Logger.warning("Failed to trim context: #{inspect(exception)}. Using original request.")
+      request
   end
 
   defp estimate_message_tokens(messages) do
@@ -446,21 +442,19 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   end
 
   defp get_system_message(request) do
-    try do
-      messages = request[:messages] || []
+    messages = request[:messages] || []
 
-      messages
-      |> Enum.find(fn msg ->
-        is_map(msg) && (msg["role"] == "system" || msg[:role] == "system")
-      end)
-      |> case do
-        nil -> ""
-        msg -> msg["content"] || msg[:content] || ""
-      end
-      |> String.slice(0..100)
-    rescue
-      _ -> ""
+    messages
+    |> Enum.find(fn msg ->
+      is_map(msg) && (msg["role"] == "system" || msg[:role] == "system")
+    end)
+    |> case do
+      nil -> ""
+      msg -> msg["content"] || msg[:content] || ""
     end
+    |> String.slice(0..100)
+  rescue
+    _ -> ""
   end
 
   defp validate_optimization_params(params) do

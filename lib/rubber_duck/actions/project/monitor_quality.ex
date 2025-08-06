@@ -52,7 +52,13 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
 
   defp matches_patterns?(path, patterns) do
     Enum.any?(patterns, fn pattern ->
-      PathGlob.match?(path, pattern)
+      # Simple pattern matching using wildcards
+      pattern_regex = pattern
+        |> String.replace("*", ".*")
+        |> String.replace("?", ".")
+        |> Regex.compile!()
+
+      Regex.match?(pattern_regex, path)
     end)
   end
 
@@ -151,13 +157,21 @@ defmodule RubberDuck.Actions.Project.MonitorQuality do
     # Look for the matching 'end' or next 'def'
     indent_level = get_indent_level(Enum.at(lines, start_index))
 
-    Enum.find_index(lines, start_index + 1, length(lines) - 1, fn line ->
+    # Search from start_index + 1 to end of lines
+    result = lines
+    |> Enum.slice((start_index + 1)..(length(lines) - 1))
+    |> Enum.find_index(fn line ->
       current_indent = get_indent_level(line)
       trimmed = String.trim(line)
 
       (current_indent <= indent_level && trimmed == "end") ||
       (line =~ ~r/^\s*def(?:p?)\s+/)
-    end) || length(lines) - 1
+    end)
+
+    case result do
+      nil -> length(lines) - 1
+      idx -> idx + start_index + 1
+    end
   end
 
   defp get_indent_level(line) do

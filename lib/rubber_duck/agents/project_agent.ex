@@ -76,13 +76,14 @@ defmodule RubberDuck.Agents.ProjectAgent do
       RubberDuck.Actions.Project.BridgeDomain
     ]
 
-  alias RubberDuck.Signal
   alias RubberDuck.Projects
+  alias RubberDuck.Signal
   require Logger
 
   # Signal definitions
-  @signal_project_created "project.created"
-  @signal_project_updated "project.updated"
+  # Unused signal definitions - kept for future reference
+  # @signal_project_created "project.created"
+  # @signal_project_updated "project.updated"
   @signal_quality_degraded "project.quality.degraded"
   @signal_dependency_outdated "project.dependency.outdated"
   @signal_refactoring_suggested "project.refactoring.suggested"
@@ -122,22 +123,18 @@ defmodule RubberDuck.Agents.ProjectAgent do
     optimizations = Map.get(agent.state.structure_optimizations, project_id, [])
 
     if length(optimizations) > 0 && agent.state.auto_optimization_enabled do
-      case apply_structure_optimizations(agent, project_id, optimizations) do
-        {:ok, results} ->
-          updated_agent = agent
-            |> record_optimization_results(project_id, results)
-            |> learn_from_optimization(results)
+      {:ok, results} = apply_structure_optimizations(agent, project_id, optimizations)
 
-          emit_signal(@signal_optimization_completed, %{
-            project_id: project_id,
-            optimizations_applied: length(results)
-          })
+      updated_agent = agent
+        |> record_optimization_results(project_id, results)
+        |> learn_from_optimization(results)
 
-          {:ok, results, updated_agent}
+      emit_signal(@signal_optimization_completed, %{
+        project_id: project_id,
+        optimizations_applied: length(results)
+      })
 
-        {:error, reason} ->
-          {{:error, reason}, agent}
-      end
+      {:ok, results, updated_agent}
     else
       {:ok, %{optimizations: []}, agent}
     end
@@ -258,19 +255,19 @@ defmodule RubberDuck.Agents.ProjectAgent do
     }}
   end
 
-  defp analyze_project_structure(agent, project_id) do
+  defp analyze_project_structure(agent, _project_id) do
     # This would be implemented by the AnalyzeStructure action
     # For now, returning agent unchanged
     agent
   end
 
-  defp detect_project_dependencies(agent, project_id) do
+  defp detect_project_dependencies(agent, _project_id) do
     # This would be implemented by the DetectDependencies action
     # For now, returning agent unchanged
     agent
   end
 
-  defp assess_code_quality(agent, project_id) do
+  defp assess_code_quality(agent, _project_id) do
     # This would be implemented by the MonitorQuality action
     # For now, returning agent unchanged
     agent
@@ -298,19 +295,19 @@ defmodule RubberDuck.Agents.ProjectAgent do
     agent
   end
 
-  defp update_file_metrics(agent, project_id, file_path) do
+  defp update_file_metrics(agent, _project_id, _file_path) do
     # Update metrics for specific file
     # This would be implemented by MonitorQuality action
     agent
   end
 
-  defp generate_incremental_suggestions(agent, project_id, file_path) do
+  defp generate_incremental_suggestions(agent, _project_id, _file_path) do
     # Generate suggestions based on file change
     # This would be implemented by SuggestRefactoring action
     agent
   end
 
-  defp generate_refactoring_suggestions(agent, project_id, quality_data) do
+  defp generate_refactoring_suggestions(_agent, _project_id, _quality_data) do
     # Generate suggestions based on quality data
     # This would be implemented by SuggestRefactoring action
     []
@@ -321,13 +318,13 @@ defmodule RubberDuck.Agents.ProjectAgent do
     |> Enum.sort_by(& &1[:impact_score], :desc)
   end
 
-  defp apply_structure_optimizations(agent, project_id, optimizations) do
+  defp apply_structure_optimizations(_agent, _project_id, _optimizations) do
     # Apply optimizations to project structure
     # This would be implemented by OptimizeStructure action
     {:ok, []}
   end
 
-  defp record_optimization_results(agent, project_id, results) do
+  defp record_optimization_results(agent, _project_id, results) do
     successful = Enum.filter(results, & &1.success)
 
     %{agent | state: %{agent.state |
@@ -344,17 +341,17 @@ defmodule RubberDuck.Agents.ProjectAgent do
     }}
   end
 
-  defp extract_optimization_patterns(results) do
+  defp extract_optimization_patterns(_results) do
     # Extract patterns from optimization results
     %{}
   end
 
-  defp detect_outdated_dependencies(dependencies) do
+  defp detect_outdated_dependencies(_dependencies) do
     # Check for outdated dependencies
     []
   end
 
-  defp check_dependency_vulnerabilities(dependencies) do
+  defp check_dependency_vulnerabilities(_dependencies) do
     # Check for security vulnerabilities
     []
   end

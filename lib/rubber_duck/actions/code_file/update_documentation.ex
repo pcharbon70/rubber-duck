@@ -67,10 +67,10 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
     end
 
     # Add type specs if missing
-    suggestions = if not analysis.has_type_specs do
-      [suggest_type_specs(params) | suggestions]
-    else
+    suggestions = if analysis.has_type_specs do
       suggestions
+    else
+      [suggest_type_specs(params) | suggestions]
     end
 
     {:ok, suggestions}
@@ -258,7 +258,7 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
     examples = Regex.scan(~r/iex>(.+)/, content)
 
     # Basic validation - check if examples are present and formatted
-    length(examples) == 0 or Enum.all?(examples, fn [_, code] ->
+    Enum.empty?(examples) or Enum.all?(examples, fn [_, code] ->
       String.trim(code) != ""
     end)
   end

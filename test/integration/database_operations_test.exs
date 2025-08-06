@@ -8,8 +8,8 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
   use RubberDuck.DataCase, async: true
 
   alias RubberDuck.Accounts
-  alias RubberDuck.Projects
   alias RubberDuck.AI
+  alias RubberDuck.Projects
 
   describe "Database operations through Ash domains" do
     setup do

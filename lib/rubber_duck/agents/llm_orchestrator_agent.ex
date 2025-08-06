@@ -47,7 +47,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       RubberDuck.Actions.LLM.CacheResponse
     ]
 
-  alias RubberDuck.LLM.{ProviderRegistry, HealthMonitor}
+  alias RubberDuck.LLM.{HealthMonitor, ProviderRegistry}
   require Logger
 
   # Signal definitions
@@ -58,30 +58,37 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   @signal_cache_hit "llm.cache.hit"
 
   def init(opts) do
-    try do
-      # Subscribe to relevant signals
-      :ok = RubberDuck.Signal.subscribe(@signal_request_completed)
-      :ok = RubberDuck.Signal.subscribe(@signal_request_failed)
+    # Subscribe to relevant signals
+    :ok = RubberDuck.Signal.subscribe(@signal_request_completed)
+    :ok = RubberDuck.Signal.subscribe(@signal_request_failed)
 
-      {:ok, opts}
-    rescue
-      exception ->
-        Logger.error("Failed to initialize LLM Orchestrator: #{inspect(exception)}")
-        {:error, exception}
-    end
+    {:ok, opts}
+  rescue
+    exception ->
+      Logger.error("Failed to initialize LLM Orchestrator: #{inspect(exception)}")
+      {:error, exception}
   end
 
   def handle_instruction({:complete, request}, agent) do
-    try do
-      validate_completion_request!(request)
-      process_completion_request(agent, request)
-    rescue
-      exception ->
-        handle_completion_exception(exception, agent)
-    catch
-      {:error, reason} ->
-        {{:error, reason}, agent}
-    end
+    validate_completion_request!(request)
+    process_completion_request(agent, request)
+  rescue
+    exception ->
+      handle_completion_exception(exception, agent)
+  catch
+    {:error, reason} ->
+      {{:error, reason}, agent}
+  end
+
+  def handle_instruction({:stream, request}, agent) do
+    validate_streaming_request!(request)
+    process_streaming_request(agent, request)
+  rescue
+    exception ->
+      handle_streaming_exception(exception, agent)
+  catch
+    {:error, reason} ->
+      {{:error, reason}, agent}
   end
 
   defp validate_completion_request!(request) do
@@ -157,19 +164,6 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     {{:error, {:exception, exception}}, agent}
   end
 
-  def handle_instruction({:stream, request}, agent) do
-    try do
-      validate_streaming_request!(request)
-      process_streaming_request(agent, request)
-    rescue
-      exception ->
-        handle_streaming_exception(exception, agent)
-    catch
-      {:error, reason} ->
-        {{:error, reason}, agent}
-    end
-  end
-
   defp validate_streaming_request!(request) do
     unless is_map(request) do
       throw({:error, :invalid_request})
@@ -193,12 +187,10 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp track_stream_chunk(chunk, token_count) do
-    try do
-      new_count = token_count + estimate_tokens(chunk)
-      {[chunk], new_count}
-    rescue
-      _ -> {[chunk], token_count}  # Continue on error
-    end
+    new_count = token_count + estimate_tokens(chunk)
+    {[chunk], new_count}
+  rescue
+    _ -> {[chunk], token_count}  # Continue on error
   end
 
   defp handle_streaming_error(agent, request, reason, error) do
@@ -477,17 +469,15 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp generate_cache_key(request) do
-    try do
-      # Generate a cache key from request parameters
-      request
-      |> :erlang.term_to_binary()
-      |> then(&:crypto.hash(:sha256, &1))
-      |> Base.encode16()
-    rescue
-      _ ->
-        # Fallback to simple key on error
-        "req_#{:erlang.phash2(request)}"
-    end
+    # Generate a cache key from request parameters
+    request
+    |> :erlang.term_to_binary()
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16()
+  rescue
+    _ ->
+      # Fallback to simple key on error
+      "req_#{:erlang.phash2(request)}"
   end
 
   defp limit_cache_size(cache, max_size) when map_size(cache) <= max_size, do: cache
@@ -513,13 +503,11 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp emit_signal(signal_type, payload) do
-    try do
-      RubberDuck.Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
-    rescue
-      exception ->
-        Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")
-        :ok
-    end
+    RubberDuck.Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
+  rescue
+    exception ->
+      Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")
+      :ok
   end
 
   defp update_provider_performance(agent, provider_name, metrics) do

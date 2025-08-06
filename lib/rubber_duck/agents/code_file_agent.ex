@@ -36,7 +36,11 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       documentation_coverage: [type: :float, default: 0.0],
       has_readme: [type: :boolean, default: false],
       has_inline_docs: [type: :boolean, default: false],
-      documentation_quality: [type: :atom, default: :unknown, values: [:excellent, :good, :fair, :poor, :missing, :unknown]],
+      documentation_quality: [
+        type: :atom,
+        default: :unknown,
+        values: [:excellent, :good, :fair, :poor, :missing, :unknown]
+      ],
 
       # Dependencies
       imports: [type: {:list, :string}, default: []],
@@ -48,7 +52,11 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       execution_time_ms: [type: :float, default: 0.0],
       memory_usage_kb: [type: :float, default: 0.0],
       optimization_opportunities: [type: {:list, :map}, default: []],
-      performance_grade: [type: :atom, default: :unknown, values: [:excellent, :good, :fair, :poor, :critical, :unknown]],
+      performance_grade: [
+        type: :atom,
+        default: :unknown,
+        values: [:excellent, :good, :fair, :poor, :critical, :unknown]
+      ],
 
       # Change tracking
       last_modified: [type: :utc_datetime, required: false],
@@ -96,7 +104,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   @impl true
-  def handle_signal(%Signal{type: "code_file.created"} = signal, state) do
+  def handle_signal(%{type: "code_file.created"} = signal, state) do
     # Handle new code file creation
     with {:ok, file_data} <- extract_file_data(signal),
          {:ok, updated_state} <- initialize_file_tracking(state, file_data),
@@ -119,7 +127,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   @impl true
-  def handle_signal(%Signal{type: "code_file.modified"} = signal, state) do
+  def handle_signal(%{type: "code_file.modified"} = signal, state) do
     # Handle code file modifications
     with {:ok, changes} <- extract_changes(signal),
          {:ok, impact} <- analyze_change_impact(changes, state),
@@ -141,9 +149,9 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   @impl true
-  def handle_signal(%Signal{type: "code_file.analyze"} = signal, state) do
+  def handle_signal(%{type: "code_file.analyze"} = signal, state) do
     # Trigger comprehensive analysis
-    with {:ok, analysis} <- perform_comprehensive_analysis(state, signal.data),
+    with {:ok, analysis} <- perform_comprehensive_analysis(state, signal),
          {:ok, insights} <- generate_insights(analysis, state),
          {:ok, updated_state} <- update_analysis_state(state, analysis, insights) do
 
@@ -161,7 +169,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     end
   end
 
-  @impl true
   def handle_instruction("monitor_quality", params, state) do
     # Monitor code quality continuously
     monitoring_config = %{
@@ -182,7 +189,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     {:ok, %{status: :monitoring_updated, config: monitoring_config}, updated_state}
   end
 
-  @impl true
   def handle_instruction("optimize_performance", params, state) do
     # Detect and apply performance optimizations
     with {:ok, optimizations} <- detect_optimization_opportunities(state, params),
@@ -197,7 +203,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     end
   end
 
-  @impl true
   def handle_instruction("update_documentation", params, state) do
     # Update or generate documentation
     with {:ok, doc_analysis} <- analyze_documentation_needs(state, params),
@@ -212,7 +217,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     end
   end
 
-  @impl true
   def handle_instruction("analyze_dependencies", params, state) do
     # Analyze dependency relationships and impact
     with {:ok, dep_analysis} <- perform_dependency_analysis(state, params),
@@ -246,7 +250,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   defp extract_file_data(signal) do
-    {:ok, signal.data}
+    {:ok, signal}
   end
 
   defp initialize_file_tracking(state, file_data) do
@@ -265,10 +269,10 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   defp extract_changes(signal) do
-    {:ok, signal.data.changes}
+    {:ok, signal[:changes] || signal}
   end
 
-  defp analyze_change_impact(changes, state) do
+  defp analyze_change_impact(_changes, state) do
     # Analyze impact of changes
     impact = %{
       affects_dependents: length(state.dependents) > 0,
@@ -288,7 +292,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     {:ok, updated_state}
   end
 
-  defp perform_comprehensive_analysis(state, _params) do
+  defp perform_comprehensive_analysis(_state, _params) do
     # Perform full analysis
     {:ok, %{
       quality_score: 0.85,
@@ -303,7 +307,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
     # Check for improvement trends
     if analysis.quality_score > state.quality_score do
-      insights = [%{
+      [%{
         type: :improvement,
         message: "Code quality improved by #{round((analysis.quality_score - state.quality_score) * 100)}%"
       } | insights]
@@ -384,7 +388,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     }}
   end
 
-  defp calculate_dependency_impact(dep_analysis) do
+  defp calculate_dependency_impact(_dep_analysis) do
     # Calculate impact of dependencies
     {:ok, %{
       impact_score: 0.5,

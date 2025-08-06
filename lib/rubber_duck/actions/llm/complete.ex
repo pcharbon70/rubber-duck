@@ -24,9 +24,9 @@ defmodule RubberDuck.Actions.LLM.Complete do
     request = params.request
     timeout = params.timeout
 
-    start_time = System.monotonic_time(:millisecond)
-
     try do
+      start_time = System.monotonic_time(:millisecond)
+
       # Add timeout to provider config
       config = Map.put(provider.config, :timeout, timeout)
 
@@ -62,8 +62,6 @@ defmodule RubberDuck.Actions.LLM.Complete do
       end
     rescue
       exception ->
-        duration = System.monotonic_time(:millisecond) - start_time
-
         # Record failure metrics
         HealthMonitor.record_failure(provider.name, exception)
 
@@ -72,7 +70,7 @@ defmodule RubberDuck.Actions.LLM.Complete do
         {:error, %{
           reason: {:exception, exception},
           provider: provider.name,
-          duration_ms: duration,
+          duration_ms: 0,
           success: false
         }}
     end

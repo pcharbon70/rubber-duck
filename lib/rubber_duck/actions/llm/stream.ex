@@ -25,15 +25,15 @@ defmodule RubberDuck.Actions.LLM.Stream do
     timeout = params.timeout
     chunk_timeout = params.chunk_timeout
 
-    # Ensure streaming is requested
-    streaming_request = Map.put(request, :stream, true)
-
-    # Add timeout to provider config
-    config = Map.put(provider.config, :timeout, timeout)
-
-    start_time = System.monotonic_time(:millisecond)
-
     try do
+      # Ensure streaming is requested
+      streaming_request = Map.put(request, :stream, true)
+
+      # Add timeout to provider config
+      config = Map.put(provider.config, :timeout, timeout)
+
+      start_time = System.monotonic_time(:millisecond)
+
       case apply(provider.module, :stream, [streaming_request, config]) do
         {:ok, stream} ->
           # Wrap the stream to add monitoring and error handling
@@ -59,7 +59,7 @@ defmodule RubberDuck.Actions.LLM.Stream do
       end
     rescue
       exception ->
-        duration = System.monotonic_time(:millisecond) - start_time
+        # Record failure metrics
         HealthMonitor.record_failure(provider.name, exception)
 
         Logger.error("LLM streaming crashed for provider #{provider.name}: #{inspect(exception)}")
@@ -67,7 +67,7 @@ defmodule RubberDuck.Actions.LLM.Stream do
         {:error, %{
           reason: {:exception, exception},
           provider: provider.name,
-          duration_ms: duration
+          duration_ms: 0
         }}
     end
   end
@@ -117,13 +117,11 @@ defmodule RubberDuck.Actions.LLM.Stream do
   end
 
   defp handle_stream_chunk(stream, state, provider, start_time, chunk_timeout) do
-    try do
-      task = create_chunk_task(stream)
-      process_chunk_result(task, state, provider, start_time, chunk_timeout)
-    rescue
-      exception ->
-        handle_stream_error(exception, provider, state)
-    end
+    task = create_chunk_task(stream)
+    process_chunk_result(task, state, provider, start_time, chunk_timeout)
+  rescue
+    exception ->
+      handle_stream_error(exception, provider, state)
   end
 
   defp create_chunk_task(stream) do

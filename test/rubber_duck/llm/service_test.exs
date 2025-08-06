@@ -1,7 +1,7 @@
 defmodule RubberDuck.LLM.ServiceTest do
   use ExUnit.Case, async: false
 
-  alias RubberDuck.LLM.{Service, ProviderRegistry, HealthMonitor}
+  alias RubberDuck.LLM.{HealthMonitor, ProviderRegistry, Service}
 
   # Mock provider for testing
   defmodule MockProvider do

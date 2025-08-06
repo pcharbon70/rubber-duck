@@ -296,14 +296,16 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
   end
 
   defp identify_strengths(metrics) do
-    Enum.filter(metrics, fn {_key, value} ->
+    metrics
+    |> Enum.filter(fn {_key, value} ->
       is_map(value) and Map.get(value, :score, 0) > 0.8
     end)
     |> Enum.map(fn {key, _value} -> key end)
   end
 
   defp identify_weaknesses(metrics) do
-    Enum.filter(metrics, fn {_key, value} ->
+    metrics
+    |> Enum.filter(fn {_key, value} ->
       is_map(value) and Map.get(value, :score, 0) < 0.5
     end)
     |> Enum.map(fn {key, _value} -> key end)
@@ -369,7 +371,8 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
   end
 
   defp extract_score_breakdown(metrics) do
-    Enum.map(metrics, fn {key, value} ->
+    metrics
+    |> Enum.map(fn {key, value} ->
       {key, get_metric_score(value)}
     end)
     |> Enum.into(%{})
@@ -518,7 +521,7 @@ defmodule RubberDuck.Actions.CodeFile.AssessQuality do
   defp calculate_comment_ratio(content) do
     lines = String.split(content, "\n")
     comment_lines = Enum.count(lines, fn line ->
-      String.trim(line) |> String.starts_with?("#")
+      line |> String.trim() |> String.starts_with?("#")
     end)
 
     if length(lines) > 0 do

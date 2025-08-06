@@ -199,7 +199,7 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     end
   end
 
-  defp check_breaking_changes(dep, current, target) do
+  defp check_breaking_changes(_dep, current, target) do
     # In a real implementation, this would check changelog or version notes
     case categorize_update(current, target) do
       :major -> %{likely: true, confidence: 0.9}
@@ -412,11 +412,12 @@ defmodule RubberDuck.Actions.Project.UpdateDependencies do
     end
   end
 
-  defp create_pull_request(project, updated_files, update_plan) do
+  defp create_pull_request(_project, updated_files, update_plan) do
     # Save updated files
     Enum.each(updated_files, fn result ->
       file = result.file
-      Projects.update_code_file_by_id(file.file_id, %{
+      # Use the standard update_code_file function with the file record
+      Projects.update_code_file(file, %{
         content: result.updated_content
       })
     end)

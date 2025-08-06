@@ -165,12 +165,7 @@ defmodule RubberDuck.LLM.HealthMonitor do
       {:ok, provider} ->
         start_time = System.monotonic_time(:millisecond)
 
-        result =
-          try do
-            provider.module.health_check(provider.config)
-          rescue
-            error -> {:error, error}
-          end
+        result = provider.module.health_check(provider.config)
 
         response_time = System.monotonic_time(:millisecond) - start_time
 
@@ -197,6 +192,15 @@ defmodule RubberDuck.LLM.HealthMonitor do
       {:error, :provider_not_found} ->
         {:error, :provider_not_found}
     end
+  rescue
+    error ->
+      record_failure(provider_name, error)
+      ProviderRegistry.update_health(provider_name, %{
+        available: false,
+        last_error: error,
+        response_time_ms: 0
+      })
+      {:error, error}
   end
 
   defp get_or_init_metrics(state, provider_name) do

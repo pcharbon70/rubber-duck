@@ -483,13 +483,15 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
   end
 
   defp group_by_language(code_files) do
-    Enum.group_by(code_files, & &1.language)
+    code_files
+    |> Enum.group_by(& &1.language)
     |> Enum.map(fn {lang, files} -> {lang, length(files)} end)
     |> Enum.into(%{})
   end
 
   defp group_by_status(code_files) do
-    Enum.group_by(code_files, & &1.status)
+    code_files
+    |> Enum.group_by(& &1.status)
     |> Enum.map(fn {status, files} -> {status, length(files)} end)
     |> Enum.into(%{})
   end

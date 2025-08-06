@@ -317,7 +317,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     Map.has_key?(context.file_map, test_path)
   end
 
-  defp find_function_callers(function_key, context) do
+  defp find_function_callers(_function_key, _context) do
     # In a real implementation, this would parse and analyze all files
     # For now, return empty list
     []
@@ -463,7 +463,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     end
   end
 
-  defp detect_api_changes(impact, context) do
+  defp detect_api_changes(impact, _context) do
     # Check if any affected files are controllers or API modules
     api_files = Enum.filter(impact.affected_files, fn file ->
       String.contains?(file, "controller") ||
@@ -477,7 +477,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     }
   end
 
-  defp detect_database_impact(impact, context) do
+  defp detect_database_impact(impact, _context) do
     # Check for migration or schema changes
     db_files = Enum.filter(impact.affected_files, fn file ->
       String.contains?(file, "migration") ||
@@ -654,7 +654,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     end
 
     # Test coverage recommendations
-    recs = if get_in(impact, [:direct_impact, :test_coverage, :coverage_ratio], 1.0) < 0.8 do
+    recs = if (Kernel.get_in(impact, [:direct_impact, :test_coverage, :coverage_ratio]) || 1.0) < 0.8 do
       ["Add or improve test coverage for affected files" | recs]
     else
       recs

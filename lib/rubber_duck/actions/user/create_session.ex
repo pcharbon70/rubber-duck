@@ -26,6 +26,6 @@ defmodule RubberDuck.Actions.User.CreateSession do
   end
 
   defp generate_session_id do
-    "sess_#{UUID.uuid4()}"
+    "sess_#{Uniq.UUID.uuid4()}"
   end
 end

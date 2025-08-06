@@ -203,41 +203,39 @@ defmodule RubberDuck.Actions.Agent.Learn do
   end
 
   defp extract_experience_features(experience) do
-    try do
-      features = []
+    features = []
 
-      # Extract goal type
-      features = if goal = experience[:goal] do
-        [{:goal_type, goal[:type]} | features]
-      else
-        features
-      end
-
-      # Extract action type
-      features = if action = experience[:action] do
-        [{:action_type, action} | features]
-      else
-        features
-      end
-
-      # Extract context features
-      features = if context = experience[:context] do
-        extract_context_features(context) ++ features
-      else
-        features
-      end
-
-      # Extract result features
-      features = if result = experience[:result] do
-        extract_result_features(result) ++ features
-      else
-        features
-      end
-
+    # Extract goal type
+    features = if goal = experience[:goal] do
+      [{:goal_type, goal[:type]} | features]
+    else
       features
-    rescue
-      _ -> []
     end
+
+    # Extract action type
+    features = if action = experience[:action] do
+      [{:action_type, action} | features]
+    else
+      features
+    end
+
+    # Extract context features
+    features = if context = experience[:context] do
+      extract_context_features(context) ++ features
+    else
+      features
+    end
+
+    # Extract result features
+    features = if result = experience[:result] do
+      extract_result_features(result) ++ features
+    else
+      features
+    end
+
+    features
+  rescue
+    _ -> []
   end
 
   defp extract_context_features(context) do
@@ -649,20 +647,18 @@ defmodule RubberDuck.Actions.Agent.Learn do
   end
 
   defp calculate_confidence(insights, experiences) do
-    try do
-      base_confidence = min(length(experiences) / 100, 1.0) * 0.5
+    base_confidence = min(length(experiences) / 100, 1.0) * 0.5
 
-      insight_confidence = case insights do
-        %{pattern_confidence: pc} -> pc
-        %{prediction_accuracy: pa} -> pa
-        %{correlations: corr} when is_map(corr) and map_size(corr) > 0 -> 0.7
-        _ -> 0.5
-      end
-
-      base_confidence + (insight_confidence * 0.5)
-    rescue
-      _ -> 0.5  # Default medium confidence on error
+    insight_confidence = case insights do
+      %{pattern_confidence: pc} -> pc
+      %{prediction_accuracy: pa} -> pa
+      %{correlations: corr} when is_map(corr) and map_size(corr) > 0 -> 0.7
+      _ -> 0.5
     end
+
+    base_confidence + (insight_confidence * 0.5)
+  rescue
+    _ -> 0.5  # Default medium confidence on error
   end
 
   defp identify_applicable_scenarios(insights) do

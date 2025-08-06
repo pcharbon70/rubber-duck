@@ -14,9 +14,8 @@ defmodule RubberDuck.Agents.Base do
       use Jido.Agent, unquote(opts)
       require Logger
 
-
       # Import the learning and persistence actions
-      alias RubberDuck.Actions.Agent.{Learn, SaveAgentState, LoadAgentState}
+      alias RubberDuck.Actions.Agent.{Learn, LoadAgentState, SaveAgentState}
 
       # Define child_spec for supervision
       def child_spec(opts) do
@@ -68,7 +67,6 @@ defmodule RubberDuck.Agents.Base do
         Jido.Agent.Server.start_link(server_opts)
       end
 
-
       # Common callbacks that can be overridden
 
       @doc """
@@ -110,50 +108,46 @@ defmodule RubberDuck.Agents.Base do
       Called when the agent gains new experience.
       """
       def on_experience_gained(agent, experience) do
-        try do
-          unless is_map(experience) do
-            throw({:error, :invalid_experience})
-          end
-
-          updated_experience = [experience | agent.state.experience]
-
-          # Keep only recent experience based on max_memory_experiences setting
-          max_experiences = agent.state[:max_memory_experiences] || 1000
-          trimmed_experience = Enum.take(updated_experience, max_experiences)
-
-          updated_agent = %{agent | state: Map.put(agent.state, :experience, trimmed_experience)}
-
-          # Check if it's time to learn
-          if should_trigger_learning?(updated_agent) do
-            perform_learning(updated_agent)
-          else
-            {:ok, updated_agent}
-          end
-        rescue
-          exception ->
-            Logger.error("Experience recording failed: #{inspect(exception)}")
-            {:ok, agent}  # Continue with unchanged agent
-        catch
-          {:error, reason} ->
-            Logger.warning("Failed to record experience: #{inspect(reason)}")
-            {:ok, agent}  # Continue with unchanged agent
+        unless is_map(experience) do
+          throw({:error, :invalid_experience})
         end
+
+        updated_experience = [experience | agent.state.experience]
+
+        # Keep only recent experience based on max_memory_experiences setting
+        max_experiences = agent.state[:max_memory_experiences] || 1000
+        trimmed_experience = Enum.take(updated_experience, max_experiences)
+
+        updated_agent = %{agent | state: Map.put(agent.state, :experience, trimmed_experience)}
+
+        # Check if it's time to learn
+        if should_trigger_learning?(updated_agent) do
+          perform_learning(updated_agent)
+        else
+          {:ok, updated_agent}
+        end
+      rescue
+        exception ->
+          Logger.error("Experience recording failed: #{inspect(exception)}")
+          {:ok, agent}  # Continue with unchanged agent
+      catch
+        {:error, reason} ->
+          Logger.warning("Failed to record experience: #{inspect(reason)}")
+          {:ok, agent}  # Continue with unchanged agent
       end
 
       @doc """
       Extract patterns from agent's experience.
       """
       def analyze_experience(agent) do
-        try do
-          agent.state.experience
-          |> filter_valid_experiences()
-          |> group_experiences_by_type()
-          |> calculate_experience_metrics()
-        rescue
-          exception ->
-            Logger.warning("Experience analysis failed: #{inspect(exception)}")
-            %{}  # Return empty analysis on error
-        end
+        agent.state.experience
+        |> filter_valid_experiences()
+        |> group_experiences_by_type()
+        |> calculate_experience_metrics()
+      rescue
+        exception ->
+          Logger.warning("Experience analysis failed: #{inspect(exception)}")
+          %{}  # Return empty analysis on error
       end
 
       defp filter_valid_experiences(experiences) do
