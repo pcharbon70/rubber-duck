@@ -309,7 +309,7 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
       end
 
       # Complexity trend insights
-      insights = if trends.complexity_trend.direction == :increasing do
+      if trends.complexity_trend.direction == :increasing do
         [%{
           type: :trend,
           severity: :medium,

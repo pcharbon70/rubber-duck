@@ -102,33 +102,29 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
     deps = []
 
     # Extract regular deps
-    case Regex.scan(~r/{:(\w+),\s*"([^"]+)"/, content) do
-      matches ->
-        deps = deps ++ Enum.map(matches, fn [_, name, version] ->
-          %{
-            name: name,
-            version: version,
-            type: :hex,
-            scope: :runtime,
-            source: :mix
-          }
-        end)
-    end
+    matches = Regex.scan(~r/{:(\w+),\s*"([^"]+)"/, content)
+    deps = deps ++ Enum.map(matches, fn [_, name, version] ->
+      %{
+        name: name,
+        version: version,
+        type: :hex,
+        scope: :runtime,
+        source: :mix
+      }
+    end)
 
     # Extract git deps
-    case Regex.scan(~r/{:(\w+),\s*git:\s*"([^"]+)"/, content) do
-      matches ->
-        deps = deps ++ Enum.map(matches, fn [_, name, git_url] ->
-          %{
-            name: name,
-            version: "git",
-            type: :git,
-            scope: :runtime,
-            source: :mix,
-            git_url: git_url
-          }
-        end)
-    end
+    git_matches = Regex.scan(~r/{:(\w+),\s*git:\s*"([^"]+)"/, content)
+    deps = deps ++ Enum.map(git_matches, fn [_, name, git_url] ->
+      %{
+        name: name,
+        version: "git",
+        type: :git,
+        scope: :runtime,
+        source: :mix,
+        git_url: git_url
+      }
+    end)
 
     if include_dev do
       deps
@@ -239,7 +235,7 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
     |> Map.new()
   end
 
-  defp check_security_issues(dependencies) do
+  defp check_security_issues(_dependencies) do
     # In real implementation, would check against vulnerability databases
     # For now, return empty list
     []
@@ -336,8 +332,10 @@ defmodule RubberDuck.Actions.Project.DetectDependencies do
     score = score - length(analysis.circular) * 15
 
     # Deduct for too many dependencies
-    if analysis.total_count > 100 do
-      score = score - 10
+    score = if analysis.total_count > 100 do
+      score - 10
+    else
+      score
     end
 
     max(0, score)

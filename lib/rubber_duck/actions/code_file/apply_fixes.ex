@@ -142,7 +142,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
   defp get_skipped_fixes(all_fixes, applied_fixes) do
     applied_ids = Enum.map(applied_fixes, & &1.id)
 
-    Enum.filter(all_fixes, fn fix ->
+    all_fixes
+    |> Enum.filter(fn fix ->
       not Enum.member?(applied_ids, fix.id)
     end)
     |> Enum.map(fn fix ->
@@ -182,8 +183,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
 
   defp fix_unclosed_brackets(content) do
     # Count and balance brackets
-    open_count = String.graphemes(content) |> Enum.count(& &1 in ["[", "{", "("])
-    close_count = String.graphemes(content) |> Enum.count(& &1 in ["]", "}", ")"])
+    open_count = content |> String.graphemes() |> Enum.count(& &1 in ["[", "{", "("])
+    close_count = content |> String.graphemes() |> Enum.count(& &1 in ["]", "}", ")"])
 
     if open_count > close_count do
       # Add closing brackets at the end
@@ -353,12 +354,10 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
 
   defp validate_syntax(content) do
     # Basic syntax validation
-    try do
-      Code.string_to_quoted(content)
-      true
-    rescue
-      _ -> false
-    end
+    Code.string_to_quoted(content)
+    true
+  rescue
+    _ -> false
   end
 
   defp run_tests_if_available(_params) do
@@ -383,7 +382,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
   end
 
   defp extract_function_names(content) do
-    Regex.scan(~r/def(?:p?)\s+(\w+)/, content)
+    content
+    |> then(fn c -> Regex.scan(~r/def(?:p?)\s+(\w+)/, c) end)
     |> Enum.map(fn [_, name] -> name end)
   end
 
@@ -409,7 +409,8 @@ defmodule RubberDuck.Actions.CodeFile.ApplyFixes do
     original_lines = String.split(original, "\n")
     fixed_lines = String.split(fixed, "\n")
 
-    Enum.zip(original_lines, fixed_lines)
+    original_lines
+    |> Enum.zip(fixed_lines)
     |> Enum.count(fn {orig, fix} -> orig != fix end)
   end
 

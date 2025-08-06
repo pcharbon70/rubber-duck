@@ -17,7 +17,7 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
       required_capabilities: [type: {:list, :atom}, default: []]
     ]
 
-  alias RubberDuck.LLM.{ProviderRegistry, HealthMonitor}
+  alias RubberDuck.LLM.{HealthMonitor, ProviderRegistry}
 
   @impl true
   def run(params, _context) do
@@ -107,20 +107,21 @@ defmodule RubberDuck.Actions.LLM.SelectProvider do
   end
 
   defp get_provider_capabilities(provider) do
-    try do
-      capabilities = provider.module.capabilities()
-      capability_list = []
+    capabilities = provider.module.capabilities()
+    capability_list = []
 
-      capability_list = if capabilities.completion, do: [:completion | capability_list], else: capability_list
-      capability_list = if capabilities.streaming, do: [:streaming | capability_list], else: capability_list
-      capability_list = if capabilities.embeddings, do: [:embeddings | capability_list], else: capability_list
-      capability_list = if capabilities.function_calling, do: [:function_calling | capability_list], else: capability_list
-      capability_list = if capabilities.vision, do: [:vision | capability_list], else: capability_list
+    capability_list = if capabilities.completion, do: [:completion | capability_list], else: capability_list
+    capability_list = if capabilities.streaming, do: [:streaming | capability_list], else: capability_list
+    capability_list = if capabilities.embeddings, do: [:embeddings | capability_list], else: capability_list
+    capability_list =
+      if capabilities.function_calling,
+        do: [:function_calling | capability_list],
+        else: capability_list
+    capability_list = if capabilities.vision, do: [:vision | capability_list], else: capability_list
 
-      capability_list
-    rescue
-      _ -> [:completion]  # Assume basic completion capability
-    end
+    capability_list
+  rescue
+    _ -> [:completion]  # Assume basic completion capability
   end
 
   defp score_providers(providers, params) do

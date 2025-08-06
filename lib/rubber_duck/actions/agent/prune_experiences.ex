@@ -22,26 +22,24 @@ defmodule RubberDuck.Actions.Agent.PruneExperiences do
   def run(params, _context) do
     case validate_prune_params(params) do
       :ok ->
-        try do
-          if params.dry_run do
-            # Just count what would be deleted
-            perform_dry_run(params)
-          else
-            # Actually delete old experiences
-            perform_prune(params)
-          end
-        rescue
-          exception ->
-            Logger.error("Failed to prune experiences: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-            {:error, %{
-              reason: {:exception, exception},
-              message: Exception.message(exception)
-            }}
+        if params.dry_run do
+          # Just count what would be deleted
+          perform_dry_run(params)
+        else
+          # Actually delete old experiences
+          perform_prune(params)
         end
 
       {:error, reason} ->
         {:error, %{reason: reason, stage: :validation}}
     end
+  rescue
+    exception ->
+      Logger.error("Failed to prune experiences: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+      {:error, %{
+        reason: {:exception, exception},
+        message: Exception.message(exception)
+      }}
   end
 
   defp validate_prune_params(params) do

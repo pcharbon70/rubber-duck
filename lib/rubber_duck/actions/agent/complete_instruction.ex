@@ -21,56 +21,54 @@ defmodule RubberDuck.Actions.Agent.CompleteInstruction do
   def run(params, _context) do
     case validate_instruction_params(params) do
       :ok ->
-        try do
-          instruction = params.instruction
-          agent_module = params.agent_module
-          agent_state = params.agent_state
+        instruction = params.instruction
+        agent_module = params.agent_module
+        agent_state = params.agent_state
 
-          # Check if the agent module implements handle_instruction
-          if function_exported?(agent_module, :handle_instruction, 2) do
-            # Call the agent's handle_instruction function
-            case apply(agent_module, :handle_instruction, [instruction, %{state: agent_state}]) do
-              {:ok, result, updated_agent} ->
-                {:ok, %{
-                  result: result,
-                  state: updated_agent.state,
-                  instruction_type: elem(instruction, 0)
-                }}
+        # Check if the agent module implements handle_instruction
+        if function_exported?(agent_module, :handle_instruction, 2) do
+          # Call the agent's handle_instruction function
+          case apply(agent_module, :handle_instruction, [instruction, %{state: agent_state}]) do
+            {:ok, result, updated_agent} ->
+              {:ok, %{
+                result: result,
+                state: updated_agent.state,
+                instruction_type: elem(instruction, 0)
+              }}
 
-              {:ok, updated_agent} ->
-                {:ok, %{
-                  state: updated_agent.state,
-                  instruction_type: elem(instruction, 0)
-                }}
+            {:ok, updated_agent} ->
+              {:ok, %{
+                state: updated_agent.state,
+                instruction_type: elem(instruction, 0)
+              }}
 
-              {:error, reason} = error ->
-                Logger.warning("Instruction failed: #{inspect(reason)}, instruction: #{inspect(instruction)}")
-                error
+            {:error, reason} = error ->
+              Logger.warning("Instruction failed: #{inspect(reason)}, instruction: #{inspect(instruction)}")
+              error
 
-              other ->
-                Logger.error("Unexpected response from handle_instruction: #{inspect(other)}")
-                {:error, %{reason: :unexpected_response, response: other}}
-            end
-          else
-            {:error, %{
-              reason: :handle_instruction_not_implemented,
-              agent_module: agent_module,
-              available_functions: get_exported_functions(agent_module)
-            }}
+            other ->
+              Logger.error("Unexpected response from handle_instruction: #{inspect(other)}")
+              {:error, %{reason: :unexpected_response, response: other}}
           end
-        rescue
-          exception ->
-            Logger.error("Instruction execution crashed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-            {:error, %{
-              reason: {:exception, exception},
-              message: Exception.message(exception),
-              instruction: params.instruction
-            }}
+        else
+          {:error, %{
+            reason: :handle_instruction_not_implemented,
+            agent_module: agent_module,
+            available_functions: get_exported_functions(agent_module)
+          }}
         end
 
       {:error, reason} ->
         {:error, %{reason: reason, stage: :validation}}
     end
+  rescue
+    exception ->
+      Logger.error("Instruction execution crashed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+      {:error, %{
+        reason: {:exception, exception},
+        message: Exception.message(exception),
+        instruction: params.instruction
+      }}
   end
 
   defp validate_instruction_params(params) do
@@ -93,13 +91,11 @@ defmodule RubberDuck.Actions.Agent.CompleteInstruction do
   end
 
   defp get_exported_functions(module) do
-    try do
-      :functions
-      |> module.__info__()
-      |> Enum.map(fn {name, arity} -> "#{name}/#{arity}" end)
-      |> Enum.sort()
-    rescue
-      _ -> []
-    end
+    :functions
+    |> module.__info__()
+    |> Enum.map(fn {name, arity} -> "#{name}/#{arity}" end)
+    |> Enum.sort()
+  rescue
+    _ -> []
   end
 end

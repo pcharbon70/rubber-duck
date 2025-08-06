@@ -26,13 +26,9 @@ defmodule RubberDuck.LLM do
   """
   def complete(request, opts \\ []) do
     with {:ok, agent} <- get_orchestrator_agent() do
-      # Use Jido Agent Server command API with our action
-      Jido.Agent.Server.cmd(
-        agent,
-        RubberDuck.Actions.LLM.OrchestratorComplete,
-        %{request: add_request_id(request)},
-        opts
-      )
+      # Send completion request to the orchestrator agent
+      timeout = Keyword.get(opts, :timeout, 30_000)
+      GenServer.call(agent, {:complete, add_request_id(request)}, timeout)
     end
   end
 

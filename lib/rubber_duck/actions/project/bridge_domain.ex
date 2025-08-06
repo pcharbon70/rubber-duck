@@ -67,25 +67,33 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
 
     # Sync quality metrics
     quality_metrics = Map.get(full_agent_state.quality_metrics, project.id, %{})
-    if map_size(quality_metrics) > 0 do
-      updates = [{:quality_metrics, store_quality_metrics(project, quality_metrics)} | updates]
+    updates = if map_size(quality_metrics) > 0 do
+      [{:quality_metrics, store_quality_metrics(project, quality_metrics)} | updates]
+    else
+      updates
     end
 
     # Sync dependency information
     dependencies = Map.get(full_agent_state.dependency_graph, project.id, %{})
-    if map_size(dependencies) > 0 do
-      updates = [{:dependencies, store_dependencies(project, dependencies)} | updates]
+    updates = if map_size(dependencies) > 0 do
+      [{:dependencies, store_dependencies(project, dependencies)} | updates]
+    else
+      updates
     end
 
     # Sync optimization suggestions
     optimizations = Map.get(full_agent_state.structure_optimizations, project.id, [])
-    if length(optimizations) > 0 do
-      updates = [{:optimizations, store_optimizations(project, optimizations)} | updates]
+    updates = if length(optimizations) > 0 do
+      [{:optimizations, store_optimizations(project, optimizations)} | updates]
+    else
+      updates
     end
 
     # Update project status if needed
-    if should_update_project_status?(project, agent_state, quality_metrics) do
-      updates = [{:status, update_project_status(project, agent_state)} | updates]
+    updates = if should_update_project_status?(project, agent_state, quality_metrics) do
+      [{:status, update_project_status(project, agent_state)} | updates]
+    else
+      updates
     end
 
     updates
@@ -106,7 +114,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     end
   end
 
-  defp store_dependencies(project, dependencies) do
+  defp store_dependencies(_project, dependencies) do
     # Could create a separate Dependencies resource in the future
     # For now, store summary in project metadata
     dep_summary = %{
@@ -156,7 +164,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     new_status = determine_new_status(project, agent_state)
 
     case Projects.update_project(project, %{status: new_status}) do
-      {:ok, updated} -> {:updated, new_status}
+      {:ok, _updated} -> {:updated, new_status}
       error -> {:error, error}
     end
   end
@@ -280,20 +288,26 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     updates = []
 
     # Update quality metrics
-    if agent_data[:quality_metrics] do
-      updates = [{:quality_metrics, agent_data.quality_metrics} | updates]
+    updates = if agent_data[:quality_metrics] do
+      [{:quality_metrics, agent_data.quality_metrics} | updates]
+    else
+      updates
     end
 
     # Update project metadata
-    if agent_data[:metadata] do
+    updates = if agent_data[:metadata] do
       current_metadata = project.metadata || %{}
       merged_metadata = Map.merge(current_metadata, agent_data.metadata)
-      updates = [{:metadata, merged_metadata} | updates]
+      [{:metadata, merged_metadata} | updates]
+    else
+      updates
     end
 
     # Update status based on agent analysis
-    if agent_data[:suggested_status] && agent_data.suggested_status != project.status do
-      updates = [{:status, agent_data.suggested_status} | updates]
+    updates = if agent_data[:suggested_status] && agent_data.suggested_status != project.status do
+      [{:status, agent_data.suggested_status} | updates]
+    else
+      updates
     end
 
     updates
@@ -344,7 +358,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     }
   end
 
-  defp perform_analysis(project, files, :quality) do
+  defp perform_analysis(_project, files, :quality) do
     %{
       quality: analyze_code_quality(files),
       issues: find_issues(files)
@@ -530,23 +544,27 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
   defp find_file_issues(file) do
     issues = []
 
-    if file.size_bytes && file.size_bytes > 50_000 do
-      issues = [%{
+    issues = if file.size_bytes && file.size_bytes > 50_000 do
+      [%{
         type: :large_file,
         file: file.path,
         size: file.size_bytes,
         severity: :medium
       } | issues]
+    else
+      issues
     end
 
-    if file.content && String.contains?(file.content, "TODO") do
+    issues = if file.content && String.contains?(file.content, "TODO") do
       todos = length(Regex.scan(~r/TODO/, file.content))
-      issues = [%{
+      [%{
         type: :todos,
         file: file.path,
         count: todos,
         severity: :low
       } | issues]
+    else
+      issues
     end
 
     issues
@@ -583,12 +601,12 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
   defp summarize_findings(analysis) do
     %{
       structure: %{
-        total_files: get_in(analysis, [:structure, :total_files], 0),
-        consistent_naming: get_in(analysis, [:structure, :naming_consistency, :consistent], true)
+        total_files: Kernel.get_in(analysis, [:structure, :total_files]) || 0,
+        consistent_naming: Kernel.get_in(analysis, [:structure, :naming_consistency, :consistent]) || true
       },
       quality: %{
-        total_lines: get_in(analysis, [:quality, :total_lines], 0),
-        complexity: get_in(analysis, [:quality, :complexity_estimate], %{})
+        total_lines: Kernel.get_in(analysis, [:quality, :total_lines]) || 0,
+        complexity: Kernel.get_in(analysis, [:quality, :complexity_estimate]) || %{}
       },
       issues: %{
         total: length(analysis[:issues] || []),
@@ -601,19 +619,25 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     recs = []
 
     # Structure recommendations
-    if get_in(analysis, [:structure, :naming_consistency, :consistent]) == false do
-      recs = ["Standardize file naming conventions across the project" | recs]
+    recs = if get_in(analysis, [:structure, :naming_consistency, :consistent]) == false do
+      ["Standardize file naming conventions across the project" | recs]
+    else
+      recs
     end
 
     # Quality recommendations
-    if get_in(analysis, [:quality, :complexity_estimate, :functions_per_file], 0) > 20 do
-      recs = ["Consider breaking up large modules into smaller, focused ones" | recs]
+    recs = if (Kernel.get_in(analysis, [:quality, :complexity_estimate, :functions_per_file]) || 0) > 20 do
+      ["Consider breaking up large modules into smaller, focused ones" | recs]
+    else
+      recs
     end
 
     # Issue recommendations
     issue_count = length(analysis[:issues] || [])
-    if issue_count > 20 do
-      recs = ["Address #{issue_count} identified issues to improve code quality" | recs]
+    recs = if issue_count > 20 do
+      ["Address #{issue_count} identified issues to improve code quality" | recs]
+    else
+      recs
     end
 
     recs
@@ -648,8 +672,8 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
 
   defp generate_detailed_report(projects, agent_data) do
     project_details = Enum.map(projects, fn project ->
-      agent_state = get_in(agent_data, [:monitored_projects, project.id], %{})
-      metrics = get_in(agent_data, [:quality_metrics, project.id], %{})
+      agent_state = Kernel.get_in(agent_data, [:monitored_projects, project.id]) || %{}
+      metrics = Kernel.get_in(agent_data, [:quality_metrics, project.id]) || %{}
 
       %{
         project: %{
@@ -660,7 +684,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
         agent_monitoring: map_size(agent_state) > 0,
         quality_score: metrics[:quality_score],
         last_analysis: agent_state[:last_analysis],
-        pending_optimizations: length(get_in(agent_data, [:structure_optimizations, project.id], []))
+        pending_optimizations: length(Kernel.get_in(agent_data, [:structure_optimizations, project.id]) || [])
       }
     end)
 
@@ -674,7 +698,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
   defp generate_metrics_report(projects, agent_data) do
     aggregate_metrics = projects
       |> Enum.map(fn project ->
-        get_in(agent_data, [:quality_metrics, project.id], %{})
+        Kernel.get_in(agent_data, [:quality_metrics, project.id]) || %{}
       end)
       |> aggregate_quality_metrics()
 
@@ -683,7 +707,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
       aggregate_metrics: aggregate_metrics,
       project_count: length(projects),
       metrics_available_for: Enum.count(projects, fn p ->
-        map_size(get_in(agent_data, [:quality_metrics, p.id], %{})) > 0
+        map_size(Kernel.get_in(agent_data, [:quality_metrics, p.id]) || %{}) > 0
       end),
       generated_at: DateTime.utc_now()
     }
@@ -692,7 +716,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
   defp find_projects_needing_attention(projects, agent_data) do
     projects
     |> Enum.filter(fn project ->
-      quality_score = get_in(agent_data, [:quality_metrics, project.id, :quality_score], 100)
+      quality_score = Kernel.get_in(agent_data, [:quality_metrics, project.id, :quality_score]) || 100
       quality_score < 70 || project.status == :needs_attention
     end)
     |> Enum.map(& &1.id)

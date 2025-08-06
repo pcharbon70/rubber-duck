@@ -32,13 +32,11 @@ defmodule RubberDuck.Actions.LLM.Embed do
   defp execute_embedding_generation(params) do
     start_time = System.monotonic_time(:millisecond)
 
-    try do
-      results = process_embedding_request(params)
-      handle_embedding_results(results, params.provider, start_time)
-    rescue
-      exception ->
-        handle_embedding_exception(exception, params.provider, start_time)
-    end
+    results = process_embedding_request(params)
+    handle_embedding_results(results, params.provider, start_time)
+  rescue
+    exception ->
+      handle_embedding_exception(exception, params.provider, System.monotonic_time(:millisecond))
   end
 
   defp process_embedding_request(params) do
@@ -141,12 +139,10 @@ defmodule RubberDuck.Actions.LLM.Embed do
   # Private functions
 
   defp supports_embeddings?(provider) do
-    try do
-      capabilities = provider.module.capabilities()
-      Map.get(capabilities, :embeddings, false)
-    rescue
-      _ -> false
-    end
+    capabilities = provider.module.capabilities()
+    Map.get(capabilities, :embeddings, false)
+  rescue
+    _ -> false
   end
 
   defp process_single_batch(texts, provider, params) do

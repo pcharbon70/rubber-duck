@@ -27,35 +27,33 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
   def run(params, _context) do
     case validate_cache_params(params) do
       :ok ->
-        try do
-          ensure_cache_tables()
+        ensure_cache_tables()
 
-          case params.operation do
-            :get ->
-              handle_cache_get(params)
+        case params.operation do
+          :get ->
+            handle_cache_get(params)
 
-            :put ->
-              handle_cache_put(params)
+          :put ->
+            handle_cache_put(params)
 
-            :invalidate ->
-              handle_cache_invalidate(params)
+          :invalidate ->
+            handle_cache_invalidate(params)
 
-            other ->
-              {:error, %{reason: :invalid_operation, operation: other}}
-          end
-        rescue
-          exception ->
-            Logger.error("Cache operation failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-            {:error, %{
-              reason: {:exception, exception},
-              message: Exception.message(exception),
-              operation: params.operation
-            }}
+          other ->
+            {:error, %{reason: :invalid_operation, operation: other}}
         end
 
       {:error, reason} ->
         {:error, %{reason: reason, stage: :validation}}
     end
+  rescue
+    exception ->
+      Logger.error("Cache operation failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+      {:error, %{
+        reason: {:exception, exception},
+        message: Exception.message(exception),
+        operation: params.operation
+      }}
   end
 
   def describe do
@@ -97,24 +95,22 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
   # Private functions
 
   defp ensure_cache_tables do
-    try do
-      # Create tables if they don't exist
-      if :ets.whereis(@cache_table) == :undefined do
-        :ets.new(@cache_table, [:set, :public, :named_table, read_concurrency: true])
-      end
-
-      if :ets.whereis(@cache_stats_table) == :undefined do
-        :ets.new(@cache_stats_table, [:set, :public, :named_table])
-        :ets.insert(@cache_stats_table, {:hits, 0})
-        :ets.insert(@cache_stats_table, {:misses, 0})
-        :ets.insert(@cache_stats_table, {:puts, 0})
-      end
-      :ok
-    rescue
-      exception ->
-        Logger.error("Failed to create cache tables: #{inspect(exception)}")
-        {:error, :cache_initialization_failed}
+    # Create tables if they don't exist
+    if :ets.whereis(@cache_table) == :undefined do
+      :ets.new(@cache_table, [:set, :public, :named_table, read_concurrency: true])
     end
+
+    if :ets.whereis(@cache_stats_table) == :undefined do
+      :ets.new(@cache_stats_table, [:set, :public, :named_table])
+      :ets.insert(@cache_stats_table, {:hits, 0})
+      :ets.insert(@cache_stats_table, {:misses, 0})
+      :ets.insert(@cache_stats_table, {:puts, 0})
+    end
+    :ok
+  rescue
+    exception ->
+      Logger.error("Failed to create cache tables: #{inspect(exception)}")
+      {:error, :cache_initialization_failed}
   end
 
   defp handle_cache_get(params) do
@@ -359,38 +355,34 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
   end
 
   defp maybe_cleanup_expired do
-    try do
-      # Cleanup every 100 puts
-      case :ets.lookup(@cache_stats_table, :puts) do
-        [{:puts, put_count}] ->
-          if rem(put_count, 100) == 0 do
-            Task.start(fn ->
-              try do
-                cleanup_expired_entries()
-              rescue
-                e -> Logger.warning("Cleanup task failed: #{inspect(e)}")
-              end
-            end)
-          end
-        _ ->
-          :ok
-      end
-    rescue
-      exception ->
-        Logger.warning("Failed to check cleanup: #{inspect(exception)}")
+    # Cleanup every 100 puts
+    case :ets.lookup(@cache_stats_table, :puts) do
+      [{:puts, put_count}] ->
+        if rem(put_count, 100) == 0 do
+          Task.start(fn ->
+            try do
+              cleanup_expired_entries()
+            rescue
+              e -> Logger.warning("Cleanup task failed: #{inspect(e)}")
+            end
+          end)
+        end
+      _ ->
         :ok
     end
+  rescue
+    exception ->
+      Logger.warning("Failed to check cleanup: #{inspect(exception)}")
+      :ok
   end
 
   defp cleanup_expired_entries do
-    try do
-      expired_keys = find_expired_cache_keys()
-      remove_expired_keys(expired_keys)
-      log_cleanup_results(expired_keys)
-    rescue
-      exception ->
-        Logger.error("Cleanup failed: #{inspect(exception)}")
-    end
+    expired_keys = find_expired_cache_keys()
+    remove_expired_keys(expired_keys)
+    log_cleanup_results(expired_keys)
+  rescue
+    exception ->
+      Logger.error("Cleanup failed: #{inspect(exception)}")
   end
 
   defp find_expired_cache_keys do
@@ -411,11 +403,9 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
   end
 
   defp safe_delete_cache_key(key) do
-    try do
-      :ets.delete(@cache_table, key)
-    rescue
-      _ -> :ok
-    end
+    :ets.delete(@cache_table, key)
+  rescue
+    _ -> :ok
   end
 
   defp log_cleanup_results(expired_keys) do

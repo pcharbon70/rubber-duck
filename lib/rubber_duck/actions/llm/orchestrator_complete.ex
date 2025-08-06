@@ -11,7 +11,7 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
       request: [type: :map, required: true]
     ]
 
-  alias RubberDuck.LLM.{ProviderRegistry, HealthMonitor}
+  alias RubberDuck.LLM.{HealthMonitor, ProviderRegistry}
   alias RubberDuck.Signal
   require Logger
 
@@ -32,16 +32,14 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   end
 
   defp execute_orchestrated_completion(params, context) do
-    try do
-      agent = context[:agent]
-      request = params.request
-      start_time = System.monotonic_time(:millisecond)
+    agent = context[:agent]
+    request = params.request
+    start_time = System.monotonic_time(:millisecond)
 
-      process_completion_with_cache(agent, request, start_time)
-    rescue
-      exception ->
-        handle_orchestrator_exception(exception, params)
-    end
+    process_completion_with_cache(agent, request, start_time)
+  rescue
+    exception ->
+      handle_orchestrator_exception(exception, params)
   end
 
   defp process_completion_with_cache(agent, request, start_time) do
@@ -157,13 +155,11 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   end
 
   defp emit_signal(signal_type, payload) do
-    try do
-      Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
-    rescue
-      exception ->
-        Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")
-        :ok
-    end
+    Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
+  rescue
+    exception ->
+      Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")
+      :ok
   end
 
   defp validate_orchestrator_params(params) do

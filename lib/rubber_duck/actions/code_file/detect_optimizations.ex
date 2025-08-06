@@ -80,7 +80,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
   end
 
   defp generate_recommendations(optimizations, benchmarks, _params) do
-    recommendations = Enum.zip(optimizations, benchmarks)
+    recommendations = optimizations
+      |> Enum.zip(benchmarks)
       |> Enum.map(fn {opt, bench} ->
         %{
           title: opt.title,
@@ -140,7 +141,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     lines = String.split(content, "\n")
     max_depth = 0
 
-    Enum.reduce(lines, {0, max_depth}, fn line, {current_depth, max} ->
+    lines
+    |> Enum.reduce({0, max_depth}, fn line, {current_depth, max} ->
       new_depth = if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
         current_depth + 1
       else
@@ -175,8 +177,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect Enum chains that could use Stream
-    if Regex.match?(~r/Enum\.\w+.*\|>\s*Enum\.\w+/, content) do
-      optimizations = [%{
+    optimizations = if Regex.match?(~r/Enum\.\w+.*\|>\s*Enum\.\w+/, content) do
+      [%{
         id: "enum_to_stream",
         type: :algorithm,
         title: "Replace Enum chains with Stream",
@@ -187,11 +189,13 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         risk: :low,
         auto_applicable: true
       } | optimizations]
+    else
+      optimizations
     end
 
     # Detect multiple passes over same collection
-    if detect_multiple_enum_passes(content) do
-      optimizations = [%{
+    optimizations = if detect_multiple_enum_passes(content) do
+      [%{
         id: "combine_enum_passes",
         type: :algorithm,
         title: "Combine multiple Enum operations",
@@ -202,6 +206,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         risk: :low,
         auto_applicable: false
       } | optimizations]
+    else
+      optimizations
     end
 
     optimizations
@@ -211,8 +217,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect if-else chains that could be pattern matching
-    if Regex.match?(~r/if .+ do.*else.*end/s, content) do
-      optimizations = [%{
+    optimizations = if Regex.match?(~r/if .+ do.*else.*end/s, content) do
+      [%{
         id: "if_to_pattern_match",
         type: :code_quality,
         title: "Replace if-else with pattern matching",
@@ -223,6 +229,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         risk: :low,
         auto_applicable: false
       } | optimizations]
+    else
+      optimizations
     end
 
     optimizations
@@ -232,8 +240,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect string concatenation in loops
-    if Regex.match?(~r/Enum\..+<>/, content) do
-      optimizations = [%{
+    optimizations = if Regex.match?(~r/Enum\..+<>/, content) do
+      [%{
         id: "string_concat_optimization",
         type: :memory,
         title: "Optimize string concatenation",
@@ -244,11 +252,13 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         risk: :low,
         auto_applicable: false
       } | optimizations]
+    else
+      optimizations
     end
 
     # Detect large list operations
-    if detect_large_list_operations(content) do
-      optimizations = [%{
+    optimizations = if detect_large_list_operations(content) do
+      [%{
         id: "list_optimization",
         type: :memory,
         title: "Optimize list operations",
@@ -259,6 +269,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         risk: :medium,
         auto_applicable: false
       } | optimizations]
+    else
+      optimizations
     end
 
     optimizations
@@ -268,8 +280,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect N+1 query patterns
-    if detect_n_plus_one_pattern(content) do
-      optimizations = [%{
+    optimizations = if detect_n_plus_one_pattern(content) do
+      [%{
         id: "n_plus_one",
         type: :database,
         title: "Fix N+1 query problem",
@@ -280,6 +292,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         risk: :low,
         auto_applicable: false
       } | optimizations]
+    else
+      optimizations
     end
 
     optimizations
@@ -289,8 +303,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect synchronous operations that could be concurrent
-    if detect_parallelizable_operations(content) do
-      optimizations = [%{
+    optimizations = if detect_parallelizable_operations(content) do
+      [%{
         id: "add_concurrency",
         type: :concurrency,
         title: "Add concurrent processing",
@@ -301,6 +315,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         risk: :medium,
         auto_applicable: false
       } | optimizations]
+    else
+      optimizations
     end
 
     optimizations
@@ -358,7 +374,7 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
   end
 
   defp calculate_optimization_score(optimizations, benchmarks) do
-    if length(optimizations) == 0 do
+    if Enum.empty?(optimizations) do
       1.0
     else
       total_speedup = Enum.reduce(benchmarks, 0, fn b, acc ->
@@ -370,7 +386,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
   end
 
   defp prioritize_optimizations(optimizations, benchmarks) do
-    Enum.zip(optimizations, benchmarks)
+    optimizations
+    |> Enum.zip(benchmarks)
     |> Enum.sort_by(fn {opt, bench} ->
       score = bench.estimated_speedup * 10
       score = score + (1.0 - risk_to_number(opt.risk)) * 5
@@ -401,7 +418,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     # Simplified nested loop detection
     lines = String.split(content, "\n")
 
-    Enum.reduce(lines, {0, 0}, fn line, {current, max_n} ->
+    lines
+    |> Enum.reduce({0, 0}, fn line, {current, max_n} ->
       new_current = if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
         current + 1
       else

@@ -187,7 +187,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     # Check for large modules
     module_size = count_module_lines(content)
     if module_size > 300 do
-      suggestions = [%{
+      [%{
         type: :split_module,
         file_path: file.path,
         current_size: module_size,
@@ -360,7 +360,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     div(indent, 2) # Assuming 2-space indentation
   end
 
-  defp suggest_nesting_reduction(block) do
+  defp suggest_nesting_reduction(_block) do
     %{
       techniques: [
         "Use guard clauses to exit early",
@@ -494,8 +494,8 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
       issues = []
 
       # Check for non-snake_case
-      if name =~ ~r/[A-Z]/ do
-        issues = [%{
+      issues = if name =~ ~r/[A-Z]/ do
+        [%{
           type: :rename_function,
           current_name: name,
           suggested_name: Macro.underscore(name),
@@ -505,11 +505,13 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           impact: :low,
           effort: :low
         } | issues]
+      else
+        issues
       end
 
       # Check for unclear abbreviations
-      if has_unclear_abbreviation?(name) do
-        issues = [%{
+      issues = if has_unclear_abbreviation?(name) do
+        [%{
           type: :clarify_naming,
           current_name: name,
           title: "Expand unclear abbreviation in '#{name}'",
@@ -518,6 +520,8 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
           impact: :low,
           effort: :low
         } | issues]
+      else
+        issues
       end
 
       issues
@@ -598,7 +602,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     end)
   end
 
-  defp find_misplaced_functions(content) do
+  defp find_misplaced_functions(_content) do
     # This would require more context about the codebase
     # For now, return empty list
     []
@@ -610,7 +614,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     # Find if-else chains that could be pattern matching
     if_else_chains = Regex.scan(~r/if\s+.*?do.*?else.*?end/s, content)
 
-    opportunities = opportunities ++ Enum.map(if_else_chains, fn [chain] ->
+    opportunities = opportunities ++ Enum.map(if_else_chains, fn [_chain] ->
       %{
         type: :use_pattern_matching,
         title: "Replace if-else with pattern matching",
@@ -663,7 +667,7 @@ defmodule RubberDuck.Actions.Project.SuggestRefactoring do
     # Find sequential error handling that could use 'with'
     case_sequences = Regex.scan(~r/case\s+.*?do.*?{:ok.*?case\s+.*?do/s, content)
 
-    Enum.map(case_sequences, fn [sequence] ->
+    Enum.map(case_sequences, fn [_sequence] ->
       %{
         type: :use_with,
         title: "Use 'with' for sequential operations",

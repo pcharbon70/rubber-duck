@@ -30,23 +30,21 @@ defmodule RubberDuck.Actions.Agent.SaveAgentState do
   end
 
   defp execute_save_process(params) do
-    try do
-      agent = params.agent
-      {:ok, agent_state} = get_or_create_agent_state(agent)
+    agent = params.agent
+    {:ok, agent_state} = get_or_create_agent_state(agent)
 
-      results = build_save_results(agent_state, agent, params)
-      update_checkpoint(agent_state)
+    results = build_save_results(agent_state, agent, params)
+    update_checkpoint(agent_state)
 
-      {:ok, results}
-    rescue
-      exception ->
-        Logger.error("Failed to save agent state: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-        {:error, %{
-          reason: {:exception, exception},
-          message: Exception.message(exception),
-          agent_name: params.agent[:name]
-        }}
-    end
+    {:ok, results}
+  rescue
+    exception ->
+      Logger.error("Failed to save agent state: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
+      {:error, %{
+        reason: {:exception, exception},
+        message: Exception.message(exception),
+        agent_name: params.agent[:name]
+      }}
   end
 
   defp build_save_results(agent_state, agent, params) do

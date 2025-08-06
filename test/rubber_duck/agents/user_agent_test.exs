@@ -3,13 +3,13 @@ defmodule RubberDuck.Agents.UserAgentTest do
 
   alias RubberDuck.Agents.UserAgent
   alias RubberDuck.Actions.User.{
-    CreateSession,
-    ValidateSession,
-    RecordInteraction,
     AnalyzeBehavior,
-    UpdatePreferences,
+    CreateSession,
     DetectPatterns,
-    GenerateSuggestions
+    GenerateSuggestions,
+    RecordInteraction,
+    UpdatePreferences,
+    ValidateSession
   }
 
   describe "agent initialization" do

@@ -193,28 +193,26 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   # Private functions
 
   defp record_provider_failure(agent, provider, error, payload) do
-    try do
-      history = Map.get(agent.state.provider_history, provider, %{
-        failures: [],
-        recoveries: [],
-        degradations: []
-      })
+    history = Map.get(agent.state.provider_history, provider, %{
+      failures: [],
+      recoveries: [],
+      degradations: []
+    })
 
-      failure_record = %{
-        error: error,
-        timestamp: DateTime.utc_now(),
-        metrics: payload[:metrics]
-      }
+    failure_record = %{
+      error: error,
+      timestamp: DateTime.utc_now(),
+      metrics: payload[:metrics]
+    }
 
-      updated_history = Map.update(history, :failures, [failure_record], &[failure_record | &1])
+    updated_history = Map.update(history, :failures, [failure_record], &[failure_record | &1])
 
-      %{agent | state: Map.put(agent.state, :provider_history,
-        Map.put(agent.state.provider_history, provider, updated_history))}
-    rescue
-      exception ->
-        Logger.error("Failed to record provider failure: #{inspect(exception)}")
-        agent  # Return unchanged agent on error
-    end
+    %{agent | state: Map.put(agent.state, :provider_history,
+      Map.put(agent.state.provider_history, provider, updated_history))}
+  rescue
+    exception ->
+      Logger.error("Failed to record provider failure: #{inspect(exception)}")
+      agent  # Return unchanged agent on error
   end
 
   defp record_provider_recovery(agent, provider, payload) do
@@ -244,31 +242,25 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   end
 
   defp take_corrective_action(agent, provider, error) do
-    try do
-      Logger.info("Taking corrective action for provider #{provider}")
+    Logger.info("Taking corrective action for provider #{provider}")
 
-      # Emit signal for other agents to avoid this provider temporarily
-      try do
-        RubberDuck.Signal.emit("llm.monitoring.provider.quarantine", %{
-          provider: provider,
-          reason: error,
-          duration_seconds: 300,  # 5 minute quarantine
-          suggested_alternatives: suggest_alternatives(agent, provider),
-          timestamp: DateTime.utc_now()
-        })
-      rescue
-        e -> Logger.warning("Failed to emit quarantine signal: #{inspect(e)}")
-      end
+    # Emit signal for other agents to avoid this provider temporarily
+    RubberDuck.Signal.emit("llm.monitoring.provider.quarantine", %{
+      provider: provider,
+      reason: error,
+      duration_seconds: 300,  # 5 minute quarantine
+      suggested_alternatives: suggest_alternatives(agent, provider),
+      timestamp: DateTime.utc_now()
+    })
 
-      # Record the action taken
-      updated_agent = record_corrective_action(agent, provider, :quarantine)
+    # Record the action taken
+    updated_agent = record_corrective_action(agent, provider, :quarantine)
 
-      {:ok, updated_agent}
-    rescue
-      exception ->
-        Logger.error("Corrective action failed: #{inspect(exception)}")
-        {:ok, agent}  # Continue with unchanged agent
-    end
+    {:ok, updated_agent}
+  rescue
+    exception ->
+      Logger.error("Corrective action failed: #{inspect(exception)}")
+      {:ok, agent}  # Continue with unchanged agent
   end
 
   defp learn_degradation_pattern(agent, provider, reason, payload) do
@@ -332,42 +324,36 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   end
 
   defp handle_system_health_crisis(agent, health_data) do
-    try do
-      Logger.error("System health crisis detected: #{inspect(health_data)}")
+    Logger.error("System health crisis detected: #{inspect(health_data)}")
 
-      # Emit crisis signal
-      try do
-        RubberDuck.Signal.emit("llm.monitoring.crisis", %{
-          health_ratio: health_data[:health_ratio],
-          failed_providers: health_data[:failed_count],
-          degraded_providers: health_data[:degraded_count],
-          recommended_actions: [
-            "Scale up healthy providers",
-            "Investigate root cause",
-            "Enable fallback modes",
-            "Alert operations team"
-          ],
-          timestamp: DateTime.utc_now()
-        })
-      rescue
-        e -> Logger.error("Failed to emit crisis signal: #{inspect(e)}")
+    # Emit crisis signal
+    RubberDuck.Signal.emit("llm.monitoring.crisis", %{
+      health_ratio: health_data[:health_ratio],
+      failed_providers: health_data[:failed_count],
+      degraded_providers: health_data[:degraded_count],
+      recommended_actions: [
+        "Scale up healthy providers",
+        "Investigate root cause",
+        "Enable fallback modes",
+        "Alert operations team"
+      ],
+      timestamp: DateTime.utc_now()
+    })
+
+    # Mark goal as critical
+    updated_goals = Enum.map(agent.state.goals, fn goal ->
+      if is_map(goal) && goal[:id] == "maintain_health" do
+        Map.put(goal, :status, :critical)
+      else
+        goal
       end
+    end)
 
-      # Mark goal as critical
-      updated_goals = Enum.map(agent.state.goals, fn goal ->
-        if is_map(goal) && goal[:id] == "maintain_health" do
-          Map.put(goal, :status, :critical)
-        else
-          goal
-        end
-      end)
-
-      {:ok, %{agent | state: Map.put(agent.state, :goals, updated_goals)}}
-    rescue
-      exception ->
-        Logger.error("Crisis handling failed: #{inspect(exception)}")
-        {:ok, agent}  # Continue with unchanged agent
-    end
+    {:ok, %{agent | state: Map.put(agent.state, :goals, updated_goals)}}
+  rescue
+    exception ->
+      Logger.error("Crisis handling failed: #{inspect(exception)}")
+      {:ok, agent}  # Continue with unchanged agent
   end
 
   defp record_fallback_event(agent, from_provider, to_provider) do

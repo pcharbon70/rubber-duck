@@ -45,7 +45,13 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
 
   defp matches_patterns?(path, patterns) do
     Enum.any?(patterns, fn pattern ->
-      PathGlob.match?(path, pattern)
+      # Simple pattern matching using wildcards
+      pattern_regex = pattern
+        |> String.replace("*", ".*")
+        |> String.replace("?", ".")
+        |> Regex.compile!()
+
+      Regex.match?(pattern_regex, path)
     end)
   end
 
@@ -243,16 +249,18 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
     deep_nesting_score + large_dir_score + naming_score + module_score
   end
 
-  defp suggest_structure_optimizations(structure, metrics) do
+  defp suggest_structure_optimizations(structure, _metrics) do
     optimizations = []
 
     # Suggest based on deep nesting
-    if length(structure.patterns.deep_nesting) > 0 do
-      optimizations = [{:flatten_structure, %{
+    optimizations = if length(structure.patterns.deep_nesting) > 0 do
+      [{:flatten_structure, %{
         directories: structure.patterns.deep_nesting,
         reason: "Deep nesting makes navigation difficult",
         impact: :medium
       }} | optimizations]
+    else
+      optimizations
     end
 
     # Suggest based on large directories
@@ -266,12 +274,14 @@ defmodule RubberDuck.Actions.Project.AnalyzeStructure do
     end)
 
     # Suggest module reorganization
-    if length(structure.patterns.module_organization.misplaced_modules) > 0 do
-      optimizations = [{:reorganize_modules, %{
+    optimizations = if length(structure.patterns.module_organization.misplaced_modules) > 0 do
+      [{:reorganize_modules, %{
         modules: structure.patterns.module_organization.misplaced_modules,
         reason: "Module paths don't match module names",
         impact: :medium
       }} | optimizations]
+    else
+      optimizations
     end
 
     # Suggest naming standardization

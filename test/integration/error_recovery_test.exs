@@ -8,8 +8,8 @@ defmodule RubberDuck.Integration.ErrorRecoveryTest do
   use RubberDuck.DataCase, async: false  # Not async due to process manipulation
 
   alias RubberDuck.Accounts
-  alias RubberDuck.Projects
   alias RubberDuck.HealthCheck
+  alias RubberDuck.Projects
 
   describe "Error handling and recovery" do
     setup do

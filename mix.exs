@@ -31,7 +31,7 @@ defmodule RubberDuck.MixProject do
       {:ash_postgres, "~> 2.0"},
       {:ash, "~> 3.0"},
       # Jido SDK
-      {:jido, "~> 1.0.0-rc.5"},
+      {:jido, "~> 1.2"},
       {:jason, "~> 1.4"},
       # Ash framework
       {:picosat_elixir, "~> 0.2"},
@@ -65,7 +65,10 @@ defmodule RubberDuck.MixProject do
       {:tower, "~> 0.6"},
       
       # PubSub for signal system
-      {:phoenix_pubsub, "~> 2.1"}
+      {:phoenix_pubsub, "~> 2.1"},
+      
+      # Code quality
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
