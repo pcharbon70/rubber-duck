@@ -11,9 +11,12 @@ defmodule RubberDuck.LLM.HealthMonitor do
 
   alias RubberDuck.LLM.ProviderRegistry
 
-  @check_interval 30_000  # 30 seconds
-  @error_threshold 0.5    # 50% error rate threshold
-  @min_samples 10         # Minimum samples for error rate calculation
+  # 30 seconds
+  @check_interval 30_000
+  # 50% error rate threshold
+  @error_threshold 0.5
+  # Minimum samples for error rate calculation
+  @min_samples 10
 
   # Client API
 
@@ -135,7 +138,10 @@ defmodule RubberDuck.LLM.HealthMonitor do
 
     # Check if provider should be marked as unhealthy
     if should_disable_provider?(updated_metrics) do
-      Logger.error("Disabling provider #{provider_name} due to high error rate: #{updated_metrics.error_rate}")
+      Logger.error(
+        "Disabling provider #{provider_name} due to high error rate: #{updated_metrics.error_rate}"
+      )
+
       ProviderRegistry.mark_unavailable(provider_name)
     end
 
@@ -172,20 +178,24 @@ defmodule RubberDuck.LLM.HealthMonitor do
         case result do
           :ok ->
             record_success(provider_name, response_time)
+
             ProviderRegistry.update_health(provider_name, %{
               available: true,
               last_error: nil,
               response_time_ms: response_time
             })
+
             :ok
 
           {:error, reason} ->
             record_failure(provider_name, reason)
+
             ProviderRegistry.update_health(provider_name, %{
               available: false,
               last_error: reason,
               response_time_ms: response_time
             })
+
             {:error, reason}
         end
 
@@ -195,11 +205,13 @@ defmodule RubberDuck.LLM.HealthMonitor do
   rescue
     error ->
       record_failure(provider_name, error)
+
       ProviderRegistry.update_health(provider_name, %{
         available: false,
         last_error: error,
         response_time_ms: 0
       })
+
       {:error, error}
   end
 

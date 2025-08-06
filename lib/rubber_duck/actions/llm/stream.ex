@@ -39,11 +39,12 @@ defmodule RubberDuck.Actions.LLM.Stream do
           # Wrap the stream to add monitoring and error handling
           monitored_stream = create_monitored_stream(stream, provider, start_time, chunk_timeout)
 
-          {:ok, %{
-            stream: monitored_stream,
-            provider: provider.name,
-            started_at: DateTime.utc_now()
-          }}
+          {:ok,
+           %{
+             stream: monitored_stream,
+             provider: provider.name,
+             started_at: DateTime.utc_now()
+           }}
 
         {:error, reason} ->
           duration = System.monotonic_time(:millisecond) - start_time
@@ -51,11 +52,12 @@ defmodule RubberDuck.Actions.LLM.Stream do
 
           Logger.warning("LLM streaming failed for provider #{provider.name}: #{inspect(reason)}")
 
-          {:error, %{
-            reason: reason,
-            provider: provider.name,
-            duration_ms: duration
-          }}
+          {:error,
+           %{
+             reason: reason,
+             provider: provider.name,
+             duration_ms: duration
+           }}
       end
     rescue
       exception ->
@@ -64,11 +66,12 @@ defmodule RubberDuck.Actions.LLM.Stream do
 
         Logger.error("LLM streaming crashed for provider #{provider.name}: #{inspect(exception)}")
 
-        {:error, %{
-          reason: {:exception, exception},
-          provider: provider.name,
-          duration_ms: 0
-        }}
+        {:error,
+         %{
+           reason: {:exception, exception},
+           provider: provider.name,
+           duration_ms: 0
+         }}
     end
   end
 
@@ -137,19 +140,23 @@ defmodule RubberDuck.Actions.LLM.Stream do
     case Task.yield(task, chunk_timeout) || Task.shutdown(task) do
       {:ok, {:ok, chunk}} ->
         handle_successful_chunk(chunk, state)
+
       {:ok, :done} ->
         handle_stream_completion(provider, start_time, state)
+
       nil ->
         handle_chunk_timeout(provider, state)
     end
   end
 
   defp handle_successful_chunk(chunk, state) do
-    new_state = %{state |
-      chunks_received: state.chunks_received + 1,
-      total_tokens: state.total_tokens + estimate_tokens(chunk),
-      last_chunk_time: System.monotonic_time(:millisecond)
+    new_state = %{
+      state
+      | chunks_received: state.chunks_received + 1,
+        total_tokens: state.total_tokens + estimate_tokens(chunk),
+        last_chunk_time: System.monotonic_time(:millisecond)
     }
+
     {[chunk], new_state}
   end
 
@@ -172,7 +179,9 @@ defmodule RubberDuck.Actions.LLM.Stream do
   end
 
   defp cleanup_stream(state) do
-    Logger.debug("Stream completed: #{state.chunks_received} chunks, ~#{state.total_tokens} tokens")
+    Logger.debug(
+      "Stream completed: #{state.chunks_received} chunks, ~#{state.total_tokens} tokens"
+    )
   end
 
   defp estimate_tokens(chunk) when is_binary(chunk) do

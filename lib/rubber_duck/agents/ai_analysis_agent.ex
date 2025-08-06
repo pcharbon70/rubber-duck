@@ -16,8 +16,9 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
       # Analysis scheduling
       analysis_queue: [type: {:list, :map}, default: []],
       scheduled_analyses: [type: :map, default: %{}],
-      last_analysis_at: [type: {:or, [:naive_datetime, :nil]}, default: nil],
-      analysis_interval: [type: :pos_integer, default: 3600],  # 1 hour default
+      last_analysis_at: [type: {:or, [:naive_datetime, nil]}, default: nil],
+      # 1 hour default
+      analysis_interval: [type: :pos_integer, default: 3600],
 
       # Quality tracking
       quality_metrics: [type: :map, default: %{}],
@@ -83,8 +84,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   """
   def handle_instruction({:analyze_project, project_id}, agent) do
     with {:ok, analysis_params} <- prepare_project_analysis(agent, project_id),
-         {:ok, result} <- execute_action(agent, RubberDuck.Actions.AI.RunAnalysis, analysis_params) do
-
+         {:ok, result} <-
+           execute_action(agent, RubberDuck.Actions.AI.RunAnalysis, analysis_params) do
       # Update agent state with analysis result
       updated_agent = update_analysis_history(agent, project_id, result)
 
@@ -101,16 +102,18 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
 
   def handle_instruction({:analyze_code_file, file_id}, agent) do
     with {:ok, analysis_params} <- prepare_file_analysis(agent, file_id),
-         {:ok, result} <- execute_action(agent, RubberDuck.Actions.AI.RunAnalysis, analysis_params) do
-
+         {:ok, result} <-
+           execute_action(agent, RubberDuck.Actions.AI.RunAnalysis, analysis_params) do
       # Assess quality of the analysis
-      {:ok, quality} = execute_action(agent, RubberDuck.Actions.AI.AssessQuality, %{
-        analysis_result: result,
-        historical_data: agent.state.quality_metrics
-      })
+      {:ok, quality} =
+        execute_action(agent, RubberDuck.Actions.AI.AssessQuality, %{
+          analysis_result: result,
+          historical_data: agent.state.quality_metrics
+        })
 
       # Update agent state
-      updated_agent = agent
+      updated_agent =
+        agent
         |> update_file_analysis(file_id, result)
         |> update_quality_metrics(quality)
 
@@ -127,6 +130,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
       {:ok, schedule_result} ->
         updated_agent = add_to_analysis_queue(agent, schedule_result)
         {:ok, schedule_result, updated_agent}
+
       error ->
         {error, agent}
     end
@@ -138,11 +142,13 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
            history: agent.state.feedback_history
          }) do
       {:ok, learning_result} ->
-        updated_agent = agent
+        updated_agent =
+          agent
           |> add_feedback_to_history(feedback)
           |> apply_learning_updates(learning_result)
 
         {:ok, learning_result, updated_agent}
+
       error ->
         {error, agent}
     end
@@ -161,6 +167,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
         emit_pattern_signal(patterns)
 
         {:ok, patterns, updated_agent}
+
       error ->
         {error, agent}
     end
@@ -175,6 +182,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
       {:ok, insights} ->
         updated_agent = cache_insights(agent, insights)
         {:ok, insights, updated_agent}
+
       error ->
         {error, agent}
     end
@@ -225,10 +233,14 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     Logger.info("Feedback received for analysis #{analysis_id}")
 
     # Process feedback and learn
-    handle_instruction({:process_feedback, %{
-      analysis_id: analysis_id,
-      feedback: feedback
-    }}, agent)
+    handle_instruction(
+      {:process_feedback,
+       %{
+         analysis_id: analysis_id,
+         feedback: feedback
+       }},
+      agent
+    )
   end
 
   @doc """
@@ -247,20 +259,22 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   # Private helper functions
 
   defp prepare_project_analysis(agent, project_id) do
-    {:ok, %{
-      project_id: project_id,
-      analysis_types: determine_analysis_types(agent, project_id),
-      priority: calculate_priority(agent, project_id),
-      context: build_analysis_context(agent, project_id)
-    }}
+    {:ok,
+     %{
+       project_id: project_id,
+       analysis_types: determine_analysis_types(agent, project_id),
+       priority: calculate_priority(agent, project_id),
+       context: build_analysis_context(agent, project_id)
+     }}
   end
 
   defp prepare_file_analysis(agent, file_id) do
-    {:ok, %{
-      file_id: file_id,
-      analysis_types: [:complexity, :quality, :security],
-      context: build_file_context(agent, file_id)
-    }}
+    {:ok,
+     %{
+       file_id: file_id,
+       analysis_types: [:complexity, :quality, :security],
+       context: build_file_context(agent, file_id)
+     }}
   end
 
   defp determine_analysis_types(agent, project_id) do
@@ -268,7 +282,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     base_types = [:general, :complexity, :quality]
 
     # Add types based on learned preferences
-    learned_types = agent.state.learned_preferences
+    learned_types =
+      agent.state.learned_preferences
       |> Map.get(project_id, %{})
       |> Map.get(:preferred_analyses, [])
 
@@ -303,7 +318,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp update_analysis_history(agent, project_id, result) do
-    history = agent.state.project_activity
+    history =
+      agent.state.project_activity
       |> Map.get(project_id, %{})
       |> Map.put(:last_analysis, DateTime.utc_now())
       |> Map.put(:last_result, result)
@@ -322,7 +338,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp update_file_analysis(agent, file_id, result) do
-    tracking = agent.state.file_change_tracking
+    tracking =
+      agent.state.file_change_tracking
       |> Map.get(file_id, %{})
       |> Map.put(:last_analysis, DateTime.utc_now())
       |> Map.put(:analysis_result, result)
@@ -336,16 +353,20 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp add_to_analysis_queue(agent, schedule_result) do
-    queue = [schedule_result | agent.state.analysis_queue]
+    queue =
+      [schedule_result | agent.state.analysis_queue]
       |> Enum.sort_by(& &1.priority)
-      |> Enum.take(100)  # Keep queue bounded
+      # Keep queue bounded
+      |> Enum.take(100)
 
     %{agent | state: Map.put(agent.state, :analysis_queue, queue)}
   end
 
   defp add_feedback_to_history(agent, feedback) do
-    history = [feedback | agent.state.feedback_history]
-      |> Enum.take(1000)  # Keep history bounded
+    history =
+      [feedback | agent.state.feedback_history]
+      # Keep history bounded
+      |> Enum.take(1000)
 
     %{agent | state: Map.put(agent.state, :feedback_history, history)}
   end
@@ -363,7 +384,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp update_improvement_targets(agent, areas) do
-    targets = areas ++ agent.state.improvement_targets
+    targets =
+      (areas ++ agent.state.improvement_targets)
       |> Enum.uniq_by(& &1.area)
       |> Enum.take(20)
 
@@ -376,7 +398,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp update_discovered_patterns(agent, patterns) do
-    discovered = (patterns ++ agent.state.discovered_patterns)
+    discovered =
+      (patterns ++ agent.state.discovered_patterns)
       |> Enum.uniq_by(& &1.signature)
       |> Enum.sort_by(& &1.confidence, :desc)
       |> Enum.take(500)
@@ -385,7 +408,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp cache_insights(agent, insights) do
-    cache = agent.state.insight_cache
+    cache =
+      agent.state.insight_cache
       |> Map.put(insights.context_id, insights)
       |> limit_cache_size(100)
 
@@ -393,6 +417,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp limit_cache_size(cache, max_size) when map_size(cache) <= max_size, do: cache
+
   defp limit_cache_size(cache, max_size) do
     cache
     |> Enum.sort_by(fn {_, v} -> v.timestamp end, :desc)
@@ -401,7 +426,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp track_project_activity(agent, project_id, changes) do
-    activity = agent.state.project_activity
+    activity =
+      agent.state.project_activity
       |> Map.get(project_id, %{})
       |> Map.put(:last_change, DateTime.utc_now())
       |> Map.update(:change_count, 1, &(&1 + 1))
@@ -411,7 +437,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp track_file_change(agent, file_id, changes) do
-    tracking = agent.state.file_change_tracking
+    tracking =
+      agent.state.file_change_tracking
       |> Map.get(file_id, %{})
       |> Map.put(:last_modified, DateTime.utc_now())
       |> Map.update(:modification_count, 1, &(&1 + 1))
@@ -426,23 +453,21 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     cond do
       # Always analyze if never analyzed
       is_nil(activity[:last_analysis]) -> true
-
       # Analyze if significant changes
       activity[:change_count] >= 10 -> true
-
       # Analyze if time threshold passed
       time_since_last_analysis(activity) > agent.state.analysis_interval -> true
-
       # Otherwise don't trigger
       true -> false
     end
   end
 
   defp significant_changes_detected?(agent, project_id) do
-    files = agent.state.file_change_tracking
+    files =
+      agent.state.file_change_tracking
       |> Enum.filter(fn {_, tracking} ->
         tracking[:project_id] == project_id and
-        tracking[:modification_count] > 3
+          tracking[:modification_count] > 3
       end)
 
     length(files) >= 5
@@ -451,6 +476,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   defp time_since_last_analysis(%{last_analysis: last}) when not is_nil(last) do
     DateTime.diff(DateTime.utc_now(), last)
   end
+
   defp time_since_last_analysis(_), do: :infinity
 
   defp schedule_project_analysis(agent, project_id) do
@@ -488,7 +514,10 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
         {:ok, _result, updated_agent} = execute_analysis(agent, analysis)
 
         # Remove from queue
-        final_agent = %{updated_agent | state: Map.put(updated_agent.state, :analysis_queue, rest)}
+        final_agent = %{
+          updated_agent
+          | state: Map.put(updated_agent.state, :analysis_queue, rest)
+        }
 
         {:ok, final_agent}
 
@@ -503,8 +532,10 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
       case process_next_analysis(acc_agent) do
         {:ok, new_agent} when new_agent.state.analysis_queue != [] ->
           {:cont, new_agent}
+
         {:ok, new_agent} ->
           {:halt, new_agent}
+
         _ ->
           {:halt, acc_agent}
       end
@@ -530,15 +561,16 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
 
     # Look for code patterns
     if result[:code_patterns] do
-      patterns ++ Enum.map(result.code_patterns, fn pattern ->
-        %{
-          type: :code,
-          signature: pattern.signature,
-          occurrences: pattern.count,
-          confidence: pattern.confidence || 0.8,
-          discovered_at: DateTime.utc_now()
-        }
-      end)
+      patterns ++
+        Enum.map(result.code_patterns, fn pattern ->
+          %{
+            type: :code,
+            signature: pattern.signature,
+            occurrences: pattern.count,
+            confidence: pattern.confidence || 0.8,
+            discovered_at: DateTime.utc_now()
+          }
+        end)
     else
       patterns
     end
@@ -549,7 +581,9 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     confidence = agent.state.pattern_confidence
 
     if result[:validated_patterns] do
-      updated_confidence = Enum.reduce(result.validated_patterns, confidence, &update_single_pattern_confidence/2)
+      updated_confidence =
+        Enum.reduce(result.validated_patterns, confidence, &update_single_pattern_confidence/2)
+
       %{agent | state: Map.put(agent.state, :pattern_confidence, updated_confidence)}
     else
       agent
@@ -597,6 +631,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp schedule_next_analysis_check do
-    Process.send_after(self(), :check_analysis_queue, 60_000)  # Check every minute
+    # Check every minute
+    Process.send_after(self(), :check_analysis_queue, 60_000)
   end
 end

@@ -23,14 +23,14 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
          :ok <- validate_optimizations(params.optimizations),
          {:ok, backup_id} <- create_backup(project, params),
          results <- apply_optimizations(project, params.optimizations, params) do
-
-      {:ok, %{
-        applied: count_successful(results),
-        failed: count_failed(results),
-        results: results,
-        backup_id: backup_id,
-        optimized_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         applied: count_successful(results),
+         failed: count_failed(results),
+         results: results,
+         backup_id: backup_id,
+         optimized_at: DateTime.utc_now()
+       }}
     end
   end
 
@@ -85,6 +85,7 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   end
 
   defp filter_optimizations(optimizations, [:all]), do: optimizations
+
   defp filter_optimizations(optimizations, filters) do
     Enum.filter(optimizations, fn opt ->
       opt.type in filters
@@ -114,15 +115,16 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   defp flatten_directory_structure(project, optimization) do
     directories = optimization.target.directories
 
-    results = Enum.map(directories, fn dir ->
-      flatten_single_directory(project, dir)
-    end)
+    results =
+      Enum.map(directories, fn dir ->
+        flatten_single_directory(project, dir)
+      end)
 
     %{
       optimization: optimization,
       success: Enum.all?(results, & &1.success),
       results: results,
-      files_moved: Enum.sum(Enum.map(results, & Map.get(&1, :files_moved, 0)))
+      files_moved: Enum.sum(Enum.map(results, &Map.get(&1, :files_moved, 0)))
     }
   rescue
     e ->
@@ -138,10 +140,11 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
       {:ok, files} ->
         dir_files = Enum.filter(files, &String.starts_with?(&1.path, directory))
 
-        moved = Enum.map(dir_files, fn file ->
-          new_path = calculate_flattened_path(file.path, directory)
-          move_file(file, new_path)
-        end)
+        moved =
+          Enum.map(dir_files, fn file ->
+            new_path = calculate_flattened_path(file.path, directory)
+            move_file(file, new_path)
+          end)
 
         %{
           directory: directory,
@@ -163,7 +166,8 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
     relevant_parts = Enum.drop(path_parts, length(base_parts))
 
     # Keep only meaningful directory names
-    flattened = relevant_parts
+    flattened =
+      relevant_parts
       |> Enum.reject(&redundant_directory?/1)
       |> Enum.join("/")
 
@@ -184,6 +188,7 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
           new_path: new_path,
           success: true
         }
+
       error ->
         %{
           original_path: file.path,
@@ -209,6 +214,7 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
     case Projects.list_code_files_by_project(project.id) do
       {:ok, files} ->
         process_directory_split(files, directory, file_count, optimization)
+
       _ ->
         %{
           optimization: optimization,
@@ -241,10 +247,11 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   defp move_files_to_subdirectory(subdir_name, files, base_directory) do
     new_subdir = Path.join(base_directory, subdir_name)
 
-    moved = Enum.map(files, fn file ->
-      new_path = Path.join(new_subdir, Path.basename(file.path))
-      move_file(file, new_path)
-    end)
+    moved =
+      Enum.map(files, fn file ->
+        new_path = Path.join(new_subdir, Path.basename(file.path))
+        move_file(file, new_path)
+      end)
 
     %{
       subdirectory: new_subdir,
@@ -312,9 +319,10 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
   defp reorganize_module_structure(project, optimization) do
     misplaced_modules = optimization.target.modules
 
-    results = Enum.map(misplaced_modules, fn module_info ->
-      relocate_module(project, module_info)
-    end)
+    results =
+      Enum.map(misplaced_modules, fn module_info ->
+        relocate_module(project, module_info)
+      end)
 
     %{
       optimization: optimization,
@@ -329,9 +337,10 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
     expected_path = module_info.expected_path
 
     # Query for code file by project_id and path
-    file = project.id
-           |> Projects.list_code_files_by_project()
-           |> Enum.find(fn f -> f.path == current_path end)
+    file =
+      project.id
+      |> Projects.list_code_files_by_project()
+      |> Enum.find(fn f -> f.path == current_path end)
 
     case file do
       nil ->
@@ -340,14 +349,15 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
           success: false,
           error: "File not found"
         }
+
       file ->
         # Update file path and module declaration
         updated_content = update_module_declaration(file.content, module_info.module)
 
         case Projects.update_code_file(file, %{
-          path: expected_path,
-          content: updated_content
-        }) do
+               path: expected_path,
+               content: updated_content
+             }) do
           {:ok, _} ->
             %{
               module: module_info.module,
@@ -355,6 +365,7 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
               old_path: current_path,
               new_path: expected_path
             }
+
           error ->
             %{
               module: module_info.module,
@@ -378,9 +389,10 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
     files_to_rename = optimization.target.files
     naming_convention = optimization.action.convention || :snake_case
 
-    results = Enum.map(files_to_rename, fn file_info ->
-      rename_file(project, file_info, naming_convention)
-    end)
+    results =
+      Enum.map(files_to_rename, fn file_info ->
+        rename_file(project, file_info, naming_convention)
+      end)
 
     %{
       optimization: optimization,
@@ -423,13 +435,15 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
 
   defp perform_rename(project, current_path, new_path) do
     # Query for code file by project_id and path
-    file = project.id
-           |> Projects.list_code_files_by_project()
-           |> Enum.find(fn f -> f.path == current_path end)
+    file =
+      project.id
+      |> Projects.list_code_files_by_project()
+      |> Enum.find(fn f -> f.path == current_path end)
 
     case file do
       nil ->
         {:error, "File not found at #{current_path}"}
+
       file ->
         update_file_path(file, current_path, new_path)
     end
@@ -444,6 +458,7 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
           old_name: Path.basename(current_path),
           new_name: Path.basename(new_path)
         }
+
       error ->
         %{
           file: current_path,
@@ -482,12 +497,16 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
     case optimization.type do
       :flatten_structure ->
         "Flatten #{length(optimization.target.directories)} directories"
+
       :split_directory ->
         "Split directory with #{optimization.target.file_count} files"
+
       :reorganize_modules ->
         "Reorganize #{length(optimization.target.modules)} misplaced modules"
+
       :standardize_naming ->
         "Standardize naming for #{length(optimization.target.files)} files"
+
       _ ->
         "Unknown optimization"
     end
@@ -501,24 +520,28 @@ defmodule RubberDuck.Actions.Project.OptimizeStructure do
           complexity_reduction: :high,
           navigation_improvement: :high
         }
+
       :split_directory ->
         %{
           files_affected: optimization.target.file_count,
           organization_improvement: :high,
           maintainability_improvement: :medium
         }
+
       :reorganize_modules ->
         %{
           modules_affected: length(optimization.target.modules),
           consistency_improvement: :high,
           discoverability_improvement: :medium
         }
+
       :standardize_naming ->
         %{
           files_affected: length(optimization.target.files),
           consistency_improvement: :medium,
           readability_improvement: :low
         }
+
       _ ->
         %{}
     end

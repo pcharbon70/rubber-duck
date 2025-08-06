@@ -29,9 +29,7 @@ defmodule RubberDuck.Agents.AgentExperience do
     destroy :prune do
       argument :retention_days, :integer, allow_nil?: false, default: 30
 
-      filter expr(
-        timestamp < datetime_add(now(), ^-1 * arg(:retention_days), :day)
-      )
+      filter expr(timestamp < datetime_add(now(), ^(-1) * arg(:retention_days), :day))
     end
 
     read :by_agent do
@@ -47,9 +45,10 @@ defmodule RubberDuck.Agents.AgentExperience do
       argument :hours, :integer, default: 24
 
       filter expr(
-        agent_state_id == ^arg(:agent_state_id) and
-        timestamp > datetime_add(now(), ^-1 * arg(:hours), :hour)
-      )
+               agent_state_id == ^arg(:agent_state_id) and
+                 timestamp > datetime_add(now(), ^(-1) * arg(:hours), :hour)
+             )
+
       prepare build(sort: [timestamp: :desc])
     end
   end

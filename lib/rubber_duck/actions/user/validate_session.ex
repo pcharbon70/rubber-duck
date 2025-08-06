@@ -31,7 +31,7 @@ defmodule RubberDuck.Actions.User.ValidateSession do
 
   defp find_session(agent, user_id, session_id) do
     sessions = Map.get(agent.state.active_sessions, user_id, [])
-    Enum.find(sessions, & &1.id == session_id)
+    Enum.find(sessions, &(&1.id == session_id))
   end
 
   defp session_active?(session, timeout_seconds) do

@@ -12,46 +12,54 @@ defmodule RubberDuck.LLM.ServiceTest do
 
     @impl true
     def complete(request, _config) do
-      {:ok, %{
-        id: "test_completion",
-        model: request.model,
-        choices: [%{
-          index: 0,
-          message: %{role: :assistant, content: "Test response"},
-          finish_reason: "stop"
-        }],
-        usage: %{
-          prompt_tokens: 10,
-          completion_tokens: 5,
-          total_tokens: 15
-        },
-        created: System.system_time(:second)
-      }}
+      {:ok,
+       %{
+         id: "test_completion",
+         model: request.model,
+         choices: [
+           %{
+             index: 0,
+             message: %{role: :assistant, content: "Test response"},
+             finish_reason: "stop"
+           }
+         ],
+         usage: %{
+           prompt_tokens: 10,
+           completion_tokens: 5,
+           total_tokens: 15
+         },
+         created: System.system_time(:second)
+       }}
     end
 
     @impl true
     def stream(_request, _config) do
-      stream = 0
-              |> Stream.iterate(&(&1 + 1))
-              |> Stream.take(3)
-              |> Stream.map(fn i -> "chunk_#{i}" end)
+      stream =
+        0
+        |> Stream.iterate(&(&1 + 1))
+        |> Stream.take(3)
+        |> Stream.map(fn i -> "chunk_#{i}" end)
+
       {:ok, stream}
     end
 
     @impl true
     def embed(_request, _config) do
-      {:ok, %{
-        data: [%{
-          index: 0,
-          embedding: [0.1, 0.2, 0.3]
-        }],
-        model: "test_model",
-        usage: %{
-          prompt_tokens: 5,
-          completion_tokens: 0,
-          total_tokens: 5
-        }
-      }}
+      {:ok,
+       %{
+         data: [
+           %{
+             index: 0,
+             embedding: [0.1, 0.2, 0.3]
+           }
+         ],
+         model: "test_model",
+         usage: %{
+           prompt_tokens: 5,
+           completion_tokens: 0,
+           total_tokens: 5
+         }
+       }}
     end
 
     @impl true
@@ -92,7 +100,8 @@ defmodule RubberDuck.LLM.ServiceTest do
     end
 
     # Register mock provider
-    provider_name = :mock_provider_#{System.unique_integer([:positive])}
+    # {System.unique_integer([:positive])}
+    provider_name = :mock_provider_
     Service.register_provider(provider_name, MockProvider, %{api_key: "test"})
     Process.sleep(10)
 
@@ -152,7 +161,8 @@ defmodule RubberDuck.LLM.ServiceTest do
 
   describe "register_provider/3" do
     test "registers valid provider" do
-      provider_name = :new_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :new_provider_
       config = %{api_key: "test_key"}
 
       assert :ok = Service.register_provider(provider_name, MockProvider, config)
@@ -166,11 +176,12 @@ defmodule RubberDuck.LLM.ServiceTest do
         # Not implementing the behavior
       end
 
-      provider_name = :invalid_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :invalid_provider_
       config = %{api_key: "test_key"}
 
       assert {:error, :invalid_provider_module} =
-        Service.register_provider(provider_name, InvalidProvider, config)
+               Service.register_provider(provider_name, InvalidProvider, config)
     end
   end
 
@@ -179,7 +190,7 @@ defmodule RubberDuck.LLM.ServiceTest do
       status = Service.provider_status()
 
       assert is_list(status)
-      provider_status = Enum.find(status, & &1.name == provider_name)
+      provider_status = Enum.find(status, &(&1.name == provider_name))
 
       assert provider_status != nil
       assert provider_status.available == true

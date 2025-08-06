@@ -69,6 +69,7 @@ defmodule RubberDuck.Application do
         Logger.info("RubberDuck application started successfully")
         configure_jido_signal_system()
         {:ok, pid}
+
       {:error, reason} = error ->
         Logger.error("Failed to start RubberDuck application: #{inspect(reason)}")
         error

@@ -28,16 +28,16 @@ defmodule RubberDuck.Actions.AI.ScheduleAnalysis do
     with {:ok, schedule} <- determine_optimal_schedule(params),
          {:ok, validated} <- validate_schedule(schedule),
          {:ok, prioritized} <- apply_priority_rules(validated, params.priority) do
-
-      {:ok, %{
-        scheduled_at: prioritized.scheduled_at,
-        analysis_types: prioritized.analysis_types,
-        priority: prioritized.priority,
-        estimated_duration: estimate_duration(prioritized),
-        resource_requirements: calculate_resources(prioritized),
-        trigger: params.trigger,
-        metadata: build_schedule_metadata(prioritized, params)
-      }}
+      {:ok,
+       %{
+         scheduled_at: prioritized.scheduled_at,
+         analysis_types: prioritized.analysis_types,
+         priority: prioritized.priority,
+         estimated_duration: estimate_duration(prioritized),
+         resource_requirements: calculate_resources(prioritized),
+         trigger: params.trigger,
+         metadata: build_schedule_metadata(prioritized, params)
+       }}
     end
   end
 
@@ -57,10 +57,14 @@ defmodule RubberDuck.Actions.AI.ScheduleAnalysis do
   defp calculate_optimal_time(current_time, params) do
     case params.priority do
       :immediate -> current_time
-      :high -> DateTime.add(current_time, 300, :second)  # 5 minutes
-      :normal -> DateTime.add(current_time, 1800, :second)  # 30 minutes
-      :low -> DateTime.add(current_time, 7200, :second)  # 2 hours
-      _ -> DateTime.add(current_time, 3600, :second)  # 1 hour default
+      # 5 minutes
+      :high -> DateTime.add(current_time, 300, :second)
+      # 30 minutes
+      :normal -> DateTime.add(current_time, 1800, :second)
+      # 2 hours
+      :low -> DateTime.add(current_time, 7200, :second)
+      # 1 hour default
+      _ -> DateTime.add(current_time, 3600, :second)
     end
   end
 
@@ -68,12 +72,13 @@ defmodule RubberDuck.Actions.AI.ScheduleAnalysis do
     base_types = params.analysis_types || [:general]
 
     # Add types based on trigger
-    trigger_types = case params.trigger do
-      :commit -> [:complexity, :quality]
-      :pr -> [:security, :performance, :quality]
-      :major_change -> [:complexity, :security, :performance]
-      _ -> []
-    end
+    trigger_types =
+      case params.trigger do
+        :commit -> [:complexity, :quality]
+        :pr -> [:security, :performance, :quality]
+        :major_change -> [:complexity, :security, :performance]
+        _ -> []
+      end
 
     Enum.uniq(base_types ++ trigger_types)
   end
@@ -99,17 +104,19 @@ defmodule RubberDuck.Actions.AI.ScheduleAnalysis do
   defp validate_schedule(schedule) do
     errors = []
 
-    errors = if DateTime.compare(schedule.scheduled_at, DateTime.utc_now()) == :lt do
-      ["Scheduled time is in the past" | errors]
-    else
-      errors
-    end
+    errors =
+      if DateTime.compare(schedule.scheduled_at, DateTime.utc_now()) == :lt do
+        ["Scheduled time is in the past" | errors]
+      else
+        errors
+      end
 
-    errors = if Enum.empty?(schedule.analysis_types) do
-      ["No analysis types specified" | errors]
-    else
-      errors
-    end
+    errors =
+      if Enum.empty?(schedule.analysis_types) do
+        ["No analysis types specified" | errors]
+      else
+        errors
+      end
 
     if Enum.empty?(errors) do
       {:ok, schedule}
@@ -119,42 +126,48 @@ defmodule RubberDuck.Actions.AI.ScheduleAnalysis do
   end
 
   defp apply_priority_rules(schedule, priority) do
-    adjusted = case priority do
-      :immediate ->
-        %{schedule |
-          scheduled_at: DateTime.utc_now(),
-          priority: :immediate,
-          analysis_types: Enum.take(schedule.analysis_types, 2)  # Limit for speed
-        }
+    adjusted =
+      case priority do
+        :immediate ->
+          %{
+            schedule
+            | scheduled_at: DateTime.utc_now(),
+              priority: :immediate,
+              # Limit for speed
+              analysis_types: Enum.take(schedule.analysis_types, 2)
+          }
 
-      :high ->
-        %{schedule |
-          priority: :high,
-          analysis_types: prioritize_critical_types(schedule.analysis_types)
-        }
+        :high ->
+          %{
+            schedule
+            | priority: :high,
+              analysis_types: prioritize_critical_types(schedule.analysis_types)
+          }
 
-      _ ->
-        Map.put(schedule, :priority, priority)
-    end
+        _ ->
+          Map.put(schedule, :priority, priority)
+      end
 
     {:ok, adjusted}
   end
 
   defp prioritize_critical_types(types) do
     critical = [:security, :performance]
-    critical_first = Enum.filter(types, & &1 in critical)
-    others = Enum.filter(types, & &1 not in critical)
+    critical_first = Enum.filter(types, &(&1 in critical))
+    others = Enum.filter(types, &(&1 not in critical))
     critical_first ++ others
   end
 
   defp estimate_duration(schedule) do
-    base_duration = length(schedule.analysis_types) * 30  # 30 seconds per type
+    # 30 seconds per type
+    base_duration = length(schedule.analysis_types) * 30
 
-    scope_multiplier = case schedule.scope do
-      :file -> 1
-      :project -> 5
-      :workspace -> 10
-    end
+    scope_multiplier =
+      case schedule.scope do
+        :file -> 1
+        :project -> 5
+        :workspace -> 10
+      end
 
     base_duration * scope_multiplier
   end
@@ -179,11 +192,12 @@ defmodule RubberDuck.Actions.AI.ScheduleAnalysis do
     base_mb = 100
     type_mb = length(schedule.analysis_types) * 50
 
-    scope_multiplier = case schedule.scope do
-      :file -> 1
-      :project -> 3
-      :workspace -> 5
-    end
+    scope_multiplier =
+      case schedule.scope do
+        :file -> 1
+        :project -> 3
+        :workspace -> 5
+      end
 
     (base_mb + type_mb) * scope_multiplier
   end

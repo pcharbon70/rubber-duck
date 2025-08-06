@@ -4,11 +4,12 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
   alias RubberDuck.Projects
 
   setup do
-    {:ok, project} = Projects.create_project(%{
-      name: "Dependency Test Project",
-      language: "elixir",
-      status: :active
-    })
+    {:ok, project} =
+      Projects.create_project(%{
+        name: "Dependency Test Project",
+        language: "elixir",
+        status: :active
+      })
 
     %{project: project}
   end
@@ -16,33 +17,34 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
   describe "run/2 - Elixir projects" do
     test "detects Mix dependencies", %{project: project} do
       # Create mix.exs file
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "mix.exs",
-        content: """
-        defmodule MyApp.MixProject do
-          use Mix.Project
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "mix.exs",
+          content: """
+          defmodule MyApp.MixProject do
+            use Mix.Project
 
-          def project do
-            [
-              app: :my_app,
-              deps: deps()
-            ]
-          end
+            def project do
+              [
+                app: :my_app,
+                deps: deps()
+              ]
+            end
 
-          defp deps do
-            [
-              {:phoenix, "~> 1.7.0"},
-              {:ecto_sql, "~> 3.10"},
-              {:jason, "~> 1.4"},
-              {:plug_cowboy, "~> 2.5", only: :dev}
-            ]
+            defp deps do
+              [
+                {:phoenix, "~> 1.7.0"},
+                {:ecto_sql, "~> 3.10"},
+                {:jason, "~> 1.4"},
+                {:plug_cowboy, "~> 2.5", only: :dev}
+              ]
+            end
           end
-        end
-        """,
-        language: "elixir",
-        size_bytes: 300
-      })
+          """,
+          language: "elixir",
+          size_bytes: 300
+        })
 
       params = %{
         project_id: project.id,
@@ -54,29 +56,30 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
       assert {:ok, result} = DetectDependencies.run(params, %{})
 
       assert length(result.dependencies) == 4
-      assert Enum.any?(result.dependencies, & &1.name == "phoenix")
-      assert Enum.any?(result.dependencies, & &1.name == "ecto_sql")
+      assert Enum.any?(result.dependencies, &(&1.name == "phoenix"))
+      assert Enum.any?(result.dependencies, &(&1.name == "ecto_sql"))
     end
 
     test "excludes dev dependencies when requested", %{project: project} do
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "mix.exs",
-        content: """
-        defmodule MyApp.MixProject do
-          use Mix.Project
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "mix.exs",
+          content: """
+          defmodule MyApp.MixProject do
+            use Mix.Project
 
-          defp deps do
-            [
-              {:phoenix, "~> 1.7.0"},
-              {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
-            ]
+            defp deps do
+              [
+                {:phoenix, "~> 1.7.0"},
+                {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+              ]
+            end
           end
-        end
-        """,
-        language: "elixir",
-        size_bytes: 200
-      })
+          """,
+          language: "elixir",
+          size_bytes: 200
+        })
 
       params = %{
         project_id: project.id,
@@ -93,24 +96,25 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
     end
 
     test "detects git dependencies", %{project: project} do
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "mix.exs",
-        content: """
-        defmodule MyApp.MixProject do
-          use Mix.Project
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "mix.exs",
+          content: """
+          defmodule MyApp.MixProject do
+            use Mix.Project
 
-          defp deps do
-            [
-              {:my_dep, git: "https://github.com/example/my_dep.git"},
-              {:another_dep, git: "https://github.com/example/another.git", tag: "v1.0"}
-            ]
+            defp deps do
+              [
+                {:my_dep, git: "https://github.com/example/my_dep.git"},
+                {:another_dep, git: "https://github.com/example/another.git", tag: "v1.0"}
+              ]
+            end
           end
-        end
-        """,
-        language: "elixir",
-        size_bytes: 250
-      })
+          """,
+          language: "elixir",
+          size_bytes: 250
+        })
 
       params = %{
         project_id: project.id,
@@ -121,9 +125,9 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
 
       {:ok, result} = DetectDependencies.run(params, %{})
 
-      git_deps = Enum.filter(result.dependencies, & &1.type == :git)
+      git_deps = Enum.filter(result.dependencies, &(&1.type == :git))
       assert length(git_deps) == 2
-      assert Enum.all?(git_deps, & &1.git_url != nil)
+      assert Enum.all?(git_deps, &(&1.git_url != nil))
     end
   end
 
@@ -132,27 +136,28 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
       # Update project language
       Projects.update_project(project, %{language: "javascript"})
 
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "package.json",
-        content: """
-        {
-          "name": "my-app",
-          "version": "1.0.0",
-          "dependencies": {
-            "react": "^18.2.0",
-            "react-dom": "^18.2.0",
-            "axios": "^1.4.0"
-          },
-          "devDependencies": {
-            "webpack": "^5.88.0",
-            "jest": "^29.5.0"
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "package.json",
+          content: """
+          {
+            "name": "my-app",
+            "version": "1.0.0",
+            "dependencies": {
+              "react": "^18.2.0",
+              "react-dom": "^18.2.0",
+              "axios": "^1.4.0"
+            },
+            "devDependencies": {
+              "webpack": "^5.88.0",
+              "jest": "^29.5.0"
+            }
           }
-        }
-        """,
-        language: "json",
-        size_bytes: 300
-      })
+          """,
+          language: "json",
+          size_bytes: 300
+        })
 
       params = %{
         project_id: project.id,
@@ -165,10 +170,10 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
 
       assert length(result.dependencies) == 5
 
-      prod_deps = Enum.filter(result.dependencies, & &1.scope == :runtime)
+      prod_deps = Enum.filter(result.dependencies, &(&1.scope == :runtime))
       assert length(prod_deps) == 3
 
-      dev_deps = Enum.filter(result.dependencies, & &1.scope == :dev)
+      dev_deps = Enum.filter(result.dependencies, &(&1.scope == :dev))
       assert length(dev_deps) == 2
     end
   end
@@ -177,20 +182,21 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
     test "detects pip dependencies", %{project: project} do
       Projects.update_project(project, %{language: "python"})
 
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "requirements.txt",
-        content: """
-        Django==4.2.0
-        requests>=2.28.0
-        numpy~=1.24.0
-        pandas>1.5.0,<2.0.0
-        # This is a comment
-        pytest==7.3.0
-        """,
-        language: "text",
-        size_bytes: 150
-      })
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "requirements.txt",
+          content: """
+          Django==4.2.0
+          requests>=2.28.0
+          numpy~=1.24.0
+          pandas>1.5.0,<2.0.0
+          # This is a comment
+          pytest==7.3.0
+          """,
+          language: "text",
+          size_bytes: 150
+        })
 
       params = %{
         project_id: project.id,
@@ -202,32 +208,33 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
       {:ok, result} = DetectDependencies.run(params, %{})
 
       assert length(result.dependencies) == 5
-      assert Enum.any?(result.dependencies, & &1.name == "Django")
-      assert Enum.any?(result.dependencies, & &1.name == "pytest")
+      assert Enum.any?(result.dependencies, &(&1.name == "Django"))
+      assert Enum.any?(result.dependencies, &(&1.name == "pytest"))
     end
   end
 
   describe "dependency analysis" do
     test "calculates dependency health score", %{project: project} do
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "mix.exs",
-        content: """
-        defmodule MyApp.MixProject do
-          use Mix.Project
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "mix.exs",
+          content: """
+          defmodule MyApp.MixProject do
+            use Mix.Project
 
-          defp deps do
-            [
-              {:phoenix, "~> 1.7.0"},
-              {:old_dep, "~> 0.1.0"},
-              {:another_old, "~> 0.2.0"}
-            ]
+            defp deps do
+              [
+                {:phoenix, "~> 1.7.0"},
+                {:old_dep, "~> 0.1.0"},
+                {:another_old, "~> 0.2.0"}
+              ]
+            end
           end
-        end
-        """,
-        language: "elixir",
-        size_bytes: 200
-      })
+          """,
+          language: "elixir",
+          size_bytes: 200
+        })
 
       params = %{
         project_id: project.id,
@@ -245,33 +252,35 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
 
     test "detects duplicate dependencies", %{project: project} do
       # Create multiple config files that might have duplicates
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "mix.exs",
-        content: """
-        defmodule MyApp.MixProject do
-          defp deps do
-            [{:phoenix, "~> 1.7.0"}]
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "mix.exs",
+          content: """
+          defmodule MyApp.MixProject do
+            defp deps do
+              [{:phoenix, "~> 1.7.0"}]
+            end
           end
-        end
-        """,
-        language: "elixir",
-        size_bytes: 100
-      })
+          """,
+          language: "elixir",
+          size_bytes: 100
+        })
 
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "other_mix.exs",
-        content: """
-        defmodule Other.MixProject do
-          defp deps do
-            [{:phoenix, "~> 1.6.0"}]
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "other_mix.exs",
+          content: """
+          defmodule Other.MixProject do
+            defp deps do
+              [{:phoenix, "~> 1.6.0"}]
+            end
           end
-        end
-        """,
-        language: "elixir",
-        size_bytes: 100
-      })
+          """,
+          language: "elixir",
+          size_bytes: 100
+        })
 
       params = %{
         project_id: project.id,
@@ -287,23 +296,24 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
     end
 
     test "builds dependency graph", %{project: project} do
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "mix.exs",
-        content: """
-        defmodule MyApp.MixProject do
-          defp deps do
-            [
-              {:phoenix, "~> 1.7.0"},
-              {:ecto, "~> 3.10"},
-              {:postgrex, "~> 0.17"}
-            ]
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "mix.exs",
+          content: """
+          defmodule MyApp.MixProject do
+            defp deps do
+              [
+                {:phoenix, "~> 1.7.0"},
+                {:ecto, "~> 3.10"},
+                {:postgrex, "~> 0.17"}
+              ]
+            end
           end
-        end
-        """,
-        language: "elixir",
-        size_bytes: 200
-      })
+          """,
+          language: "elixir",
+          size_bytes: 200
+        })
 
       params = %{
         project_id: project.id,
@@ -333,13 +343,14 @@ defmodule RubberDuck.Actions.Project.DetectDependenciesTest do
     end
 
     test "handles malformed dependency files", %{project: project} do
-      {:ok, _} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "package.json",
-        content: "{ invalid json }",
-        language: "json",
-        size_bytes: 20
-      })
+      {:ok, _} =
+        Projects.create_code_file(%{
+          project_id: project.id,
+          path: "package.json",
+          content: "{ invalid json }",
+          language: "json",
+          size_bytes: 20
+        })
 
       params = %{
         project_id: project.id,

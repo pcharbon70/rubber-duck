@@ -46,25 +46,28 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     }
 
     # Add impact assessment if enabled
-    result = if state.opts.impact_analysis do
-      Map.put(result, :impact, assess_change_impact(signal.data, state))
-    else
-      result
-    end
+    result =
+      if state.opts.impact_analysis do
+        Map.put(result, :impact, assess_change_impact(signal.data, state))
+      else
+        result
+      end
 
     # Add performance analysis if enabled
-    result = if state.opts.performance_check do
-      Map.put(result, :performance, analyze_performance(signal.data))
-    else
-      result
-    end
+    result =
+      if state.opts.performance_check do
+        Map.put(result, :performance, analyze_performance(signal.data))
+      else
+        result
+      end
 
     # Add security scan if enabled
-    result = if state.opts.security_scan do
-      Map.put(result, :security, scan_security_issues(signal.data))
-    else
-      result
-    end
+    result =
+      if state.opts.security_scan do
+        Map.put(result, :security, scan_security_issues(signal.data))
+      else
+        result
+      end
 
     # Update state with analysis history
     updated_state = track_analysis_history(state, signal.data.file_path, result)
@@ -142,11 +145,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     }
 
     # Track security issues in state
-    updated_state = if length(security_scan.vulnerabilities) > 0 do
-      track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
-    else
-      state
-    end
+    updated_state =
+      if length(security_scan.vulnerabilities) > 0 do
+        track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
+      else
+        state
+      end
 
     {:ok, security_scan, updated_state}
   end
@@ -176,27 +180,38 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp detect_issues(data, depth) do
     issues = []
 
-    issues = if data[:complexity] > 10 do
-      [%{type: :complexity, severity: :high, message: "High complexity detected", line: data[:line]} | issues]
-    else
-      issues
-    end
+    issues =
+      if data[:complexity] > 10 do
+        [
+          %{
+            type: :complexity,
+            severity: :high,
+            message: "High complexity detected",
+            line: data[:line]
+          }
+          | issues
+        ]
+      else
+        issues
+      end
 
-    issues = if data[:lines] > 100 do
-      [%{type: :length, severity: :medium, message: "File is too long"} | issues]
-    else
-      issues
-    end
+    issues =
+      if data[:lines] > 100 do
+        [%{type: :length, severity: :medium, message: "File is too long"} | issues]
+      else
+        issues
+      end
 
     # Add more issues for deeper analysis
-    issues = if depth in [:moderate, :deep] do
-      issues
-      |> detect_naming_issues(data)
-      |> detect_documentation_issues(data)
-      |> detect_pattern_violations(data)
-    else
-      issues
-    end
+    issues =
+      if depth in [:moderate, :deep] do
+        issues
+        |> detect_naming_issues(data)
+        |> detect_documentation_issues(data)
+        |> detect_pattern_violations(data)
+      else
+        issues
+      end
 
     issues
   end
@@ -204,27 +219,32 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp generate_suggestions(data, depth) do
     suggestions = []
 
-    suggestions = if data[:complexity] > 10 do
-      [%{
-        type: :refactor,
-        priority: :high,
-        action: "Consider breaking down complex functions",
-        impact: :high,
-        effort: :medium
-      } | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if data[:complexity] > 10 do
+        [
+          %{
+            type: :refactor,
+            priority: :high,
+            action: "Consider breaking down complex functions",
+            impact: :high,
+            effort: :medium
+          }
+          | suggestions
+        ]
+      else
+        suggestions
+      end
 
     # Add more suggestions for deeper analysis
-    suggestions = if depth in [:moderate, :deep] do
-      suggestions
-      |> add_performance_suggestions(data)
-      |> add_maintainability_suggestions(data)
-      |> add_testing_suggestions(data)
-    else
-      suggestions
-    end
+    suggestions =
+      if depth in [:moderate, :deep] do
+        suggestions
+        |> add_performance_suggestions(data)
+        |> add_maintainability_suggestions(data)
+        |> add_testing_suggestions(data)
+      else
+        suggestions
+      end
 
     suggestions
   end
@@ -241,17 +261,19 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp build_recommendations(data) do
     recs = []
 
-    recs = if data[:coverage] < 0.8 do
-      ["Increase test coverage to at least 80%" | recs]
-    else
-      recs
-    end
+    recs =
+      if data[:coverage] < 0.8 do
+        ["Increase test coverage to at least 80%" | recs]
+      else
+        recs
+      end
 
-    recs = if data[:duplication] > 0.1 do
-      ["Reduce code duplication" | recs]
-    else
-      recs
-    end
+    recs =
+      if data[:duplication] > 0.1 do
+        ["Reduce code duplication" | recs]
+      else
+        recs
+      end
 
     recs
   end
@@ -303,23 +325,26 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp assess_change_risk(changes, _state) do
     risk_factors = []
 
-    risk_factors = if changes[:breaking_changes] do
-      [{:breaking_changes, 0.8} | risk_factors]
-    else
-      risk_factors
-    end
+    risk_factors =
+      if changes[:breaking_changes] do
+        [{:breaking_changes, 0.8} | risk_factors]
+      else
+        risk_factors
+      end
 
-    risk_factors = if changes[:complexity_delta] > 5 do
-      [{:high_complexity_increase, 0.6} | risk_factors]
-    else
-      risk_factors
-    end
+    risk_factors =
+      if changes[:complexity_delta] > 5 do
+        [{:high_complexity_increase, 0.6} | risk_factors]
+      else
+        risk_factors
+      end
 
-    risk_factors = if changes[:test_coverage_delta] < -0.1 do
-      [{:reduced_test_coverage, 0.7} | risk_factors]
-    else
-      risk_factors
-    end
+    risk_factors =
+      if changes[:test_coverage_delta] < -0.1 do
+        [{:reduced_test_coverage, 0.7} | risk_factors]
+      else
+        risk_factors
+      end
 
     risk_score = Enum.reduce(risk_factors, 0.0, fn {_, weight}, acc -> acc + weight end)
 
@@ -383,11 +408,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp detect_database_queries(content) do
     queries = []
 
-    queries = if String.contains?(content, "Repo.") do
-      [%{type: :ecto, count: count_pattern(content, ~r/Repo\.\w+/)} | queries]
-    else
-      queries
-    end
+    queries =
+      if String.contains?(content, "Repo.") do
+        [%{type: :ecto, count: count_pattern(content, ~r/Repo\.\w+/)} | queries]
+      else
+        queries
+      end
 
     queries
   end
@@ -395,17 +421,22 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp identify_bottlenecks(content) do
     bottlenecks = []
 
-    bottlenecks = if String.contains?(content, "Enum.") && String.contains?(content, "|> Enum.") do
-      [%{type: :multiple_iterations, suggestion: "Consider using Stream or single pass"} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if String.contains?(content, "Enum.") && String.contains?(content, "|> Enum.") do
+        [
+          %{type: :multiple_iterations, suggestion: "Consider using Stream or single pass"}
+          | bottlenecks
+        ]
+      else
+        bottlenecks
+      end
 
-    bottlenecks = if count_pattern(content, ~r/\bn\+1\b|N\+1/) > 0 do
-      [%{type: :n_plus_one, suggestion: "Potential N+1 query pattern detected"} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if count_pattern(content, ~r/\bn\+1\b|N\+1/) > 0 do
+        [%{type: :n_plus_one, suggestion: "Potential N+1 query pattern detected"} | bottlenecks]
+      else
+        bottlenecks
+      end
 
     bottlenecks
   end
@@ -413,15 +444,19 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp suggest_performance_optimizations(content) do
     optimizations = []
 
-    optimizations = if String.contains?(content, "length(") && String.contains?(content, "== 0") do
-      [%{
-        pattern: "length() == 0",
-        replacement: "Enum.empty?()",
-        impact: :low
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if String.contains?(content, "length(") && String.contains?(content, "== 0") do
+        [
+          %{
+            pattern: "length() == 0",
+            replacement: "Enum.empty?()",
+            impact: :low
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -439,17 +474,25 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp scan_for_vulnerabilities(content, _file_type) do
     vulnerabilities = []
 
-    vulnerabilities = if String.contains?(content, "eval(") || String.contains?(content, "Code.eval_string") do
-      [%{type: :code_injection, severity: :critical, message: "Potential code injection"} | vulnerabilities]
-    else
-      vulnerabilities
-    end
+    vulnerabilities =
+      if String.contains?(content, "eval(") || String.contains?(content, "Code.eval_string") do
+        [
+          %{type: :code_injection, severity: :critical, message: "Potential code injection"}
+          | vulnerabilities
+        ]
+      else
+        vulnerabilities
+      end
 
-    vulnerabilities = if Regex.match?(~r/password|secret|token|key.*=.*"[^"]+"/i, content) do
-      [%{type: :hardcoded_secret, severity: :high, message: "Potential hardcoded secret"} | vulnerabilities]
-    else
-      vulnerabilities
-    end
+    vulnerabilities =
+      if Regex.match?(~r/password|secret|token|key.*=.*"[^"]+"/i, content) do
+        [
+          %{type: :hardcoded_secret, severity: :high, message: "Potential hardcoded secret"}
+          | vulnerabilities
+        ]
+      else
+        vulnerabilities
+      end
 
     vulnerabilities
   end
@@ -457,17 +500,19 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp detect_unsafe_operations(content) do
     unsafe_ops = []
 
-    unsafe_ops = if String.contains?(content, "System.cmd") do
-      [%{operation: "System.cmd", risk: :command_injection} | unsafe_ops]
-    else
-      unsafe_ops
-    end
+    unsafe_ops =
+      if String.contains?(content, "System.cmd") do
+        [%{operation: "System.cmd", risk: :command_injection} | unsafe_ops]
+      else
+        unsafe_ops
+      end
 
-    unsafe_ops = if String.contains?(content, ":os.cmd") do
-      [%{operation: ":os.cmd", risk: :command_injection} | unsafe_ops]
-    else
-      unsafe_ops
-    end
+    unsafe_ops =
+      if String.contains?(content, ":os.cmd") do
+        [%{operation: ":os.cmd", risk: :command_injection} | unsafe_ops]
+      else
+        unsafe_ops
+      end
 
     unsafe_ops
   end
@@ -483,11 +528,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp check_authentication_issues(content) do
     issues = []
 
-    issues = if String.contains?(content, "skip_before_action :authenticate") do
-      [%{type: :skipped_auth, message: "Authentication bypass detected"} | issues]
-    else
-      issues
-    end
+    issues =
+      if String.contains?(content, "skip_before_action :authenticate") do
+        [%{type: :skipped_auth, message: "Authentication bypass detected"} | issues]
+      else
+        issues
+      end
 
     issues
   end
@@ -513,9 +559,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp track_analysis_history(state, file_path, result) do
     history = Map.get(state, :analysis_history, %{})
 
-    updated_history = Map.update(history, file_path, [result], fn prev ->
-      [result | Enum.take(prev, 9)]
-    end)
+    updated_history =
+      Map.update(history, file_path, [result], fn prev ->
+        [result | Enum.take(prev, 9)]
+      end)
 
     Map.put(state, :analysis_history, updated_history)
   end
@@ -544,7 +591,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   defp detect_pattern_violations(issues, data) do
     if data[:pattern_violations] do
-      [%{type: :pattern, severity: :medium, message: "Design pattern violations detected"} | issues]
+      [
+        %{type: :pattern, severity: :medium, message: "Design pattern violations detected"}
+        | issues
+      ]
     else
       issues
     end
@@ -552,13 +602,16 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   defp add_performance_suggestions(suggestions, data) do
     if data[:performance_issues] do
-      [%{
-        type: :performance,
-        priority: :medium,
-        action: "Optimize performance bottlenecks",
-        impact: :medium,
-        effort: :medium
-      } | suggestions]
+      [
+        %{
+          type: :performance,
+          priority: :medium,
+          action: "Optimize performance bottlenecks",
+          impact: :medium,
+          effort: :medium
+        }
+        | suggestions
+      ]
     else
       suggestions
     end
@@ -566,13 +619,16 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   defp add_maintainability_suggestions(suggestions, data) do
     if data[:maintainability_score] < 0.6 do
-      [%{
-        type: :maintainability,
-        priority: :medium,
-        action: "Improve code maintainability",
-        impact: :medium,
-        effort: :low
-      } | suggestions]
+      [
+        %{
+          type: :maintainability,
+          priority: :medium,
+          action: "Improve code maintainability",
+          impact: :medium,
+          effort: :low
+        }
+        | suggestions
+      ]
     else
       suggestions
     end
@@ -580,13 +636,16 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   defp add_testing_suggestions(suggestions, data) do
     if data[:test_coverage] < 0.8 do
-      [%{
-        type: :testing,
-        priority: :high,
-        action: "Increase test coverage",
-        impact: :high,
-        effort: :medium
-      } | suggestions]
+      [
+        %{
+          type: :testing,
+          priority: :high,
+          action: "Increase test coverage",
+          impact: :high,
+          effort: :medium
+        }
+        | suggestions
+      ]
     else
       suggestions
     end
@@ -627,7 +686,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     base_effort = data[:lines_changed] || 0
     complexity_factor = data[:complexity] || 1
 
-    effort_hours = (base_effort * complexity_factor) / 50
+    effort_hours = base_effort * complexity_factor / 50
 
     cond do
       effort_hours < 1 -> :trivial
@@ -713,17 +772,19 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   defp suggest_tests_for_changes(changes) do
     suggestions = []
 
-    suggestions = if changes[:new_functions] do
-      ["Add unit tests for new functions" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if changes[:new_functions] do
+        ["Add unit tests for new functions" | suggestions]
+      else
+        suggestions
+      end
 
-    suggestions = if changes[:modified_functions] do
-      ["Update tests for modified functions" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if changes[:modified_functions] do
+        ["Update tests for modified functions" | suggestions]
+      else
+        suggestions
+      end
 
     suggestions
   end

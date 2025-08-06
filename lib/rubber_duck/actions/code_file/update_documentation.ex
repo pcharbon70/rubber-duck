@@ -10,7 +10,11 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
       file_id: [type: :string, required: true],
       content: [type: :string, required: true],
       file_path: [type: :string, required: true],
-      doc_style: [type: :atom, default: :moduledoc, values: [:moduledoc, :comments, :readme, :all]],
+      doc_style: [
+        type: :atom,
+        default: :moduledoc,
+        values: [:moduledoc, :comments, :readme, :all]
+      ],
       auto_generate: [type: :boolean, default: true]
     ]
 
@@ -18,17 +22,18 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
   def run(params, _context) do
     with {:ok, analysis} <- analyze_documentation_state(params),
          {:ok, suggestions} <- generate_documentation_suggestions(analysis, params),
-         {:ok, updated_content} <- apply_documentation_updates(params.content, suggestions, params),
+         {:ok, updated_content} <-
+           apply_documentation_updates(params.content, suggestions, params),
          {:ok, validation} <- validate_documentation_consistency(updated_content) do
-
-      {:ok, %{
-        original_coverage: analysis.coverage,
-        new_coverage: calculate_coverage(updated_content),
-        documentation_quality: assess_quality(updated_content),
-        updates_applied: length(suggestions),
-        validation_results: validation,
-        updated_content: updated_content
-      }}
+      {:ok,
+       %{
+         original_coverage: analysis.coverage,
+         new_coverage: calculate_coverage(updated_content),
+         documentation_quality: assess_quality(updated_content),
+         updates_applied: length(suggestions),
+         validation_results: validation,
+         updated_content: updated_content
+       }}
     end
   end
 
@@ -52,34 +57,40 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
     suggestions = []
 
     # Generate moduledoc if missing
-    suggestions = if not analysis.has_moduledoc and params.auto_generate do
-      [generate_moduledoc_suggestion(params) | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if not analysis.has_moduledoc and params.auto_generate do
+        [generate_moduledoc_suggestion(params) | suggestions]
+      else
+        suggestions
+      end
 
     # Generate function docs for undocumented functions
-    suggestions = if length(analysis.missing_docs) > 0 and params.auto_generate do
-      func_suggestions = Enum.map(analysis.missing_docs, &generate_function_doc_suggestion(&1, params))
-      suggestions ++ func_suggestions
-    else
-      suggestions
-    end
+    suggestions =
+      if length(analysis.missing_docs) > 0 and params.auto_generate do
+        func_suggestions =
+          Enum.map(analysis.missing_docs, &generate_function_doc_suggestion(&1, params))
+
+        suggestions ++ func_suggestions
+      else
+        suggestions
+      end
 
     # Add type specs if missing
-    suggestions = if analysis.has_type_specs do
-      suggestions
-    else
-      [suggest_type_specs(params) | suggestions]
-    end
+    suggestions =
+      if analysis.has_type_specs do
+        suggestions
+      else
+        [suggest_type_specs(params) | suggestions]
+      end
 
     {:ok, suggestions}
   end
 
   defp apply_documentation_updates(content, suggestions, params) do
-    updated_content = Enum.reduce(suggestions, content, fn suggestion, acc ->
-      apply_single_update(acc, suggestion, params)
-    end)
+    updated_content =
+      Enum.reduce(suggestions, content, fn suggestion, acc ->
+        apply_single_update(acc, suggestion, params)
+      end)
 
     {:ok, updated_content}
   end
@@ -156,7 +167,8 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
     |> Enum.filter(fn {line, _} -> String.contains?(line, "@doc") end)
     |> Enum.map(fn {_, index} ->
       # Look for the next function definition after @doc
-      next_func = lines
+      next_func =
+        lines
         |> Enum.drop(index + 1)
         |> Enum.find(&Regex.match?(~r/def(?:p?)\s+(\w+)/, &1))
 
@@ -258,9 +270,10 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
     examples = Regex.scan(~r/iex>(.+)/, content)
 
     # Basic validation - check if examples are present and formatted
-    Enum.empty?(examples) or Enum.all?(examples, fn [_, code] ->
-      String.trim(code) != ""
-    end)
+    Enum.empty?(examples) or
+      Enum.all?(examples, fn [_, code] ->
+        String.trim(code) != ""
+      end)
   end
 
   defp check_for_outdated_references(_content) do
@@ -315,6 +328,7 @@ defmodule RubberDuck.Actions.CodeFile.UpdateDocumentation do
   end
 
   defp generate_parameter_docs(""), do: "  None"
+
   defp generate_parameter_docs(args) do
     args
     |> String.split(",")

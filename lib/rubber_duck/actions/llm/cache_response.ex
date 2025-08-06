@@ -48,12 +48,16 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     end
   rescue
     exception ->
-      Logger.error("Cache operation failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-      {:error, %{
-        reason: {:exception, exception},
-        message: Exception.message(exception),
-        operation: params.operation
-      }}
+      Logger.error(
+        "Cache operation failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+      )
+
+      {:error,
+       %{
+         reason: {:exception, exception},
+         message: Exception.message(exception),
+         operation: params.operation
+       }}
   end
 
   def describe do
@@ -106,6 +110,7 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
       :ets.insert(@cache_stats_table, {:misses, 0})
       :ets.insert(@cache_stats_table, {:puts, 0})
     end
+
     :ok
   rescue
     exception ->
@@ -120,8 +125,17 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     case lookup_cache(cache_key, params.similarity_threshold) do
       {:exact, cached_entry} ->
         handle_exact_cache_match(cached_entry, cache_key, now)
+
       {:similar, similar_key, similarity_score, cached_entry} ->
-        handle_similar_cache_match(cached_entry, similar_key, similarity_score, cache_key, now, params)
+        handle_similar_cache_match(
+          cached_entry,
+          similar_key,
+          similarity_score,
+          cache_key,
+          now,
+          params
+        )
+
       :not_found ->
         handle_cache_miss(cache_key)
     end
@@ -135,7 +149,14 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     end
   end
 
-  defp handle_similar_cache_match(cached_entry, similar_key, similarity_score, cache_key, now, params) do
+  defp handle_similar_cache_match(
+         cached_entry,
+         similar_key,
+         similarity_score,
+         cache_key,
+         now,
+         params
+       ) do
     if cached_entry.expires_at > now && similarity_score >= params.similarity_threshold do
       handle_valid_similarity_hit(cached_entry, similar_key, similarity_score, now)
     else
@@ -145,23 +166,27 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
 
   defp handle_valid_cache_hit(cached_entry, cache_key, now, similarity_score) do
     update_stats(:hit)
-    {:ok, %{
-      cached_response: cached_entry.response,
-      cache_key: cache_key,
-      age_seconds: now - cached_entry.cached_at,
-      similarity_score: similarity_score
-    }}
+
+    {:ok,
+     %{
+       cached_response: cached_entry.response,
+       cache_key: cache_key,
+       age_seconds: now - cached_entry.cached_at,
+       similarity_score: similarity_score
+     }}
   end
 
   defp handle_valid_similarity_hit(cached_entry, similar_key, similarity_score, now) do
     update_stats(:hit)
     Logger.debug("Cache hit with similarity #{similarity_score} for key #{similar_key}")
-    {:ok, %{
-      cached_response: cached_entry.response,
-      cache_key: similar_key,
-      age_seconds: now - cached_entry.cached_at,
-      similarity_score: similarity_score
-    }}
+
+    {:ok,
+     %{
+       cached_response: cached_entry.response,
+       cache_key: similar_key,
+       age_seconds: now - cached_entry.cached_at,
+       similarity_score: similarity_score
+     }}
   end
 
   defp handle_expired_cache_entry(cache_key) do
@@ -200,10 +225,11 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
       # Clean up old entries periodically
       maybe_cleanup_expired()
 
-      {:ok, %{
-        cache_key: cache_key,
-        expires_at: DateTime.from_unix!(expires_at)
-      }}
+      {:ok,
+       %{
+         cache_key: cache_key,
+         expires_at: DateTime.from_unix!(expires_at)
+       }}
     else
       {:error, %{reason: :response_required_for_put}}
     end
@@ -213,7 +239,8 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     pattern = params.request[:pattern] || params.request[:model] || "_"
 
     # Find all matching keys
-    matching_keys = @cache_table
+    matching_keys =
+      @cache_table
       |> :ets.tab2list()
       |> Enum.filter(fn {key, _entry} ->
         String.contains?(key, pattern)
@@ -223,10 +250,11 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     # Delete matching entries
     Enum.each(matching_keys, &:ets.delete(@cache_table, &1))
 
-    {:ok, %{
-      invalidated_count: length(matching_keys),
-      pattern: pattern
-    }}
+    {:ok,
+     %{
+       invalidated_count: length(matching_keys),
+       pattern: pattern
+     }}
   end
 
   defp generate_cache_key(request) do
@@ -260,9 +288,10 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     # Extract system message as fingerprint
     messages = request[:messages] || []
 
-    system_msg = Enum.find(messages, fn msg ->
-      (msg["role"] || msg[:role]) == "system"
-    end)
+    system_msg =
+      Enum.find(messages, fn msg ->
+        (msg["role"] || msg[:role]) == "system"
+      end)
 
     if system_msg do
       content = system_msg["content"] || system_msg[:content] || ""
@@ -323,6 +352,7 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
     case similar_entries do
       [{key, entry, score} | _] ->
         {:similar, key, score, entry}
+
       [] ->
         :not_found
     end
@@ -338,9 +368,10 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
       bytes1 = :binary.bin_to_list(key1, 0, min(16, byte_size(key1)))
       bytes2 = :binary.bin_to_list(key2, 0, min(16, byte_size(key2)))
 
-      matching = bytes1
-      |> Enum.zip(bytes2)
-      |> Enum.count(fn {a, b} -> a == b end)
+      matching =
+        bytes1
+        |> Enum.zip(bytes2)
+        |> Enum.count(fn {a, b} -> a == b end)
 
       matching / max(length(bytes1), length(bytes2))
     end
@@ -361,6 +392,7 @@ defmodule RubberDuck.Actions.LLM.CacheResponse do
         if rem(put_count, 100) == 0 do
           start_cleanup_task()
         end
+
       _ ->
         :ok
     end

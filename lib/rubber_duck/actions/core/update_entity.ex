@@ -32,24 +32,28 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   def run(params, context) do
     with {:ok, current_entity} <- fetch_entity(params.entity_id, params.entity_type),
          {:ok, validated_changes} <- validate_changes(params.changes, current_entity, params),
-         {:ok, impact_assessment} <- assess_change_impact(current_entity, validated_changes, context),
-         {:ok, approval} <- check_goal_alignment(validated_changes, impact_assessment, params.agent_goals),
+         {:ok, impact_assessment} <-
+           assess_change_impact(current_entity, validated_changes, context),
+         {:ok, approval} <-
+           check_goal_alignment(validated_changes, impact_assessment, params.agent_goals),
          {:ok, snapshot} <- create_entity_snapshot(current_entity),
-         {:ok, updated_entity} <- apply_changes(current_entity, validated_changes, impact_assessment),
-         {:ok, propagation_results} <- propagate_changes(updated_entity, impact_assessment, params),
+         {:ok, updated_entity} <-
+           apply_changes(current_entity, validated_changes, impact_assessment),
+         {:ok, propagation_results} <-
+           propagate_changes(updated_entity, impact_assessment, params),
          {:ok, _verification} <- verify_update_success(updated_entity, validated_changes),
          {:ok, learning_data} <- track_update_outcome(updated_entity, impact_assessment, context) do
-
-      {:ok, %{
-        entity: updated_entity,
-        previous_state: snapshot,
-        changes_applied: validated_changes,
-        impact_assessment: impact_assessment,
-        propagation_results: propagation_results,
-        learning_data: learning_data,
-        goal_alignment_score: approval.alignment_score,
-        metadata: build_metadata(params, context)
-      }}
+      {:ok,
+       %{
+         entity: updated_entity,
+         previous_state: snapshot,
+         changes_applied: validated_changes,
+         impact_assessment: impact_assessment,
+         propagation_results: propagation_results,
+         learning_data: learning_data,
+         goal_alignment_score: approval.alignment_score,
+         metadata: build_metadata(params, context)
+       }}
     else
       {:error, _reason} = error ->
         handle_update_failure(error, params, context)
@@ -69,50 +73,54 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   defp fetch_user_entity(id) do
     # Simulate fetching user
-    {:ok, %{
-      id: id,
-      type: :user,
-      email: "user@example.com",
-      username: "testuser",
-      preferences: %{},
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :user,
+       email: "user@example.com",
+       username: "testuser",
+       preferences: %{},
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_project_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :project,
-      name: "Test Project",
-      description: "A test project",
-      status: :active,
-      files: [],
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :project,
+       name: "Test Project",
+       description: "A test project",
+       status: :active,
+       files: [],
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_code_file_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :code_file,
-      path: "/lib/example.ex",
-      content: "defmodule Example do\nend",
-      language: :elixir,
-      project_id: "project_123",
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :code_file,
+       path: "/lib/example.ex",
+       content: "defmodule Example do\nend",
+       language: :elixir,
+       project_id: "project_123",
+       created_at: DateTime.utc_now()
+     }}
   end
 
   defp fetch_analysis_entity(id) do
-    {:ok, %{
-      id: id,
-      type: :analysis,
-      analysis_type: :quality,
-      target: "project_123",
-      status: :completed,
-      results: %{},
-      created_at: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       id: id,
+       type: :analysis,
+       analysis_type: :quality,
+       target: "project_123",
+       status: :completed,
+       results: %{},
+       created_at: DateTime.utc_now()
+     }}
   end
 
   # Change validation
@@ -124,28 +132,32 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
       security_check: perform_security_validation(changes, current_entity.type)
     }
 
-    all_valid = validation_results
+    all_valid =
+      validation_results
       |> Map.values()
       |> Enum.all?(& &1.valid)
 
     if all_valid do
-      {:ok, %{
-        changes: sanitize_changes(changes),
-        validations: validation_results,
-        change_count: map_size(changes),
-        change_severity: assess_change_severity(changes, current_entity)
-      }}
+      {:ok,
+       %{
+         changes: sanitize_changes(changes),
+         validations: validation_results,
+         change_count: map_size(changes),
+         change_severity: assess_change_severity(changes, current_entity)
+       }}
     else
-      {:error, %{
-        reason: :validation_failed,
-        failures: extract_validation_failures(validation_results),
-        original_changes: changes
-      }}
+      {:error,
+       %{
+         reason: :validation_failed,
+         failures: extract_validation_failures(validation_results),
+         original_changes: changes
+       }}
     end
   end
 
   defp validate_field_changes(changes, entity) do
-    invalid_fields = changes
+    invalid_fields =
+      changes
       |> Map.keys()
       |> Enum.filter(fn field ->
         not Map.has_key?(entity, field) and field not in allowed_new_fields(entity.type)
@@ -170,9 +182,10 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp validate_constraints(changes, config) do
     constraints = config[:constraints] || %{}
 
-    violations = Enum.reduce(changes, [], fn {field, value}, acc ->
-      check_field_constraint(acc, field, value, constraints)
-    end)
+    violations =
+      Enum.reduce(changes, [], fn {field, value}, acc ->
+        check_field_constraint(acc, field, value, constraints)
+      end)
 
     %{
       valid: Enum.empty?(violations),
@@ -183,7 +196,9 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   defp check_field_constraint(acc, field, value, constraints) do
     case constraints[field] do
-      nil -> acc
+      nil ->
+        acc
+
       constraint ->
         if violates_constraint?(value, constraint) do
           [{field, constraint, value} | acc]
@@ -196,32 +211,37 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp violates_constraint?(value, %{type: type}) when is_binary(value) do
     type != :string
   end
+
   defp violates_constraint?(value, %{min: min}) when is_number(value) do
     value < min
   end
+
   defp violates_constraint?(value, %{max: max}) when is_number(value) do
     value > max
   end
+
   defp violates_constraint?(value, %{pattern: pattern}) when is_binary(value) do
     not Regex.match?(pattern, value)
   end
+
   defp violates_constraint?(_, _), do: false
 
   defp check_compatibility(changes, entity) do
     compatibility_issues = []
 
     # Check for type mismatches
-    compatibility_issues = Enum.reduce(changes, compatibility_issues, fn {field, new_value}, acc ->
-      if old_value = Map.get(entity, field) do
-        if incompatible_types?(old_value, new_value) do
-          [{field, :type_mismatch, {old_value, new_value}} | acc]
+    compatibility_issues =
+      Enum.reduce(changes, compatibility_issues, fn {field, new_value}, acc ->
+        if old_value = Map.get(entity, field) do
+          if incompatible_types?(old_value, new_value) do
+            [{field, :type_mismatch, {old_value, new_value}} | acc]
+          else
+            acc
+          end
         else
           acc
         end
-      else
-        acc
-      end
-    end)
+      end)
 
     %{
       valid: Enum.empty?(compatibility_issues),
@@ -238,7 +258,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   defp calculate_compatibility_score(issues, changes) do
     if map_size(changes) > 0 do
-      1.0 - (length(issues) / map_size(changes))
+      1.0 - length(issues) / map_size(changes)
     else
       1.0
     end
@@ -250,13 +270,14 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     # Check for sensitive field modifications
     sensitive_fields = get_sensitive_fields(entity_type)
 
-    security_risks = Enum.reduce(changes, security_risks, fn {field, _value}, acc ->
-      if field in sensitive_fields do
-        [{field, :sensitive_field_modification} | acc]
-      else
-        acc
-      end
-    end)
+    security_risks =
+      Enum.reduce(changes, security_risks, fn {field, _value}, acc ->
+        if field in sensitive_fields do
+          [{field, :sensitive_field_modification} | acc]
+        else
+          acc
+        end
+      end)
 
     %{
       valid: Enum.empty?(security_risks),
@@ -296,13 +317,15 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     # Basic sanitization - in production would be more comprehensive
     String.replace(value, ~r/[<>]/, "")
   end
+
   defp sanitize_value(value), do: value
 
   defp assess_change_severity(changes, entity) do
-    severity_scores = Enum.map(changes, fn {field, new_value} ->
-      old_value = Map.get(entity, field)
-      calculate_field_change_severity(field, old_value, new_value, entity.type)
-    end)
+    severity_scores =
+      Enum.map(changes, fn {field, new_value} ->
+        old_value = Map.get(entity, field)
+        calculate_field_change_severity(field, old_value, new_value, entity.type)
+      end)
 
     if length(severity_scores) > 0 do
       Enum.max(severity_scores)
@@ -333,37 +356,43 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp significantly_different?(old, new) when is_binary(old) and is_binary(new) do
     String.jaro_distance(old, new) < 0.7
   end
+
   defp significantly_different?(old, new) when is_number(old) and is_number(new) do
     abs(old - new) / max(abs(old), 1) > 0.5
   end
+
   defp significantly_different?(_, _), do: false
 
   defp extract_validation_failures(results) do
     failures = []
 
-    failures = if results.field_validation.valid do
-      failures
-    else
-      [{:invalid_fields, results.field_validation.invalid_fields} | failures]
-    end
+    failures =
+      if results.field_validation.valid do
+        failures
+      else
+        [{:invalid_fields, results.field_validation.invalid_fields} | failures]
+      end
 
-    failures = if results.constraint_validation.valid do
-      failures
-    else
-      [{:constraint_violations, results.constraint_validation.violations} | failures]
-    end
+    failures =
+      if results.constraint_validation.valid do
+        failures
+      else
+        [{:constraint_violations, results.constraint_validation.violations} | failures]
+      end
 
-    failures = if results.compatibility_check.valid do
-      failures
-    else
-      [{:compatibility_issues, results.compatibility_check.issues} | failures]
-    end
+    failures =
+      if results.compatibility_check.valid do
+        failures
+      else
+        [{:compatibility_issues, results.compatibility_check.issues} | failures]
+      end
 
-    failures = if results.security_check.valid do
-      failures
-    else
-      [{:security_risks, results.security_check.risks} | failures]
-    end
+    failures =
+      if results.security_check.valid do
+        failures
+      else
+        [{:security_risks, results.security_check.risks} | failures]
+      end
 
     failures
   end
@@ -379,12 +408,13 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
       affected_entities: identify_affected_entities(entity, validated_changes)
     }
 
-    {:ok, %{
-      impact_score: calculate_overall_impact_score(impact),
-      impact_details: impact,
-      recommendations: generate_impact_recommendations(impact),
-      mitigation_strategies: suggest_mitigation_strategies(impact)
-    }}
+    {:ok,
+     %{
+       impact_score: calculate_overall_impact_score(impact),
+       impact_details: impact,
+       recommendations: generate_impact_recommendations(impact),
+       mitigation_strategies: suggest_mitigation_strategies(impact)
+     }}
   end
 
   defp analyze_direct_impact(entity, changes) do
@@ -409,7 +439,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   defp estimate_performance_impact(_entity, changes) do
     # Estimate based on change characteristics
-    change_size = changes.changes |> Map.values() |> Enum.map(&estimate_value_size/1) |> Enum.sum()
+    change_size =
+      changes.changes |> Map.values() |> Enum.map(&estimate_value_size/1) |> Enum.sum()
 
     %{
       expected_latency_change: estimate_latency_impact(change_size),
@@ -432,25 +463,28 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     risks = []
 
     # Data loss risk
-    risks = if has_data_loss_risk?(entity, changes) do
-      [:data_loss | risks]
-    else
-      risks
-    end
+    risks =
+      if has_data_loss_risk?(entity, changes) do
+        [:data_loss | risks]
+      else
+        risks
+      end
 
     # Consistency risk
-    risks = if has_consistency_risk?(entity, changes) do
-      [:consistency | risks]
-    else
-      risks
-    end
+    risks =
+      if has_consistency_risk?(entity, changes) do
+        [:consistency | risks]
+      else
+        risks
+      end
 
     # Performance degradation risk
-    risks = if has_performance_risk?(changes) do
-      [:performance | risks]
-    else
-      risks
-    end
+    risks =
+      if has_performance_risk?(changes) do
+        [:performance | risks]
+      else
+        risks
+      end
 
     %{
       identified_risks: risks,
@@ -464,10 +498,13 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     case entity.type do
       :user ->
         [{:sessions, entity.id}, {:preferences, entity.id}]
+
       :project ->
         [{:code_files, entity.id}, {:analyses, entity.id}]
+
       :code_file ->
         [{:project, entity.project_id}, {:analyses, entity.id}]
+
       :analysis ->
         [{:target, entity.target}]
     end
@@ -484,7 +521,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   defp filter_critical_dependencies(dependencies) do
     critical = [:sessions, :project, :target_entity]
-    Enum.filter(dependencies, & &1 in critical)
+    Enum.filter(dependencies, &(&1 in critical))
   end
 
   defp predict_cascade_effects(dependencies, changes) do
@@ -549,9 +586,10 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp estimate_resource_change(_), do: :moderate
 
   defp requires_cache_invalidation?(_entity, _changes), do: true
+
   defp requires_index_updates?(entity, changes) do
     indexed_fields = get_indexed_fields(entity.type)
-    Enum.any?(Map.keys(changes.changes), & &1 in indexed_fields)
+    Enum.any?(Map.keys(changes.changes), &(&1 in indexed_fields))
   end
 
   defp get_indexed_fields(entity_type) do
@@ -629,23 +667,26 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp generate_impact_recommendations(impact) do
     recommendations = []
 
-    recommendations = if impact.risk_assessment.risk_level in [:high, :medium] do
-      ["Consider implementing gradual rollout" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if impact.risk_assessment.risk_level in [:high, :medium] do
+        ["Consider implementing gradual rollout" | recommendations]
+      else
+        recommendations
+      end
 
-    recommendations = if length(impact.dependency_impact.breaking_changes) > 0 do
-      ["Update dependent entities before applying changes" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if length(impact.dependency_impact.breaking_changes) > 0 do
+        ["Update dependent entities before applying changes" | recommendations]
+      else
+        recommendations
+      end
 
-    recommendations = if impact.system_impact.cache_invalidation_required do
-      ["Plan for cache warming after update" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if impact.system_impact.cache_invalidation_required do
+        ["Plan for cache warming after update" | recommendations]
+      else
+        recommendations
+      end
 
     recommendations
   end
@@ -653,23 +694,26 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp suggest_mitigation_strategies(impact) do
     strategies = []
 
-    strategies = if :data_loss in impact.risk_assessment.identified_risks do
-      ["Create backup before applying changes" | strategies]
-    else
-      strategies
-    end
+    strategies =
+      if :data_loss in impact.risk_assessment.identified_risks do
+        ["Create backup before applying changes" | strategies]
+      else
+        strategies
+      end
 
-    strategies = if :consistency in impact.risk_assessment.identified_risks do
-      ["Implement consistency checks post-update" | strategies]
-    else
-      strategies
-    end
+    strategies =
+      if :consistency in impact.risk_assessment.identified_risks do
+        ["Implement consistency checks post-update" | strategies]
+      else
+        strategies
+      end
 
-    strategies = if :performance in impact.risk_assessment.identified_risks do
-      ["Monitor performance metrics during update" | strategies]
-    else
-      strategies
-    end
+    strategies =
+      if :performance in impact.risk_assessment.identified_risks do
+        ["Monitor performance metrics during update" | strategies]
+      else
+        strategies
+      end
 
     strategies
   end
@@ -679,29 +723,33 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     if Enum.empty?(agent_goals) do
       {:ok, %{approved: true, alignment_score: 1.0, reason: :no_goals_specified}}
     else
-      alignment_results = Enum.map(agent_goals, fn goal ->
-        evaluate_change_goal_alignment(changes, impact_assessment, goal)
-      end)
+      alignment_results =
+        Enum.map(agent_goals, fn goal ->
+          evaluate_change_goal_alignment(changes, impact_assessment, goal)
+        end)
 
-      avg_score = if length(alignment_results) > 0 do
-        Enum.sum(alignment_results) / length(alignment_results)
-      else
-        1.0
-      end
+      avg_score =
+        if length(alignment_results) > 0 do
+          Enum.sum(alignment_results) / length(alignment_results)
+        else
+          1.0
+        end
 
       if avg_score >= 0.6 do
-        {:ok, %{
-          approved: true,
-          alignment_score: avg_score,
-          aligned_goals: Enum.count(alignment_results, & &1 >= 0.6),
-          total_goals: length(agent_goals)
-        }}
+        {:ok,
+         %{
+           approved: true,
+           alignment_score: avg_score,
+           aligned_goals: Enum.count(alignment_results, &(&1 >= 0.6)),
+           total_goals: length(agent_goals)
+         }}
       else
-        {:error, %{
-          reason: :goal_misalignment,
-          alignment_score: avg_score,
-          recommendation: "Changes do not align with agent goals"
-        }}
+        {:error,
+         %{
+           reason: :goal_misalignment,
+           alignment_score: avg_score,
+           recommendation: "Changes do not align with agent goals"
+         }}
       end
     end
   end
@@ -710,10 +758,13 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     case goal.type do
       :quality ->
         evaluate_quality_impact(changes, impact, goal)
+
       :performance ->
         evaluate_performance_impact(impact, goal)
+
       :stability ->
         evaluate_stability_impact(impact, goal)
+
       _ ->
         0.5
     end
@@ -722,7 +773,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp evaluate_quality_impact(changes, _impact, _goal) do
     # Evaluate if changes improve quality
     if changes.change_severity == :low do
-      0.9  # Low severity changes are generally quality-preserving
+      # Low severity changes are generally quality-preserving
+      0.9
     else
       0.6
     end
@@ -747,13 +799,14 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   # Snapshot and rollback
   defp create_entity_snapshot(entity) do
-    {:ok, %{
-      entity_id: entity.id,
-      entity_type: entity.type,
-      snapshot_time: DateTime.utc_now(),
-      data: entity,
-      checksum: calculate_checksum(entity)
-    }}
+    {:ok,
+     %{
+       entity_id: entity.id,
+       entity_type: entity.type,
+       snapshot_time: DateTime.utc_now(),
+       data: entity,
+       checksum: calculate_checksum(entity)
+     }}
   end
 
   defp calculate_checksum(entity) do
@@ -767,7 +820,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp apply_changes(entity, validated_changes, impact_assessment) do
     updated = Map.merge(entity, validated_changes.changes)
 
-    updated = updated
+    updated =
+      updated
       |> Map.put(:updated_at, DateTime.utc_now())
       |> Map.put(:update_metadata, %{
         impact_score: impact_assessment.impact_score,
@@ -782,15 +836,17 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   # Change propagation
   defp propagate_changes(updated_entity, impact_assessment, params) do
     if params.auto_propagate and length(impact_assessment.impact_details.affected_entities) > 0 do
-      propagation_results = Enum.map(impact_assessment.impact_details.affected_entities, fn {type, id} ->
-        propagate_to_entity(type, id, updated_entity)
-      end)
+      propagation_results =
+        Enum.map(impact_assessment.impact_details.affected_entities, fn {type, id} ->
+          propagate_to_entity(type, id, updated_entity)
+        end)
 
-      {:ok, %{
-        propagated: true,
-        entities_updated: length(propagation_results),
-        results: propagation_results
-      }}
+      {:ok,
+       %{
+         propagated: true,
+         entities_updated: length(propagation_results),
+         results: propagation_results
+       }}
     else
       {:ok, %{propagated: false, reason: :auto_propagate_disabled}}
     end
@@ -822,11 +878,12 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
     all_valid = verifications |> Map.values() |> Enum.all?(& &1)
 
-    {:ok, %{
-      verified: all_valid,
-      checks: verifications,
-      entity_id: entity.id
-    }}
+    {:ok,
+     %{
+       verified: all_valid,
+       checks: verifications,
+       entity_id: entity.id
+     }}
   end
 
   defp verify_fields_updated(entity, changes) do

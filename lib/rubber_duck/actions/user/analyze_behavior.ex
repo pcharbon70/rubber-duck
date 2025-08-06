@@ -40,10 +40,11 @@ defmodule RubberDuck.Actions.User.AnalyzeBehavior do
     interactions
     |> Enum.group_by(& &1.action.type)
     |> Enum.map(fn {action_type, group} ->
-      {action_type, %{
-        count: length(group),
-        percentage: length(group) / length(interactions) * 100
-      }}
+      {action_type,
+       %{
+         count: length(group),
+         percentage: length(group) / length(interactions) * 100
+       }}
     end)
     |> Map.new()
   end
@@ -76,7 +77,7 @@ defmodule RubberDuck.Actions.User.AnalyzeBehavior do
 
   defp find_peak_hours(interactions) do
     interactions
-    |> Enum.group_by(& DateTime.to_time(&1.timestamp).hour)
+    |> Enum.group_by(&DateTime.to_time(&1.timestamp).hour)
     |> Enum.map(fn {hour, group} -> {hour, length(group)} end)
     |> Enum.sort_by(fn {_, count} -> count end, :desc)
     |> Enum.take(3)

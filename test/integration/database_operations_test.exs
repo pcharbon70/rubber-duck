@@ -43,19 +43,27 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
 
       # Update (change password)
       assert {:ok, updated_user} =
-        Accounts.change_user_password(created_user, %{
-          current_password: "Password456!",
-          password: "NewPassword789!",
-          password_confirmation: "NewPassword789!"
-        }, authorize?: false)
+               Accounts.change_user_password(
+                 created_user,
+                 %{
+                   current_password: "Password456!",
+                   password: "NewPassword789!",
+                   password_confirmation: "NewPassword789!"
+                 },
+                 authorize?: false
+               )
 
       assert updated_user.id == created_user.id
 
       # Verify password was changed
-      assert {:ok, _} = Accounts.sign_in_user(%{
-        username: "crud_test_user",
-        password: "NewPassword789!"
-      }, authorize?: false)
+      assert {:ok, _} =
+               Accounts.sign_in_user(
+                 %{
+                   username: "crud_test_user",
+                   password: "NewPassword789!"
+                 },
+                 authorize?: false
+               )
     end
 
     test "CRUD operations on Project resource", %{user: user} do
@@ -76,7 +84,10 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
 
       # Update project
       assert {:ok, updated_project} =
-        Projects.update_project(project, %{description: "Updated description"}, actor: user)
+               Projects.update_project(project, %{description: "Updated description"},
+                 actor: user
+               )
+
       assert updated_project.description == "Updated description"
 
       # List projects
@@ -95,10 +106,14 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
 
     test "CRUD operations on AI resources", %{user: user} do
       # Create a project first
-      {:ok, project} = Projects.create_project(%{
-        name: "AI Test Project",
-        language: "elixir"
-      }, actor: user)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "AI Test Project",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Create an analysis result
       analysis_attrs = %{
@@ -128,10 +143,14 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
       # Create multiple related resources in a transaction-like manner
 
       # Create project
-      {:ok, project} = Projects.create_project(%{
-        name: "Transaction Test",
-        language: "elixir"
-      }, actor: user)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Transaction Test",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Create multiple code files
       file1_attrs = %{
@@ -170,14 +189,17 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
             name: "Concurrent Test #{i}_#{System.unique_integer([:positive])}",
             language: "elixir"
           }
+
           Projects.create_project(project_attrs, actor: user)
         end
 
       # All should succeed with unique names
-      successful_count = Enum.count(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+      successful_count =
+        Enum.count(results, fn
+          {:ok, _} -> true
+          _ -> false
+        end)
+
       # All should succeed
       assert successful_count == 5
 
@@ -188,26 +210,38 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
 
     test "data integrity with relationships", %{user: user} do
       # Create interconnected resources and verify integrity
-      {:ok, project} = Projects.create_project(%{
-        name: "Integrity Test",
-        language: "elixir"
-      }, actor: user)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Integrity Test",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Create code file
-      {:ok, code_file} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "/lib/app.ex",
-        content: "defmodule App do\nend",
-        language: "elixir"
-      }, actor: user)
+      {:ok, code_file} =
+        Projects.create_code_file(
+          %{
+            project_id: project.id,
+            path: "/lib/app.ex",
+            content: "defmodule App do\nend",
+            language: "elixir"
+          },
+          actor: user
+        )
 
       # Create analysis referencing both project and file
-      {:ok, analysis} = AI.create_analysis_result(%{
-        project_id: project.id,
-        code_file_id: code_file.id,
-        analysis_type: :general,
-        summary: "Analysis of App module"
-      }, actor: user)
+      {:ok, analysis} =
+        AI.create_analysis_result(
+          %{
+            project_id: project.id,
+            code_file_id: code_file.id,
+            analysis_type: :general,
+            summary: "Analysis of App module"
+          },
+          actor: user
+        )
 
       # Verify relationships are maintained
       assert analysis.project_id == project.id
@@ -233,9 +267,11 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
 
       # Attempting to create another user with same username should fail
       assert {:error, error} = Accounts.register_user(attrs, authorize?: false)
-      assert error.errors |> Enum.any?(fn e ->
-        e.field == :username || e.message =~ "has already been taken"
-      end)
+
+      assert error.errors
+             |> Enum.any?(fn e ->
+               e.field == :username || e.message =~ "has already been taken"
+             end)
     end
   end
 end

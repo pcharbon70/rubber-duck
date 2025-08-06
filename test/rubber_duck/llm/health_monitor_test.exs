@@ -18,7 +18,8 @@ defmodule RubberDuck.LLM.HealthMonitorTest do
 
   describe "record_success/2" do
     test "records successful request metrics" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
 
       HealthMonitor.record_success(provider_name, 100)
       HealthMonitor.record_success(provider_name, 150)
@@ -37,7 +38,8 @@ defmodule RubberDuck.LLM.HealthMonitorTest do
 
   describe "record_failure/2" do
     test "records failed request metrics" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
 
       HealthMonitor.record_failure(provider_name, :timeout)
       HealthMonitor.record_failure(provider_name, :connection_error)
@@ -66,7 +68,8 @@ defmodule RubberDuck.LLM.HealthMonitorTest do
     end
 
     test "calculates error rate after minimum samples" do
-      provider_name = :test_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :test_provider_
 
       # Record enough samples to calculate error rate
       for _ <- 1..8 do
@@ -95,7 +98,8 @@ defmodule RubberDuck.LLM.HealthMonitorTest do
         def health_check(_config), do: :ok
       end
 
-      provider_name = :mock_health_provider_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider_name = :mock_health_provider_
       ProviderRegistry.register(provider_name, MockHealthProvider, %{})
 
       result = HealthMonitor.check_provider(provider_name)
@@ -118,8 +122,10 @@ defmodule RubberDuck.LLM.HealthMonitorTest do
         def health_check(_config), do: {:error, :unhealthy}
       end
 
-      provider1 = :provider1_#{System.unique_integer([:positive])}
-      provider2 = :provider2_#{System.unique_integer([:positive])}
+      # {System.unique_integer([:positive])}
+      provider1 = :provider1_
+      # {System.unique_integer([:positive])}
+      provider2 = :provider2_
 
       ProviderRegistry.register(provider1, MockProvider1, %{})
       ProviderRegistry.register(provider2, MockProvider2, %{})

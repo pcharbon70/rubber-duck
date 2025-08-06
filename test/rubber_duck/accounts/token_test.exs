@@ -70,7 +70,8 @@ defmodule RubberDuck.Accounts.TokenTest do
       # Try to perform token operations as regular user (should be forbidden)
 
       # Attempt to get expired tokens (should be forbidden)
-      assert {:error, %Ash.Error.Forbidden{}} = Ash.read(RubberDuck.Accounts.Token, action: :expired, actor: user)
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Ash.read(RubberDuck.Accounts.Token, action: :expired, actor: user)
     end
 
     test "token resource has proper policy configuration" do
@@ -92,7 +93,8 @@ defmodule RubberDuck.Accounts.TokenTest do
   describe "Token integration with authentication" do
     test "user registration creates token metadata capability" do
       # Verify that user registration has token generation capability
-      register_action = Ash.Resource.Info.action(RubberDuck.Accounts.User, :register_with_password)
+      register_action =
+        Ash.Resource.Info.action(RubberDuck.Accounts.User, :register_with_password)
 
       # Should have token metadata defined
       token_metadata = Enum.find(register_action.metadata, &(&1.name == :token))
@@ -117,7 +119,9 @@ defmodule RubberDuck.Accounts.TokenTest do
       assert length(strategies) > 0
 
       # Verify password strategy is configured
-      password_strategy = Enum.find(strategies, &(&1.__struct__ == AshAuthentication.Strategy.Password))
+      password_strategy =
+        Enum.find(strategies, &(&1.__struct__ == AshAuthentication.Strategy.Password))
+
       assert password_strategy != nil
 
       # Verify the strategy uses username field

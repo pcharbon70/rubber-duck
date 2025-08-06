@@ -26,14 +26,14 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
          {:ok, content} <- fetch_content(target),
          {:ok, analyses} <- perform_analyses(content, params.analysis_types, params.context),
          {:ok, results} <- save_analysis_results(analyses, target, context) do
-
-      {:ok, %{
-        results: results,
-        summary: generate_summary(results),
-        insights: extract_insights(results),
-        recommendations: generate_recommendations(results),
-        metadata: build_metadata(params, results)
-      }}
+      {:ok,
+       %{
+         results: results,
+         summary: generate_summary(results),
+         insights: extract_insights(results),
+         recommendations: generate_recommendations(results),
+         metadata: build_metadata(params, results)
+       }}
     end
   end
 
@@ -41,8 +41,10 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     cond do
       params.file_id ->
         {:ok, {:file, params.file_id}}
+
       params.project_id ->
         {:ok, {:project, params.project_id}}
+
       true ->
         {:error, :no_target_specified}
     end
@@ -51,14 +53,17 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   defp fetch_content({:file, file_id}) do
     case Projects.get_code_file(file_id) do
       {:ok, file} ->
-        {:ok, %{
-          type: :file,
-          id: file_id,
-          content: file.content,
-          language: file.language,
-          path: file.path
-        }}
-      error -> error
+        {:ok,
+         %{
+           type: :file,
+           id: file_id,
+           content: file.content,
+           language: file.language,
+           path: file.path
+         }}
+
+      error ->
+        error
     end
   end
 
@@ -68,15 +73,18 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
         # Load project files
         {:ok, files} = Projects.list_code_files_by_project(project_id)
 
-        {:ok, %{
-          type: :project,
-          id: project_id,
-          name: project.name,
-          files: files,
-          file_count: length(files),
-          languages: extract_languages(files)
-        }}
-      error -> error
+        {:ok,
+         %{
+           type: :project,
+           id: project_id,
+           name: project.name,
+           files: files,
+           file_count: length(files),
+           languages: extract_languages(files)
+         }}
+
+      error ->
+        error
     end
   end
 
@@ -84,25 +92,27 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     files
     |> Enum.map(& &1.language)
     |> Enum.uniq()
-    |> Enum.filter(& &1 != nil)
+    |> Enum.filter(&(&1 != nil))
   end
 
   defp perform_analyses(content, types, context) do
-    analyses = Enum.map(types, fn type ->
-      Task.async(fn ->
-        perform_single_analysis(content, type, context)
+    analyses =
+      Enum.map(types, fn type ->
+        Task.async(fn ->
+          perform_single_analysis(content, type, context)
+        end)
       end)
-    end)
 
     results = Task.await_many(analyses, 30_000)
 
     # Filter out any failed analyses
-    successful = results
-    |> Enum.filter(fn
-      {:ok, _} -> true
-      _ -> false
-    end)
-    |> Enum.map(fn {:ok, result} -> result end)
+    successful =
+      results
+      |> Enum.filter(fn
+        {:ok, _} -> true
+        _ -> false
+      end)
+      |> Enum.map(fn {:ok, result} -> result end)
 
     {:ok, successful}
   end
@@ -140,10 +150,11 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   # Analysis implementations
 
   defp analyze_complexity(content) do
-    metrics = case content.type do
-      :file -> analyze_file_complexity(content.content)
-      :project -> analyze_project_complexity(content.files)
-    end
+    metrics =
+      case content.type do
+        :file -> analyze_file_complexity(content.content)
+        :project -> analyze_project_complexity(content.files)
+      end
 
     %{
       score: calculate_complexity_score(metrics),
@@ -165,9 +176,10 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   end
 
   defp analyze_project_complexity(files) do
-    file_metrics = Enum.map(files, fn file ->
-      analyze_file_complexity(file.content || "")
-    end)
+    file_metrics =
+      Enum.map(files, fn file ->
+        analyze_file_complexity(file.content || "")
+      end)
 
     %{
       total_lines: Enum.sum(Enum.map(file_metrics, & &1.lines_of_code)),
@@ -203,11 +215,12 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     # Simple scoring algorithm
     base_score = 100
 
-    deductions = cond do
-      metrics[:cyclomatic_complexity] > 10 -> 20
-      metrics[:cyclomatic_complexity] > 5 -> 10
-      true -> 0
-    end
+    deductions =
+      cond do
+        metrics[:cyclomatic_complexity] > 10 -> 20
+        metrics[:cyclomatic_complexity] > 5 -> 10
+        true -> 0
+      end
 
     max(0, base_score - deductions)
   end
@@ -215,17 +228,19 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   defp generate_complexity_suggestions(metrics) do
     suggestions = []
 
-    suggestions = if metrics[:cyclomatic_complexity] > 10 do
-      ["Consider breaking down complex functions" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if metrics[:cyclomatic_complexity] > 10 do
+        ["Consider breaking down complex functions" | suggestions]
+      else
+        suggestions
+      end
 
-    suggestions = if metrics[:nesting_depth] > 4 do
-      ["Reduce nesting depth for better readability" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if metrics[:nesting_depth] > 4 do
+        ["Reduce nesting depth for better readability" | suggestions]
+      else
+        suggestions
+      end
 
     suggestions
   end
@@ -248,16 +263,22 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
       check_unsafe_operations(content)
     ]
 
-    Enum.filter(checks, & &1 != nil)
+    Enum.filter(checks, &(&1 != nil))
   end
 
   defp check_sql_injection(content) do
     case content.type do
       :file ->
         if Regex.match?(~r/Repo\.query.*#\{/, content.content) do
-          %{type: :sql_injection, severity: :high, description: "Possible SQL injection vulnerability"}
+          %{
+            type: :sql_injection,
+            severity: :high,
+            description: "Possible SQL injection vulnerability"
+          }
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -267,7 +288,9 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
         if Regex.match?(~r/(api_key|password|secret|token)\s*=\s*"[^"]+"/i, content.content) do
           %{type: :hardcoded_secret, severity: :high, description: "Hardcoded secrets detected"}
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -275,23 +298,30 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     case content.type do
       :file ->
         if Regex.match?(~r/Code\.eval_string|System\.cmd/i, content.content) do
-          %{type: :unsafe_operation, severity: :medium, description: "Potentially unsafe operations detected"}
+          %{
+            type: :unsafe_operation,
+            severity: :medium,
+            description: "Potentially unsafe operations detected"
+          }
         end
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
   defp calculate_security_score(vulnerabilities) do
     base_score = 100
 
-    deductions = Enum.reduce(vulnerabilities, 0, fn vuln, acc ->
-      case vuln.severity do
-        :critical -> acc + 30
-        :high -> acc + 20
-        :medium -> acc + 10
-        :low -> acc + 5
-      end
-    end)
+    deductions =
+      Enum.reduce(vulnerabilities, 0, fn vuln, acc ->
+        case vuln.severity do
+          :critical -> acc + 30
+          :high -> acc + 20
+          :medium -> acc + 10
+          :low -> acc + 5
+        end
+      end)
 
     max(0, base_score - deductions)
   end
@@ -322,6 +352,7 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
           code_duplication: detect_duplication(content.content),
           naming_consistency: check_naming_consistency(content.content)
         }
+
       :project ->
         %{
           average_file_size: calculate_average_file_size(content.files),
@@ -336,7 +367,7 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     docs = Regex.scan(~r/@doc\s+"""/, content)
 
     if length(functions) > 0 do
-      (length(docs) / length(functions)) * 100
+      length(docs) / length(functions) * 100
     else
       100.0
     end
@@ -352,7 +383,7 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     unique_lines = Enum.uniq(lines)
 
     if length(lines) > 0 do
-      (1 - (length(unique_lines) / length(lines))) * 100
+      (1 - length(unique_lines) / length(lines)) * 100
     else
       0.0
     end
@@ -364,7 +395,7 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     camel_case = content |> Regex.scan(~r/def\s+[a-zA-Z]+/) |> length()
 
     if snake_case + camel_case > 0 do
-      (max(snake_case, camel_case) / (snake_case + camel_case)) * 100
+      max(snake_case, camel_case) / (snake_case + camel_case) * 100
     else
       100.0
     end
@@ -372,9 +403,11 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
 
   defp calculate_average_file_size(files) do
     if length(files) > 0 do
-      total_size = Enum.reduce(files, 0, fn file, acc ->
-        acc + String.length(file.content || "")
-      end)
+      total_size =
+        Enum.reduce(files, 0, fn file, acc ->
+          acc + String.length(file.content || "")
+        end)
+
       total_size / length(files)
     else
       0
@@ -392,7 +425,8 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   end
 
   defp calculate_quality_score(metrics) do
-    scores = metrics
+    scores =
+      metrics
       |> Map.values()
       |> Enum.filter(&is_number/1)
 
@@ -406,17 +440,19 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   defp generate_quality_suggestions(metrics) do
     suggestions = []
 
-    suggestions = if metrics[:documentation_coverage] < 80 do
-      ["Improve documentation coverage" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if metrics[:documentation_coverage] < 80 do
+        ["Improve documentation coverage" | suggestions]
+      else
+        suggestions
+      end
 
-    suggestions = if metrics[:test_coverage] < 80 do
-      ["Increase test coverage" | suggestions]
-    else
-      suggestions
-    end
+    suggestions =
+      if metrics[:test_coverage] < 80 do
+        ["Increase test coverage" | suggestions]
+      else
+        suggestions
+      end
 
     suggestions
   end
@@ -443,18 +479,20 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
     issues = []
 
     # Check for N+1 queries
-    issues = if Regex.match?(~r/Enum\.map.*Repo\.(get|all)/, content) do
-      [%{type: :n_plus_one, description: "Potential N+1 query pattern"} | issues]
-    else
-      issues
-    end
+    issues =
+      if Regex.match?(~r/Enum\.map.*Repo\.(get|all)/, content) do
+        [%{type: :n_plus_one, description: "Potential N+1 query pattern"} | issues]
+      else
+        issues
+      end
 
     # Check for inefficient list operations
-    issues = if Regex.match?(~r/List\.flatten|Enum\.concat.*Enum\.concat/, content) do
-      [%{type: :inefficient_list_ops, description: "Inefficient list operations"} | issues]
-    else
-      issues
-    end
+    issues =
+      if Regex.match?(~r/List\.flatten|Enum\.concat.*Enum\.concat/, content) do
+        [%{type: :inefficient_list_ops, description: "Inefficient list operations"} | issues]
+      else
+        issues
+      end
 
     issues
   end
@@ -496,7 +534,8 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   end
 
   defp calculate_average(list, key) do
-    values = Enum.map(list, & Map.get(&1, key, 0))
+    values = Enum.map(list, &Map.get(&1, key, 0))
+
     if length(values) > 0 do
       Enum.sum(values) / length(values)
     else
@@ -505,16 +544,18 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   end
 
   defp save_analysis_results(analyses, target, context) do
-    results = Enum.map(analyses, fn analysis ->
-      save_single_result(analysis, target, context)
-    end)
+    results =
+      Enum.map(analyses, fn analysis ->
+        save_single_result(analysis, target, context)
+      end)
 
-    successful = results
-    |> Enum.filter(fn
-      {:ok, _} -> true
-      _ -> false
-    end)
-    |> Enum.map(fn {:ok, result} -> result end)
+    successful =
+      results
+      |> Enum.filter(fn
+        {:ok, _} -> true
+        _ -> false
+      end)
+      |> Enum.map(fn {:ok, result} -> result end)
 
     {:ok, successful}
   end
@@ -528,27 +569,30 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
       suggestions: analysis.suggestions
     }
 
-    params = case target_type do
-      :file ->
-        # Get project_id from file
-        case Projects.get_code_file(target_id) do
-          {:ok, file} ->
-            params
-            |> Map.put(:project_id, file.project_id)
-            |> Map.put(:code_file_id, target_id)
-          _ ->
-            params
-        end
-      :project ->
-        Map.put(params, :project_id, target_id)
-    end
+    params =
+      case target_type do
+        :file ->
+          # Get project_id from file
+          case Projects.get_code_file(target_id) do
+            {:ok, file} ->
+              params
+              |> Map.put(:project_id, file.project_id)
+              |> Map.put(:code_file_id, target_id)
+
+            _ ->
+              params
+          end
+
+        :project ->
+          Map.put(params, :project_id, target_id)
+      end
 
     AI.create_analysis_result(params, actor: context[:actor])
   end
 
   defp generate_summary(results) do
     if length(results) > 0 do
-      avg_score = Enum.sum(Enum.map(results, & &1.score || 0)) / length(results)
+      avg_score = Enum.sum(Enum.map(results, &(&1.score || 0))) / length(results)
 
       "Completed #{length(results)} analyses with average score: #{Float.round(avg_score, 1)}"
     else
@@ -563,7 +607,7 @@ defmodule RubberDuck.Actions.AI.RunAnalysis do
   end
 
   defp generate_recommendations(results) do
-    all_suggestions = Enum.flat_map(results, & &1.suggestions || [])
+    all_suggestions = Enum.flat_map(results, &(&1.suggestions || []))
 
     # Deduplicate and prioritize
     all_suggestions

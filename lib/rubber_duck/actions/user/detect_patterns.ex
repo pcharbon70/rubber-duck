@@ -16,18 +16,20 @@ defmodule RubberDuck.Actions.User.DetectPatterns do
 
   @impl true
   def run(params, _context) do
-    patterns = params.pattern_types
+    patterns =
+      params.pattern_types
       |> Enum.map(fn type ->
         {type, detect_pattern_type(type, params.interactions, params)}
       end)
       |> Map.new()
       |> filter_by_confidence(params.confidence_threshold)
 
-    {:ok, %{
-      patterns: patterns,
-      pattern_count: count_patterns(patterns),
-      confidence_scores: calculate_confidence_scores(patterns)
-    }}
+    {:ok,
+     %{
+       patterns: patterns,
+       pattern_count: count_patterns(patterns),
+       confidence_scores: calculate_confidence_scores(patterns)
+     }}
   end
 
   defp detect_pattern_type(:temporal, interactions, params) do
@@ -44,13 +46,15 @@ defmodule RubberDuck.Actions.User.DetectPatterns do
 
   defp detect_temporal_patterns(interactions, min_occurrences) do
     # Group by hour of day and day of week
-    hourly_patterns = interactions
+    hourly_patterns =
+      interactions
       |> Enum.group_by(fn int ->
         DateTime.to_time(int.timestamp).hour
       end)
       |> analyze_temporal_groups(min_occurrences, :hourly)
 
-    daily_patterns = interactions
+    daily_patterns =
+      interactions
       |> Enum.group_by(& &1.context.day_of_week)
       |> analyze_temporal_groups(min_occurrences, :daily)
 
@@ -114,7 +118,8 @@ defmodule RubberDuck.Actions.User.DetectPatterns do
 
   defp detect_contextual_patterns(interactions, min_occurrences) do
     # Detect patterns based on context
-    context_groups = interactions
+    context_groups =
+      interactions
       |> Enum.group_by(fn int ->
         {int.context.device_type, int.context.location_type}
       end)
@@ -188,7 +193,7 @@ defmodule RubberDuck.Actions.User.DetectPatterns do
   end
 
   defp filter_patterns_list(patterns, threshold) when is_list(patterns) do
-    Enum.filter(patterns, & &1.confidence >= threshold)
+    Enum.filter(patterns, &(&1.confidence >= threshold))
   end
 
   defp filter_patterns_list(patterns, _threshold), do: patterns
@@ -231,6 +236,7 @@ defmodule RubberDuck.Actions.User.DetectPatterns do
   defp calculate_average_confidence(_), do: 0.0
 
   defp calculate_list_average_confidence([]), do: 0.0
+
   defp calculate_list_average_confidence(patterns) do
     confidences = Enum.map(patterns, & &1.confidence)
     Enum.sum(confidences) / length(confidences)

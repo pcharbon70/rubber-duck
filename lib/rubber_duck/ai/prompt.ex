@@ -116,12 +116,15 @@ defmodule RubberDuck.AI.Prompt do
 
     read :search do
       argument :search_term, :string, allow_nil?: false
-      prepare build(filter: [
-        or: [
-          [name: [ilike: arg(:search_term)]],
-          [description: [ilike: arg(:search_term)]]
-        ]
-      ])
+
+      prepare build(
+                filter: [
+                  or: [
+                    [name: [ilike: arg(:search_term)]],
+                    [description: [ilike: arg(:search_term)]]
+                  ]
+                ]
+              )
     end
   end
 
@@ -147,5 +150,4 @@ defmodule RubberDuck.AI.Prompt do
       authorize_if relates_to_actor_via(:author)
     end
   end
-
 end

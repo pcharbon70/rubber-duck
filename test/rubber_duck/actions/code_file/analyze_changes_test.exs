@@ -126,8 +126,8 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChangesTest do
       {:ok, result} = AnalyzeChanges.run(params, %{})
 
       # Deep analysis should find security and performance issues
-      security_issues = Enum.filter(result.issues, & &1.type == :security)
-      performance_issues = Enum.filter(result.issues, & &1.type == :performance)
+      security_issues = Enum.filter(result.issues, &(&1.type == :security))
+      performance_issues = Enum.filter(result.issues, &(&1.type == :performance))
 
       assert length(security_issues) > 0
       assert length(performance_issues) > 0
@@ -220,16 +220,17 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChangesTest do
       {:ok, result} = AnalyzeChanges.run(params, %{})
 
       assert length(result.issues) > 0
-      syntax_issues = Enum.filter(result.issues, & &1.type == :syntax)
+      syntax_issues = Enum.filter(result.issues, &(&1.type == :syntax))
       assert length(syntax_issues) > 0
     end
 
     test "handles very large files" do
-      large_content = 1..1000
-      |> Enum.map(fn i ->
-        "def function_#{i} do\n  :ok\nend\n"
-      end)
-      |> Enum.join("\n")
+      large_content =
+        1..1000
+        |> Enum.map(fn i ->
+          "def function_#{i} do\n  :ok\nend\n"
+        end)
+        |> Enum.join("\n")
 
       params = %{
         file_id: "large_file",

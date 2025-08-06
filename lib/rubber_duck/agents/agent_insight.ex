@@ -36,9 +36,13 @@ defmodule RubberDuck.Agents.AgentInsight do
       argument :insight_type, :string, allow_nil?: true
 
       filter expr(
-        agent_state_id == ^arg(:agent_state_id) and
-        if is_nil(^arg(:insight_type)), do: true, else: insight_type == ^arg(:insight_type)
-      )
+               agent_state_id == ^arg(:agent_state_id) and
+                 if(is_nil(^arg(:insight_type)),
+                   do: true,
+                   else: insight_type == ^arg(:insight_type)
+                 )
+             )
+
       prepare build(sort: [learned_at: :desc], limit: 10)
     end
 
@@ -47,9 +51,10 @@ defmodule RubberDuck.Agents.AgentInsight do
       argument :insight_type, :string, allow_nil?: false
 
       filter expr(
-        agent_state_id == ^arg(:agent_state_id) and
-        insight_type == ^arg(:insight_type)
-      )
+               agent_state_id == ^arg(:agent_state_id) and
+                 insight_type == ^arg(:insight_type)
+             )
+
       prepare build(sort: [learned_at: :desc])
     end
   end
@@ -73,7 +78,7 @@ defmodule RubberDuck.Agents.AgentInsight do
       description "Confidence level in the insight (0.0 to 1.0)"
       allow_nil? false
       public? true
-      constraints [min: 0.0, max: 1.0]
+      constraints min: 0.0, max: 1.0
     end
 
     attribute :applicable_scenarios, {:array, :string} do

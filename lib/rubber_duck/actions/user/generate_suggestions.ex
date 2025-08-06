@@ -16,7 +16,8 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
 
   @impl true
   def run(params, _context) do
-    suggestions = []
+    suggestions =
+      []
       |> add_temporal_suggestions(params.detected_patterns, params.current_context)
       |> add_sequential_suggestions(params.detected_patterns, params.current_context)
       |> add_contextual_suggestions(params.detected_patterns, params.current_context)
@@ -24,11 +25,12 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
       |> prioritize_suggestions()
       |> Enum.take(params.max_suggestions)
 
-    {:ok, %{
-      suggestions: suggestions,
-      generated_at: DateTime.utc_now(),
-      context_used: params.current_context
-    }}
+    {:ok,
+     %{
+       suggestions: suggestions,
+       generated_at: DateTime.utc_now(),
+       context_used: params.current_context
+     }}
   end
 
   defp add_temporal_suggestions(suggestions, patterns, _context) do
@@ -36,7 +38,8 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
     current_hour = DateTime.utc_now().hour
     current_day = Date.day_of_week(Date.utc_today())
 
-    hourly_suggestions = temporal_patterns
+    hourly_suggestions =
+      temporal_patterns
       |> Map.get(:hourly, [])
       |> Enum.filter(fn pattern ->
         pattern.time_key == current_hour && pattern.confidence > 0.6
@@ -54,7 +57,8 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
         end)
       end)
 
-    daily_suggestions = temporal_patterns
+    daily_suggestions =
+      temporal_patterns
       |> Map.get(:daily, [])
       |> Enum.filter(fn pattern ->
         pattern.time_key == current_day && pattern.confidence > 0.6
@@ -80,12 +84,14 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
     last_action = Map.get(context, :last_action)
 
     if last_action do
-      sequence_suggestions = sequential_patterns
+      sequence_suggestions =
+        sequential_patterns
         |> Enum.filter(fn pattern ->
           List.first(pattern.sequence) == last_action && pattern.confidence > 0.5
         end)
         |> Enum.map(fn pattern ->
           next_action = Enum.at(pattern.sequence, 1)
+
           %{
             type: :sequential,
             action: next_action,
@@ -106,11 +112,12 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
     current_device = Map.get(context, :device_type)
     current_location = Map.get(context, :location_type)
 
-    context_suggestions = contextual_patterns
+    context_suggestions =
+      contextual_patterns
       |> Enum.filter(fn pattern ->
         pattern.context.device == current_device &&
-        pattern.context.location == current_location &&
-        pattern.confidence > 0.4
+          pattern.context.location == current_location &&
+          pattern.confidence > 0.4
       end)
       |> Enum.flat_map(fn pattern ->
         pattern.actions
@@ -130,7 +137,8 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
   end
 
   defp add_preference_based_suggestions(suggestions, preferences) do
-    pref_suggestions = preferences
+    pref_suggestions =
+      preferences
       |> Map.get(:preferred_actions, %{})
       |> Enum.filter(fn {_action, weight} -> weight > 0.7 end)
       |> Enum.map(fn {action, weight} ->
@@ -156,12 +164,17 @@ defmodule RubberDuck.Actions.User.GenerateSuggestions do
   end
 
   defp calculate_priority(type, confidence) do
-    type_weight = case type do
-      :sequential -> 1.2  # Recent actions are highly relevant
-      :temporal -> 1.0    # Time-based patterns are reliable
-      :contextual -> 0.9  # Context matters but less than sequence
-      :preference -> 0.8  # General preferences have lower priority
-    end
+    type_weight =
+      case type do
+        # Recent actions are highly relevant
+        :sequential -> 1.2
+        # Time-based patterns are reliable
+        :temporal -> 1.0
+        # Context matters but less than sequence
+        :contextual -> 0.9
+        # General preferences have lower priority
+        :preference -> 0.8
+      end
 
     confidence * type_weight
   end

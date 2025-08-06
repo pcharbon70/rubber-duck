@@ -26,16 +26,16 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
          {:ok, patterns} <- extract_learning_patterns(processed, params.history),
          {:ok, adjustments} <- calculate_adjustments(patterns, params.learning_rate),
          {:ok, updates} <- generate_learning_updates(adjustments, processed) do
-
-      {:ok, %{
-        processed_feedback: processed,
-        identified_patterns: patterns,
-        accuracy_updates: updates.accuracy,
-        improvement_areas: updates.improvements,
-        preferences: updates.preferences,
-        confidence: calculate_learning_confidence(patterns, params.history),
-        recommendations: generate_recommendations(patterns, adjustments)
-      }}
+      {:ok,
+       %{
+         processed_feedback: processed,
+         identified_patterns: patterns,
+         accuracy_updates: updates.accuracy,
+         improvement_areas: updates.improvements,
+         preferences: updates.preferences,
+         confidence: calculate_learning_confidence(patterns, params.history),
+         recommendations: generate_recommendations(patterns, adjustments)
+       }}
     end
   end
 
@@ -130,23 +130,26 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
   defp extract_actionable_points(feedback) do
     points = []
 
-    points = if feedback[:correction] do
-      [%{type: :correction, detail: feedback.correction} | points]
-    else
-      points
-    end
+    points =
+      if feedback[:correction] do
+        [%{type: :correction, detail: feedback.correction} | points]
+      else
+        points
+      end
 
-    points = if feedback[:suggestion] do
-      [%{type: :suggestion, detail: feedback.suggestion} | points]
-    else
-      points
-    end
+    points =
+      if feedback[:suggestion] do
+        [%{type: :suggestion, detail: feedback.suggestion} | points]
+      else
+        points
+      end
 
-    points = if feedback[:specific_issue] do
-      [%{type: :issue, detail: feedback.specific_issue} | points]
-    else
-      points
-    end
+    points =
+      if feedback[:specific_issue] do
+        [%{type: :issue, detail: feedback.specific_issue} | points]
+      else
+        points
+      end
 
     points
   end
@@ -168,8 +171,8 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
   defp analyze_sentiment_trend(feedback_list) do
     sentiments = Enum.map(feedback_list, & &1.sentiment)
 
-    positive_count = Enum.count(sentiments, & &1 == :positive)
-    negative_count = Enum.count(sentiments, & &1 == :negative)
+    positive_count = Enum.count(sentiments, &(&1 == :positive))
+    negative_count = Enum.count(sentiments, &(&1 == :negative))
     total = length(sentiments)
 
     cond do
@@ -183,7 +186,7 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
   defp identify_common_issues(feedback_list) do
     feedback_list
     |> Enum.flat_map(& &1.actionable_points)
-    |> Enum.filter(& &1.type == :issue)
+    |> Enum.filter(&(&1.type == :issue))
     |> Enum.group_by(& &1.detail)
     |> Enum.map(fn {issue, occurrences} ->
       %{issue: issue, frequency: length(occurrences)}
@@ -198,8 +201,8 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
       recent = Enum.take(feedback_list, 5)
       older = Enum.slice(feedback_list, 5, 5)
 
-      recent_positive = Enum.count(recent, & &1.sentiment == :positive)
-      older_positive = Enum.count(older, & &1.sentiment == :positive)
+      recent_positive = Enum.count(recent, &(&1.sentiment == :positive))
+      older_positive = Enum.count(older, &(&1.sentiment == :positive))
 
       cond do
         recent_positive > older_positive -> :accelerating
@@ -215,7 +218,7 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
     specificities = Enum.map(feedback_list, & &1.specificity)
 
     if length(specificities) > 0 do
-      high_count = Enum.count(specificities, & &1 == :high)
+      high_count = Enum.count(specificities, &(&1 == :high))
       high_count / length(specificities)
     else
       0.0
@@ -226,14 +229,16 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
     preferences = %{}
 
     # Extract preferences from suggestions
-    suggestions = feedback_list
+    suggestions =
+      feedback_list
       |> Enum.flat_map(& &1.actionable_points)
-      |> Enum.filter(& &1.type == :suggestion)
+      |> Enum.filter(&(&1.type == :suggestion))
 
     # Group by type of suggestion
-    grouped = Enum.group_by(suggestions, fn suggestion ->
-      categorize_suggestion(suggestion.detail)
-    end)
+    grouped =
+      Enum.group_by(suggestions, fn suggestion ->
+        categorize_suggestion(suggestion.detail)
+      end)
 
     Enum.reduce(grouped, preferences, fn {category, items}, acc ->
       Map.put(acc, category, %{
@@ -252,6 +257,7 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
       true -> :general
     end
   end
+
   defp categorize_suggestion(_), do: :general
 
   defp calculate_adjustments(patterns, learning_rate) do
@@ -266,11 +272,12 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
   end
 
   defp calculate_accuracy_adjustment(patterns, learning_rate) do
-    base_adjustment = case patterns.sentiment_trend do
-      :improving -> learning_rate
-      :declining -> -learning_rate
-      _ -> 0
-    end
+    base_adjustment =
+      case patterns.sentiment_trend do
+        :improving -> learning_rate
+        :declining -> -learning_rate
+        _ -> 0
+      end
 
     # Modify based on consistency
     base_adjustment * (0.5 + patterns.feedback_consistency * 0.5)
@@ -295,6 +302,7 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
       true -> :general
     end
   end
+
   defp categorize_issue(_), do: :general
 
   defp calculate_issue_weight(frequency) do
@@ -315,8 +323,10 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
 
   defp adjust_confidence_threshold(patterns, learning_rate) do
     case patterns.sentiment_trend do
-      :declining -> -learning_rate * 0.1  # Lower threshold if declining
-      :improving -> learning_rate * 0.05   # Slightly raise if improving
+      # Lower threshold if declining
+      :declining -> -learning_rate * 0.1
+      # Slightly raise if improving
+      :improving -> learning_rate * 0.05
       _ -> 0
     end
   end
@@ -330,11 +340,13 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
   end
 
   defp adjust_complexity_threshold(_patterns, _learning_rate) do
-    0  # Keep stable for now
+    # Keep stable for now
+    0
   end
 
   defp calculate_preference_weights(preference_patterns) do
-    total_suggestions = preference_patterns
+    total_suggestions =
+      preference_patterns
       |> Map.values()
       |> Enum.map(& &1.count)
       |> Enum.sum()
@@ -369,8 +381,10 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
     case processed.type do
       :correction ->
         Map.put(base_updates, :correction_applied, true)
+
       :rating ->
         Map.put(base_updates, :rating_incorporated, true)
+
       _ ->
         base_updates
     end
@@ -409,22 +423,25 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
     factors = []
 
     # Factor in data volume
-    factors = if length(history) > 20 do
-      [0.3 | factors]
-    else
-      [0.1 | factors]
-    end
+    factors =
+      if length(history) > 20 do
+        [0.3 | factors]
+      else
+        [0.1 | factors]
+      end
 
     # Factor in consistency
     factors = [patterns.feedback_consistency * 0.4 | factors]
 
     # Factor in trend clarity
-    trend_factor = case patterns.sentiment_trend do
-      :improving -> 0.3
-      :declining -> 0.2
-      :stable -> 0.25
-      _ -> 0.1
-    end
+    trend_factor =
+      case patterns.sentiment_trend do
+        :improving -> 0.3
+        :declining -> 0.2
+        :stable -> 0.25
+        _ -> 0.1
+      end
+
     factors = [trend_factor | factors]
 
     Enum.sum(factors)
@@ -434,17 +451,21 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
     recommendations = []
 
     # Add recommendations based on patterns
-    recommendations = case patterns.sentiment_trend do
-      :declining ->
-        ["Review and adjust analysis algorithms" | recommendations]
-      :improving ->
-        ["Continue current approach with minor refinements" | recommendations]
-      _ ->
-        recommendations
-    end
+    recommendations =
+      case patterns.sentiment_trend do
+        :declining ->
+          ["Review and adjust analysis algorithms" | recommendations]
+
+        :improving ->
+          ["Continue current approach with minor refinements" | recommendations]
+
+        _ ->
+          recommendations
+      end
 
     # Add recommendations based on common issues
-    issue_recommendations = patterns.common_issues
+    issue_recommendations =
+      patterns.common_issues
       |> Enum.take(3)
       |> Enum.map(fn issue ->
         "Address recurring issue: #{issue.issue}"
@@ -453,7 +474,8 @@ defmodule RubberDuck.Actions.AI.LearnFromFeedback do
     recommendations = recommendations ++ issue_recommendations
 
     # Add preference-based recommendations
-    preference_recommendations = adjustments.preference_weights
+    preference_recommendations =
+      adjustments.preference_weights
       |> Enum.sort_by(fn {_, weight} -> weight end, :desc)
       |> Enum.take(2)
       |> Enum.map(fn {category, _} ->

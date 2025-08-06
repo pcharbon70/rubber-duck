@@ -10,7 +10,11 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
       file_id: [type: :string, required: true],
       content: [type: :string, required: true],
       language: [type: :string, default: "elixir"],
-      optimization_level: [type: :atom, default: :balanced, values: [:conservative, :balanced, :aggressive]]
+      optimization_level: [
+        type: :atom,
+        default: :balanced,
+        values: [:conservative, :balanced, :aggressive]
+      ]
     ]
 
   @impl true
@@ -19,15 +23,15 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
          {:ok, optimizations} <- detect_optimization_opportunities(analysis, params),
          {:ok, benchmarks} <- estimate_performance_gains(optimizations),
          {:ok, recommendations} <- generate_recommendations(optimizations, benchmarks, params) do
-
-      {:ok, %{
-        optimizations: optimizations,
-        performance_metrics: analysis.metrics,
-        estimated_gains: benchmarks,
-        recommendations: recommendations,
-        optimization_score: calculate_optimization_score(optimizations, benchmarks),
-        priority_order: prioritize_optimizations(optimizations, benchmarks)
-      }}
+      {:ok,
+       %{
+         optimizations: optimizations,
+         performance_metrics: analysis.metrics,
+         estimated_gains: benchmarks,
+         recommendations: recommendations,
+         optimization_score: calculate_optimization_score(optimizations, benchmarks),
+         priority_order: prioritize_optimizations(optimizations, benchmarks)
+       }}
     end
   end
 
@@ -66,21 +70,23 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
   end
 
   defp estimate_performance_gains(optimizations) do
-    benchmarks = Enum.map(optimizations, fn opt ->
-      %{
-        optimization_id: opt.id,
-        estimated_speedup: estimate_speedup(opt),
-        memory_reduction: estimate_memory_reduction(opt),
-        complexity_improvement: estimate_complexity_improvement(opt),
-        confidence: calculate_confidence(opt)
-      }
-    end)
+    benchmarks =
+      Enum.map(optimizations, fn opt ->
+        %{
+          optimization_id: opt.id,
+          estimated_speedup: estimate_speedup(opt),
+          memory_reduction: estimate_memory_reduction(opt),
+          complexity_improvement: estimate_complexity_improvement(opt),
+          confidence: calculate_confidence(opt)
+        }
+      end)
 
     {:ok, benchmarks}
   end
 
   defp generate_recommendations(optimizations, benchmarks, _params) do
-    recommendations = optimizations
+    recommendations =
+      optimizations
       |> Enum.zip(benchmarks)
       |> Enum.map(fn {opt, bench} ->
         %{
@@ -143,11 +149,12 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
     lines
     |> Enum.reduce({0, max_depth}, fn line, {current_depth, max} ->
-      new_depth = if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
-        current_depth + 1
-      else
-        max(0, current_depth - count_block_ends(line))
-      end
+      new_depth =
+        if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
+          current_depth + 1
+        else
+          max(0, current_depth - count_block_ends(line))
+        end
 
       {new_depth, max(max, new_depth)}
     end)
@@ -177,38 +184,46 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect Enum chains that could use Stream
-    optimizations = if Regex.match?(~r/Enum\.\w+.*\|>\s*Enum\.\w+/, content) do
-      [%{
-        id: "enum_to_stream",
-        type: :algorithm,
-        title: "Replace Enum chains with Stream",
-        description: "Use Stream for lazy evaluation in chained operations",
-        current_code: extract_enum_chains(content),
-        optimized_code: convert_enum_to_stream(extract_enum_chains(content)),
-        effort: :low,
-        risk: :low,
-        auto_applicable: true
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if Regex.match?(~r/Enum\.\w+.*\|>\s*Enum\.\w+/, content) do
+        [
+          %{
+            id: "enum_to_stream",
+            type: :algorithm,
+            title: "Replace Enum chains with Stream",
+            description: "Use Stream for lazy evaluation in chained operations",
+            current_code: extract_enum_chains(content),
+            optimized_code: convert_enum_to_stream(extract_enum_chains(content)),
+            effort: :low,
+            risk: :low,
+            auto_applicable: true
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     # Detect multiple passes over same collection
-    optimizations = if detect_multiple_enum_passes(content) do
-      [%{
-        id: "combine_enum_passes",
-        type: :algorithm,
-        title: "Combine multiple Enum operations",
-        description: "Reduce iterations by combining operations",
-        current_code: "Multiple Enum operations detected",
-        optimized_code: "Combined operation suggested",
-        effort: :medium,
-        risk: :low,
-        auto_applicable: false
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if detect_multiple_enum_passes(content) do
+        [
+          %{
+            id: "combine_enum_passes",
+            type: :algorithm,
+            title: "Combine multiple Enum operations",
+            description: "Reduce iterations by combining operations",
+            current_code: "Multiple Enum operations detected",
+            optimized_code: "Combined operation suggested",
+            effort: :medium,
+            risk: :low,
+            auto_applicable: false
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -217,21 +232,25 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect if-else chains that could be pattern matching
-    optimizations = if Regex.match?(~r/if .+ do.*else.*end/s, content) do
-      [%{
-        id: "if_to_pattern_match",
-        type: :code_quality,
-        title: "Replace if-else with pattern matching",
-        description: "Use pattern matching for cleaner, faster code",
-        current_code: "if-else chain detected",
-        optimized_code: "case or function heads suggested",
-        effort: :low,
-        risk: :low,
-        auto_applicable: false
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if Regex.match?(~r/if .+ do.*else.*end/s, content) do
+        [
+          %{
+            id: "if_to_pattern_match",
+            type: :code_quality,
+            title: "Replace if-else with pattern matching",
+            description: "Use pattern matching for cleaner, faster code",
+            current_code: "if-else chain detected",
+            optimized_code: "case or function heads suggested",
+            effort: :low,
+            risk: :low,
+            auto_applicable: false
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -240,38 +259,46 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect string concatenation in loops
-    optimizations = if Regex.match?(~r/Enum\..+<>/, content) do
-      [%{
-        id: "string_concat_optimization",
-        type: :memory,
-        title: "Optimize string concatenation",
-        description: "Use iolist instead of string concatenation in loops",
-        current_code: "String concatenation in loop",
-        optimized_code: "Use iolist pattern",
-        effort: :medium,
-        risk: :low,
-        auto_applicable: false
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if Regex.match?(~r/Enum\..+<>/, content) do
+        [
+          %{
+            id: "string_concat_optimization",
+            type: :memory,
+            title: "Optimize string concatenation",
+            description: "Use iolist instead of string concatenation in loops",
+            current_code: "String concatenation in loop",
+            optimized_code: "Use iolist pattern",
+            effort: :medium,
+            risk: :low,
+            auto_applicable: false
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     # Detect large list operations
-    optimizations = if detect_large_list_operations(content) do
-      [%{
-        id: "list_optimization",
-        type: :memory,
-        title: "Optimize list operations",
-        description: "Consider using :ets or Stream for large lists",
-        current_code: "Large list operations detected",
-        optimized_code: "Alternative data structure suggested",
-        effort: :high,
-        risk: :medium,
-        auto_applicable: false
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if detect_large_list_operations(content) do
+        [
+          %{
+            id: "list_optimization",
+            type: :memory,
+            title: "Optimize list operations",
+            description: "Consider using :ets or Stream for large lists",
+            current_code: "Large list operations detected",
+            optimized_code: "Alternative data structure suggested",
+            effort: :high,
+            risk: :medium,
+            auto_applicable: false
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -280,21 +307,25 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect N+1 query patterns
-    optimizations = if detect_n_plus_one_pattern(content) do
-      [%{
-        id: "n_plus_one",
-        type: :database,
-        title: "Fix N+1 query problem",
-        description: "Use preloading to reduce database queries",
-        current_code: "Potential N+1 pattern",
-        optimized_code: "Use Repo.preload or join",
-        effort: :medium,
-        risk: :low,
-        auto_applicable: false
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if detect_n_plus_one_pattern(content) do
+        [
+          %{
+            id: "n_plus_one",
+            type: :database,
+            title: "Fix N+1 query problem",
+            description: "Use preloading to reduce database queries",
+            current_code: "Potential N+1 pattern",
+            optimized_code: "Use Repo.preload or join",
+            effort: :medium,
+            risk: :low,
+            auto_applicable: false
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -303,21 +334,25 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
     optimizations = []
 
     # Detect synchronous operations that could be concurrent
-    optimizations = if detect_parallelizable_operations(content) do
-      [%{
-        id: "add_concurrency",
-        type: :concurrency,
-        title: "Add concurrent processing",
-        description: "Use Task.async/await for parallel operations",
-        current_code: "Sequential operations detected",
-        optimized_code: "Concurrent processing suggested",
-        effort: :medium,
-        risk: :medium,
-        auto_applicable: false
-      } | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if detect_parallelizable_operations(content) do
+        [
+          %{
+            id: "add_concurrency",
+            type: :concurrency,
+            title: "Add concurrent processing",
+            description: "Use Task.async/await for parallel operations",
+            current_code: "Sequential operations detected",
+            optimized_code: "Concurrent processing suggested",
+            effort: :medium,
+            risk: :medium,
+            auto_applicable: false
+          }
+          | optimizations
+        ]
+      else
+        optimizations
+      end
 
     optimizations
   end
@@ -370,16 +405,17 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
   defp format_improvement(benchmark) do
     "#{round(benchmark.estimated_speedup * 100)}% faster, " <>
-    "#{round(benchmark.memory_reduction * 100)}% less memory"
+      "#{round(benchmark.memory_reduction * 100)}% less memory"
   end
 
   defp calculate_optimization_score(optimizations, benchmarks) do
     if Enum.empty?(optimizations) do
       1.0
     else
-      total_speedup = Enum.reduce(benchmarks, 0, fn b, acc ->
-        acc + b.estimated_speedup
-      end)
+      total_speedup =
+        Enum.reduce(benchmarks, 0, fn b, acc ->
+          acc + b.estimated_speedup
+        end)
 
       min(1.0, total_speedup / (length(optimizations) * 2))
     end
@@ -420,17 +456,19 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
     lines
     |> Enum.reduce({0, 0}, fn line, {current, max_n} ->
-      new_current = if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
-        current + 1
-      else
-        current
-      end
+      new_current =
+        if String.contains?(line, "Enum.") or String.contains?(line, "for ") do
+          current + 1
+        else
+          current
+        end
 
-      new_current = if String.contains?(line, "end") do
-        max(0, new_current - 1)
-      else
-        new_current
-      end
+      new_current =
+        if String.contains?(line, "end") do
+          max(0, new_current - 1)
+        else
+          new_current
+        end
 
       {new_current, max(max_n, new_current)}
     end)
@@ -447,6 +485,7 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
   defp count_list_operations(content) do
     list_ops = ["++", "[", "|", "List."]
+
     Enum.reduce(list_ops, 0, fn op, acc ->
       acc + count_pattern_occurrences(content, op)
     end)
@@ -454,6 +493,7 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
   defp count_map_operations(content) do
     map_ops = ["%{", "Map.", "put_in", "get_in", "update_in"]
+
     Enum.reduce(map_ops, 0, fn op, acc ->
       acc + count_pattern_occurrences(content, op)
     end)
@@ -466,8 +506,8 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
   defp detect_large_data_structures(content) do
     # Detect indicators of large data structures
     String.contains?(content, "Enum.take") or
-    String.contains?(content, "Stream.") or
-    String.contains?(content, ":ets")
+      String.contains?(content, "Stream.") or
+      String.contains?(content, ":ets")
   end
 
   defp count_block_ends(line) do
@@ -497,9 +537,9 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
   defp is_performance_hotspot?(function_body) do
     String.contains?(function_body, "Enum.") or
-    String.contains?(function_body, "Repo.") or
-    String.contains?(function_body, "for ") or
-    count_pattern_occurrences(function_body, "|>") > 3
+      String.contains?(function_body, "Repo.") or
+      String.contains?(function_body, "for ") or
+      count_pattern_occurrences(function_body, "|>") > 3
   end
 
   defp extract_enum_chains(content) do
@@ -520,16 +560,16 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
   defp detect_large_list_operations(content) do
     String.contains?(content, "Enum.map") and
-    (String.contains?(content, "large") or String.contains?(content, "all"))
+      (String.contains?(content, "large") or String.contains?(content, "all"))
   end
 
   defp detect_n_plus_one_pattern(content) do
     String.contains?(content, "Enum.map") and
-    String.contains?(content, "Repo.")
+      String.contains?(content, "Repo.")
   end
 
   defp detect_parallelizable_operations(content) do
     String.contains?(content, "Enum.map") and
-    not String.contains?(content, "Task.")
+      not String.contains?(content, "Task.")
   end
 end

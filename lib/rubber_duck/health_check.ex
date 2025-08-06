@@ -11,8 +11,10 @@ defmodule RubberDuck.HealthCheck do
   use GenServer
   require Logger
 
-  @check_interval 30_000  # 30 seconds
-  @timeout 5_000          # 5 second timeout for checks
+  # 30 seconds
+  @check_interval 30_000
+  # 5 second timeout for checks
+  @timeout 5_000
 
   defstruct [:status, :last_check, :checks, :timer_ref]
 
@@ -122,11 +124,7 @@ defmodule RubberDuck.HealthCheck do
     # Emit telemetry events for monitoring
     emit_health_telemetry(checks)
 
-    %{state |
-      status: status,
-      last_check: DateTime.utc_now(),
-      checks: checks
-    }
+    %{state | status: status, last_check: DateTime.utc_now(), checks: checks}
   end
 
   defp check_database do
@@ -134,6 +132,7 @@ defmodule RubberDuck.HealthCheck do
       case RubberDuck.Repo.query("SELECT 1", [], timeout: @timeout) do
         {:ok, _result} ->
           %{status: :healthy, message: "Database connection successful"}
+
         {:error, reason} ->
           %{status: :unhealthy, message: "Database error: #{inspect(reason)}"}
       end
@@ -150,7 +149,8 @@ defmodule RubberDuck.HealthCheck do
     total_mb = memory[:total] / 1_048_576
     process_mb = memory[:processes] / 1_048_576
 
-    if total_mb > 4000 do  # Over 4GB
+    # Over 4GB
+    if total_mb > 4000 do
       %{
         status: :warning,
         message: "High memory usage: #{Float.round(total_mb, 2)} MB",
@@ -170,7 +170,7 @@ defmodule RubberDuck.HealthCheck do
   defp check_process_count do
     count = :erlang.system_info(:process_count)
     limit = :erlang.system_info(:process_limit)
-    usage_percent = (count / limit) * 100
+    usage_percent = count / limit * 100
 
     if usage_percent > 80 do
       %{
@@ -192,7 +192,7 @@ defmodule RubberDuck.HealthCheck do
   defp check_atom_usage do
     count = :erlang.system_info(:atom_count)
     limit = :erlang.system_info(:atom_limit)
-    usage_percent = (count / limit) * 100
+    usage_percent = count / limit * 100
 
     if usage_percent > 75 do
       %{
@@ -226,6 +226,7 @@ defmodule RubberDuck.HealthCheck do
     case Process.whereis(RubberDuck.Repo) do
       nil ->
         %{status: :unhealthy, message: "Repository pool not running"}
+
       pid ->
         # Check if the repo process is alive
         if Process.alive?(pid) do
@@ -259,6 +260,7 @@ defmodule RubberDuck.HealthCheck do
   defp emit_health_telemetry(checks) do
     # Emit database health
     db_value = if checks.database.status == :healthy, do: 1, else: 0
+
     :telemetry.execute(
       [:rubber_duck, :health, :database],
       %{value: db_value},

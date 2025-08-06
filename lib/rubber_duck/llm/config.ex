@@ -103,6 +103,7 @@ defmodule RubberDuck.LLM.Config do
   defp normalize_provider_config(_), do: nil
 
   defp valid_provider_config?(nil), do: false
+
   defp valid_provider_config?(config) do
     Map.get(config, :enabled, false) &&
       Map.has_key?(config, :name) &&

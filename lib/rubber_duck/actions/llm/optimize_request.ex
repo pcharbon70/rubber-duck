@@ -39,20 +39,22 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
           {:ok, optimized} ->
             optimizations_applied = detect_optimizations(request, optimized)
 
-            {:ok, %{
-              optimized_request: optimized,
-              original_request: request,
-              optimizations_applied: optimizations_applied,
-              estimated_savings: estimate_cost_savings(request, optimized),
-              quality_impact: estimate_quality_impact(optimizations_applied)
-            }}
+            {:ok,
+             %{
+               optimized_request: optimized,
+               original_request: request,
+               optimizations_applied: optimizations_applied,
+               estimated_savings: estimate_cost_savings(request, optimized),
+               quality_impact: estimate_quality_impact(optimizations_applied)
+             }}
 
           {:error, reason} ->
-            {:error, %{
-              reason: reason,
-              original_request: request,
-              stage: :validation
-            }}
+            {:error,
+             %{
+               reason: reason,
+               original_request: request,
+               stage: :validation
+             }}
         end
 
       {:error, reason} ->
@@ -60,12 +62,16 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
     end
   rescue
     exception ->
-      Logger.error("Request optimization failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-      {:error, %{
-        reason: {:exception, exception},
-        message: Exception.message(exception),
-        original_request: params.request
-      }}
+      Logger.error(
+        "Request optimization failed: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+      )
+
+      {:error,
+       %{
+         reason: {:exception, exception},
+         message: Exception.message(exception),
+         original_request: params.request
+       }}
   end
 
   def describe do
@@ -174,9 +180,10 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   end
 
   defp select_recent_messages_within_limit(messages, available_tokens) do
-    {kept_messages, _} = messages
-    |> Enum.reverse()
-    |> Enum.reduce_while({[], available_tokens}, &accumulate_message_if_fits/2)
+    {kept_messages, _} =
+      messages
+      |> Enum.reverse()
+      |> Enum.reduce_while({[], available_tokens}, &accumulate_message_if_fits/2)
 
     kept_messages
   end
@@ -202,6 +209,7 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
       key_prefix: generate_cache_key_prefix(request)
     })
   end
+
   defp add_caching_headers(request, false), do: request
 
   defp optimize_parameters(request) do
@@ -214,21 +222,30 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
 
   defp optimize_temperature(request) do
     case request[:temperature] do
-      nil -> request
+      nil ->
+        request
+
       temp when temp > 1.5 ->
         Logger.debug("Reducing excessive temperature from #{temp} to 1.2")
         Map.put(request, :temperature, 1.2)
-      _ -> request
+
+      _ ->
+        request
     end
   end
 
   defp optimize_max_tokens(request) do
     case request[:max_tokens] do
-      nil -> Map.put(request, :max_tokens, 1000)  # Set reasonable default
+      # Set reasonable default
+      nil ->
+        Map.put(request, :max_tokens, 1000)
+
       tokens when tokens > 4000 ->
         Logger.debug("Reducing max_tokens from #{tokens} to 2000")
         Map.put(request, :max_tokens, 2000)
-      _ -> request
+
+      _ ->
+        request
     end
   end
 
@@ -243,9 +260,12 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
 
   defp remove_redundant_params(request) do
     request
-    |> Map.delete(:presence_penalty) # Often not needed
-    |> Map.delete(:frequency_penalty) # Often not needed
-    |> Map.delete(:logit_bias) # Rarely used
+    # Often not needed
+    |> Map.delete(:presence_penalty)
+    # Often not needed
+    |> Map.delete(:frequency_penalty)
+    # Rarely used
+    |> Map.delete(:logit_bias)
   end
 
   defp reduce_max_tokens(request) do
@@ -259,12 +279,13 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   defp use_cheaper_model_if_appropriate(request) do
     model = request[:model] || ""
 
-    cheaper_alternative = case model do
-      "gpt-4" <> _ -> "gpt-3.5-turbo"
-      "claude-3-opus" <> _ -> "claude-3-sonnet"
-      "claude-3-sonnet" <> _ -> "claude-3-haiku"
-      _ -> model
-    end
+    cheaper_alternative =
+      case model do
+        "gpt-4" <> _ -> "gpt-3.5-turbo"
+        "claude-3-opus" <> _ -> "claude-3-sonnet"
+        "claude-3-sonnet" <> _ -> "claude-3-haiku"
+        _ -> model
+      end
 
     if cheaper_alternative != model do
       Logger.debug("Switching from #{model} to cheaper #{cheaper_alternative}")
@@ -276,9 +297,12 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
 
   defp disable_unnecessary_features(request) do
     request
-    |> Map.put(:stream, false)  # Streaming adds overhead
-    |> Map.delete(:functions)   # Function calling is expensive
-    |> Map.delete(:tools)       # Tools are expensive
+    # Streaming adds overhead
+    |> Map.put(:stream, false)
+    # Function calling is expensive
+    |> Map.delete(:functions)
+    # Tools are expensive
+    |> Map.delete(:tools)
   end
 
   defp increase_temperature_diversity(request) do
@@ -301,12 +325,13 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   defp use_better_model_if_needed(request) do
     model = request[:model] || ""
 
-    quality_upgrade = case model do
-      "gpt-3.5-turbo" -> "gpt-4-turbo"
-      "claude-3-haiku" -> "claude-3-sonnet"
-      "claude-3-sonnet" -> "claude-3-opus"
-      _ -> model
-    end
+    quality_upgrade =
+      case model do
+        "gpt-3.5-turbo" -> "gpt-4-turbo"
+        "claude-3-haiku" -> "claude-3-sonnet"
+        "claude-3-sonnet" -> "claude-3-opus"
+        _ -> model
+      end
 
     if quality_upgrade != model do
       Logger.debug("Upgrading from #{model} to higher quality #{quality_upgrade}")
@@ -333,6 +358,7 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   end
 
   defp validate_optimized_request({:error, _} = error), do: error
+
   defp validate_optimized_request(request) do
     cond do
       # Must have messages or prompt
@@ -352,41 +378,47 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
     optimizations = []
 
     # Model change
-    optimizations = if original[:model] != optimized[:model] do
-      [:model_changed | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if original[:model] != optimized[:model] do
+        [:model_changed | optimizations]
+      else
+        optimizations
+      end
 
     # Context trimmed
     original_msgs = length(original[:messages] || [])
     optimized_msgs = length(optimized[:messages] || [])
-    optimizations = if original_msgs > optimized_msgs do
-      [:context_trimmed | optimizations]
-    else
-      optimizations
-    end
+
+    optimizations =
+      if original_msgs > optimized_msgs do
+        [:context_trimmed | optimizations]
+      else
+        optimizations
+      end
 
     # Parameters optimized
-    optimizations = if original[:max_tokens] != optimized[:max_tokens] do
-      [:max_tokens_adjusted | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if original[:max_tokens] != optimized[:max_tokens] do
+        [:max_tokens_adjusted | optimizations]
+      else
+        optimizations
+      end
 
     # Features disabled
-    optimizations = if Map.has_key?(original, :functions) && !Map.has_key?(optimized, :functions) do
-      [:functions_disabled | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if Map.has_key?(original, :functions) && !Map.has_key?(optimized, :functions) do
+        [:functions_disabled | optimizations]
+      else
+        optimizations
+      end
 
     # Caching enabled
-    optimizations = if Map.has_key?(optimized, :cache_control) do
-      [:caching_enabled | optimizations]
-    else
-      optimizations
-    end
+    optimizations =
+      if Map.has_key?(optimized, :cache_control) do
+        [:caching_enabled | optimizations]
+      else
+        optimizations
+      end
 
     Enum.reverse(optimizations)
   end
@@ -397,7 +429,7 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
     optimized_cost = estimate_request_cost(optimized)
 
     if original_cost > 0 do
-      savings_percent = ((original_cost - optimized_cost) / original_cost) * 100
+      savings_percent = (original_cost - optimized_cost) / original_cost * 100
       Float.round(savings_percent, 1)
     else
       0.0
@@ -405,14 +437,15 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
   end
 
   defp estimate_request_cost(request) do
-    model_cost = case request[:model] do
-      "gpt-4" <> _ -> 10.0
-      "gpt-3.5-turbo" -> 1.0
-      "claude-3-opus" <> _ -> 15.0
-      "claude-3-sonnet" <> _ -> 3.0
-      "claude-3-haiku" <> _ -> 0.25
-      _ -> 1.0
-    end
+    model_cost =
+      case request[:model] do
+        "gpt-4" <> _ -> 10.0
+        "gpt-3.5-turbo" -> 1.0
+        "claude-3-opus" <> _ -> 15.0
+        "claude-3-sonnet" <> _ -> 3.0
+        "claude-3-haiku" <> _ -> 0.25
+        _ -> 1.0
+      end
 
     tokens = (request[:max_tokens] || 1000) / 1000
     model_cost * tokens
@@ -420,9 +453,10 @@ defmodule RubberDuck.Actions.LLM.OptimizeRequest do
 
   defp estimate_quality_impact(optimizations) do
     # Estimate impact on quality based on optimizations
-    negative_impact = Enum.count(optimizations, fn opt ->
-      opt in [:model_changed, :context_trimmed, :functions_disabled]
-    end)
+    negative_impact =
+      Enum.count(optimizations, fn opt ->
+        opt in [:model_changed, :context_trimmed, :functions_disabled]
+      end)
 
     case negative_impact do
       0 -> :none

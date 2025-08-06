@@ -81,7 +81,11 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       auto_fix_enabled: [type: :boolean, default: false],
       last_analysis_at: [type: :utc_datetime, required: false],
       next_analysis_at: [type: :utc_datetime, required: false],
-      analysis_frequency: [type: :atom, default: :on_change, values: [:on_change, :hourly, :daily, :weekly]]
+      analysis_frequency: [
+        type: :atom,
+        default: :on_change,
+        values: [:on_change, :hourly, :daily, :weekly]
+      ]
     ],
     actions: [
       RubberDuck.Actions.CodeFile.AnalyzeChanges,
@@ -109,8 +113,8 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     with {:ok, file_data} <- extract_file_data(signal),
          {:ok, updated_state} <- initialize_file_tracking(state, file_data),
          {:ok, analysis_result} <- perform_initial_analysis(updated_state) do
-
-      new_state = updated_state
+      new_state =
+        updated_state
         |> Map.merge(analysis_result)
         |> Map.put(:last_analysis_at, DateTime.utc_now())
 
@@ -132,7 +136,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     with {:ok, changes} <- extract_changes(signal),
          {:ok, impact} <- analyze_change_impact(changes, state),
          {:ok, updated_state} <- apply_changes(state, changes, impact) do
-
       # Emit signals for dependent files if needed
       if impact.affects_dependents do
         emit_signal("code_file.dependencies_affected", %{
@@ -154,7 +157,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     with {:ok, analysis} <- perform_comprehensive_analysis(state, signal),
          {:ok, insights} <- generate_insights(analysis, state),
          {:ok, updated_state} <- update_analysis_state(state, analysis, insights) do
-
       emit_signal("code_file.analysis_complete", %{
         file_id: state.file_id,
         quality_score: updated_state.quality_score,
@@ -177,7 +179,8 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       auto_fix: Map.get(params, :auto_fix, false)
     }
 
-    updated_state = state
+    updated_state =
+      state
       |> Map.put(:monitoring_enabled, monitoring_config.enabled)
       |> Map.put(:analysis_frequency, monitoring_config.frequency)
       |> Map.put(:auto_fix_enabled, monitoring_config.auto_fix)
@@ -194,12 +197,12 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     with {:ok, optimizations} <- detect_optimization_opportunities(state, params),
          {:ok, applied} <- apply_optimizations(optimizations, params),
          {:ok, updated_state} <- update_performance_metrics(state, applied) do
-
-      {:ok, %{
-        optimizations_found: length(optimizations),
-        optimizations_applied: length(applied),
-        new_performance_grade: updated_state.performance_grade
-      }, updated_state}
+      {:ok,
+       %{
+         optimizations_found: length(optimizations),
+         optimizations_applied: length(applied),
+         new_performance_grade: updated_state.performance_grade
+       }, updated_state}
     end
   end
 
@@ -208,12 +211,12 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     with {:ok, doc_analysis} <- analyze_documentation_needs(state, params),
          {:ok, updates} <- generate_documentation_updates(doc_analysis, params),
          {:ok, updated_state} <- apply_documentation_updates(state, updates) do
-
-      {:ok, %{
-        documentation_updated: true,
-        coverage: updated_state.documentation_coverage,
-        quality: updated_state.documentation_quality
-      }, updated_state}
+      {:ok,
+       %{
+         documentation_updated: true,
+         coverage: updated_state.documentation_coverage,
+         quality: updated_state.documentation_quality
+       }, updated_state}
     end
   end
 
@@ -222,12 +225,12 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     with {:ok, dep_analysis} <- perform_dependency_analysis(state, params),
          {:ok, impact_map} <- calculate_dependency_impact(dep_analysis),
          {:ok, updated_state} <- update_dependency_state(state, dep_analysis, impact_map) do
-
-      {:ok, %{
-        dependencies: updated_state.dependencies,
-        dependents: updated_state.dependents,
-        impact_analysis: impact_map
-      }, updated_state}
+      {:ok,
+       %{
+         dependencies: updated_state.dependencies,
+         dependents: updated_state.dependents,
+         impact_analysis: impact_map
+       }, updated_state}
     end
   end
 
@@ -259,10 +262,13 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
   defp perform_initial_analysis(state) do
     # Delegate to action
-    case RubberDuck.Actions.CodeFile.AnalyzeChanges.run(%{
-      file_id: state.file_id,
-      content: state.current_content
-    }, %{}) do
+    case RubberDuck.Actions.CodeFile.AnalyzeChanges.run(
+           %{
+             file_id: state.file_id,
+             content: state.current_content
+           },
+           %{}
+         ) do
       {:ok, result} -> {:ok, result}
       error -> error
     end
@@ -279,11 +285,13 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       affected_files: state.dependents,
       severity: :medium
     }
+
     {:ok, impact}
   end
 
   defp apply_changes(state, changes, _impact) do
-    updated_state = state
+    updated_state =
+      state
       |> Map.put(:previous_content, state.current_content)
       |> Map.put(:current_content, changes.new_content)
       |> Map.put(:last_modified, DateTime.utc_now())
@@ -294,11 +302,12 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
   defp perform_comprehensive_analysis(_state, _params) do
     # Perform full analysis
-    {:ok, %{
-      quality_score: 0.85,
-      issues: [],
-      suggestions: []
-    }}
+    {:ok,
+     %{
+       quality_score: 0.85,
+       issues: [],
+       suggestions: []
+     }}
   end
 
   defp generate_insights(analysis, state) do
@@ -307,17 +316,22 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
     # Check for improvement trends
     if analysis.quality_score > state.quality_score do
-      [%{
-        type: :improvement,
-        message: "Code quality improved by #{round((analysis.quality_score - state.quality_score) * 100)}%"
-      } | insights]
+      [
+        %{
+          type: :improvement,
+          message:
+            "Code quality improved by #{round((analysis.quality_score - state.quality_score) * 100)}%"
+        }
+        | insights
+      ]
     end
 
     {:ok, insights}
   end
 
   defp update_analysis_state(state, analysis, insights) do
-    updated_state = state
+    updated_state =
+      state
       |> Map.merge(analysis)
       |> Map.put(:learning_insights, insights)
       |> Map.put(:last_analysis_at, DateTime.utc_now())
@@ -327,10 +341,13 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
   defp detect_optimization_opportunities(state, _params) do
     # Delegate to action
-    case RubberDuck.Actions.CodeFile.DetectOptimizations.run(%{
-      file_id: state.file_id,
-      content: state.current_content
-    }, %{}) do
+    case RubberDuck.Actions.CodeFile.DetectOptimizations.run(
+           %{
+             file_id: state.file_id,
+             content: state.current_content
+           },
+           %{}
+         ) do
       {:ok, result} -> {:ok, result.optimizations}
       error -> error
     end
@@ -346,7 +363,8 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   defp update_performance_metrics(state, applied) do
-    updated_state = state
+    updated_state =
+      state
       |> Map.put(:optimization_opportunities, applied)
       |> Map.put(:performance_grade, :good)
 
@@ -355,23 +373,26 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
   defp analyze_documentation_needs(state, _params) do
     # Analyze what documentation is needed
-    {:ok, %{
-      needs_readme: not state.has_readme,
-      needs_inline_docs: not state.has_inline_docs,
-      undocumented_functions: []
-    }}
+    {:ok,
+     %{
+       needs_readme: not state.has_readme,
+       needs_inline_docs: not state.has_inline_docs,
+       undocumented_functions: []
+     }}
   end
 
   defp generate_documentation_updates(doc_analysis, _params) do
     # Generate documentation updates
-    {:ok, %{
-      readme_content: if(doc_analysis.needs_readme, do: "# Module Documentation\n", else: nil),
-      inline_docs: []
-    }}
+    {:ok,
+     %{
+       readme_content: if(doc_analysis.needs_readme, do: "# Module Documentation\n", else: nil),
+       inline_docs: []
+     }}
   end
 
   defp apply_documentation_updates(state, updates) do
-    updated_state = state
+    updated_state =
+      state
       |> Map.put(:has_readme, updates.readme_content != nil)
       |> Map.put(:documentation_coverage, 0.75)
       |> Map.put(:documentation_quality, :good)
@@ -381,24 +402,27 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
   defp perform_dependency_analysis(state, _params) do
     # Analyze dependencies
-    {:ok, %{
-      imports: state.imports,
-      exports: state.exports,
-      external_deps: []
-    }}
+    {:ok,
+     %{
+       imports: state.imports,
+       exports: state.exports,
+       external_deps: []
+     }}
   end
 
   defp calculate_dependency_impact(_dep_analysis) do
     # Calculate impact of dependencies
-    {:ok, %{
-      impact_score: 0.5,
-      affected_modules: [],
-      risk_level: :low
-    }}
+    {:ok,
+     %{
+       impact_score: 0.5,
+       affected_modules: [],
+       risk_level: :low
+     }}
   end
 
   defp update_dependency_state(state, dep_analysis, _impact_map) do
-    updated_state = state
+    updated_state =
+      state
       |> Map.put(:dependencies, dep_analysis.external_deps)
       |> Map.put(:imports, dep_analysis.imports)
       |> Map.put(:exports, dep_analysis.exports)

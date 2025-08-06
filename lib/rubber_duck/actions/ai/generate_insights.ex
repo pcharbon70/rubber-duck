@@ -28,7 +28,6 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
          {:ok, predictions} <- generate_predictions(trends, params.depth),
          {:ok, opportunities} <- identify_opportunities(analyzed, predictions),
          {:ok, recommendations} <- formulate_recommendations(opportunities, params.context) do
-
       {:ok, build_insights(params, trends, predictions, opportunities, recommendations)}
     end
   end
@@ -123,11 +122,12 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
     current = analysis.key_metrics.quality_score || analysis.baseline.average_quality
     baseline = analysis.baseline.average_quality
 
-    trend = cond do
-      current > baseline + 5 -> :improving
-      current < baseline - 5 -> :declining
-      true -> :stable
-    end
+    trend =
+      cond do
+        current > baseline + 5 -> :improving
+        current < baseline - 5 -> :declining
+        true -> :stable
+      end
 
     %{
       direction: trend,
@@ -140,11 +140,12 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
     current = analysis.key_metrics.complexity || analysis.baseline.average_complexity
     baseline = analysis.baseline.average_complexity
 
-    trend = cond do
-      current > baseline * 1.2 -> :increasing
-      current < baseline * 0.8 -> :decreasing
-      true -> :stable
-    end
+    trend =
+      cond do
+        current > baseline * 1.2 -> :increasing
+        current < baseline * 0.8 -> :decreasing
+        true -> :stable
+      end
 
     %{
       direction: trend,
@@ -155,7 +156,7 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
 
   defp identify_complexity_hotspots(analysis) do
     analysis.relevant_patterns
-    |> Enum.filter(& &1.type == :high_complexity)
+    |> Enum.filter(&(&1.type == :high_complexity))
     |> Enum.map(& &1.details)
     |> Enum.take(5)
   end
@@ -238,11 +239,12 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
   defp generate_predictions(trends, depth) do
     predictions = %{
       short_term: generate_short_term_predictions(trends),
-      long_term: if depth == :deep do
-        generate_long_term_predictions(trends)
-      else
-        []
-      end,
+      long_term:
+        if depth == :deep do
+          generate_long_term_predictions(trends)
+        else
+          []
+        end,
       risk_areas: predict_risk_areas(trends),
       improvement_potential: estimate_improvement_potential(trends)
     }
@@ -254,24 +256,30 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
     predictions = []
 
     # Quality predictions
-    predictions = case trends.quality.direction do
-      :improving ->
-        ["Quality metrics likely to exceed baseline within 1-2 weeks" | predictions]
-      :declining ->
-        ["Quality degradation may reach critical levels without intervention" | predictions]
-      _ ->
-        predictions
-    end
+    predictions =
+      case trends.quality.direction do
+        :improving ->
+          ["Quality metrics likely to exceed baseline within 1-2 weeks" | predictions]
+
+        :declining ->
+          ["Quality degradation may reach critical levels without intervention" | predictions]
+
+        _ ->
+          predictions
+      end
 
     # Complexity predictions
-    predictions = case trends.complexity.direction do
-      :increasing ->
-        ["Code complexity trending toward maintenance difficulties" | predictions]
-      :decreasing ->
-        ["Complexity reduction efforts showing positive results" | predictions]
-      _ ->
-        predictions
-    end
+    predictions =
+      case trends.complexity.direction do
+        :increasing ->
+          ["Code complexity trending toward maintenance difficulties" | predictions]
+
+        :decreasing ->
+          ["Complexity reduction efforts showing positive results" | predictions]
+
+        _ ->
+          predictions
+      end
 
     predictions
   end
@@ -280,21 +288,28 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
     predictions = []
 
     # Pattern evolution predictions
-    predictions = if length(trends.patterns.emerging) > 0 do
-      ["Emerging patterns may become dominant: #{Enum.join(trends.patterns.emerging, ", ")}" | predictions]
-    else
-      predictions
-    end
+    predictions =
+      if length(trends.patterns.emerging) > 0 do
+        [
+          "Emerging patterns may become dominant: #{Enum.join(trends.patterns.emerging, ", ")}"
+          | predictions
+        ]
+      else
+        predictions
+      end
 
     # Stability predictions
-    predictions = case trends.stability do
-      :degrading ->
-        ["System stability at risk - proactive measures recommended" | predictions]
-      :improving ->
-        ["Continued stability improvements expected with current practices" | predictions]
-      _ ->
-        predictions
-    end
+    predictions =
+      case trends.stability do
+        :degrading ->
+          ["System stability at risk - proactive measures recommended" | predictions]
+
+        :improving ->
+          ["Continued stability improvements expected with current practices" | predictions]
+
+        _ ->
+          predictions
+      end
 
     predictions
   end
@@ -302,23 +317,29 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
   defp predict_risk_areas(trends) do
     risks = []
 
-    risks = if trends.quality.direction == :declining do
-      [%{area: :quality, level: :medium, description: "Declining code quality"} | risks]
-    else
-      risks
-    end
+    risks =
+      if trends.quality.direction == :declining do
+        [%{area: :quality, level: :medium, description: "Declining code quality"} | risks]
+      else
+        risks
+      end
 
-    risks = if trends.complexity.direction == :increasing do
-      [%{area: :complexity, level: :high, description: "Increasing complexity"} | risks]
-    else
-      risks
-    end
+    risks =
+      if trends.complexity.direction == :increasing do
+        [%{area: :complexity, level: :high, description: "Increasing complexity"} | risks]
+      else
+        risks
+      end
 
-    risks = if length(trends.patterns.persistent) > 5 do
-      [%{area: :patterns, level: :medium, description: "Persistent problematic patterns"} | risks]
-    else
-      risks
-    end
+    risks =
+      if length(trends.patterns.persistent) > 5 do
+        [
+          %{area: :patterns, level: :medium, description: "Persistent problematic patterns"}
+          | risks
+        ]
+      else
+        risks
+      end
 
     risks
   end
@@ -327,8 +348,13 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
     base_potential = 50.0
 
     adjustments = 0
-    adjustments = if trends.quality.direction == :improving, do: adjustments + 20, else: adjustments
-    adjustments = if trends.complexity.direction == :decreasing, do: adjustments + 15, else: adjustments
+
+    adjustments =
+      if trends.quality.direction == :improving, do: adjustments + 20, else: adjustments
+
+    adjustments =
+      if trends.complexity.direction == :decreasing, do: adjustments + 15, else: adjustments
+
     adjustments = if trends.stability == :stable, do: adjustments + 10, else: adjustments
 
     min(100, base_potential + adjustments)
@@ -356,18 +382,21 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
     wins = []
 
     # Low-hanging fruit from patterns
-    simple_patterns = analysis.relevant_patterns
-      |> Enum.filter(& &1[:impact] && &1.impact.effort == :low)
+    simple_patterns =
+      analysis.relevant_patterns
+      |> Enum.filter(&(&1[:impact] && &1.impact.effort == :low))
       |> Enum.take(3)
 
-    wins = wins ++ Enum.map(simple_patterns, fn pattern ->
-      %{
-        action: "Fix #{pattern.type}",
-        impact: :medium,
-        effort: :low,
-        roi: :high
-      }
-    end)
+    wins =
+      wins ++
+        Enum.map(simple_patterns, fn pattern ->
+          %{
+            action: "Fix #{pattern.type}",
+            impact: :medium,
+            effort: :low,
+            roi: :high
+          }
+        end)
 
     wins
   end
@@ -377,26 +406,31 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
 
     # Based on improvement potential
     if predictions.improvement_potential > 70 do
-      _improvements = [%{
-        action: "Implement comprehensive refactoring",
-        impact: :high,
-        effort: :high,
-        roi: :medium,
-        timeline: "2-4 weeks"
-      } | improvements]
+      _improvements = [
+        %{
+          action: "Implement comprehensive refactoring",
+          impact: :high,
+          effort: :high,
+          roi: :medium,
+          timeline: "2-4 weeks"
+        }
+        | improvements
+      ]
     end
 
     # Based on risk areas
-    high_risks = Enum.filter(predictions.risk_areas, & &1.level == :high)
-    risk_improvements = Enum.map(high_risks, fn risk ->
-      %{
-        action: "Address #{risk.area} risk: #{risk.description}",
-        impact: :high,
-        effort: :medium,
-        roi: :high,
-        timeline: "1-2 weeks"
-      }
-    end)
+    high_risks = Enum.filter(predictions.risk_areas, &(&1.level == :high))
+
+    risk_improvements =
+      Enum.map(high_risks, fn risk ->
+        %{
+          action: "Address #{risk.area} risk: #{risk.description}",
+          impact: :high,
+          effort: :medium,
+          roi: :high,
+          timeline: "1-2 weeks"
+        }
+      end)
 
     improvements ++ risk_improvements
   end
@@ -404,35 +438,37 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
   defp identify_preventive_measures(predictions) do
     # Based on predicted risks
     predictions.risk_areas
-      |> Enum.filter(& &1.level in [:medium, :high])
-      |> Enum.map(fn risk ->
-        %{
-          action: "Prevent #{risk.area} issues",
-          impact: :medium,
-          effort: :low,
-          roi: :high,
-          description: "Proactive measure for #{risk.description}"
-        }
-      end)
+    |> Enum.filter(&(&1.level in [:medium, :high]))
+    |> Enum.map(fn risk ->
+      %{
+        action: "Prevent #{risk.area} issues",
+        impact: :medium,
+        effort: :low,
+        roi: :high,
+        description: "Proactive measure for #{risk.description}"
+      }
+    end)
   end
 
   defp formulate_recommendations(opportunities, context) do
     # Prioritize opportunities
-    prioritized = opportunities
+    prioritized =
+      opportunities
       |> score_opportunities()
       |> Enum.sort_by(& &1.score, :desc)
       |> Enum.take(10)
 
     # Format as actionable recommendations
-    recommendations = Enum.map(prioritized, fn opp ->
-      %{
-        action: opp.action,
-        priority: determine_priority(opp),
-        expected_impact: opp.impact,
-        implementation: generate_implementation_steps(opp, context),
-        rationale: generate_rationale(opp)
-      }
-    end)
+    recommendations =
+      Enum.map(prioritized, fn opp ->
+        %{
+          action: opp.action,
+          priority: determine_priority(opp),
+          expected_impact: opp.impact,
+          implementation: generate_implementation_steps(opp, context),
+          rationale: generate_rationale(opp)
+        }
+      end)
 
     {:ok, recommendations}
   end
@@ -473,23 +509,27 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
   end
 
   defp generate_implementation_steps(opportunity, _context) do
-    base_steps = case opportunity.category do
-      :quick_win ->
-        ["Identify affected code", "Apply fix", "Test changes"]
-      :strategic ->
-        ["Plan implementation", "Allocate resources", "Execute in phases", "Monitor progress"]
-      :preventive ->
-        ["Set up monitoring", "Define thresholds", "Create alerts"]
-      _ ->
-        ["Assess current state", "Implement change", "Verify results"]
-    end
+    base_steps =
+      case opportunity.category do
+        :quick_win ->
+          ["Identify affected code", "Apply fix", "Test changes"]
+
+        :strategic ->
+          ["Plan implementation", "Allocate resources", "Execute in phases", "Monitor progress"]
+
+        :preventive ->
+          ["Set up monitoring", "Define thresholds", "Create alerts"]
+
+        _ ->
+          ["Assess current state", "Implement change", "Verify results"]
+      end
 
     base_steps
   end
 
   defp generate_rationale(opportunity) do
     "#{opportunity.action} offers #{opportunity.impact} impact with #{opportunity.effort} effort" <>
-    if opportunity[:roi], do: " and #{opportunity.roi} ROI", else: ""
+      if opportunity[:roi], do: " and #{opportunity.roi} ROI", else: ""
   end
 
   defp calculate_insight_confidence(trends, predictions) do
@@ -498,16 +538,20 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
     # Trend confidence
     trend_confidence = [
       trends.quality.confidence || 0.5,
-      0.7  # Default confidence for other trends
+      # Default confidence for other trends
+      0.7
     ]
+
     factors = factors ++ trend_confidence
 
     # Prediction confidence based on risk count
-    prediction_confidence = if length(predictions.risk_areas) > 0 do
-      0.6
-    else
-      0.8
-    end
+    prediction_confidence =
+      if length(predictions.risk_areas) > 0 do
+        0.6
+      else
+        0.8
+      end
+
     factors = [prediction_confidence | factors]
 
     # Average all confidence factors
@@ -521,7 +565,7 @@ defmodule RubberDuck.Actions.AI.GenerateInsights do
   defp generate_context_id(context) do
     context
     |> :erlang.term_to_binary()
-    |> then(& :crypto.hash(:md5, &1))
+    |> then(&:crypto.hash(:md5, &1))
     |> Base.encode16()
     |> String.slice(0, 8)
   end

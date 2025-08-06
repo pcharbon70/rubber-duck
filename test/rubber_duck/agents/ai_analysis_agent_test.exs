@@ -2,6 +2,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
   use ExUnit.Case, async: true
 
   alias RubberDuck.Agents.AIAnalysisAgent
+
   alias RubberDuck.Actions.AI.{
     AssessQuality,
     DiscoverPatterns,
@@ -42,6 +43,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         analysis_types: [:general, :quality],
         priority: :medium
       }
+
       context = %{agent: agent}
 
       assert {:ok, schedule} = ScheduleAnalysis.run(params, context)
@@ -55,6 +57,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         project_id: "urgent_project",
         priority: :immediate
       }
+
       context = %{agent: agent}
 
       assert {:ok, schedule} = ScheduleAnalysis.run(params, context)
@@ -63,10 +66,11 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
     end
 
     test "adds analysis to queue via instruction", %{agent: agent} do
-      {:ok, result, updated_agent} = AIAnalysisAgent.handle_instruction(
-        {:schedule_analysis, %{project_id: "test", priority: :high}},
-        agent
-      )
+      {:ok, result, updated_agent} =
+        AIAnalysisAgent.handle_instruction(
+          {:schedule_analysis, %{project_id: "test", priority: :high}},
+          agent
+        )
 
       assert result.priority == :high
       assert length(updated_agent.state.analysis_queue) > 0
@@ -107,10 +111,11 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
 
     test "handles analysis instruction", %{agent: agent} do
       # Mock a simple project analysis
-      result = AIAnalysisAgent.handle_instruction(
-        {:analyze_project, "project123"},
-        agent
-      )
+      result =
+        AIAnalysisAgent.handle_instruction(
+          {:analyze_project, "project123"},
+          agent
+        )
 
       # The actual result depends on database state
       # We're testing the instruction handling
@@ -207,10 +212,11 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         suggestion: "Focus more on performance analysis"
       }
 
-      {:ok, result, updated_agent} = AIAnalysisAgent.handle_instruction(
-        {:process_feedback, feedback},
-        agent
-      )
+      {:ok, result, updated_agent} =
+        AIAnalysisAgent.handle_instruction(
+          {:process_feedback, feedback},
+          agent
+        )
 
       assert result.processed_feedback
       assert length(updated_agent.state.feedback_history) > 0
@@ -311,11 +317,12 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         change_type: :code_update
       }
 
-      {:ok, updated_agent} = AIAnalysisAgent.handle_signal(
-        "project.changed",
-        payload,
-        agent
-      )
+      {:ok, updated_agent} =
+        AIAnalysisAgent.handle_signal(
+          "project.changed",
+          payload,
+          agent
+        )
 
       activity = updated_agent.state.project_activity["project123"]
       assert activity.change_count == 1
@@ -330,11 +337,12 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         change_type: :content_update
       }
 
-      {:ok, updated_agent} = AIAnalysisAgent.handle_signal(
-        "code_file.modified",
-        payload,
-        agent
-      )
+      {:ok, updated_agent} =
+        AIAnalysisAgent.handle_signal(
+          "code_file.modified",
+          payload,
+          agent
+        )
 
       tracking = updated_agent.state.file_change_tracking["file123"]
       assert tracking.modification_count == 1
@@ -349,11 +357,12 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         priority: :high
       }
 
-      {:ok, updated_agent} = AIAnalysisAgent.handle_signal(
-        "analysis.requested",
-        payload,
-        agent
-      )
+      {:ok, updated_agent} =
+        AIAnalysisAgent.handle_signal(
+          "analysis.requested",
+          payload,
+          agent
+        )
 
       # Should be added to queue with high priority
       assert length(updated_agent.state.analysis_queue) > 0
@@ -372,11 +381,12 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         }
       }
 
-      result = AIAnalysisAgent.handle_signal(
-        "analysis.feedback",
-        payload,
-        agent
-      )
+      result =
+        AIAnalysisAgent.handle_signal(
+          "analysis.feedback",
+          payload,
+          agent
+        )
 
       # Should trigger feedback processing
       assert elem(result, 0) == :ok
@@ -388,11 +398,12 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
       agent = AIAnalysisAgent.new()
 
       # Simulate multiple changes to trigger analysis
-      agent = Enum.reduce(1..10, agent, fn i, acc ->
-        payload = %{project_id: "active_project", change_count: i}
-        {:ok, updated} = AIAnalysisAgent.handle_signal("project.changed", payload, acc)
-        updated
-      end)
+      agent =
+        Enum.reduce(1..10, agent, fn i, acc ->
+          payload = %{project_id: "active_project", change_count: i}
+          {:ok, updated} = AIAnalysisAgent.handle_signal("project.changed", payload, acc)
+          updated
+        end)
 
       activity = agent.state.project_activity["active_project"]
       assert activity.change_count >= 10
@@ -431,9 +442,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         completeness: 0.95
       }
 
-      updated_agent = %{agent |
-        state: Map.put(agent.state, :quality_metrics, quality_data)
-      }
+      updated_agent = %{agent | state: Map.put(agent.state, :quality_metrics, quality_data)}
 
       assert updated_agent.state.quality_metrics.accuracy == 0.85
       assert updated_agent.state.quality_metrics.relevance == 0.90
@@ -447,9 +456,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
         %{area: :complexity, priority: :medium}
       ]
 
-      updated_agent = %{agent |
-        state: Map.put(agent.state, :improvement_targets, targets)
-      }
+      updated_agent = %{agent | state: Map.put(agent.state, :improvement_targets, targets)}
 
       assert length(updated_agent.state.improvement_targets) == 2
       assert hd(updated_agent.state.improvement_targets).area == :documentation

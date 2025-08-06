@@ -23,14 +23,14 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
          impact_analysis <- analyze_changes(params.changes, project_context, params),
          risk_assessment <- assess_risks(impact_analysis, params.risk_threshold),
          recommendations <- generate_recommendations(impact_analysis, risk_assessment) do
-
-      {:ok, %{
-        impact_analysis: impact_analysis,
-        risk_assessment: risk_assessment,
-        recommendations: recommendations,
-        overall_risk: calculate_overall_risk(risk_assessment),
-        analyzed_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         impact_analysis: impact_analysis,
+         risk_assessment: risk_assessment,
+         recommendations: recommendations,
+         overall_risk: calculate_overall_risk(risk_assessment),
+         analyzed_at: DateTime.utc_now()
+       }}
     end
   end
 
@@ -41,16 +41,20 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
           project: project,
           files: files,
           file_map: build_file_map(files),
-          dependency_graph: if params.include_dependencies do
-            build_dependency_graph(files)
-          else
-            %{}
-          end,
+          dependency_graph:
+            if params.include_dependencies do
+              build_dependency_graph(files)
+            else
+              %{}
+            end,
           module_map: build_module_map(files),
           function_map: build_function_map(files)
         }
+
         {:ok, context}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -62,7 +66,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
 
   defp build_dependency_graph(files) do
     files
-    |> Enum.filter(& &1.language == "elixir")
+    |> Enum.filter(&(&1.language == "elixir"))
     |> Enum.reduce(%{}, fn file, acc ->
       deps = extract_file_dependencies(file)
       Map.put(acc, file.path, deps)
@@ -106,7 +110,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
 
   defp build_module_map(files) do
     files
-    |> Enum.filter(& &1.language == "elixir" && &1.content)
+    |> Enum.filter(&(&1.language == "elixir" && &1.content))
     |> Enum.reduce(%{}, fn file, acc ->
       case extract_module_name(file.content) do
         nil -> acc
@@ -124,7 +128,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
 
   defp build_function_map(files) do
     files
-    |> Enum.filter(& &1.language == "elixir" && &1.content)
+    |> Enum.filter(&(&1.language == "elixir" && &1.content))
     |> Enum.reduce(%{}, fn file, acc ->
       process_file_functions(file, acc)
     end)
@@ -144,6 +148,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
   defp add_module_functions(functions, module_name, file_path, acc) do
     Enum.reduce(functions, acc, fn func, inner_acc ->
       key = "#{module_name}.#{func.name}/#{func.arity}"
+
       Map.put(inner_acc, key, %{
         file: file_path,
         function: func,
@@ -157,12 +162,15 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     |> then(&Regex.scan(~r/def(?:p?)\s+(\w+)(?:\(([^)]*)\))?/, &1))
     |> Enum.map(fn
       [_, name, args] ->
-        arity = if args && args != "" do
-          length(String.split(args, ","))
-        else
-          0
-        end
+        arity =
+          if args && args != "" do
+            length(String.split(args, ","))
+          else
+            0
+          end
+
         %{name: name, arity: arity}
+
       [_, name] ->
         %{name: name, arity: 0}
     end)
@@ -177,11 +185,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
   defp analyze_single_change(change, context, depth) do
     base_impact = analyze_direct_impact(change, context)
 
-    enhanced_impact = case depth do
-      :shallow -> base_impact
-      :moderate -> enhance_with_dependencies(base_impact, context)
-      :deep -> deep_analysis(base_impact, context)
-    end
+    enhanced_impact =
+      case depth do
+        :shallow -> base_impact
+        :moderate -> enhance_with_dependencies(base_impact, context)
+        :deep -> deep_analysis(base_impact, context)
+      end
 
     %{
       change: change,
@@ -289,6 +298,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     case change.target.structure_type do
       :directory_move ->
         files_in_dir = find_files_in_directory(change.target.from, context)
+
         %{
           affected_files: files_in_dir,
           impact_type: :structure_reorganization,
@@ -298,6 +308,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
       :file_rename ->
         old_path = change.target.from
         importers = find_file_importers(old_path, context)
+
         %{
           affected_files: [old_path | importers] |> Enum.uniq(),
           impact_type: :file_rename,
@@ -310,7 +321,8 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
   end
 
   defp has_associated_tests?(file_path, context) do
-    test_path = file_path
+    test_path =
+      file_path
       |> String.replace("lib/", "test/")
       |> String.replace(".ex", "_test.exs")
 
@@ -347,10 +359,11 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
   end
 
   defp find_file_importers(file_path, context) do
-    module_name = case Map.get(context.file_map, file_path) do
-      nil -> nil
-      file -> extract_module_name(file.content)
-    end
+    module_name =
+      case Map.get(context.file_map, file_path) do
+        nil -> nil
+        file -> extract_module_name(file.content)
+      end
 
     if module_name do
       find_module_dependents(module_name, context)
@@ -364,7 +377,8 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
 
     Map.merge(base_impact, %{
       ripple_effects: ripple_effects,
-      affected_files: Enum.uniq(base_impact.affected_files ++ extract_ripple_files(ripple_effects)),
+      affected_files:
+        Enum.uniq(base_impact.affected_files ++ extract_ripple_files(ripple_effects)),
       affected_modules: extract_affected_modules(ripple_effects)
     })
   end
@@ -391,12 +405,14 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
         }
       ]
     end)
-    |> Enum.filter(& length(&1.affected) > 0)
+    |> Enum.filter(&(length(&1.affected) > 0))
   end
 
   defp find_module_dependents_for_file(file_path, context) do
     case Map.get(context.file_map, file_path) do
-      nil -> []
+      nil ->
+        []
+
       file ->
         case extract_module_name(file.content) do
           nil -> []
@@ -445,11 +461,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     %{
       covered_files: length(files_with_tests),
       total_files: length(affected_files),
-      coverage_ratio: if length(affected_files) > 0 do
-        length(files_with_tests) / length(affected_files)
-      else
-        0.0
-      end
+      coverage_ratio:
+        if length(affected_files) > 0 do
+          length(files_with_tests) / length(affected_files)
+        else
+          0.0
+        end
     }
   end
 
@@ -465,11 +482,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
 
   defp detect_api_changes(impact, _context) do
     # Check if any affected files are controllers or API modules
-    api_files = Enum.filter(impact.affected_files, fn file ->
-      String.contains?(file, "controller") ||
-      String.contains?(file, "api") ||
-      String.contains?(file, "endpoint")
-    end)
+    api_files =
+      Enum.filter(impact.affected_files, fn file ->
+        String.contains?(file, "controller") ||
+          String.contains?(file, "api") ||
+          String.contains?(file, "endpoint")
+      end)
 
     %{
       has_api_changes: length(api_files) > 0,
@@ -479,11 +497,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
 
   defp detect_database_impact(impact, _context) do
     # Check for migration or schema changes
-    db_files = Enum.filter(impact.affected_files, fn file ->
-      String.contains?(file, "migration") ||
-      String.contains?(file, "schema") ||
-      String.contains?(file, "ecto")
-    end)
+    db_files =
+      Enum.filter(impact.affected_files, fn file ->
+        String.contains?(file, "migration") ||
+          String.contains?(file, "schema") ||
+          String.contains?(file, "ecto")
+      end)
 
     %{
       has_database_changes: length(db_files) > 0,
@@ -508,11 +527,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
   end
 
   defp calculate_confidence(impact, depth) do
-    base_confidence = case depth do
-      :shallow -> 0.6
-      :moderate -> 0.8
-      :deep -> 0.9
-    end
+    base_confidence =
+      case depth do
+        :shallow -> 0.6
+        :moderate -> 0.8
+        :deep -> 0.9
+      end
 
     # Adjust based on analysis completeness
     adjustments = [
@@ -546,53 +566,78 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     factors = []
 
     # File count risk
-    factors = if length(analysis.affected_files) > 20 do
-      [{:high_file_count, %{
-        count: length(analysis.affected_files),
-        severity: :high
-      }} | factors]
-    else
-      factors
-    end
+    factors =
+      if length(analysis.affected_files) > 20 do
+        [
+          {:high_file_count,
+           %{
+             count: length(analysis.affected_files),
+             severity: :high
+           }}
+          | factors
+        ]
+      else
+        factors
+      end
 
     # Complexity risk
-    factors = if analysis.complexity_score > 50 do
-      [{:high_complexity, %{
-        score: analysis.complexity_score,
-        severity: :high
-      }} | factors]
-    else
-      factors
-    end
+    factors =
+      if analysis.complexity_score > 50 do
+        [
+          {:high_complexity,
+           %{
+             score: analysis.complexity_score,
+             severity: :high
+           }}
+          | factors
+        ]
+      else
+        factors
+      end
 
     # Test coverage risk
-    factors = if get_in(analysis, [:direct_impact, :test_coverage, :coverage_ratio]) < 0.5 do
-      [{:low_test_coverage, %{
-        ratio: get_in(analysis, [:direct_impact, :test_coverage, :coverage_ratio]),
-        severity: :medium
-      }} | factors]
-    else
-      factors
-    end
+    factors =
+      if get_in(analysis, [:direct_impact, :test_coverage, :coverage_ratio]) < 0.5 do
+        [
+          {:low_test_coverage,
+           %{
+             ratio: get_in(analysis, [:direct_impact, :test_coverage, :coverage_ratio]),
+             severity: :medium
+           }}
+          | factors
+        ]
+      else
+        factors
+      end
 
     # API change risk
-    factors = if get_in(analysis, [:direct_impact, :api_changes, :has_api_changes]) do
-      [{:api_changes, %{
-        endpoints: get_in(analysis, [:direct_impact, :api_changes, :affected_endpoints]),
-        severity: :high
-      }} | factors]
-    else
-      factors
-    end
+    factors =
+      if get_in(analysis, [:direct_impact, :api_changes, :has_api_changes]) do
+        [
+          {:api_changes,
+           %{
+             endpoints: get_in(analysis, [:direct_impact, :api_changes, :affected_endpoints]),
+             severity: :high
+           }}
+          | factors
+        ]
+      else
+        factors
+      end
 
     # Database risk
-    factors = if get_in(analysis, [:direct_impact, :database_impact, :migration_required]) do
-      [{:database_migration, %{
-        severity: :high
-      }} | factors]
-    else
-      factors
-    end
+    factors =
+      if get_in(analysis, [:direct_impact, :database_impact, :migration_required]) do
+        [
+          {:database_migration,
+           %{
+             severity: :high
+           }}
+          | factors
+        ]
+      else
+        factors
+      end
 
     factors
   end
@@ -607,9 +652,12 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     if Enum.empty?(risk_factors) do
       0.1
     else
-      total_score = Enum.sum(Enum.map(risk_factors, fn {_, details} ->
-        Map.get(severity_scores, details.severity, 0.5)
-      end))
+      total_score =
+        Enum.sum(
+          Enum.map(risk_factors, fn {_, details} ->
+            Map.get(severity_scores, details.severity, 0.5)
+          end)
+        )
 
       min(1.0, total_score / length(risk_factors) * 1.5)
     end
@@ -642,54 +690,59 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     recs = []
 
     # High risk recommendations
-    recs = if risk.high_risk do
-      [
-        "Consider breaking this change into smaller, incremental updates",
-        "Ensure comprehensive testing before deployment",
-        "Plan for rollback strategy"
-        | recs
-      ]
-    else
-      recs
-    end
+    recs =
+      if risk.high_risk do
+        [
+          "Consider breaking this change into smaller, incremental updates",
+          "Ensure comprehensive testing before deployment",
+          "Plan for rollback strategy"
+          | recs
+        ]
+      else
+        recs
+      end
 
     # Test coverage recommendations
-    recs = if (Kernel.get_in(impact, [:direct_impact, :test_coverage, :coverage_ratio]) || 1.0) < 0.8 do
-      ["Add or improve test coverage for affected files" | recs]
-    else
-      recs
-    end
+    recs =
+      if (Kernel.get_in(impact, [:direct_impact, :test_coverage, :coverage_ratio]) || 1.0) < 0.8 do
+        ["Add or improve test coverage for affected files" | recs]
+      else
+        recs
+      end
 
     # API change recommendations
-    recs = if get_in(impact, [:direct_impact, :api_changes, :has_api_changes]) do
-      [
-        "Update API documentation",
-        "Version the API if breaking changes are introduced",
-        "Notify API consumers of changes"
-        | recs
-      ]
-    else
-      recs
-    end
+    recs =
+      if get_in(impact, [:direct_impact, :api_changes, :has_api_changes]) do
+        [
+          "Update API documentation",
+          "Version the API if breaking changes are introduced",
+          "Notify API consumers of changes"
+          | recs
+        ]
+      else
+        recs
+      end
 
     # Database recommendations
-    recs = if get_in(impact, [:direct_impact, :database_impact, :migration_required]) do
-      [
-        "Test database migration on staging environment",
-        "Plan for migration rollback",
-        "Consider migration performance impact"
-        | recs
-      ]
-    else
-      recs
-    end
+    recs =
+      if get_in(impact, [:direct_impact, :database_impact, :migration_required]) do
+        [
+          "Test database migration on staging environment",
+          "Plan for migration rollback",
+          "Consider migration performance impact"
+          | recs
+        ]
+      else
+        recs
+      end
 
     # Performance recommendations
-    recs = if impact[:performance_impact] == :high do
-      ["Monitor performance metrics after deployment" | recs]
-    else
-      recs
-    end
+    recs =
+      if impact[:performance_impact] == :high do
+        ["Monitor performance metrics after deployment" | recs]
+      else
+        recs
+      end
 
     Enum.reverse(recs)
   end
@@ -714,9 +767,10 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
       {length(Map.get(impact, :ripple_effects, [])) > 10, 1.5}
     ]
 
-    estimated_hours = Enum.reduce(multipliers, base_hours, fn {condition, mult}, acc ->
-      if condition, do: acc * mult, else: acc
-    end)
+    estimated_hours =
+      Enum.reduce(multipliers, base_hours, fn {condition, mult}, acc ->
+        if condition, do: acc * mult, else: acc
+      end)
 
     %{
       hours: Float.round(estimated_hours, 1),
@@ -730,7 +784,7 @@ defmodule RubberDuck.Actions.Project.AnalyzeImpact do
     %{
       average_risk: Enum.sum(risk_scores) / max(length(risk_scores), 1),
       max_risk: Enum.max(risk_scores, fn -> 0 end),
-      critical_count: Enum.count(risk_assessment, & &1.risk_level == :critical),
+      critical_count: Enum.count(risk_assessment, &(&1.risk_level == :critical)),
       high_risk_count: Enum.count(risk_assessment, & &1.high_risk)
     }
   end

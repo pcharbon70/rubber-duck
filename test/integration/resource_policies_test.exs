@@ -14,28 +14,40 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
   describe "Resource creation with policy enforcement" do
     setup do
       # Create two test users
-      {:ok, owner} = Accounts.register_user(%{
-        username: "owner_user",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      }, authorize?: false)
+      {:ok, owner} =
+        Accounts.register_user(
+          %{
+            username: "owner_user",
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          },
+          authorize?: false
+        )
 
-      {:ok, other_user} = Accounts.register_user(%{
-        username: "other_user",
-        password: "Password123!",
-        password_confirmation: "Password123!"
-      }, authorize?: false)
+      {:ok, other_user} =
+        Accounts.register_user(
+          %{
+            username: "other_user",
+            password: "Password123!",
+            password_confirmation: "Password123!"
+          },
+          authorize?: false
+        )
 
       %{owner: owner, other_user: other_user}
     end
 
     test "project ownership and access control", %{owner: owner, other_user: other_user} do
       # Owner creates a project
-      {:ok, project} = Projects.create_project(%{
-        name: "Owner's Project",
-        description: "Test project for policy testing",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Owner's Project",
+            description: "Test project for policy testing",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
       assert project.owner_id == owner.id
 
@@ -45,24 +57,27 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
 
       # Other user cannot read owner's project (may return NotFound due to filtering)
       result = Projects.get_project(project.id, actor: other_user)
+
       assert match?({:error, %Ash.Error.Forbidden{}}, result) or
-             match?({:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}}, result)
+               match?({:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}}, result)
 
       # Owner can update their project
-      assert {:ok, updated} = Projects.update_project(
-        project,
-        %{description: "Updated by owner"},
-        actor: owner
-      )
+      assert {:ok, updated} =
+               Projects.update_project(
+                 project,
+                 %{description: "Updated by owner"},
+                 actor: owner
+               )
+
       assert updated.description == "Updated by owner"
 
       # Other user cannot update owner's project
       assert {:error, %Ash.Error.Forbidden{}} =
-        Projects.update_project(
-          project,
-          %{description: "Attempted update by other"},
-          actor: other_user
-        )
+               Projects.update_project(
+                 project,
+                 %{description: "Attempted update by other"},
+                 actor: other_user
+               )
 
       # Owner can delete their project
       assert {:ok, deleted} = Projects.delete_project(project, actor: owner)
@@ -71,20 +86,32 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
 
     test "users can only see their own projects", %{owner: owner, other_user: other_user} do
       # Each user creates projects
-      {:ok, owner_project1} = Projects.create_project(%{
-        name: "Owner Project 1",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, owner_project1} =
+        Projects.create_project(
+          %{
+            name: "Owner Project 1",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
-      {:ok, owner_project2} = Projects.create_project(%{
-        name: "Owner Project 2",
-        language: "python"
-      }, actor: owner)
+      {:ok, owner_project2} =
+        Projects.create_project(
+          %{
+            name: "Owner Project 2",
+            language: "python"
+          },
+          actor: owner
+        )
 
-      {:ok, other_project} = Projects.create_project(%{
-        name: "Other User Project",
-        language: "javascript"
-      }, actor: other_user)
+      {:ok, other_project} =
+        Projects.create_project(
+          %{
+            name: "Other User Project",
+            language: "javascript"
+          },
+          actor: other_user
+        )
 
       # Owner sees only their projects
       {:ok, owner_projects} = Projects.list_projects(actor: owner)
@@ -102,104 +129,138 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
 
     test "code file policies follow project ownership", %{owner: owner, other_user: other_user} do
       # Owner creates a project
-      {:ok, project} = Projects.create_project(%{
-        name: "Code File Test",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Code File Test",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
       # Owner can create code files in their project
-      {:ok, code_file} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "/lib/test.ex",
-        content: "defmodule Test do\nend",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, code_file} =
+        Projects.create_code_file(
+          %{
+            project_id: project.id,
+            path: "/lib/test.ex",
+            content: "defmodule Test do\nend",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
       assert code_file.project_id == project.id
 
       # Note: Current policy allows anyone to create code files
       # This test demonstrates current behavior - may need policy adjustment
       assert {:ok, _hack_file} =
-        Projects.create_code_file(%{
-          project_id: project.id,
-          path: "/lib/hack.ex",
-          content: "defmodule Hack do\nend",
-          language: "elixir"
-        }, actor: other_user)
+               Projects.create_code_file(
+                 %{
+                   project_id: project.id,
+                   path: "/lib/hack.ex",
+                   content: "defmodule Hack do\nend",
+                   language: "elixir"
+                 },
+                 actor: other_user
+               )
 
       # Owner can update their code files
-      assert {:ok, updated_file} = Projects.update_code_file(
-        code_file,
-        %{content: "defmodule Updated do\nend"},
-        actor: owner
-      )
+      assert {:ok, updated_file} =
+               Projects.update_code_file(
+                 code_file,
+                 %{content: "defmodule Updated do\nend"},
+                 actor: owner
+               )
+
       assert updated_file.content == "defmodule Updated do\nend"
 
       # Other user cannot update owner's code files
       assert {:error, %Ash.Error.Forbidden{}} =
-        Projects.update_code_file(
-          code_file,
-          %{content: "defmodule Hacked do\nend"},
-          actor: other_user
-        )
+               Projects.update_code_file(
+                 code_file,
+                 %{content: "defmodule Hacked do\nend"},
+                 actor: other_user
+               )
     end
 
     test "AI analysis results follow project ownership", %{owner: owner, other_user: other_user} do
       # Owner creates a project
-      {:ok, project} = Projects.create_project(%{
-        name: "AI Analysis Test",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "AI Analysis Test",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
       # Owner can create analysis for their project
-      {:ok, analysis} = AI.create_analysis_result(%{
-        project_id: project.id,
-        analysis_type: :general,
-        summary: "Owner's analysis"
-      }, actor: owner)
+      {:ok, analysis} =
+        AI.create_analysis_result(
+          %{
+            project_id: project.id,
+            analysis_type: :general,
+            summary: "Owner's analysis"
+          },
+          actor: owner
+        )
 
       assert analysis.project_id == project.id
 
       # Note: Current policy allows anyone to create analysis results
       # This demonstrates current behavior - may need policy adjustment
       assert {:ok, _unauthorized_analysis} =
-        AI.create_analysis_result(%{
-          project_id: project.id,
-          analysis_type: :security,
-          summary: "Unauthorized analysis"
-        }, actor: other_user)
+               AI.create_analysis_result(
+                 %{
+                   project_id: project.id,
+                   analysis_type: :security,
+                   summary: "Unauthorized analysis"
+                 },
+                 actor: other_user
+               )
 
       # Owner can view analyses for their project
       {:ok, analyses} = AI.list_analysis_results_by_project(project.id, actor: owner)
-      assert length(analyses) == 2  # Both owner's and other user's analyses
+      # Both owner's and other user's analyses
+      assert length(analyses) == 2
       analysis_ids = Enum.map(analyses, & &1.id)
       assert analysis.id in analysis_ids
 
       # Other user cannot view analyses for owner's project
       result = AI.list_analysis_results_by_project(project.id, actor: other_user)
+      # May return empty list due to filtering
       assert match?({:error, %Ash.Error.Forbidden{}}, result) or
-             match?({:ok, []}, result)  # May return empty list due to filtering
+               match?({:ok, []}, result)
     end
 
     test "prompt sharing and privacy policies", %{owner: owner, other_user: other_user} do
       # Owner creates a private prompt
-      {:ok, private_prompt} = AI.create_prompt(%{
-        name: "Private Prompt",
-        template: "Private template",
-        category: "testing",
-        is_public: false
-      }, actor: owner)
+      {:ok, private_prompt} =
+        AI.create_prompt(
+          %{
+            name: "Private Prompt",
+            template: "Private template",
+            category: "testing",
+            is_public: false
+          },
+          actor: owner
+        )
 
       assert private_prompt.author_id == owner.id
       assert private_prompt.is_public == false
 
       # Owner creates a public prompt
-      {:ok, public_prompt} = AI.create_prompt(%{
-        name: "Public Prompt",
-        template: "Public template",
-        category: "testing",
-        is_public: true
-      }, actor: owner)
+      {:ok, public_prompt} =
+        AI.create_prompt(
+          %{
+            name: "Public Prompt",
+            template: "Public template",
+            category: "testing",
+            is_public: true
+          },
+          actor: owner
+        )
 
       assert public_prompt.is_public == true
 
@@ -214,38 +275,51 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
 
       # Other user cannot update owner's prompt
       assert {:error, %Ash.Error.Forbidden{}} =
-        AI.update_prompt(
-          public_prompt,
-          %{template: "Hacked content"},
-          actor: other_user
-        )
+               AI.update_prompt(
+                 public_prompt,
+                 %{template: "Hacked content"},
+                 actor: other_user
+               )
 
       # Only owner can delete their prompts
       assert :ok = AI.delete_prompt(private_prompt, actor: owner)
+
       assert {:error, %Ash.Error.Forbidden{}} =
-        AI.delete_prompt(public_prompt, actor: other_user)
+               AI.delete_prompt(public_prompt, actor: other_user)
     end
 
     test "soft deletion maintains data integrity", %{owner: owner} do
       # Create project with related resources
-      {:ok, project} = Projects.create_project(%{
-        name: "Soft Delete Test",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Soft Delete Test",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
-      {:ok, code_file} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "/lib/app.ex",
-        content: "defmodule App do\nend",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, code_file} =
+        Projects.create_code_file(
+          %{
+            project_id: project.id,
+            path: "/lib/app.ex",
+            content: "defmodule App do\nend",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
-      {:ok, _analysis} = AI.create_analysis_result(%{
-        project_id: project.id,
-        code_file_id: code_file.id,
-        analysis_type: :general,
-        summary: "Test analysis"
-      }, actor: owner)
+      {:ok, _analysis} =
+        AI.create_analysis_result(
+          %{
+            project_id: project.id,
+            code_file_id: code_file.id,
+            analysis_type: :general,
+            summary: "Test analysis"
+          },
+          actor: owner
+        )
 
       # Soft delete the project
       {:ok, deleted_project} = Projects.delete_project(project, actor: owner)
@@ -262,24 +336,36 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
 
     test "relationship loading respects policies", %{owner: owner, other_user: other_user} do
       # Owner creates project with files
-      {:ok, project} = Projects.create_project(%{
-        name: "Relationship Test",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Relationship Test",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
-      {:ok, _file1} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "/lib/file1.ex",
-        content: "content1",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, _file1} =
+        Projects.create_code_file(
+          %{
+            project_id: project.id,
+            path: "/lib/file1.ex",
+            content: "content1",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
-      {:ok, _file2} = Projects.create_code_file(%{
-        project_id: project.id,
-        path: "/lib/file2.ex",
-        content: "content2",
-        language: "elixir"
-      }, actor: owner)
+      {:ok, _file2} =
+        Projects.create_code_file(
+          %{
+            project_id: project.id,
+            path: "/lib/file2.ex",
+            content: "content2",
+            language: "elixir"
+          },
+          actor: owner
+        )
 
       # Owner can load project with files
       {:ok, project_with_files} = Projects.get_project(project.id, actor: owner)
@@ -288,28 +374,37 @@ defmodule RubberDuck.Integration.ResourcePoliciesTest do
 
       # Other user cannot load owner's project with files (may return NotFound due to filtering)
       result = Projects.get_project(project.id, actor: other_user)
+
       assert match?({:error, %Ash.Error.Forbidden{}}, result) or
-             match?({:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}}, result)
+               match?({:error, %Ash.Error.Invalid{errors: [%Ash.Error.Query.NotFound{}]}}, result)
     end
 
     test "create actions set ownership automatically", %{owner: owner} do
       # Project creation sets owner_id automatically
-      {:ok, project} = Projects.create_project(%{
-        name: "Auto Owner Test",
-        language: "elixir"
-        # Note: owner_id is NOT provided
-      }, actor: owner)
+      {:ok, project} =
+        Projects.create_project(
+          %{
+            name: "Auto Owner Test",
+            language: "elixir"
+            # Note: owner_id is NOT provided
+          },
+          actor: owner
+        )
 
       assert project.owner_id == owner.id
 
       # Prompt creation sets author_id automatically
-      {:ok, prompt} = AI.create_prompt(%{
-        name: "Auto Creator Test",
-        template: "Test content",
-        category: "testing",
-        is_public: false
-        # Note: author_id is NOT provided
-      }, actor: owner)
+      {:ok, prompt} =
+        AI.create_prompt(
+          %{
+            name: "Auto Creator Test",
+            template: "Test content",
+            category: "testing",
+            is_public: false
+            # Note: author_id is NOT provided
+          },
+          actor: owner
+        )
 
       assert prompt.author_id == owner.id
     end

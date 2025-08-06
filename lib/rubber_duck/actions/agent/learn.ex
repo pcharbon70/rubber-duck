@@ -11,7 +11,11 @@ defmodule RubberDuck.Actions.Agent.Learn do
     description: "Extract patterns and insights from agent experiences",
     schema: [
       experiences: [type: {:list, :map}, required: true],
-      learning_type: [type: :atom, values: [:pattern, :correlation, :prediction, :optimization], required: true],
+      learning_type: [
+        type: :atom,
+        values: [:pattern, :correlation, :prediction, :optimization],
+        required: true
+      ],
       context: [type: :map, default: %{}],
       min_confidence: [type: :float, default: 0.7],
       max_patterns: [type: :pos_integer, default: 10]
@@ -31,30 +35,39 @@ defmodule RubberDuck.Actions.Agent.Learn do
   end
 
   defp perform_learning(experiences, _learning_type, _params) when length(experiences) < 3 do
-    {:ok, %{
-      learned: false,
-      reason: :insufficient_data,
-      required_experiences: 3,
-      current_experiences: length(experiences)
-    }}
+    {:ok,
+     %{
+       learned: false,
+       reason: :insufficient_data,
+       required_experiences: 3,
+       current_experiences: length(experiences)
+     }}
   end
 
   defp perform_learning(experiences, learning_type, params) do
     insights = execute_learning_type(learning_type, experiences, params)
 
-    {:ok, %{
-      learned: true,
-      learning_type: learning_type,
-      insights: insights,
-      confidence: calculate_confidence(insights, experiences),
-      applicable_scenarios: identify_applicable_scenarios(insights)
-    }}
+    {:ok,
+     %{
+       learned: true,
+       learning_type: learning_type,
+       insights: insights,
+       confidence: calculate_confidence(insights, experiences),
+       applicable_scenarios: identify_applicable_scenarios(insights)
+     }}
   end
 
-  defp execute_learning_type(:pattern, experiences, params), do: learn_patterns(experiences, params)
-  defp execute_learning_type(:correlation, experiences, params), do: learn_correlations(experiences, params)
-  defp execute_learning_type(:prediction, experiences, params), do: learn_predictions(experiences, params)
-  defp execute_learning_type(:optimization, experiences, params), do: learn_optimizations(experiences, params)
+  defp execute_learning_type(:pattern, experiences, params),
+    do: learn_patterns(experiences, params)
+
+  defp execute_learning_type(:correlation, experiences, params),
+    do: learn_correlations(experiences, params)
+
+  defp execute_learning_type(:prediction, experiences, params),
+    do: learn_predictions(experiences, params)
+
+  defp execute_learning_type(:optimization, experiences, params),
+    do: learn_optimizations(experiences, params)
 
   def describe do
     %{
@@ -89,9 +102,10 @@ defmodule RubberDuck.Actions.Agent.Learn do
 
   defp learn_patterns(experiences, params) do
     # Group experiences by outcome
-    grouped = Enum.group_by(experiences, fn exp ->
-      get_outcome_category(exp)
-    end)
+    grouped =
+      Enum.group_by(experiences, fn exp ->
+        get_outcome_category(exp)
+      end)
 
     # Find common patterns in successful outcomes
     success_patterns = extract_success_patterns(grouped[:success] || [], params)
@@ -206,32 +220,36 @@ defmodule RubberDuck.Actions.Agent.Learn do
     features = []
 
     # Extract goal type
-    features = if goal = experience[:goal] do
-      [{:goal_type, goal[:type]} | features]
-    else
-      features
-    end
+    features =
+      if goal = experience[:goal] do
+        [{:goal_type, goal[:type]} | features]
+      else
+        features
+      end
 
     # Extract action type
-    features = if action = experience[:action] do
-      [{:action_type, action} | features]
-    else
-      features
-    end
+    features =
+      if action = experience[:action] do
+        [{:action_type, action} | features]
+      else
+        features
+      end
 
     # Extract context features
-    features = if context = experience[:context] do
-      extract_context_features(context) ++ features
-    else
-      features
-    end
+    features =
+      if context = experience[:context] do
+        extract_context_features(context) ++ features
+      else
+        features
+      end
 
     # Extract result features
-    features = if result = experience[:result] do
-      extract_result_features(result) ++ features
-    else
-      features
-    end
+    features =
+      if result = experience[:result] do
+        extract_result_features(result) ++ features
+      else
+        features
+      end
 
     features
   rescue
@@ -243,25 +261,28 @@ defmodule RubberDuck.Actions.Agent.Learn do
     |> Enum.map(fn {k, v} ->
       {:context, {k, categorize_value(v)}}
     end)
-    |> Enum.take(5)  # Limit context features
+    # Limit context features
+    |> Enum.take(5)
   end
 
   defp extract_result_features(result) do
     features = []
 
     # Duration category
-    features = if duration = result[:duration_ms] do
-      [{:duration_category, categorize_duration(duration)} | features]
-    else
-      features
-    end
+    features =
+      if duration = result[:duration_ms] do
+        [{:duration_category, categorize_duration(duration)} | features]
+      else
+        features
+      end
 
     # Error type
-    features = if error = result[:error] || result[:reason] do
-      [{:error_type, categorize_error(error)} | features]
-    else
-      features
-    end
+    features =
+      if error = result[:error] || result[:reason] do
+        [{:error_type, categorize_error(error)} | features]
+      else
+        features
+      end
 
     features
   end
@@ -275,6 +296,7 @@ defmodule RubberDuck.Actions.Agent.Learn do
       true -> :high
     end
   end
+
   defp categorize_value(value) when is_boolean(value), do: value
   defp categorize_value(value) when is_atom(value), do: value
   defp categorize_value(_), do: :other
@@ -304,7 +326,7 @@ defmodule RubberDuck.Actions.Agent.Learn do
     total = MapSet.union(success_features, failure_features)
 
     if MapSet.size(total) > 0 do
-      1.0 - (MapSet.size(overlap) / MapSet.size(total))
+      1.0 - MapSet.size(overlap) / MapSet.size(total)
     else
       0.0
     end
@@ -315,21 +337,31 @@ defmodule RubberDuck.Actions.Agent.Learn do
 
     # Recommend following success patterns
     top_success = Enum.take(success_patterns, 3)
-    recommendations = if length(top_success) > 0 do
-      ["Prioritize scenarios with: " <>
-       Enum.map_join(top_success, ", ", fn p -> inspect(p.feature) end) | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if length(top_success) > 0 do
+        [
+          "Prioritize scenarios with: " <>
+            Enum.map_join(top_success, ", ", fn p -> inspect(p.feature) end)
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
     # Recommend avoiding failure patterns
     top_failure = Enum.take(failure_patterns, 3)
-    recommendations = if length(top_failure) > 0 do
-      ["Avoid scenarios with: " <>
-       Enum.map_join(top_failure, ", ", fn p -> inspect(p.feature) end) | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if length(top_failure) > 0 do
+        [
+          "Avoid scenarios with: " <>
+            Enum.map_join(top_failure, ", ", fn p -> inspect(p.feature) end)
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
     recommendations
   end
@@ -352,19 +384,22 @@ defmodule RubberDuck.Actions.Agent.Learn do
 
   defp calculate_feature_correlation(feature, experiences) do
     # Simplified correlation calculation
-    with_feature = Enum.filter(experiences, fn exp ->
-      feature in extract_experience_features(exp)
-    end)
+    with_feature =
+      Enum.filter(experiences, fn exp ->
+        feature in extract_experience_features(exp)
+      end)
 
-    success_with = Enum.count(with_feature, fn exp ->
-      get_outcome_category(exp) == :success
-    end)
+    success_with =
+      Enum.count(with_feature, fn exp ->
+        get_outcome_category(exp) == :success
+      end)
 
     total_with = length(with_feature)
 
     if total_with > 0 do
       %{
-        coefficient: (success_with / total_with) - 0.5,  # -0.5 to 0.5 range
+        # -0.5 to 0.5 range
+        coefficient: success_with / total_with - 0.5,
         sample_size: total_with,
         success_rate: success_with / total_with
       }
@@ -389,6 +424,7 @@ defmodule RubberDuck.Actions.Agent.Learn do
     correlations
     |> Enum.map(fn {feature, corr} ->
       impact = if corr.coefficient > 0, do: "increases", else: "decreases"
+
       "#{inspect(feature)} #{impact} success rate by #{Float.round(abs(corr.coefficient) * 100, 1)}%"
     end)
   end
@@ -431,12 +467,13 @@ defmodule RubberDuck.Actions.Agent.Learn do
     time_series
     |> Enum.chunk_every(3, 1, :discard)
     |> Enum.map(fn window ->
-      success_count = Enum.count(window, & &1.outcome == :success)
+      success_count = Enum.count(window, &(&1.outcome == :success))
       success_count / length(window)
     end)
   end
 
   defp increasing_trend?(rates) when length(rates) < 2, do: false
+
   defp increasing_trend?(rates) do
     rates
     |> Enum.chunk_every(2, 1, :discard)
@@ -444,6 +481,7 @@ defmodule RubberDuck.Actions.Agent.Learn do
   end
 
   defp decreasing_trend?(rates) when length(rates) < 2, do: false
+
   defp decreasing_trend?(rates) do
     rates
     |> Enum.chunk_every(2, 1, :discard)
@@ -453,25 +491,31 @@ defmodule RubberDuck.Actions.Agent.Learn do
   defp build_predictions(trends, _context) do
     case trends.trend_type do
       :improving ->
-        [%{
-          prediction: "Performance will continue to improve",
-          confidence: trends.confidence,
-          recommendation: "Maintain current strategy"
-        }]
+        [
+          %{
+            prediction: "Performance will continue to improve",
+            confidence: trends.confidence,
+            recommendation: "Maintain current strategy"
+          }
+        ]
 
       :degrading ->
-        [%{
-          prediction: "Performance degradation likely to continue",
-          confidence: trends.confidence,
-          recommendation: "Implement corrective measures"
-        }]
+        [
+          %{
+            prediction: "Performance degradation likely to continue",
+            confidence: trends.confidence,
+            recommendation: "Implement corrective measures"
+          }
+        ]
 
       :stable ->
-        [%{
-          prediction: "Performance will remain stable",
-          confidence: trends.confidence,
-          recommendation: "Consider optimization opportunities"
-        }]
+        [
+          %{
+            prediction: "Performance will remain stable",
+            confidence: trends.confidence,
+            recommendation: "Consider optimization opportunities"
+          }
+        ]
 
       _ ->
         []
@@ -501,8 +545,9 @@ defmodule RubberDuck.Actions.Agent.Learn do
 
   defp calculate_success_rate(experiences) do
     total = length(experiences)
+
     if total > 0 do
-      success = Enum.count(experiences, & get_outcome_category(&1) == :success)
+      success = Enum.count(experiences, &(get_outcome_category(&1) == :success))
       success / total
     else
       0.0
@@ -528,36 +573,45 @@ defmodule RubberDuck.Actions.Agent.Learn do
     avg_duration = calculate_average_duration(performance_data)
     slow_actions = find_slow_actions(performance_data, avg_duration)
 
-    opportunities = if length(slow_actions) > 0 do
-      [%{
-        type: :performance,
-        description: "Optimize slow actions",
-        targets: slow_actions,
-        potential_improvement: "30-50% reduction in response time"
-      } | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if length(slow_actions) > 0 do
+        [
+          %{
+            type: :performance,
+            description: "Optimize slow actions",
+            targets: slow_actions,
+            potential_improvement: "30-50% reduction in response time"
+          }
+          | opportunities
+        ]
+      else
+        opportunities
+      end
 
     # Find high failure rate actions
     high_failure_actions = find_high_failure_actions(performance_data)
 
-    opportunities = if length(high_failure_actions) > 0 do
-      [%{
-        type: :reliability,
-        description: "Improve reliability of error-prone actions",
-        targets: high_failure_actions,
-        potential_improvement: "Reduce failure rate by 50%"
-      } | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if length(high_failure_actions) > 0 do
+        [
+          %{
+            type: :reliability,
+            description: "Improve reliability of error-prone actions",
+            targets: high_failure_actions,
+            potential_improvement: "Reduce failure rate by 50%"
+          }
+          | opportunities
+        ]
+      else
+        opportunities
+      end
 
     opportunities
   end
 
   defp calculate_average_duration(performance_data) do
     durations = Enum.map(performance_data, & &1.duration_ms)
+
     if length(durations) > 0 do
       Enum.sum(durations) / length(durations)
     else
@@ -630,14 +684,18 @@ defmodule RubberDuck.Actions.Agent.Learn do
     |> Enum.flat_map(fn opt ->
       case opt.type do
         :performance ->
-          ["Implement caching for #{inspect(opt.targets)}",
-           "Consider parallel processing",
-           "Profile and optimize hot paths"]
+          [
+            "Implement caching for #{inspect(opt.targets)}",
+            "Consider parallel processing",
+            "Profile and optimize hot paths"
+          ]
 
         :reliability ->
-          ["Add retry logic for #{inspect(opt.targets)}",
-           "Implement circuit breakers",
-           "Improve error handling"]
+          [
+            "Add retry logic for #{inspect(opt.targets)}",
+            "Implement circuit breakers",
+            "Improve error handling"
+          ]
 
         _ ->
           []
@@ -649,50 +707,61 @@ defmodule RubberDuck.Actions.Agent.Learn do
   defp calculate_confidence(insights, experiences) do
     base_confidence = min(length(experiences) / 100, 1.0) * 0.5
 
-    insight_confidence = case insights do
-      %{pattern_confidence: pc} -> pc
-      %{prediction_accuracy: pa} -> pa
-      %{correlations: corr} when is_map(corr) and map_size(corr) > 0 -> 0.7
-      _ -> 0.5
-    end
+    insight_confidence =
+      case insights do
+        %{pattern_confidence: pc} -> pc
+        %{prediction_accuracy: pa} -> pa
+        %{correlations: corr} when is_map(corr) and map_size(corr) > 0 -> 0.7
+        _ -> 0.5
+      end
 
-    base_confidence + (insight_confidence * 0.5)
+    base_confidence + insight_confidence * 0.5
   rescue
-    _ -> 0.5  # Default medium confidence on error
+    # Default medium confidence on error
+    _ -> 0.5
   end
 
   defp identify_applicable_scenarios(insights) do
     scenarios = []
 
     # Pattern-based scenarios
-    scenarios = if patterns = insights[:success_patterns] do
-      pattern_scenarios = Enum.map(Enum.take(patterns, 3), fn pattern ->
-        "When #{inspect(pattern.feature)} is present"
-      end)
-      scenarios ++ pattern_scenarios
-    else
-      scenarios
-    end
+    scenarios =
+      if patterns = insights[:success_patterns] do
+        pattern_scenarios =
+          Enum.map(Enum.take(patterns, 3), fn pattern ->
+            "When #{inspect(pattern.feature)} is present"
+          end)
+
+        scenarios ++ pattern_scenarios
+      else
+        scenarios
+      end
 
     # Correlation-based scenarios
-    scenarios = if correlations = insights[:strongest_factors] do
-      correlation_scenarios = Enum.map(Enum.take(correlations, 3), fn factor ->
-        "To #{factor.impact} success rate via #{inspect(factor.feature)}"
-      end)
-      scenarios ++ correlation_scenarios
-    else
-      scenarios
-    end
+    scenarios =
+      if correlations = insights[:strongest_factors] do
+        correlation_scenarios =
+          Enum.map(Enum.take(correlations, 3), fn factor ->
+            "To #{factor.impact} success rate via #{inspect(factor.feature)}"
+          end)
+
+        scenarios ++ correlation_scenarios
+      else
+        scenarios
+      end
 
     # Optimization scenarios
-    scenarios = if opportunities = insights[:optimization_opportunities] do
-      opt_scenarios = Enum.map(opportunities, fn opt ->
-        "For #{opt.description}"
-      end)
-      scenarios ++ opt_scenarios
-    else
-      scenarios
-    end
+    scenarios =
+      if opportunities = insights[:optimization_opportunities] do
+        opt_scenarios =
+          Enum.map(opportunities, fn opt ->
+            "For #{opt.description}"
+          end)
+
+        scenarios ++ opt_scenarios
+      else
+        scenarios
+      end
 
     Enum.uniq(scenarios)
   end
@@ -727,6 +796,7 @@ defmodule RubberDuck.Actions.Agent.Learn do
       {:error, :unknown_learning_type}
     end
   end
+
   defp validate_learning_type(_), do: {:error, :invalid_learning_type}
 
   defp validate_min_confidence(confidence) when is_float(confidence) do
@@ -736,6 +806,7 @@ defmodule RubberDuck.Actions.Agent.Learn do
       {:error, :invalid_min_confidence}
     end
   end
+
   defp validate_min_confidence(_), do: {:error, :invalid_min_confidence}
 
   defp validate_max_patterns(patterns) when is_integer(patterns) do
@@ -745,5 +816,6 @@ defmodule RubberDuck.Actions.Agent.Learn do
       {:error, :invalid_max_patterns}
     end
   end
+
   defp validate_max_patterns(_), do: {:error, :invalid_max_patterns}
 end

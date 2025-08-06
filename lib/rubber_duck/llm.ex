@@ -51,7 +51,11 @@ defmodule RubberDuck.LLM do
   """
   def stream(request, opts \\ []) do
     with {:ok, agent} <- get_orchestrator_agent() do
-      GenServer.call(agent, {:stream, add_request_id(request)}, Keyword.get(opts, :timeout, 60_000))
+      GenServer.call(
+        agent,
+        {:stream, add_request_id(request)},
+        Keyword.get(opts, :timeout, 60_000)
+      )
     end
   end
 
@@ -74,7 +78,11 @@ defmodule RubberDuck.LLM do
         model: opts[:model]
       }
 
-      GenServer.call(agent, {:embed, add_request_id(request)}, Keyword.get(opts, :timeout, 30_000))
+      GenServer.call(
+        agent,
+        {:embed, add_request_id(request)},
+        Keyword.get(opts, :timeout, 30_000)
+      )
     end
   end
 
@@ -182,6 +190,7 @@ defmodule RubberDuck.LLM do
       nil ->
         Logger.error("LLM Orchestrator Agent not found. Ensure application is started.")
         {:error, :agent_not_found}
+
       pid ->
         {:ok, pid}
     end
@@ -192,6 +201,7 @@ defmodule RubberDuck.LLM do
       nil ->
         Logger.error("LLM Monitoring Agent not found. Ensure application is started.")
         {:error, :agent_not_found}
+
       pid ->
         {:ok, pid}
     end
@@ -215,18 +225,20 @@ defmodule RubberDuck.LLM do
 
     providers
     |> Enum.map(fn provider ->
-      metrics = GenServer.call(
-        RubberDuck.Sensors.LLMHealthSensor,
-        {:get_provider_metrics, provider}
-      )
+      metrics =
+        GenServer.call(
+          RubberDuck.Sensors.LLMHealthSensor,
+          {:get_provider_metrics, provider}
+        )
 
       status = determine_provider_status(metrics)
 
-      {provider, %{
-        status: status,
-        success_rate: Float.round(metrics.success_rate * 100, 1),
-        avg_response_time_ms: round(metrics.avg_response_time)
-      }}
+      {provider,
+       %{
+         status: status,
+         success_rate: Float.round(metrics.success_rate * 100, 1),
+         avg_response_time_ms: round(metrics.avg_response_time)
+       }}
     end)
     |> Map.new()
   end

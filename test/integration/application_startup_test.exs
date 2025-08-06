@@ -32,10 +32,12 @@ defmodule RubberDuck.Integration.ApplicationStartupTest do
       assert RubberDuck.HealthCheck in child_ids
 
       # Check that AshAuthentication.Supervisor is present (may be in different format)
-      ash_auth_present = Enum.any?(child_ids, fn
-        {AshAuthentication.Supervisor, _} -> true
-        _ -> false
-      end)
+      ash_auth_present =
+        Enum.any?(child_ids, fn
+          {AshAuthentication.Supervisor, _} -> true
+          _ -> false
+        end)
+
       assert ash_auth_present || AshAuthentication.Supervisor in child_ids
     end
 

@@ -40,27 +40,30 @@ defmodule RubberDuck.Skills.LearningSkill do
     experience = build_experience(signal.data)
 
     # Record the experience
-    updated_state = update_in(state, [:experiences, agent_id], fn experiences ->
-      experiences = experiences || []
-      [experience | Enum.take(experiences, state.opts.experience_window - 1)]
-    end)
+    updated_state =
+      update_in(state, [:experiences, agent_id], fn experiences ->
+        experiences = experiences || []
+        [experience | Enum.take(experiences, state.opts.experience_window - 1)]
+      end)
 
     # Update experience statistics
     updated_state = update_experience_stats(updated_state, agent_id, experience)
 
     # Check for emerging patterns
-    patterns = if length(get_in(updated_state, [:experiences, agent_id]) || []) >= 10 do
-      detect_experience_patterns(updated_state, agent_id)
-    else
-      []
-    end
+    patterns =
+      if length(get_in(updated_state, [:experiences, agent_id]) || []) >= 10 do
+        detect_experience_patterns(updated_state, agent_id)
+      else
+        []
+      end
 
     # Store patterns if found
-    updated_state = if length(patterns) > 0 do
-      put_in(updated_state, [:patterns, agent_id], patterns)
-    else
-      updated_state
-    end
+    updated_state =
+      if length(patterns) > 0 do
+        put_in(updated_state, [:patterns, agent_id], patterns)
+      else
+        updated_state
+      end
 
     {:ok, %{recorded: true, patterns_detected: length(patterns)}, updated_state}
   end
@@ -79,9 +82,10 @@ defmodule RubberDuck.Skills.LearningSkill do
       learning_update = process_feedback(experience, feedback, state.opts.learning_rate)
 
       # Update agent's learning model
-      updated_state = update_in(state, [:learning_models, agent_id], fn model ->
-        apply_learning_update(model || initialize_learning_model(), learning_update)
-      end)
+      updated_state =
+        update_in(state, [:learning_models, agent_id], fn model ->
+          apply_learning_update(model || initialize_learning_model(), learning_update)
+        end)
 
       # Generate optimization suggestions
       optimizations = generate_optimizations(updated_state, agent_id)
@@ -109,31 +113,35 @@ defmodule RubberDuck.Skills.LearningSkill do
     patterns = analyze_agent_patterns(state, agent_id, analysis_depth)
 
     # Identify successful patterns
-    successful_patterns = patterns
-      |> Enum.filter(& &1.success_rate > state.opts.pattern_threshold)
+    successful_patterns =
+      patterns
+      |> Enum.filter(&(&1.success_rate > state.opts.pattern_threshold))
       |> Enum.sort_by(& &1.success_rate, :desc)
 
     # Identify failure patterns
-    failure_patterns = patterns
-      |> Enum.filter(& &1.failure_rate > state.opts.pattern_threshold)
+    failure_patterns =
+      patterns
+      |> Enum.filter(&(&1.failure_rate > state.opts.pattern_threshold))
       |> Enum.sort_by(& &1.failure_rate, :desc)
 
     # Generate insights
     insights = generate_pattern_insights(successful_patterns, failure_patterns)
 
     # Store analyzed patterns
-    updated_state = put_in(state, [:analyzed_patterns, agent_id], %{
-      successful: successful_patterns,
-      failures: failure_patterns,
-      insights: insights,
-      analyzed_at: DateTime.utc_now()
-    })
+    updated_state =
+      put_in(state, [:analyzed_patterns, agent_id], %{
+        successful: successful_patterns,
+        failures: failure_patterns,
+        insights: insights,
+        analyzed_at: DateTime.utc_now()
+      })
 
-    {:ok, %{
-      successful_patterns: length(successful_patterns),
-      failure_patterns: length(failure_patterns),
-      insights: insights
-    }, updated_state}
+    {:ok,
+     %{
+       successful_patterns: length(successful_patterns),
+       failure_patterns: length(failure_patterns),
+       insights: insights
+     }, updated_state}
   end
 
   @impl true
@@ -145,14 +153,16 @@ defmodule RubberDuck.Skills.LearningSkill do
     model = get_in(state, [:learning_models, agent_id]) || initialize_learning_model()
 
     # Optimize for each goal
-    optimizations = Enum.map(optimization_goals, fn goal ->
-      optimize_for_goal(model, goal, state)
-    end)
+    optimizations =
+      Enum.map(optimization_goals, fn goal ->
+        optimize_for_goal(model, goal, state)
+      end)
 
     # Apply optimizations to model
-    optimized_model = Enum.reduce(optimizations, model, fn opt, acc_model ->
-      apply_optimization(acc_model, opt)
-    end)
+    optimized_model =
+      Enum.reduce(optimizations, model, fn opt, acc_model ->
+        apply_optimization(acc_model, opt)
+      end)
 
     # Calculate improvement metrics
     improvements = calculate_improvements(model, optimized_model)
@@ -161,15 +171,17 @@ defmodule RubberDuck.Skills.LearningSkill do
     updated_state = put_in(state, [:learning_models, agent_id], optimized_model)
 
     # Track optimization history
-    updated_state = update_in(updated_state, [:optimization_history, agent_id], fn history ->
-      optimization_record = %{
-        timestamp: DateTime.utc_now(),
-        goals: optimization_goals,
-        improvements: improvements,
-        applied: true
-      }
-      [optimization_record | Enum.take(history || [], 99)]
-    end)
+    updated_state =
+      update_in(updated_state, [:optimization_history, agent_id], fn history ->
+        optimization_record = %{
+          timestamp: DateTime.utc_now(),
+          goals: optimization_goals,
+          improvements: improvements,
+          applied: true
+        }
+
+        [optimization_record | Enum.take(history || [], 99)]
+      end)
 
     {:ok, %{optimized: true, improvements: improvements}, updated_state}
   end
@@ -185,34 +197,39 @@ defmodule RubberDuck.Skills.LearningSkill do
       knowledge = extract_sharable_knowledge(state, source_agent, knowledge_type)
 
       # Determine target agents
-      targets = case target_agents do
-        :all -> Map.keys(state.learning_models) -- [source_agent]
-        list when is_list(list) -> list
-        _ -> []
-      end
+      targets =
+        case target_agents do
+          :all -> Map.keys(state.learning_models) -- [source_agent]
+          list when is_list(list) -> list
+          _ -> []
+        end
 
       # Share knowledge with target agents
-      updated_state = Enum.reduce(targets, state, fn target_agent, acc_state ->
-        integrate_shared_knowledge(acc_state, target_agent, knowledge, source_agent)
-      end)
+      updated_state =
+        Enum.reduce(targets, state, fn target_agent, acc_state ->
+          integrate_shared_knowledge(acc_state, target_agent, knowledge, source_agent)
+        end)
 
       # Track knowledge sharing
-      updated_state = update_in(updated_state, [:knowledge_sharing_log], fn log ->
-        share_record = %{
-          timestamp: DateTime.utc_now(),
-          source: source_agent,
-          targets: targets,
-          knowledge_type: knowledge_type,
-          items_shared: map_size(knowledge)
-        }
-        [share_record | Enum.take(log || [], 999)]
-      end)
+      updated_state =
+        update_in(updated_state, [:knowledge_sharing_log], fn log ->
+          share_record = %{
+            timestamp: DateTime.utc_now(),
+            source: source_agent,
+            targets: targets,
+            knowledge_type: knowledge_type,
+            items_shared: map_size(knowledge)
+          }
 
-      {:ok, %{
-        shared: true,
-        targets: length(targets),
-        knowledge_items: map_size(knowledge)
-      }, updated_state}
+          [share_record | Enum.take(log || [], 999)]
+        end)
+
+      {:ok,
+       %{
+         shared: true,
+         targets: length(targets),
+         knowledge_items: map_size(knowledge)
+       }, updated_state}
     else
       {:ok, %{shared: false, reason: :cross_agent_learning_disabled}, state}
     end
@@ -229,11 +246,12 @@ defmodule RubberDuck.Skills.LearningSkill do
     # Analyze query results
     analysis = analyze_experience_set(experiences)
 
-    {:ok, %{
-      experiences: experiences,
-      count: length(experiences),
-      analysis: analysis
-    }, state}
+    {:ok,
+     %{
+       experiences: experiences,
+       count: length(experiences),
+       analysis: analysis
+     }, state}
   end
 
   @impl true
@@ -274,20 +292,27 @@ defmodule RubberDuck.Skills.LearningSkill do
 
   defp update_experience_stats(state, agent_id, experience) do
     update_in(state, [:statistics, agent_id], fn stats ->
-      current_stats = stats || %{
-        total_experiences: 0,
-        successful: 0,
-        failed: 0,
-        average_performance: 0.0
-      }
+      current_stats =
+        stats ||
+          %{
+            total_experiences: 0,
+            successful: 0,
+            failed: 0,
+            average_performance: 0.0
+          }
 
       total = current_stats.total_experiences + 1
-      successful = if experience.success, do: current_stats.successful + 1, else: current_stats.successful
+
+      successful =
+        if experience.success, do: current_stats.successful + 1, else: current_stats.successful
+
       failed = if experience.success, do: current_stats.failed, else: current_stats.failed + 1
 
       # Update average performance
       perf_score = experience.performance_metrics[:score] || 0.0
-      avg_perf = (current_stats.average_performance * current_stats.total_experiences + perf_score) / total
+
+      avg_perf =
+        (current_stats.average_performance * current_stats.total_experiences + perf_score) / total
 
       %{
         total_experiences: total,
@@ -309,6 +334,7 @@ defmodule RubberDuck.Skills.LearningSkill do
     Enum.flat_map(grouped, fn {action, action_experiences} ->
       if length(action_experiences) >= 3 do
         pattern = analyze_action_pattern(action, action_experiences)
+
         if pattern.confidence > state.opts.pattern_threshold do
           [pattern]
         else
@@ -325,13 +351,15 @@ defmodule RubberDuck.Skills.LearningSkill do
     total = length(experiences)
 
     # Analyze context patterns
-    context_patterns = experiences
+    context_patterns =
+      experiences
       |> Enum.map(& &1.context)
       |> find_common_patterns()
 
     # Analyze performance trends
-    perf_scores = experiences
-      |> Enum.map(& get_in(&1, [:performance_metrics, :score]) || 0)
+    perf_scores =
+      experiences
+      |> Enum.map(&(get_in(&1, [:performance_metrics, :score]) || 0))
 
     %{
       action: action,
@@ -347,13 +375,15 @@ defmodule RubberDuck.Skills.LearningSkill do
 
   defp find_common_patterns(contexts) do
     # Find common keys and values in contexts
-    common_keys = contexts
+    common_keys =
+      contexts
       |> Enum.map(&Map.keys/1)
       |> Enum.reduce(&MapSet.intersection(MapSet.new(&1), MapSet.new(&2)))
       |> MapSet.to_list()
 
     Enum.map(common_keys, fn key ->
       values = Enum.map(contexts, & &1[key])
+
       %{
         key: key,
         common_value: mode(values),
@@ -364,7 +394,7 @@ defmodule RubberDuck.Skills.LearningSkill do
 
   defp find_experience(state, agent_id, experience_id) do
     experiences = get_in(state, [:experiences, agent_id]) || []
-    Enum.find(experiences, & &1.id == experience_id)
+    Enum.find(experiences, &(&1.id == experience_id))
   end
 
   defp process_feedback(experience, feedback, learning_rate) do
@@ -399,11 +429,12 @@ defmodule RubberDuck.Skills.LearningSkill do
 
   defp calculate_weight_updates(experience, feedback, learning_rate) do
     # Calculate weight adjustments for learning model
-    base_weight = case feedback.type do
-      :positive -> 1.0 + learning_rate
-      :negative -> 1.0 - learning_rate
-      _ -> 1.0
-    end
+    base_weight =
+      case feedback.type do
+        :positive -> 1.0 + learning_rate
+        :negative -> 1.0 - learning_rate
+        _ -> 1.0
+      end
 
     %{
       action_weight: base_weight,
@@ -455,28 +486,30 @@ defmodule RubberDuck.Skills.LearningSkill do
     optimizations = []
 
     # Optimize based on successful patterns
-    successful_patterns = Enum.filter(patterns, & &1.success_rate > 0.8)
+    successful_patterns = Enum.filter(patterns, &(&1.success_rate > 0.8))
 
-    optimizations = Enum.map(successful_patterns, fn pattern ->
-      %{
-        type: :reinforce_success,
-        action: pattern.action,
-        improvement: pattern.success_rate - 0.5,
-        suggestion: "Increase frequency of #{pattern.action} in similar contexts"
-      }
-    end) ++ optimizations
+    optimizations =
+      Enum.map(successful_patterns, fn pattern ->
+        %{
+          type: :reinforce_success,
+          action: pattern.action,
+          improvement: pattern.success_rate - 0.5,
+          suggestion: "Increase frequency of #{pattern.action} in similar contexts"
+        }
+      end) ++ optimizations
 
     # Optimize based on failure patterns
-    failure_patterns = Enum.filter(patterns, & &1.success_rate < 0.3)
+    failure_patterns = Enum.filter(patterns, &(&1.success_rate < 0.3))
 
-    failure_opts = Enum.map(failure_patterns, fn pattern ->
-      %{
-        type: :avoid_failure,
-        action: pattern.action,
-        improvement: 0.5 - pattern.success_rate,
-        suggestion: "Reduce or modify #{pattern.action} in current contexts"
-      }
-    end)
+    failure_opts =
+      Enum.map(failure_patterns, fn pattern ->
+        %{
+          type: :avoid_failure,
+          action: pattern.action,
+          improvement: 0.5 - pattern.success_rate,
+          suggestion: "Reduce or modify #{pattern.action} in current contexts"
+        }
+      end)
 
     optimizations ++ failure_opts
   end
@@ -488,14 +521,15 @@ defmodule RubberDuck.Skills.LearningSkill do
     patterns = extract_basic_patterns(experiences)
 
     # Add deeper analysis if requested
-    patterns = if depth in [:deep, :comprehensive] do
-      patterns
-      |> add_sequence_patterns(experiences)
-      |> add_temporal_patterns(experiences)
-      |> add_context_correlation_patterns(experiences)
-    else
-      patterns
-    end
+    patterns =
+      if depth in [:deep, :comprehensive] do
+        patterns
+        |> add_sequence_patterns(experiences)
+        |> add_temporal_patterns(experiences)
+        |> add_context_correlation_patterns(experiences)
+      else
+        patterns
+      end
 
     patterns
   end
@@ -513,14 +547,16 @@ defmodule RubberDuck.Skills.LearningSkill do
         total_occurrences: length(exps),
         success_rate: if(length(exps) > 0, do: successful / length(exps), else: 0),
         failure_rate: if(length(exps) > 0, do: failed / length(exps), else: 0),
-        average_performance: average(Enum.map(exps, & get_in(&1, [:performance_metrics, :score]) || 0))
+        average_performance:
+          average(Enum.map(exps, &(get_in(&1, [:performance_metrics, :score]) || 0)))
       }
     end)
   end
 
   defp add_sequence_patterns(patterns, experiences) do
     # Analyze action sequences
-    sequences = experiences
+    sequences =
+      experiences
       |> Enum.chunk_every(3, 1, :discard)
       |> Enum.map(fn [a, b, c] ->
         %{
@@ -557,20 +593,30 @@ defmodule RubberDuck.Skills.LearningSkill do
     insights = []
 
     # Insights from successful patterns
-    insights = if length(successful_patterns) > 0 do
-      top_success = List.first(successful_patterns)
-      ["Highest success rate: #{top_success.action} at #{Float.round(top_success.success_rate * 100, 1)}%" | insights]
-    else
-      insights
-    end
+    insights =
+      if length(successful_patterns) > 0 do
+        top_success = List.first(successful_patterns)
+
+        [
+          "Highest success rate: #{top_success.action} at #{Float.round(top_success.success_rate * 100, 1)}%"
+          | insights
+        ]
+      else
+        insights
+      end
 
     # Insights from failure patterns
-    insights = if length(failure_patterns) > 0 do
-      top_failure = List.first(failure_patterns)
-      ["Highest failure rate: #{top_failure.action} at #{Float.round(top_failure.failure_rate * 100, 1)}%" | insights]
-    else
-      insights
-    end
+    insights =
+      if length(failure_patterns) > 0 do
+        top_failure = List.first(failure_patterns)
+
+        [
+          "Highest failure rate: #{top_failure.action} at #{Float.round(top_failure.failure_rate * 100, 1)}%"
+          | insights
+        ]
+      else
+        insights
+      end
 
     insights
   end
@@ -653,6 +699,7 @@ defmodule RubberDuck.Skills.LearningSkill do
       :experiences ->
         # Share only successful experiences
         experiences = get_in(state, [:experiences, source_agent]) || []
+
         experiences
         |> Enum.filter(& &1.success)
         |> Enum.take(10)
@@ -672,6 +719,7 @@ defmodule RubberDuck.Skills.LearningSkill do
     # Integrate knowledge with attribution to source
     update_in(state, [:shared_knowledge, target_agent], fn current ->
       current = current || %{}
+
       Map.put(current, source_agent, %{
         knowledge: knowledge,
         received_at: DateTime.utc_now()
@@ -690,20 +738,23 @@ defmodule RubberDuck.Skills.LearningSkill do
   end
 
   defp filter_by_success(experiences, nil), do: experiences
+
   defp filter_by_success(experiences, success) do
-    Enum.filter(experiences, & &1.success == success)
+    Enum.filter(experiences, &(&1.success == success))
   end
 
   defp filter_by_action(experiences, nil), do: experiences
+
   defp filter_by_action(experiences, action) do
-    Enum.filter(experiences, & &1.action == action)
+    Enum.filter(experiences, &(&1.action == action))
   end
 
   defp filter_by_time_range(experiences, nil, nil), do: experiences
+
   defp filter_by_time_range(experiences, from, to) do
     Enum.filter(experiences, fn exp ->
       (from == nil or DateTime.compare(exp.timestamp, from) != :lt) and
-      (to == nil or DateTime.compare(exp.timestamp, to) != :gt)
+        (to == nil or DateTime.compare(exp.timestamp, to) != :gt)
     end)
   end
 
@@ -712,8 +763,9 @@ defmodule RubberDuck.Skills.LearningSkill do
       %{
         total: length(experiences),
         successful: Enum.count(experiences, & &1.success),
-        failed: Enum.count(experiences, & not &1.success),
-        average_performance: average(Enum.map(experiences, & get_in(&1, [:performance_metrics, :score]) || 0)),
+        failed: Enum.count(experiences, &(not &1.success)),
+        average_performance:
+          average(Enum.map(experiences, &(get_in(&1, [:performance_metrics, :score]) || 0))),
         actions: experiences |> Enum.map(& &1.action) |> Enum.uniq()
       }
     else
@@ -725,6 +777,7 @@ defmodule RubberDuck.Skills.LearningSkill do
   defp average(list), do: Enum.sum(list) / length(list)
 
   defp calculate_trend(values) when length(values) < 2, do: :insufficient_data
+
   defp calculate_trend(values) do
     first_half = Enum.take(values, div(length(values), 2))
     second_half = Enum.drop(values, div(length(values), 2))

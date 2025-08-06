@@ -48,6 +48,7 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
     case maybe_get_from_cache(agent, cache_key) do
       {:ok, cached_response} ->
         handle_cache_hit_response(request, cache_key, cached_response)
+
       :miss ->
         execute_fresh_completion_request(agent, request, start_time)
     end
@@ -62,7 +63,6 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
     with {:ok, provider} <- select_optimal_provider(agent, request),
          _ = emit_provider_selection_signal(provider, request),
          {:ok, response} <- execute_completion(agent, provider, request) do
-
       finalize_completion_success(provider, request, response, start_time)
     else
       {:error, reason} ->
@@ -92,12 +92,16 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   end
 
   defp handle_orchestrator_exception(exception, params) do
-    Logger.error("Orchestrator completion error: #{inspect(exception)}\n#{Exception.format_stacktrace()}")
-    {:error, %{
-      reason: {:exception, exception},
-      message: Exception.message(exception),
-      request_id: params.request[:id]
-    }}
+    Logger.error(
+      "Orchestrator completion error: #{inspect(exception)}\n#{Exception.format_stacktrace()}"
+    )
+
+    {:error,
+     %{
+       reason: {:exception, exception},
+       message: Exception.message(exception),
+       request_id: params.request[:id]
+     }}
   end
 
   # Private functions (simplified versions of the orchestrator logic)
@@ -166,8 +170,10 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
     cond do
       not is_map(params) ->
         {:error, :invalid_params}
+
       not is_map(params[:request]) ->
         {:error, :invalid_request}
+
       true ->
         :ok
     end
@@ -177,10 +183,13 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
     cond do
       not is_map(context) ->
         {:error, :invalid_context}
+
       not is_map(context[:agent]) ->
         {:error, :agent_not_in_context}
+
       not is_map(context[:agent][:state]) ->
         {:error, :invalid_agent_state}
+
       true ->
         :ok
     end

@@ -21,7 +21,6 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
          {:ok, correlations} <- find_correlations(patterns, trends),
          {:ok, insights} <- generate_insights(patterns, trends, correlations, params),
          {:ok, learning} <- apply_learning(insights, params.user_feedback) do
-
       {:ok, build_result(insights, patterns, trends, correlations, learning)}
     end
   end
@@ -166,11 +165,12 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
       recent = Enum.take(quality_scores, -3)
       older = Enum.take(quality_scores, 3)
 
-      trend_direction = if Enum.sum(recent) / length(recent) > Enum.sum(older) / length(older) do
-        :improving
-      else
-        :declining
-      end
+      trend_direction =
+        if Enum.sum(recent) / length(recent) > Enum.sum(older) / length(older) do
+          :improving
+        else
+          :declining
+        end
 
       %{
         direction: trend_direction,
@@ -186,7 +186,11 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
     complexity_scores = Enum.map(history, fn h -> h[:complexity] || 10 end)
 
     %{
-      direction: (if List.last(complexity_scores) > List.first(complexity_scores), do: :increasing, else: :decreasing),
+      direction:
+        if(List.last(complexity_scores) > List.first(complexity_scores),
+          do: :increasing,
+          else: :decreasing
+        ),
       average: Enum.sum(complexity_scores) / length(complexity_scores),
       peak: Enum.max(complexity_scores)
     }
@@ -204,7 +208,8 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
     issue_counts = Enum.map(history, fn h -> length(h[:issues] || []) end)
 
     %{
-      direction: (if List.last(issue_counts) > List.first(issue_counts), do: :worsening, else: :improving),
+      direction:
+        if(List.last(issue_counts) > List.first(issue_counts), do: :worsening, else: :improving),
       average_issues: Enum.sum(issue_counts) / length(issue_counts),
       recent_issues: List.last(issue_counts) || 0
     }
@@ -214,7 +219,8 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
     if length(history) < 2 do
       0.0
     else
-      improvements = history
+      improvements =
+        history
         |> Enum.chunk_every(2, 1, :discard)
         |> Enum.map(fn [prev, curr] ->
           (curr[:quality_score] || 0.5) - (prev[:quality_score] || 0.5)
@@ -264,29 +270,36 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
     insights = []
 
     # Coding style insights
-    insights = if patterns.coding_style.consistency_level < 0.7 do
-      [%{
-        type: :style,
-        severity: :medium,
-        title: "Inconsistent coding style detected",
-        description: "Code style varies significantly across the file",
-        recommendation: "Consider using a code formatter for consistency",
-        confidence: 0.8
-      } | insights]
-    else
-      insights
-    end
+    insights =
+      if patterns.coding_style.consistency_level < 0.7 do
+        [
+          %{
+            type: :style,
+            severity: :medium,
+            title: "Inconsistent coding style detected",
+            description: "Code style varies significantly across the file",
+            recommendation: "Consider using a code formatter for consistency",
+            confidence: 0.8
+          }
+          | insights
+        ]
+      else
+        insights
+      end
 
     # Anti-pattern insights
     if length(patterns.coding_style.anti_patterns) > 0 do
-      [%{
-        type: :quality,
-        severity: :high,
-        title: "Anti-patterns detected",
-        description: "Found #{length(patterns.coding_style.anti_patterns)} anti-patterns",
-        recommendation: "Refactor to use idiomatic patterns",
-        confidence: 0.9
-      } | insights]
+      [
+        %{
+          type: :quality,
+          severity: :high,
+          title: "Anti-patterns detected",
+          description: "Found #{length(patterns.coding_style.anti_patterns)} anti-patterns",
+          recommendation: "Refactor to use idiomatic patterns",
+          confidence: 0.9
+        }
+        | insights
+      ]
     else
       insights
     end
@@ -299,29 +312,36 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
 
     if not trends[:insufficient_data] do
       # Quality trend insights
-      insights = if trends.quality_trend.direction == :declining do
-        [%{
-          type: :trend,
-          severity: :high,
-          title: "Code quality declining",
-          description: "Quality has decreased by #{round(trends.quality_trend.rate * 100)}%",
-          recommendation: "Focus on code review and refactoring",
-          confidence: 0.7
-        } | insights]
-      else
-        insights
-      end
+      insights =
+        if trends.quality_trend.direction == :declining do
+          [
+            %{
+              type: :trend,
+              severity: :high,
+              title: "Code quality declining",
+              description: "Quality has decreased by #{round(trends.quality_trend.rate * 100)}%",
+              recommendation: "Focus on code review and refactoring",
+              confidence: 0.7
+            }
+            | insights
+          ]
+        else
+          insights
+        end
 
       # Complexity trend insights
       if trends.complexity_trend.direction == :increasing do
-        [%{
-          type: :trend,
-          severity: :medium,
-          title: "Complexity increasing",
-          description: "Code complexity growing over time",
-          recommendation: "Consider breaking down complex functions",
-          confidence: 0.75
-        } | insights]
+        [
+          %{
+            type: :trend,
+            severity: :medium,
+            title: "Complexity increasing",
+            description: "Code complexity growing over time",
+            recommendation: "Consider breaking down complex functions",
+            confidence: 0.75
+          }
+          | insights
+        ]
       else
         insights
       end
@@ -334,14 +354,17 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
     insights = []
 
     if correlations.quality_complexity.correlation_strength > 0.7 do
-      [%{
-        type: :correlation,
-        severity: :medium,
-        title: "Strong quality-complexity correlation",
-        description: "High complexity directly impacts code quality",
-        recommendation: "Prioritize simplifying complex code sections",
-        confidence: 0.85
-      } | insights]
+      [
+        %{
+          type: :correlation,
+          severity: :medium,
+          title: "Strong quality-complexity correlation",
+          description: "High complexity directly impacts code quality",
+          recommendation: "Prioritize simplifying complex code sections",
+          confidence: 0.85
+        }
+        | insights
+      ]
     else
       insights
     end
@@ -351,31 +374,38 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
     insights = []
 
     # Predict future issues based on patterns
-    insights = if patterns.error_patterns.error_frequency > 0.3 do
-      [%{
-        type: :predictive,
-        severity: :high,
-        title: "High error probability",
-        description: "Current patterns suggest increased error likelihood",
-        recommendation: "Implement additional error handling and tests",
-        confidence: 0.6,
-        prediction_window: "next 2 weeks"
-      } | insights]
-    else
-      insights
-    end
+    insights =
+      if patterns.error_patterns.error_frequency > 0.3 do
+        [
+          %{
+            type: :predictive,
+            severity: :high,
+            title: "High error probability",
+            description: "Current patterns suggest increased error likelihood",
+            recommendation: "Implement additional error handling and tests",
+            confidence: 0.6,
+            prediction_window: "next 2 weeks"
+          }
+          | insights
+        ]
+      else
+        insights
+      end
 
     # Predict maintenance needs
     if trends[:quality_trend] && trends.quality_trend.direction == :declining do
-      [%{
-        type: :predictive,
-        severity: :medium,
-        title: "Maintenance debt accumulating",
-        description: "Technical debt will require attention soon",
-        recommendation: "Schedule refactoring sprint",
-        confidence: 0.7,
-        prediction_window: "next month"
-      } | insights]
+      [
+        %{
+          type: :predictive,
+          severity: :medium,
+          title: "Maintenance debt accumulating",
+          description: "Technical debt will require attention soon",
+          recommendation: "Schedule refactoring sprint",
+          confidence: 0.7,
+          prediction_window: "next month"
+        }
+        | insights
+      ]
     else
       insights
     end
@@ -389,14 +419,17 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
       common_issues = analyze_feedback_patterns(user_feedback)
 
       if length(common_issues) > 0 do
-        [%{
-          type: :learning,
-          severity: :medium,
-          title: "Recurring issue pattern identified",
-          description: "Users frequently report: #{List.first(common_issues)}",
-          recommendation: "Focus on addressing this specific concern",
-          confidence: 0.9
-        } | insights]
+        [
+          %{
+            type: :learning,
+            severity: :medium,
+            title: "Recurring issue pattern identified",
+            description: "Users frequently report: #{List.first(common_issues)}",
+            recommendation: "Focus on addressing this specific concern",
+            confidence: 0.9
+          }
+          | insights
+        ]
       else
         insights
       end
@@ -407,12 +440,13 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
 
   defp prioritize_insights(insights) do
     Enum.sort_by(insights, fn insight ->
-      severity_score = case insight.severity do
-        :critical -> 4
-        :high -> 3
-        :medium -> 2
-        :low -> 1
-      end
+      severity_score =
+        case insight.severity do
+          :critical -> 4
+          :high -> 3
+          :medium -> 2
+          :low -> 1
+        end
 
       confidence_score = insight.confidence * 10
 
@@ -443,10 +477,11 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
   end
 
   defp reinforce_successful_patterns(insights, feedback) do
-    successful = Enum.filter(insights, fn insight ->
-      feedback_score = calculate_feedback_score_for_insight(insight, feedback)
-      feedback_score > 0.7
-    end)
+    successful =
+      Enum.filter(insights, fn insight ->
+        feedback_score = calculate_feedback_score_for_insight(insight, feedback)
+        feedback_score > 0.7
+      end)
 
     Enum.map(successful, fn insight ->
       %{
@@ -556,7 +591,7 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
   defp find_relevant_feedback(insight, feedback) do
     Enum.filter(feedback, fn f ->
       f[:related_insight] == insight.title or
-      f[:insight_type] == insight.type
+        f[:insight_type] == insight.type
     end)
   end
 
@@ -574,6 +609,7 @@ defmodule RubberDuck.Actions.CodeFile.GenerateInsights do
 
   defp calculate_success_rate(insight, feedback) do
     relevant = find_relevant_feedback(insight, feedback)
+
     if length(relevant) > 0 do
       successful = Enum.count(relevant, fn f -> f[:outcome] == :successful end)
       successful / length(relevant)
