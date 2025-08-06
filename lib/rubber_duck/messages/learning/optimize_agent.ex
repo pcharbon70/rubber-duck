@@ -11,6 +11,7 @@ defmodule RubberDuck.Messages.Learning.OptimizeAgent do
     goals: [:performance, :accuracy, :efficiency],
     use_historical_data: true,
     optimization_strategy: :balanced,
+    target_metrics: nil,
     metadata: %{}
   ]
 
@@ -22,6 +23,7 @@ defmodule RubberDuck.Messages.Learning.OptimizeAgent do
           goals: [goal()],
           use_historical_data: boolean(),
           optimization_strategy: strategy(),
+          target_metrics: map() | nil,
           metadata: map()
         }
 

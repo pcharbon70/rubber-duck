@@ -13,6 +13,7 @@ defmodule RubberDuck.Messages.Code.PerformanceAnalyze do
     analyze_memory: true,
     analyze_database: true,
     analyze_bottlenecks: true,
+    metrics: %{},
     opts: %{},
     metadata: %{}
   ]
@@ -24,6 +25,7 @@ defmodule RubberDuck.Messages.Code.PerformanceAnalyze do
           analyze_memory: boolean(),
           analyze_database: boolean(),
           analyze_bottlenecks: boolean(),
+          metrics: map(),
           opts: map(),
           metadata: map()
         }

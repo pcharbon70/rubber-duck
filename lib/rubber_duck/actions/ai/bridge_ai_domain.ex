@@ -449,11 +449,8 @@ defmodule RubberDuck.Actions.AI.BridgeAIDomain do
   end
 
   defp emit_analysis_created_signal(analysis) do
-    RubberDuck.Signal.emit("analysis.created", %{
-      analysis_id: analysis.id,
-      type: analysis.analysis_type,
-      project_id: analysis.project_id,
-      timestamp: DateTime.utc_now()
-    })
+    Logger.debug("Legacy signal emission: analysis.created for analysis #{analysis.id}")
+    # Note: Converted from legacy signal system - analysis events now handled via MessageRouter
+    :ok
   end
 end

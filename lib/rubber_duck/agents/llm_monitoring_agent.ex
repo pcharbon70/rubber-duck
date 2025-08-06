@@ -44,18 +44,17 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   require Logger
 
   # Subscribe to health signals
-  @health_signals [
-    "llm.health.provider.healthy",
-    "llm.health.provider.degraded",
-    "llm.health.provider.failed",
-    "llm.health.check.completed",
-    "llm.provider.selected",
-    "llm.fallback.triggered"
-  ]
+  # @health_signals [
+  #   "llm.health.provider.healthy",
+  #   "llm.health.provider.degraded",
+  #   "llm.health.provider.failed",
+  #   "llm.health.check.completed",
+  #   "llm.provider.selected",
+  #   "llm.fallback.triggered"
+  # ]
 
   def init(opts) do
-    # Subscribe to all health-related signals
-    Enum.each(@health_signals, &RubberDuck.Signal.subscribe/1)
+    # No longer need to subscribe to signals - messages are routed directly
 
     # Set initial goals
     initial_goals = [
@@ -264,14 +263,15 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     Logger.info("Taking corrective action for provider #{provider}")
 
     # Emit signal for other agents to avoid this provider temporarily
-    RubberDuck.Signal.emit("llm.monitoring.provider.quarantine", %{
+    # TODO: Convert to typed message once LLM domain messages are created
+    Logger.info("Would emit provider.quarantine signal: #{inspect(%{
       provider: provider,
       reason: error,
       # 5 minute quarantine
       duration_seconds: 300,
       suggested_alternatives: suggest_alternatives(agent, provider),
       timestamp: DateTime.utc_now()
-    })
+    })}")
 
     # Record the action taken
     updated_agent = record_corrective_action(agent, provider, :quarantine)
@@ -337,11 +337,12 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
           %{action: :monitor, reason: "Continue monitoring"}
       end
 
-    RubberDuck.Signal.emit("llm.monitoring.adjustment.suggested", %{
+    # TODO: Convert to typed message once LLM domain messages are created
+    Logger.info("Would emit adjustment.suggested signal: #{inspect(%{
       provider: provider,
       adjustment: adjustment,
       current_reason: reason
-    })
+    })}")
 
     {:ok, agent}
   end
@@ -350,7 +351,8 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     Logger.error("System health crisis detected: #{inspect(health_data)}")
 
     # Emit crisis signal
-    RubberDuck.Signal.emit("llm.monitoring.crisis", %{
+    # TODO: Convert to typed message once LLM domain messages are created
+    Logger.warning("Would emit crisis signal: #{inspect(%{
       health_ratio: health_data[:health_ratio],
       failed_providers: health_data[:failed_count],
       degraded_providers: health_data[:degraded_count],
@@ -361,7 +363,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
         "Alert operations team"
       ],
       timestamp: DateTime.utc_now()
-    })
+    })}")
 
     # Mark goal as critical
     updated_goals =
@@ -416,7 +418,9 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       recommendation: determine_provider_recommendation(agent, provider)
     }
 
-    RubberDuck.Signal.emit("llm.monitoring.investigation.complete", investigation)
+    # TODO: Convert to typed message once LLM domain messages are created
+    Logger.info("Would emit investigation.complete signal: #{inspect(investigation)}")
+    :ok
 
     {:ok, agent}
   end

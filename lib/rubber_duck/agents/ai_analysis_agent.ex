@@ -64,15 +64,10 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   @file_modified "code_file.modified"
   @analysis_requested "analysis.requested"
   @feedback_received "analysis.feedback"
-  @pattern_detected "pattern.detected"
+  # @pattern_detected "pattern.detected"
 
   def init(opts) do
-    # Subscribe to relevant signals
-    :ok = RubberDuck.Signal.subscribe(@project_changed)
-    :ok = RubberDuck.Signal.subscribe(@file_modified)
-    :ok = RubberDuck.Signal.subscribe(@analysis_requested)
-    :ok = RubberDuck.Signal.subscribe(@feedback_received)
-
+    # No longer need to subscribe to signals - messages are routed directly
     # Schedule initial analysis check
     schedule_next_analysis_check()
 
@@ -623,11 +618,14 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
   end
 
   defp emit_pattern_signal(patterns) do
-    RubberDuck.Signal.emit(@pattern_detected, %{
-      patterns: patterns,
-      count: length(patterns),
-      timestamp: DateTime.utc_now()
-    })
+    # Use typed AI messages
+    message = %RubberDuck.Messages.AI.PatternDetect{
+      data_source: %{patterns: patterns},
+      pattern_types: [:behavioral, :temporal],
+      confidence_threshold: 0.7,
+      metadata: %{source: "ai_analysis_agent", pattern_count: length(patterns)}
+    }
+    RubberDuck.Routing.MessageRouter.route(message)
   end
 
   defp schedule_next_analysis_check do

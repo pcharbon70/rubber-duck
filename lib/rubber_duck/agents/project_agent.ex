@@ -86,7 +86,8 @@ defmodule RubberDuck.Agents.ProjectAgent do
     ]
 
   alias RubberDuck.Projects
-  alias RubberDuck.Signal
+  alias RubberDuck.Routing.MessageRouter
+  alias RubberDuck.Messages.Project.{AnalyzeStructure, MonitorHealth, OptimizeResources}
   require Logger
 
   # Signal definitions
@@ -99,12 +100,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
   @signal_optimization_completed "project.optimization.completed"
 
   def init(opts) do
-    # Subscribe to project-related signals
-    :ok = Signal.subscribe("project.created")
-    :ok = Signal.subscribe("project.updated")
-    :ok = Signal.subscribe("project.file.changed")
-    :ok = Signal.subscribe("project.deleted")
-
+    # No longer need to subscribe to signals - messages are routed directly
     # Schedule periodic project scanning
     schedule_project_scan()
 
@@ -401,9 +397,47 @@ defmodule RubberDuck.Agents.ProjectAgent do
     Process.send_after(self(), :scan_projects, 300_000)
   end
 
+  # Use typed messages instead of string-based signals
+  defp emit_signal(@signal_optimization_completed, payload) do
+    message = %OptimizeResources{
+      project_id: payload.project_id,
+      optimization_goal: :balanced,
+      include_recommendations: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_refactoring_suggested, payload) do
+    message = %AnalyzeStructure{
+      project_id: payload.project_id,
+      include_dependencies: true,
+      analyze_complexity: true,
+      depth: :deep
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_dependency_outdated, payload) do
+    message = %MonitorHealth{
+      project_id: payload.project_id,
+      metrics: [:dependencies],
+      threshold_alerts: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_quality_degraded, payload) do
+    message = %MonitorHealth{
+      project_id: payload.project_id,
+      metrics: [:quality, :complexity, :coverage],
+      threshold_alerts: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  # Fallback for unmapped signals
   defp emit_signal(signal_type, payload) do
-    Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
-  rescue
-    e -> Logger.warning("Failed to emit signal #{signal_type}: #{inspect(e)}")
+    Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")
+    :ok
   end
 end

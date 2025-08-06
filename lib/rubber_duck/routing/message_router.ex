@@ -25,19 +25,47 @@ defmodule RubberDuck.Routing.MessageRouter do
   use GenServer
   require Logger
   alias RubberDuck.Protocol.Message
+  alias RubberDuck.Telemetry.MessageTelemetry
 
   # Compile-time routing table
   # This creates direct module dispatch without runtime lookup
   @routes %{
+    # Code domain
     RubberDuck.Messages.Code.Analyze => RubberDuck.Skills.CodeAnalysisSkill,
     RubberDuck.Messages.Code.QualityCheck => RubberDuck.Skills.CodeAnalysisSkill,
     RubberDuck.Messages.Code.ImpactAssess => RubberDuck.Skills.CodeAnalysisSkill,
     RubberDuck.Messages.Code.PerformanceAnalyze => RubberDuck.Skills.CodeAnalysisSkill,
     RubberDuck.Messages.Code.SecurityScan => RubberDuck.Skills.CodeAnalysisSkill,
+    
+    # Learning domain
     RubberDuck.Messages.Learning.RecordExperience => RubberDuck.Skills.LearningSkill,
     RubberDuck.Messages.Learning.ProcessFeedback => RubberDuck.Skills.LearningSkill,
     RubberDuck.Messages.Learning.AnalyzePattern => RubberDuck.Skills.LearningSkill,
-    RubberDuck.Messages.Learning.OptimizeAgent => RubberDuck.Skills.LearningSkill
+    RubberDuck.Messages.Learning.OptimizeAgent => RubberDuck.Skills.LearningSkill,
+    
+    # Project domain  
+    RubberDuck.Messages.Project.AnalyzeStructure => RubberDuck.Skills.ProjectManagementSkill,
+    RubberDuck.Messages.Project.UpdateStatus => RubberDuck.Skills.ProjectManagementSkill,
+    RubberDuck.Messages.Project.MonitorHealth => RubberDuck.Skills.ProjectManagementSkill,
+    RubberDuck.Messages.Project.OptimizeResources => RubberDuck.Skills.ProjectManagementSkill,
+    
+    # User domain
+    RubberDuck.Messages.User.ValidateSession => RubberDuck.Skills.UserManagementSkill,
+    RubberDuck.Messages.User.UpdatePreferences => RubberDuck.Skills.UserManagementSkill,
+    RubberDuck.Messages.User.TrackActivity => RubberDuck.Skills.UserManagementSkill,
+    RubberDuck.Messages.User.GenerateSuggestions => RubberDuck.Skills.UserManagementSkill,
+    
+    # LLM domain - route directly to agents (not skills)
+    RubberDuck.Messages.LLM.Complete => RubberDuck.Agents.LLMOrchestratorAgent,
+    RubberDuck.Messages.LLM.ProviderSelect => RubberDuck.Agents.LLMOrchestratorAgent,
+    RubberDuck.Messages.LLM.Fallback => RubberDuck.Agents.LLMOrchestratorAgent,
+    RubberDuck.Messages.LLM.HealthCheck => RubberDuck.Agents.LLMMonitoringAgent,
+    
+    # AI domain - route to AI Analysis Agent
+    RubberDuck.Messages.AI.Analyze => RubberDuck.Agents.AIAnalysisAgent,
+    RubberDuck.Messages.AI.PatternDetect => RubberDuck.Agents.AIAnalysisAgent,
+    RubberDuck.Messages.AI.InsightGenerate => RubberDuck.Agents.AIAnalysisAgent,
+    RubberDuck.Messages.AI.QualityAssess => RubberDuck.Agents.AIAnalysisAgent
   }
 
   @type routing_result :: {:ok, term()} | {:error, term()}
@@ -60,6 +88,9 @@ defmodule RubberDuck.Routing.MessageRouter do
   @spec route(struct(), map()) :: routing_result()
   def route(message, context \\ %{}) do
     start_time = System.monotonic_time(:microsecond)
+    
+    # Emit start telemetry
+    MessageTelemetry.emit_routing_start(message, context)
 
     # Add routing metadata
     context = Map.put(context, :routed_at, DateTime.utc_now())
@@ -70,15 +101,29 @@ defmodule RubberDuck.Routing.MessageRouter do
 
     # Route based on priority
     result =
-      case priority do
-        :critical -> route_critical(message, context, timeout)
-        :high -> route_high_priority(message, context, timeout)
-        _ -> route_normal(message, context, timeout)
+      try do
+        case priority do
+          :critical -> route_critical(message, context, timeout)
+          :high -> route_high_priority(message, context, timeout)
+          _ -> route_normal(message, context, timeout)
+        end
+      rescue
+        exception ->
+          duration = System.monotonic_time(:microsecond) - start_time
+          MessageTelemetry.emit_routing_exception(
+            message,
+            duration,
+            :error,
+            exception,
+            __STACKTRACE__,
+            context
+          )
+          reraise exception, __STACKTRACE__
       end
 
-    # Emit telemetry
+    # Emit stop telemetry
     duration = System.monotonic_time(:microsecond) - start_time
-    emit_routing_telemetry(message, duration, result)
+    MessageTelemetry.emit_routing_stop(message, duration, result, context)
 
     result
   end
@@ -90,6 +135,11 @@ defmodule RubberDuck.Routing.MessageRouter do
   """
   @spec route_batch([struct()]) :: [routing_result()]
   def route_batch(messages) when is_list(messages) do
+    start_time = System.monotonic_time(:microsecond)
+    
+    # Emit batch start telemetry
+    MessageTelemetry.emit_batch_start(messages)
+    
     # Group by priority for efficient processing
     grouped = Enum.group_by(messages, &Message.priority/1)
 
@@ -140,7 +190,13 @@ defmodule RubberDuck.Routing.MessageRouter do
         []
       end
 
-    results ++ normal_results
+    final_results = results ++ normal_results
+    
+    # Emit batch stop telemetry
+    duration = System.monotonic_time(:microsecond) - start_time
+    MessageTelemetry.emit_batch_stop(messages, duration, final_results)
+    
+    final_results
   end
 
   @doc """
@@ -254,7 +310,8 @@ defmodule RubberDuck.Routing.MessageRouter do
 
         # Check if handler module and function exist
         if Code.ensure_loaded?(handler) and function_exported?(handler, handler_function, 2) do
-          apply(handler, handler_function, [message, context])
+          # Use telemetry span for handler execution
+          MessageTelemetry.span_handler(message, handler, handler_function, context)
         else
           Logger.error("Handler not available: #{inspect(handler)}.#{handler_function}/2")
           {:error, {:handler_not_available, handler, handler_function}}
@@ -278,20 +335,12 @@ defmodule RubberDuck.Routing.MessageRouter do
     {:ok, :closed}
   end
 
-  defp emit_routing_telemetry(message, duration, result) do
-    success = match?({:ok, _}, result)
-
-    :telemetry.execute(
-      [:rubber_duck, :routing, :message],
-      %{duration: duration},
-      %{
-        message_type: message.__struct__,
-        success: success,
-        priority: Message.priority(message)
-      }
-    )
-
-    # Update stats asynchronously
-    GenServer.cast(__MODULE__, {:update_stats, message.__struct__, success})
-  end
+  # Circuit breaker telemetry
+  # defp emit_circuit_breaker_event(message_type, event, metadata) do
+  #   :telemetry.execute(
+  #     [:rubber_duck, :circuit_breaker, event],
+  #     %{system_time: System.system_time()},
+  #     Map.put(metadata, :message_type, message_type)
+  #   )
+  # end
 end

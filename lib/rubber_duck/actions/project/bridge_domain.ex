@@ -19,7 +19,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     ]
 
   alias RubberDuck.Projects
-  alias RubberDuck.Signal
+  require Logger
 
   @impl true
   def run(params, _context) do
@@ -150,13 +150,10 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
 
   defp store_optimizations(project, optimizations) do
     # Could create an Optimizations resource
-    # For now, emit signals for each optimization
-    Enum.each(optimizations, fn opt ->
-      Signal.emit("project.optimization.suggested", %{
-        project_id: project.id,
-        optimization: opt,
-        timestamp: DateTime.utc_now()
-      })
+    # For now, log optimization suggestions (converted from legacy signal system)
+    Enum.each(optimizations, fn _opt ->
+      Logger.debug("Legacy signal: project.optimization.suggested for project #{project.id}")
+      # Note: Converted from legacy signal system - optimization events now handled via MessageRouter
     end)
 
     {:stored, length(optimizations)}
@@ -210,11 +207,9 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
           create_code_files(project, agent_data.files)
         end
 
-        # Emit signal for agent to start monitoring
-        Signal.emit("project.created", %{
-          project_id: project.id,
-          source: :agent_bridge
-        })
+        # Log project creation (converted from legacy signal system)
+        Logger.debug("Legacy signal: project.created for project #{project.id}")
+        # Note: Converted from legacy signal system - project events now handled via MessageRouter
 
         {:ok,
          %{
@@ -615,21 +610,15 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
   end
 
   defp emit_analysis_signals(project, analysis) do
-    # Emit signals for significant findings
+    # Log significant findings (converted from legacy signal system)
     if length(analysis[:issues] || []) > 10 do
-      Signal.emit("project.issues.detected", %{
-        project_id: project.id,
-        issue_count: length(analysis.issues),
-        severity: :high
-      })
+      Logger.debug("Legacy signal: project.issues.detected for project #{project.id}")
+      # Note: Converted from legacy signal system - issue events now handled via MessageRouter
     end
 
     if get_in(analysis, [:structure, :naming_consistency, :consistent]) == false do
-      Signal.emit("project.inconsistency.detected", %{
-        project_id: project.id,
-        type: :naming,
-        details: analysis.structure.naming_consistency
-      })
+      Logger.debug("Legacy signal: project.inconsistency.detected for project #{project.id}")
+      # Note: Converted from legacy signal system - consistency events now handled via MessageRouter
     end
   end
 

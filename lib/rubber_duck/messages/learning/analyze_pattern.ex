@@ -11,6 +11,7 @@ defmodule RubberDuck.Messages.Learning.AnalyzePattern do
     depth: :normal,
     time_window: nil,
     pattern_types: [:action_outcome, :sequence, :temporal],
+    min_occurrences: 3,
     metadata: %{}
   ]
 
@@ -22,6 +23,7 @@ defmodule RubberDuck.Messages.Learning.AnalyzePattern do
           depth: depth(),
           time_window: {DateTime.t(), DateTime.t()} | nil,
           pattern_types: [pattern_type()],
+          min_occurrences: pos_integer(),
           metadata: map()
         }
 

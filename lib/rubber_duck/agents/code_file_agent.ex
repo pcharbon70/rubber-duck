@@ -98,13 +98,20 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       RubberDuck.Actions.CodeFile.BridgeCodeDomain
     ]
 
-  alias RubberDuck.Signal
+  alias RubberDuck.Routing.MessageRouter
+  alias RubberDuck.Messages.Code.{Analyze, QualityCheck, ImpactAssess}
 
   @impl true
   def init(state) do
     # Set up initial monitoring
-    schedule_next_analysis(state)
-    {:ok, state}
+    default_state = %{
+      monitoring_enabled: true,
+      analysis_frequency: :hourly
+    }
+    
+    updated_state = Map.merge(default_state, state)
+    schedule_next_analysis(updated_state)
+    {:ok, updated_state}
   end
 
   @impl true
@@ -253,7 +260,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   defp extract_file_data(signal) do
-    {:ok, signal}
+    {:ok, signal.data}
   end
 
   defp initialize_file_tracking(state, file_data) do
@@ -265,7 +272,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     case RubberDuck.Actions.CodeFile.AnalyzeChanges.run(
            %{
              file_id: state.file_id,
-             content: state.current_content
+             content: state[:content] || state[:current_content]
            },
            %{}
          ) do
@@ -275,7 +282,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   defp extract_changes(signal) do
-    {:ok, signal[:changes] || signal}
+    {:ok, signal.data[:changes] || signal.data}
   end
 
   defp analyze_change_impact(_changes, state) do
@@ -344,7 +351,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     case RubberDuck.Actions.CodeFile.DetectOptimizations.run(
            %{
              file_id: state.file_id,
-             content: state.current_content
+             content: state[:content] || state[:current_content]
            },
            %{}
          ) do
@@ -430,7 +437,37 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     {:ok, updated_state}
   end
 
+  # Use typed messages instead of string-based signals
+  defp emit_signal("code_file.initialized", data) do
+    # Convert to typed message
+    message = %Analyze{
+      file_path: data.file_id,
+      analysis_type: :comprehensive,
+      depth: :moderate,
+      context: data
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal("code_file.dependencies_affected", data) do
+    message = %ImpactAssess{
+      file_path: data.file_id,
+      changes: %{affected_files: data.affected_files}
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal("code_file.analysis_complete", data) do
+    message = %QualityCheck{
+      target: data.file_id,
+      metrics: [:quality, :complexity, :coverage]
+    }
+    MessageRouter.route(message)
+  end
+  
+  # Fallback for unmapped signals - log warning
   defp emit_signal(type, data) do
-    Signal.emit(type, data)
+    Logger.warning("Unmapped signal type: #{type}, data: #{inspect(data)}")
+    :ok
   end
 end

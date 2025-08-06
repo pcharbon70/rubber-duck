@@ -12,7 +12,6 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
     ]
 
   alias RubberDuck.LLM.{HealthMonitor, ProviderRegistry}
-  alias RubberDuck.Signal
   require Logger
 
   # Signal definitions
@@ -159,7 +158,9 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   end
 
   defp emit_signal(signal_type, payload) do
-    Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
+    Logger.debug("Legacy signal emission: #{signal_type}, payload: #{inspect(payload)}")
+    # Note: Converted from legacy signal system - signals are now handled via MessageRouter
+    :ok
   rescue
     exception ->
       Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")

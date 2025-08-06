@@ -46,7 +46,11 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
   describe "handle_signal/2 - code_file.created" do
     test "handles new code file creation", %{initial_state: state} do
       signal = %Signal{
+        source: "test",
+        id: "test_signal_#{System.unique_integer()}",
         type: "code_file.created",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           file_id: "new_file_456",
           file_path: "lib/new_module.ex",
@@ -64,6 +68,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
     test "performs initial analysis on creation" do
       signal = %Signal{
         type: "code_file.created",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           file_id: "analyze_file",
           content: """
@@ -95,6 +101,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
     test "handles file modifications", %{initial_state: state} do
       signal = %Signal{
         type: "code_file.modified",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           changes: %{
             new_content: """
@@ -124,6 +132,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
 
       signal = %Signal{
         type: "code_file.modified",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           changes: %{
             new_content: "modified content"
@@ -142,6 +152,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
     test "triggers comprehensive analysis", %{initial_state: state} do
       signal = %Signal{
         type: "code_file.analyze",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           depth: :deep
         }
@@ -273,6 +285,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
       # Create
       create_signal = %Signal{
         type: "code_file.created",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           file_id: "lifecycle_file",
           file_path: "lib/lifecycle.ex",
@@ -287,6 +301,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
       # Modify
       modify_signal = %Signal{
         type: "code_file.modified",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           changes: %{
             new_content: """
@@ -306,6 +322,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
       # Analyze
       analyze_signal = %Signal{
         type: "code_file.analyze",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{}
       }
 
@@ -341,6 +359,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
     test "handles missing file content gracefully" do
       signal = %Signal{
         type: "code_file.created",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{
           file_id: "empty_file",
           file_path: "lib/empty.ex"
@@ -356,6 +376,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
 
       signal = %Signal{
         type: "code_file.analyze",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{}
       }
 
@@ -368,11 +390,15 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
     test "handles concurrent modifications", %{initial_state: state} do
       signal1 = %Signal{
         type: "code_file.modified",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{changes: %{new_content: "content1"}}
       }
 
       signal2 = %Signal{
         type: "code_file.modified",
+        source: self(),
+        id: "test_signal_#{:rand.uniform(1000)}",
         data: %{changes: %{new_content: "content2"}}
       }
 

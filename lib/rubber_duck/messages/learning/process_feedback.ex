@@ -10,6 +10,7 @@ defmodule RubberDuck.Messages.Learning.ProcessFeedback do
     :agent_id,
     :experience_id,
     :feedback,
+    :score,
     :learning_rate,
     metadata: %{}
   ]
@@ -27,6 +28,7 @@ defmodule RubberDuck.Messages.Learning.ProcessFeedback do
           agent_id: String.t(),
           experience_id: String.t(),
           feedback: feedback(),
+          score: float() | nil,
           learning_rate: float() | nil,
           metadata: map()
         }

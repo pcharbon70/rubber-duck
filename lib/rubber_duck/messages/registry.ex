@@ -37,15 +37,16 @@ defmodule RubberDuck.Messages.Registry do
     "learning.experience.query" => RubberDuck.Messages.Learning.QueryExperience,
 
     # Project messages
-    "project.quality.monitor" => RubberDuck.Messages.Project.MonitorQuality,
-    "project.optimization.suggest" => RubberDuck.Messages.Project.SuggestOptimization,
     "project.structure.analyze" => RubberDuck.Messages.Project.AnalyzeStructure,
-    "project.dependency.detect" => RubberDuck.Messages.Project.DetectDependencies,
+    "project.status.update" => RubberDuck.Messages.Project.UpdateStatus,
+    "project.health.monitor" => RubberDuck.Messages.Project.MonitorHealth,
+    "project.resources.optimize" => RubberDuck.Messages.Project.OptimizeResources,
 
     # User messages
-    "user.session.manage" => RubberDuck.Messages.User.ManageSession,
-    "user.behavior.learn" => RubberDuck.Messages.User.LearnBehavior,
-    "user.preference.update" => RubberDuck.Messages.User.UpdatePreference
+    "user.session.validate" => RubberDuck.Messages.User.ValidateSession,
+    "user.preferences.update" => RubberDuck.Messages.User.UpdatePreferences,
+    "user.activity.track" => RubberDuck.Messages.User.TrackActivity,
+    "user.suggestions.generate" => RubberDuck.Messages.User.GenerateSuggestions
   }
 
   # Create reverse mapping at compile time for performance

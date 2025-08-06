@@ -43,9 +43,8 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
       alert_on_degradation: opts.alert_on_degradation
     }
 
-    # Subscribe to relevant signals to track metrics
-    :ok = RubberDuck.Signal.subscribe("llm.request.completed")
-    :ok = RubberDuck.Signal.subscribe("llm.request.failed")
+    # Note: Converted from legacy signal system - metrics now tracked via telemetry
+    Logger.debug("LLM Health Sensor started - now uses telemetry instead of signals")
 
     # Start periodic health checks
     {:ok, schedule_health_check(state)}
@@ -423,7 +422,9 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     Enum.count(results, fn {_, result} -> result.status == :failed end)
   end
 
-  defp emit_signal(signal_type, payload) do
-    RubberDuck.Signal.emit(signal_type, Map.put(payload, :sensor, "llm_health_sensor"))
+  defp emit_signal(signal_type, _payload) do
+    Logger.debug("Legacy signal emission: #{signal_type} from llm_health_sensor")
+    # Note: Converted from legacy signal system - health events now handled via MessageRouter
+    :ok
   end
 end

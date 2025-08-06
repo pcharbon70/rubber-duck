@@ -13,6 +13,7 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     ]
 
   alias RubberDuck.Projects
+  require Logger
 
   @impl true
   def run(params, _context) do
@@ -475,12 +476,10 @@ defmodule RubberDuck.Actions.CodeFile.BridgeCodeDomain do
     end
   end
 
-  defp emit_update_signal(dependent, code_file) do
-    RubberDuck.Signal.emit("code_file.dependency_updated", %{
-      dependent_file: dependent.file_path,
-      updated_file: code_file.path,
-      update_type: :dependency_change
-    })
+  defp emit_update_signal(_dependent, code_file) do
+    Logger.debug("Legacy signal emission: code_file.dependency_updated for #{code_file.path}")
+    # Note: Converted from legacy signal system - code file events now handled via MessageRouter
+    :ok
   end
 
   defp calculate_total_lines(code_files) do

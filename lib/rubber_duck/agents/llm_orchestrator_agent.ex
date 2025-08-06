@@ -52,6 +52,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     ]
 
   alias RubberDuck.LLM.{HealthMonitor, ProviderRegistry}
+  alias RubberDuck.Routing.MessageRouter
   require Logger
 
   # Signal definitions
@@ -62,10 +63,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   @signal_cache_hit "llm.cache.hit"
 
   def init(opts) do
-    # Subscribe to relevant signals
-    :ok = RubberDuck.Signal.subscribe(@signal_request_completed)
-    :ok = RubberDuck.Signal.subscribe(@signal_request_failed)
-
+    # No longer need to subscribe to signals - messages are routed directly
     {:ok, opts}
   rescue
     exception ->
@@ -532,7 +530,32 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp emit_signal(signal_type, payload) do
-    RubberDuck.Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
+    # Use typed LLM messages
+    case signal_type do
+      @signal_provider_selected ->
+        message = %RubberDuck.Messages.LLM.ProviderSelect{
+          request_type: :completion,
+          preferred_providers: [payload[:provider]],
+          metadata: payload
+        }
+        MessageRouter.route(message)
+      
+      @signal_request_completed ->
+        Logger.debug("LLM request completed: #{inspect(payload)}")
+        :ok
+        
+      @signal_request_failed ->
+        message = %RubberDuck.Messages.LLM.Fallback{
+          original_provider: payload[:provider],
+          reason: payload[:error] || :error,
+          metadata: payload
+        }
+        MessageRouter.route(message)
+        
+      _ ->
+        Logger.debug("Would emit signal: #{signal_type}, payload: #{inspect(payload)}")
+        :ok
+    end
   rescue
     exception ->
       Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")

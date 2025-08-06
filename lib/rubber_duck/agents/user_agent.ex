@@ -67,7 +67,8 @@ defmodule RubberDuck.Agents.UserAgent do
       RubberDuck.Actions.User.GenerateSuggestions
     ]
 
-  alias RubberDuck.Signal
+  alias RubberDuck.Routing.MessageRouter
+  alias RubberDuck.Messages.User.{ValidateSession, UpdatePreferences, TrackActivity, GenerateSuggestions}
   require Logger
 
   # Signal definitions
@@ -78,11 +79,7 @@ defmodule RubberDuck.Agents.UserAgent do
   @signal_suggestion_generated "user.suggestion.generated"
 
   def init(opts) do
-    # Subscribe to relevant signals
-    :ok = Signal.subscribe("auth.user.signed_in")
-    :ok = Signal.subscribe("auth.user.signed_out")
-    :ok = Signal.subscribe("user.action.performed")
-
+    # No longer need to subscribe to signals - messages are routed directly
     # Schedule periodic session cleanup
     schedule_session_cleanup()
 
@@ -446,9 +443,59 @@ defmodule RubberDuck.Agents.UserAgent do
     "session_#{System.unique_integer([:positive])}_#{System.os_time(:nanosecond)}"
   end
 
+  # Use typed messages instead of string-based signals
+  defp emit_signal(@signal_session_created, payload) do
+    message = %ValidateSession{
+      user_id: payload.user_id,
+      session_id: payload.session_id,
+      check_expiry: false,
+      refresh_if_valid: true
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_session_expired, payload) do
+    # For expired sessions, use GenerateSuggestions to suggest re-authentication
+    message = %GenerateSuggestions{
+      user_id: payload.user_id,
+      context: %{session_expired: true, count: payload[:count] || 1},
+      max_suggestions: 1
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_pattern_detected, payload) do
+    # Track pattern detection as navigation activity
+    message = %TrackActivity{
+      user_id: payload.user_id,
+      activity_type: :navigation,
+      activity_data: %{patterns: payload.patterns},
+      timestamp: DateTime.utc_now()
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_preference_learned, payload) do
+    message = %UpdatePreferences{
+      user_id: payload.user_id,
+      preferences: payload.preferences,
+      merge_strategy: :deep
+    }
+    MessageRouter.route(message)
+  end
+  
+  defp emit_signal(@signal_suggestion_generated, payload) do
+    message = %GenerateSuggestions{
+      user_id: payload.user_id,
+      context: %{count: payload.count},
+      max_suggestions: 5
+    }
+    MessageRouter.route(message)
+  end
+  
+  # Fallback for unmapped signals
   defp emit_signal(signal_type, payload) do
-    Signal.emit(signal_type, Map.put(payload, :timestamp, DateTime.utc_now()))
-  rescue
-    e -> Logger.warning("Failed to emit signal #{signal_type}: #{inspect(e)}")
+    Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")
+    :ok
   end
 end
