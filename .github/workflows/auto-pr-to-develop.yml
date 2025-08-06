@@ -1,0 +1,30 @@
+name: Auto PR to Develop
+
+on:
+  push:
+    branches:
+      - 'feature/**'    # You can customize this
+      - 'bugfix/**'
+      - 'hotfix/**'
+      - 'fix/**'
+      - 'refactor/**'
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request to develop
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: develop                # 🔁 Target branch
+          branch: ${{ github.ref_name }}  # The branch that was pushed
+          title: "Auto PR from ${{ github.ref_name }}"
+          body: "This is an automated PR to merge `${{ github.ref_name }}` into `develop`."
+          draft: false
+          delete-branch: false
+
