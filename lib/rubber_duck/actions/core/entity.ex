@@ -12,6 +12,8 @@ defmodule RubberDuck.Actions.Core.Entity do
   Entities are NOT meant to replace Ash resources but to coordinate
   them during complex multi-step actions.
   """
+  
+  alias RubberDuck.EntityRepository
 
   defstruct [
     :id,
@@ -243,97 +245,13 @@ defmodule RubberDuck.Actions.Core.Entity do
 
   # Private functions
 
-  defp fetch_resource(:user, id) do
-    # Try to fetch from Accounts domain
-    # For now, use mock data until Ash domains are properly configured
-    fetch_mock_resource(:user, id)
-
-    # When Ash is ready:
-    # case RubberDuck.Accounts.get_user(id, actor: :system) do
-    #   nil -> {:error, :not_found}
-    #   user -> {:ok, user}
-    # end
-  end
-
-  defp fetch_resource(:project, id) do
-    # Try to fetch from Projects domain
-    # For now, use mock data until Ash domains are properly configured
-    fetch_mock_resource(:project, id)
-
-    # When Ash is ready:
-    # case RubberDuck.Projects.get_project(id, actor: :system) do
-    #   nil -> {:error, :not_found}
-    #   project -> {:ok, project}
-    # end
-  end
-
-  defp fetch_resource(:code_file, id) do
-    # Could be from Git or filesystem
-    fetch_mock_resource(:code_file, id)
-  end
-
-  defp fetch_resource(:analysis, id) do
-    # Fetch from Analytics domain
-    fetch_mock_resource(:analysis, id)
+  defp fetch_resource(type, id) when type in [:user, :project, :code_file, :analysis] do
+    # Use EntityRepository for real database access
+    EntityRepository.fetch(id, type)
   end
 
   defp fetch_resource(_unknown_type, _id) do
     {:error, :unknown_entity_type}
-  end
-
-  # Temporary mock fetching until Ash domains are set up
-  defp fetch_mock_resource(:user, id) do
-    {:ok,
-     %{
-       id: id,
-       email: "user@example.com",
-       username: "testuser",
-       preferences: %{},
-       version: 1,
-       inserted_at: DateTime.utc_now(),
-       updated_at: DateTime.utc_now()
-     }}
-  end
-
-  defp fetch_mock_resource(:project, id) do
-    {:ok,
-     %{
-       id: id,
-       name: "Test Project",
-       description: "A test project",
-       status: :active,
-       version: 1,
-       inserted_at: DateTime.utc_now(),
-       updated_at: DateTime.utc_now()
-     }}
-  end
-
-  defp fetch_mock_resource(:code_file, id) do
-    {:ok,
-     %{
-       id: id,
-       path: "/lib/example.ex",
-       content: "defmodule Example do\nend",
-       language: :elixir,
-       project_id: "project_123",
-       version: 1,
-       created_at: DateTime.utc_now(),
-       updated_at: DateTime.utc_now()
-     }}
-  end
-
-  defp fetch_mock_resource(:analysis, id) do
-    {:ok,
-     %{
-       id: id,
-       analysis_type: :quality,
-       target: "project_123",
-       status: :completed,
-       results: %{},
-       version: 1,
-       created_at: DateTime.utc_now(),
-       updated_at: DateTime.utc_now()
-     }}
   end
 
   defp get_resource_id(resource) when is_map(resource) do

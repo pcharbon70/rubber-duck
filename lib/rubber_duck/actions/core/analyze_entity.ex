@@ -31,6 +31,7 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     CodeAnalysisSkill,
     LearningSkill
   }
+  alias RubberDuck.EntityRepository
 
   require Logger
 
@@ -62,69 +63,70 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     end
   end
 
-  # Entity fetching and enrichment
+  # Entity fetching using EntityRepository
   defp fetch_entity(entity_id, entity_type) do
-    # In production, would fetch from appropriate context
-    case entity_type do
-      :user -> fetch_user_entity(entity_id)
-      :project -> fetch_project_entity(entity_id)
-      :code_file -> fetch_code_file_entity(entity_id)
-      :analysis -> fetch_analysis_entity(entity_id)
+    # Use the EntityRepository for real database access
+    case EntityRepository.fetch(entity_id, entity_type) do
+      {:ok, entity} -> 
+        # Convert Ash resource to map format expected by the action
+        {:ok, entity_to_map(entity, entity_type)}
+      {:error, :not_found} ->
+        {:error, "Entity not found: #{entity_type} with id #{entity_id}"}
+      {:error, reason} ->
+        Logger.error("Failed to fetch entity: #{inspect(reason)}")
+        {:error, reason}
     end
   end
-
-  defp fetch_user_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :user,
-       email: "user@example.com",
-       username: "testuser",
-       sessions: [],
-       activity_level: :moderate,
-       created_at: DateTime.utc_now()
-     }}
+  
+  # Convert Ash resources to the map format expected by the action
+  defp entity_to_map(entity, :user) do
+    %{
+      id: entity.id,
+      type: :user,
+      email: entity.email,
+      username: Map.get(entity, :username, entity.email),
+      sessions: Map.get(entity, :sessions, []),
+      activity_level: Map.get(entity, :activity_level, :moderate),
+      created_at: entity.inserted_at || DateTime.utc_now()
+    }
   end
-
-  defp fetch_project_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :project,
-       name: "Test Project",
-       description: "A test project",
-       status: :active,
-       quality_score: 0.75,
-       complexity: 50,
-       created_at: DateTime.utc_now()
-     }}
+  
+  defp entity_to_map(entity, :project) do
+    %{
+      id: entity.id,
+      type: :project,
+      name: entity.name,
+      description: entity.description,
+      status: Map.get(entity, :status, :active),
+      quality_score: Map.get(entity, :quality_score, 0.75),
+      complexity: Map.get(entity, :complexity, 50),
+      created_at: entity.inserted_at || DateTime.utc_now()
+    }
   end
-
-  defp fetch_code_file_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :code_file,
-       path: "/lib/example.ex",
-       content: "defmodule Example do\nend",
-       language: :elixir,
-       lines_of_code: 100,
-       complexity: 10,
-       created_at: DateTime.utc_now()
-     }}
+  
+  defp entity_to_map(entity, :code_file) do
+    %{
+      id: entity.id,
+      type: :code_file,
+      path: entity.path,
+      content: entity.content,
+      language: Map.get(entity, :language, :elixir),
+      lines_of_code: Map.get(entity, :lines_of_code, 0),
+      complexity: Map.get(entity, :complexity, 0),
+      created_at: entity.inserted_at || DateTime.utc_now()
+    }
   end
-
-  defp fetch_analysis_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :analysis,
-       analysis_type: :quality,
-       target: "project_123",
-       status: :completed,
-       results: %{score: 0.8},
-       created_at: DateTime.utc_now()
-     }}
+  
+  defp entity_to_map(entity, :analysis) do
+    %{
+      id: entity.id,
+      type: :analysis,
+      analysis_type: Map.get(entity, :analysis_type, :quality),
+      target: Map.get(entity, :target, ""),
+      status: Map.get(entity, :status, :completed),
+      results: Map.get(entity, :results, %{}),
+      created_at: entity.inserted_at || DateTime.utc_now()
+    }
   end
 
   defp enrich_with_history(entity, historical_data) do

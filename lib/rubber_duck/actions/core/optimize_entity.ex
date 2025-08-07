@@ -31,6 +31,7 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     ]
 
   # Aliases reserved for future integration with actual contexts
+  alias RubberDuck.EntityRepository
   require Logger
 
   @impl true
@@ -64,83 +65,90 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
     end
   end
 
-  # Entity fetching
+  # Entity fetching using EntityRepository
   defp fetch_entity(entity_id, entity_type) do
-    case entity_type do
-      :user -> fetch_user_entity(entity_id)
-      :project -> fetch_project_entity(entity_id)
-      :code_file -> fetch_code_file_entity(entity_id)
-      :analysis -> fetch_analysis_entity(entity_id)
+    case EntityRepository.fetch(entity_id, entity_type) do
+      {:ok, entity} -> 
+        # Convert Ash resource to optimization-ready format
+        {:ok, entity_to_optimization_format(entity, entity_type)}
+      {:error, :not_found} ->
+        {:error, "Entity not found: #{entity_type} with id #{entity_id}"}
+      {:error, reason} ->
+        Logger.error("Failed to fetch entity for optimization: #{inspect(reason)}")
+        {:error, reason}
     end
   end
-
-  defp fetch_user_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :user,
-       response_time: 250,
-       memory_usage: 100,
-       session_duration: 300,
-       error_rate: 0.02,
-       created_at: DateTime.utc_now()
-     }}
+  
+  # Convert Ash resources to optimization format with performance metrics
+  defp entity_to_optimization_format(entity, :user) do
+    %{
+      id: entity.id,
+      type: :user,
+      # Performance metrics - use actual values if available, defaults otherwise
+      response_time: Map.get(entity, :response_time, 250),
+      memory_usage: Map.get(entity, :memory_usage, 100),
+      session_duration: Map.get(entity, :session_duration, 300),
+      error_rate: Map.get(entity, :error_rate, 0.02),
+      created_at: entity.inserted_at || DateTime.utc_now(),
+      # Include original entity for updates
+      _original: entity
+    }
   end
-
-  defp fetch_project_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :project,
-       build_time: 5_000,
-       test_coverage: 0.65,
-       code_quality_score: 0.75,
-       complexity: 85,
-       dependencies_count: 42,
-       created_at: DateTime.utc_now()
-     }}
+  
+  defp entity_to_optimization_format(entity, :project) do
+    %{
+      id: entity.id,
+      type: :project,
+      name: entity.name,
+      description: entity.description,
+      # Performance metrics
+      build_time: Map.get(entity, :build_time, 5_000),
+      test_coverage: Map.get(entity, :test_coverage, 0.65),
+      code_quality_score: Map.get(entity, :code_quality_score, 0.75),
+      complexity: Map.get(entity, :complexity, 85),
+      dependencies_count: Map.get(entity, :dependencies_count, 42),
+      created_at: entity.inserted_at || DateTime.utc_now(),
+      _original: entity
+    }
   end
-
-  defp fetch_code_file_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :code_file,
-       path: "/lib/example.ex",
-       content: generate_sample_code(),
-       execution_time: 150,
-       memory_footprint: 50,
-       cyclomatic_complexity: 12,
-       lines_of_code: 250,
-       created_at: DateTime.utc_now()
-     }}
+  
+  defp entity_to_optimization_format(entity, :code_file) do
+    %{
+      id: entity.id,
+      type: :code_file,
+      path: entity.path,
+      content: entity.content,
+      # Performance metrics
+      execution_time: Map.get(entity, :execution_time, 150),
+      memory_footprint: Map.get(entity, :memory_footprint, 50),
+      cyclomatic_complexity: Map.get(entity, :cyclomatic_complexity, 12),
+      lines_of_code: Map.get(entity, :lines_of_code, count_lines(entity.content)),
+      created_at: entity.inserted_at || DateTime.utc_now(),
+      _original: entity
+    }
   end
-
-  defp fetch_analysis_entity(id) do
-    {:ok,
-     %{
-       id: id,
-       type: :analysis,
-       processing_time: 2_000,
-       accuracy: 0.85,
-       confidence: 0.90,
-       data_points_processed: 10_000,
-       created_at: DateTime.utc_now()
-     }}
+  
+  defp entity_to_optimization_format(entity, :analysis) do
+    %{
+      id: entity.id,
+      type: :analysis,
+      # Performance metrics
+      processing_time: Map.get(entity, :processing_time, 2_000),
+      accuracy: Map.get(entity, :accuracy, 0.85),
+      confidence: Map.get(entity, :confidence, 0.90),
+      data_points_processed: Map.get(entity, :data_points_processed, 10_000),
+      created_at: entity.inserted_at || DateTime.utc_now(),
+      _original: entity
+    }
   end
-
-  defp generate_sample_code do
-    """
-    defmodule Example do
-      def process(data) do
-        data
-        |> validate()
-        |> transform()
-        |> persist()
-      end
-    end
-    """
+  
+  defp count_lines(nil), do: 0
+  defp count_lines(content) when is_binary(content) do
+    content
+    |> String.split("\n")
+    |> length()
   end
+  defp count_lines(_), do: 0
 
   # Baseline metrics capture
   defp capture_baseline_metrics(entity, optimization_goals) do

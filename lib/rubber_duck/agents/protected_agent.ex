@@ -180,7 +180,7 @@ defmodule RubberDuck.Agents.ProtectedAgent do
       {:ok, result} ->
         {:ok, result}
         
-      {:error, reason} when retries_left > 0 ->
+      {:error, _reason} when retries_left > 0 ->
         Logger.debug("Retrying instruction to #{agent_type}, #{retries_left} attempts left")
         Process.sleep(retry_delay)
         
