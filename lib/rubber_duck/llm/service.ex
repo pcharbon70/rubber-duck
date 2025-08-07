@@ -9,7 +9,7 @@ defmodule RubberDuck.LLM.Service do
   use GenServer
   require Logger
 
-  alias RubberDuck.LLM.{Config, HealthMonitor, ProviderRegistry}
+  alias RubberDuck.LLM.{Config, HealthMonitor, ProviderCircuitBreaker, ProviderRegistry}
 
   # Client API
 
@@ -87,17 +87,28 @@ defmodule RubberDuck.LLM.Service do
     provider_name = Keyword.get(opts, :provider, state.default_provider)
 
     result =
-      with {:ok, provider} <- get_available_provider(provider_name),
+      with :ok <- ProviderCircuitBreaker.check_provider(provider_name),
+           {:ok, provider} <- get_available_provider(provider_name),
            {:ok, response} <-
              execute_with_fallback(
                fn -> provider.module.complete(request, provider.config) end,
                :complete,
                request,
-               opts
+               opts,
+               provider_name
              ) do
         {:ok, response}
       else
-        error -> handle_provider_error(error, provider_name)
+        {:error, :circuit_open} ->
+          Logger.warning("Circuit open for provider #{provider_name}, attempting fallback")
+          attempt_fallback(:complete, request, opts, provider_name)
+          
+        {:error, :cost_exceeded} ->
+          Logger.warning("Cost limit exceeded for provider #{provider_name}")
+          attempt_fallback(:complete, request, opts, provider_name)
+          
+        error -> 
+          handle_provider_error(error, provider_name)
       end
 
     new_state = %{state | request_count: state.request_count + 1}
@@ -109,19 +120,32 @@ defmodule RubberDuck.LLM.Service do
     provider_name = Keyword.get(opts, :provider, state.default_provider)
 
     result =
-      with {:ok, provider} <- get_available_provider(provider_name),
+      with :ok <- ProviderCircuitBreaker.check_provider(provider_name),
+           {:ok, provider} <- get_available_provider(provider_name),
            true <- implements_streaming?(provider.module),
            {:ok, stream} <-
              execute_with_fallback(
                fn -> provider.module.stream(request, provider.config) end,
                :stream,
                request,
-               opts
+               opts,
+               provider_name
              ) do
         {:ok, stream}
       else
-        false -> {:error, :streaming_not_supported}
-        error -> handle_provider_error(error, provider_name)
+        false -> 
+          {:error, :streaming_not_supported}
+          
+        {:error, :circuit_open} ->
+          Logger.warning("Circuit open for provider #{provider_name}, attempting fallback")
+          attempt_fallback(:stream, request, opts, provider_name)
+          
+        {:error, :cost_exceeded} ->
+          Logger.warning("Cost limit exceeded for provider #{provider_name}")
+          attempt_fallback(:stream, request, opts, provider_name)
+          
+        error -> 
+          handle_provider_error(error, provider_name)
       end
 
     new_state = %{state | request_count: state.request_count + 1}
@@ -133,19 +157,32 @@ defmodule RubberDuck.LLM.Service do
     provider_name = Keyword.get(opts, :provider, state.default_provider)
 
     result =
-      with {:ok, provider} <- get_available_provider(provider_name),
+      with :ok <- ProviderCircuitBreaker.check_provider(provider_name),
+           {:ok, provider} <- get_available_provider(provider_name),
            true <- implements_embeddings?(provider.module),
            {:ok, response} <-
              execute_with_fallback(
                fn -> provider.module.embed(request, provider.config) end,
                :embed,
                request,
-               opts
+               opts,
+               provider_name
              ) do
         {:ok, response}
       else
-        false -> {:error, :embeddings_not_supported}
-        error -> handle_provider_error(error, provider_name)
+        false -> 
+          {:error, :embeddings_not_supported}
+          
+        {:error, :circuit_open} ->
+          Logger.warning("Circuit open for provider #{provider_name}, attempting fallback")
+          attempt_fallback(:embed, request, opts, provider_name)
+          
+        {:error, :cost_exceeded} ->
+          Logger.warning("Cost limit exceeded for provider #{provider_name}")
+          attempt_fallback(:embed, request, opts, provider_name)
+          
+        error -> 
+          handle_provider_error(error, provider_name)
       end
 
     new_state = %{state | request_count: state.request_count + 1}
@@ -260,20 +297,29 @@ defmodule RubberDuck.LLM.Service do
     end
   end
 
-  defp execute_with_fallback(fun, operation, request, opts) do
+  defp execute_with_fallback(fun, operation, request, opts, provider_name) do
     start_time = System.monotonic_time(:millisecond)
 
     result = fun.()
     response_time = System.monotonic_time(:millisecond) - start_time
 
     case result do
-      {:ok, _} = success ->
-        provider_name = Keyword.get(opts, :provider)
+      {:ok, response} = success ->
+        # Record success with circuit breaker
+        ProviderCircuitBreaker.record_success(provider_name, %{
+          latency_ms: response_time,
+          cost: estimate_cost(request, response)
+        })
         HealthMonitor.record_success(provider_name, response_time)
         success
 
       {:error, reason} = error ->
-        provider_name = Keyword.get(opts, :provider)
+        # Categorize and record failure
+        failure_type = categorize_failure(reason)
+        ProviderCircuitBreaker.record_failure(provider_name, failure_type, %{
+          reason: reason,
+          retry_after: extract_retry_after(reason)
+        })
         HealthMonitor.record_failure(provider_name, reason)
 
         if Keyword.get(opts, :fallback, true) do
@@ -284,7 +330,10 @@ defmodule RubberDuck.LLM.Service do
     end
   rescue
     error ->
-      provider_name = Keyword.get(opts, :provider)
+      # Exception is a failure
+      ProviderCircuitBreaker.record_failure(provider_name, :exception, %{
+        error: error
+      })
       HealthMonitor.record_failure(provider_name, error)
 
       if Keyword.get(opts, :fallback, true) do
@@ -293,28 +342,76 @@ defmodule RubberDuck.LLM.Service do
         {:error, error}
       end
   end
+  
+  defp categorize_failure(reason) do
+    case reason do
+      :timeout -> :timeout
+      {:rate_limit, _} -> :rate_limit
+      {:invalid_api_key, _} -> :invalid_api_key
+      {:server_error, _} -> :server_error
+      _ -> :unknown
+    end
+  end
+  
+  defp extract_retry_after(reason) do
+    case reason do
+      {:rate_limit, %{retry_after: seconds}} -> seconds * 1000
+      _ -> nil
+    end
+  end
+  
+  defp estimate_cost(_request, _response) do
+    # Simplified cost estimation
+    # In production, calculate based on tokens/usage
+    0.01
+  end
 
   defp attempt_fallback(operation, request, opts, failed_provider) do
     Logger.warning("Attempting fallback for #{operation} after #{failed_provider} failed")
 
-    available_providers =
-      ProviderRegistry.list_available()
-      |> Enum.reject(&(&1.name == failed_provider))
+    # Use circuit breaker to find healthy fallback providers
+    fallback_providers = ProviderCircuitBreaker.find_fallback_providers(
+      failed_provider,
+      exclude: [failed_provider],
+      max_cost: Keyword.get(opts, :max_cost, 1000.0)
+    )
 
-    case available_providers do
+    # Filter by available providers and operation support
+    available_fallbacks =
+      fallback_providers
+      |> Enum.filter(fn provider_name ->
+        case ProviderRegistry.get(provider_name) do
+          {:ok, provider} ->
+            provider.available && operation_supported?(provider.module, operation)
+          _ ->
+            false
+        end
+      end)
+
+    case available_fallbacks do
       [] ->
+        Logger.error("No fallback providers available for #{operation}")
         {:error, :no_fallback_available}
 
-      [fallback | _] ->
-        Logger.info("Using fallback provider: #{fallback.name}")
+      [fallback_name | _] ->
+        Logger.info("Using fallback provider: #{fallback_name} for #{operation}")
 
         new_opts = Keyword.put(opts, :fallback, false)
 
         case operation do
-          :complete -> complete(request, [{:provider, fallback.name} | new_opts])
-          :stream -> stream(request, [{:provider, fallback.name} | new_opts])
-          :embed -> embed(request, [{:provider, fallback.name} | new_opts])
+          :complete -> complete(request, [{:provider, fallback_name} | new_opts])
+          :stream -> stream(request, [{:provider, fallback_name} | new_opts])
+          :embed -> embed(request, [{:provider, fallback_name} | new_opts])
         end
+    end
+  end
+
+  defp operation_supported?(module, operation) do
+    case operation do
+      :complete -> function_exported?(module, :complete, 2)
+      :stream -> function_exported?(module, :stream, 2)
+      :embed -> function_exported?(module, :embed, 2)
+      _ -> false
     end
   end
 
