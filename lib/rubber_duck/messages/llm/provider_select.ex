@@ -53,9 +53,10 @@ defmodule RubberDuck.Messages.LLM.ProviderSelect do
     end
 
     def to_jido_signal(%ProviderSelect{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "llm.provider.select",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

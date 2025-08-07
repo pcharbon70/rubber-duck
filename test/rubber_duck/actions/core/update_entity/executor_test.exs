@@ -360,9 +360,10 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ExecutorTest do
       }
 
       # Fix checksum
+      {_, snapshot_result} = Executor.create_snapshot(snapshot.data)
       snapshot = %{
         snapshot
-        | checksum: Executor.create_snapshot(snapshot.data) |> elem(1) |> Map.get(:checksum)
+        | checksum: snapshot_result |> Map.get(:checksum)
       }
 
       current = %{

@@ -961,7 +961,8 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   end
 
   defp generate_optimization_id do
-    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+    bytes = :crypto.strong_rand_bytes(8)
+    bytes |> Base.encode16(case: :lower)
   end
 
   defp extract_learning_context(plan, context) do

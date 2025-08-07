@@ -203,10 +203,12 @@ defmodule RubberDuck.Routing.EnhancedMessageRouter do
   defp route_critical(message, context) do
     timeout = Message.timeout(message)
 
-    Task.Supervisor.async_nolink(
+    task = Task.Supervisor.async_nolink(
       RubberDuck.TaskSupervisor,
       fn -> dispatch(message, context) end
     )
+    
+    task
     |> Task.await(timeout)
   catch
     :exit, {:timeout, _} -> {:error, :timeout}

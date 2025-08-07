@@ -43,9 +43,10 @@ defmodule RubberDuck.Messages.Code.QualityCheck do
     end
 
     def to_jido_signal(%QualityCheck{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "code.quality.check",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

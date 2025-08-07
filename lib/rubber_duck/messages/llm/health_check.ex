@@ -48,9 +48,10 @@ defmodule RubberDuck.Messages.LLM.HealthCheck do
     end
 
     def to_jido_signal(%HealthCheck{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "llm.health.check",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

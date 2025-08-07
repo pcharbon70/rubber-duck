@@ -72,7 +72,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Learner do
         0
 
       entity when is_map(entity) ->
-        Map.get(entity, :metadata, %{})
+        metadata = Map.get(entity, :metadata, %{})
+        metadata
         |> Map.get(:change_count, 0)
 
       _ ->
@@ -816,7 +817,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Learner do
   end
 
   defp generate_learning_id do
-    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+    bytes = :crypto.strong_rand_bytes(8)
+    bytes |> Base.encode16(case: :lower)
   end
 
   @doc """

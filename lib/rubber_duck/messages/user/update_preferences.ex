@@ -43,9 +43,10 @@ defmodule RubberDuck.Messages.User.UpdatePreferences do
     end
 
     def to_jido_signal(%UpdatePreferences{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "user.preferences.update",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

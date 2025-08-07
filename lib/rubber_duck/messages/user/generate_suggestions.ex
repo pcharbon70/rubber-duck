@@ -45,9 +45,10 @@ defmodule RubberDuck.Messages.User.GenerateSuggestions do
     end
 
     def to_jido_signal(%GenerateSuggestions{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "user.suggestions.generate",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

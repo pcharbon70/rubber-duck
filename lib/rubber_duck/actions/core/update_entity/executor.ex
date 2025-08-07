@@ -64,7 +64,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Executor do
   end
 
   defp generate_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+    bytes = :crypto.strong_rand_bytes(16)
+    bytes |> Base.encode16(case: :lower)
   end
 
   defp detect_entity_type(entity) do
@@ -482,7 +483,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Executor do
   end
 
   defp generate_batch_id do
-    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+    bytes = :crypto.strong_rand_bytes(8)
+    bytes |> Base.encode16(case: :lower)
   end
 
   defp rollback_batch(successful_results) do

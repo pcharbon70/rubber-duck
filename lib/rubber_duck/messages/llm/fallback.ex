@@ -50,9 +50,10 @@ defmodule RubberDuck.Messages.LLM.Fallback do
     end
 
     def to_jido_signal(%Fallback{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "llm.fallback.trigger",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

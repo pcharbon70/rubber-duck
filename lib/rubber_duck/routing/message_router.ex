@@ -258,10 +258,12 @@ defmodule RubberDuck.Routing.MessageRouter do
 
   defp route_critical(message, context, timeout) do
     # Critical messages get dedicated resources
-    Task.Supervisor.async_nolink(
+    task = Task.Supervisor.async_nolink(
       RubberDuck.TaskSupervisor,
       fn -> do_route(message, context) end
     )
+    
+    task
     |> Task.await(timeout)
   catch
     :exit, {:timeout, _} -> {:error, :timeout}

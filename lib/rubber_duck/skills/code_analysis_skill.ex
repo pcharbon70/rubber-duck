@@ -1107,8 +1107,9 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     base_risk = map_size(changes) * 10
 
     # Add risk for critical file changes
+    change_keys = Map.keys(changes)
     critical_risk =
-      if Map.keys(changes)
+      if change_keys
          |> Enum.any?(fn key ->
            key_str = to_string(key)
            String.contains?(key_str, ["auth", "security", "payment"])

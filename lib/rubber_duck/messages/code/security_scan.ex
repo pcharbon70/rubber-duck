@@ -51,9 +51,10 @@ defmodule RubberDuck.Messages.Code.SecurityScan do
     end
 
     def to_jido_signal(%SecurityScan{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "code.security.scan",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

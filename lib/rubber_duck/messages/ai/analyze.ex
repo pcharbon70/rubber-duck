@@ -53,9 +53,10 @@ defmodule RubberDuck.Messages.AI.Analyze do
     end
 
     def to_jido_signal(%Analyze{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "ai.analysis.request",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end

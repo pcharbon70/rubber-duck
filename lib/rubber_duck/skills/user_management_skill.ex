@@ -751,7 +751,8 @@ defmodule RubberDuck.Skills.UserManagementSkill do
   end
 
   defp generate_activity_id do
-    "activity_#{:crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)}"
+    bytes = :crypto.strong_rand_bytes(8)
+    "activity_#{bytes |> Base.encode16(case: :lower)}"
   end
 
   defp detect_behavior_patterns(behavior_history, confidence_threshold) do

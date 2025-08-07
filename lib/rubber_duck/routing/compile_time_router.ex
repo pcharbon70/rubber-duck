@@ -59,10 +59,10 @@ defmodule RubberDuck.Routing.CompileTimeRouter do
 
   @doc false
   defmacro __before_compile__(env) do
-    routes =
-      Module.get_attribute(env.module, :routes, [])
-      |> Enum.reverse()
-      |> Enum.uniq()
+    route_list = Module.get_attribute(env.module, :routes, [])
+    routes = route_list
+    |> Enum.reverse()
+    |> Enum.uniq()
 
     # Generate dispatch function clauses
     dispatch_clauses =

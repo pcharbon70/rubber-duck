@@ -85,7 +85,8 @@ defmodule RubberDuck.Routing.RouterBenchmarkTest do
   describe "batch routing performance" do
     test "runtime batch routing", %{messages: messages} do
       # Create a batch of messages
-      batch = Stream.cycle(messages) |> Enum.take(@batch_size)
+      stream = Stream.cycle(messages)
+      batch = stream |> Enum.take(@batch_size)
       iterations_div_100 = div(@iterations, 100)
 
       {time_microseconds, _results} =
@@ -113,7 +114,8 @@ defmodule RubberDuck.Routing.RouterBenchmarkTest do
 
     test "compile-time batch routing", %{messages: messages} do
       # Create a batch of messages
-      batch = Stream.cycle(messages) |> Enum.take(@batch_size)
+      stream = Stream.cycle(messages)
+      batch = stream |> Enum.take(@batch_size)
       iterations_div_100 = div(@iterations, 100)
 
       {time_microseconds, _results} =

@@ -206,7 +206,8 @@ defmodule RubberDuck.Skills.Base do
 
       # Introspection helper
       defp get_message_handlers do
-        __MODULE__.__info__(:functions)
+        functions = __MODULE__.__info__(:functions)
+        functions
         |> Enum.filter(fn {name, arity} ->
           arity == 2 and String.starts_with?(Atom.to_string(name), "handle_")
         end)

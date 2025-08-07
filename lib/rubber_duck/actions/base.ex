@@ -220,11 +220,13 @@ defmodule RubberDuck.Action.Base do
   end
 
   defp generate_request_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+    bytes = :crypto.strong_rand_bytes(16)
+    bytes |> Base.encode16(case: :lower)
   end
 
   defp calculate_checksum(params) do
-    :crypto.hash(:md5, :erlang.term_to_binary(params))
+    hash = :crypto.hash(:md5, :erlang.term_to_binary(params))
+    hash
     |> Base.encode16(case: :lower)
   end
 

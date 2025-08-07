@@ -52,9 +52,10 @@ defmodule RubberDuck.Messages.LLM.Complete do
     end
 
     def to_jido_signal(%Complete{} = msg) do
+      data = Map.from_struct(msg)
       %{
         type: "llm.request.complete",
-        data: Map.from_struct(msg) |> Map.delete(:metadata),
+        data: data |> Map.delete(:metadata),
         metadata: msg.metadata
       }
     end
