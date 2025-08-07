@@ -538,20 +538,22 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
           preferred_providers: [payload[:provider]],
           metadata: payload
         }
+
         MessageRouter.route(message)
-      
+
       @signal_request_completed ->
         Logger.debug("LLM request completed: #{inspect(payload)}")
         :ok
-        
+
       @signal_request_failed ->
         message = %RubberDuck.Messages.LLM.Fallback{
           original_provider: payload[:provider],
           reason: payload[:error] || :error,
           metadata: payload
         }
+
         MessageRouter.route(message)
-        
+
       _ ->
         Logger.debug("Would emit signal: #{signal_type}, payload: #{inspect(payload)}")
         :ok

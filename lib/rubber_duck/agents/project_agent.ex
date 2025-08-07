@@ -404,9 +404,10 @@ defmodule RubberDuck.Agents.ProjectAgent do
       optimization_goal: :balanced,
       include_recommendations: true
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal(@signal_refactoring_suggested, payload) do
     message = %AnalyzeStructure{
       project_id: payload.project_id,
@@ -414,27 +415,30 @@ defmodule RubberDuck.Agents.ProjectAgent do
       analyze_complexity: true,
       depth: :deep
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal(@signal_dependency_outdated, payload) do
     message = %MonitorHealth{
       project_id: payload.project_id,
       metrics: [:dependencies],
       threshold_alerts: true
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal(@signal_quality_degraded, payload) do
     message = %MonitorHealth{
       project_id: payload.project_id,
       metrics: [:quality, :complexity, :coverage],
       threshold_alerts: true
     }
+
     MessageRouter.route(message)
   end
-  
+
   # Fallback for unmapped signals
   defp emit_signal(signal_type, payload) do
     Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")

@@ -108,7 +108,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       monitoring_enabled: true,
       analysis_frequency: :hourly
     }
-    
+
     updated_state = Map.merge(default_state, state)
     schedule_next_analysis(updated_state)
     {:ok, updated_state}
@@ -446,25 +446,28 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       depth: :moderate,
       context: data
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal("code_file.dependencies_affected", data) do
     message = %ImpactAssess{
       file_path: data.file_id,
       changes: %{affected_files: data.affected_files}
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal("code_file.analysis_complete", data) do
     message = %QualityCheck{
       target: data.file_id,
       metrics: [:quality, :complexity, :coverage]
     }
+
     MessageRouter.route(message)
   end
-  
+
   # Fallback for unmapped signals - log warning
   defp emit_signal(type, data) do
     Logger.warning("Unmapped signal type: #{type}, data: #{inspect(data)}")

@@ -36,31 +36,31 @@ defmodule RubberDuck.Routing.MessageRouter do
     RubberDuck.Messages.Code.ImpactAssess => RubberDuck.Skills.CodeAnalysisSkill,
     RubberDuck.Messages.Code.PerformanceAnalyze => RubberDuck.Skills.CodeAnalysisSkill,
     RubberDuck.Messages.Code.SecurityScan => RubberDuck.Skills.CodeAnalysisSkill,
-    
+
     # Learning domain
     RubberDuck.Messages.Learning.RecordExperience => RubberDuck.Skills.LearningSkill,
     RubberDuck.Messages.Learning.ProcessFeedback => RubberDuck.Skills.LearningSkill,
     RubberDuck.Messages.Learning.AnalyzePattern => RubberDuck.Skills.LearningSkill,
     RubberDuck.Messages.Learning.OptimizeAgent => RubberDuck.Skills.LearningSkill,
-    
+
     # Project domain  
     RubberDuck.Messages.Project.AnalyzeStructure => RubberDuck.Skills.ProjectManagementSkill,
     RubberDuck.Messages.Project.UpdateStatus => RubberDuck.Skills.ProjectManagementSkill,
     RubberDuck.Messages.Project.MonitorHealth => RubberDuck.Skills.ProjectManagementSkill,
     RubberDuck.Messages.Project.OptimizeResources => RubberDuck.Skills.ProjectManagementSkill,
-    
+
     # User domain
     RubberDuck.Messages.User.ValidateSession => RubberDuck.Skills.UserManagementSkill,
     RubberDuck.Messages.User.UpdatePreferences => RubberDuck.Skills.UserManagementSkill,
     RubberDuck.Messages.User.TrackActivity => RubberDuck.Skills.UserManagementSkill,
     RubberDuck.Messages.User.GenerateSuggestions => RubberDuck.Skills.UserManagementSkill,
-    
+
     # LLM domain - route directly to agents (not skills)
     RubberDuck.Messages.LLM.Complete => RubberDuck.Agents.LLMOrchestratorAgent,
     RubberDuck.Messages.LLM.ProviderSelect => RubberDuck.Agents.LLMOrchestratorAgent,
     RubberDuck.Messages.LLM.Fallback => RubberDuck.Agents.LLMOrchestratorAgent,
     RubberDuck.Messages.LLM.HealthCheck => RubberDuck.Agents.LLMMonitoringAgent,
-    
+
     # AI domain - route to AI Analysis Agent
     RubberDuck.Messages.AI.Analyze => RubberDuck.Agents.AIAnalysisAgent,
     RubberDuck.Messages.AI.PatternDetect => RubberDuck.Agents.AIAnalysisAgent,
@@ -88,7 +88,7 @@ defmodule RubberDuck.Routing.MessageRouter do
   @spec route(struct(), map()) :: routing_result()
   def route(message, context \\ %{}) do
     start_time = System.monotonic_time(:microsecond)
-    
+
     # Emit start telemetry
     MessageTelemetry.emit_routing_start(message, context)
 
@@ -110,6 +110,7 @@ defmodule RubberDuck.Routing.MessageRouter do
       rescue
         exception ->
           duration = System.monotonic_time(:microsecond) - start_time
+
           MessageTelemetry.emit_routing_exception(
             message,
             duration,
@@ -118,6 +119,7 @@ defmodule RubberDuck.Routing.MessageRouter do
             __STACKTRACE__,
             context
           )
+
           reraise exception, __STACKTRACE__
       end
 
@@ -136,10 +138,10 @@ defmodule RubberDuck.Routing.MessageRouter do
   @spec route_batch([struct()]) :: [routing_result()]
   def route_batch(messages) when is_list(messages) do
     start_time = System.monotonic_time(:microsecond)
-    
+
     # Emit batch start telemetry
     MessageTelemetry.emit_batch_start(messages)
-    
+
     # Group by priority for efficient processing
     grouped = Enum.group_by(messages, &Message.priority/1)
 
@@ -191,11 +193,11 @@ defmodule RubberDuck.Routing.MessageRouter do
       end
 
     final_results = results ++ normal_results
-    
+
     # Emit batch stop telemetry
     duration = System.monotonic_time(:microsecond) - start_time
     MessageTelemetry.emit_batch_stop(messages, duration, final_results)
-    
+
     final_results
   end
 

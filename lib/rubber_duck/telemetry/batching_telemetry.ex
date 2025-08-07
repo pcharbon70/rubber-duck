@@ -1,16 +1,16 @@
 defmodule RubberDuck.Telemetry.BatchingTelemetry do
   @moduledoc """
   Telemetry events for the GenStage batching pipeline.
-  
+
   Provides comprehensive metrics for:
   - Producer buffer status and operations
   - Batch creation and processing
   - Consumer demand and back-pressure
   - Adaptive sizing changes
   """
-  
+
   require Logger
-  
+
   @doc """
   Emits telemetry when the message producer starts.
   """
@@ -21,7 +21,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{config: config}
     )
   end
-  
+
   @doc """
   Emits telemetry when a message is enqueued.
   """
@@ -35,7 +35,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{message_type: message_type}
     )
   end
-  
+
   @doc """
   Emits telemetry when buffer overflow occurs.
   """
@@ -49,7 +49,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{}
     )
   end
-  
+
   @doc """
   Emits telemetry when demand is received from consumers.
   """
@@ -63,7 +63,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{}
     )
   end
-  
+
   @doc """
   Emits telemetry when a batch is created.
   """
@@ -78,7 +78,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{trigger: trigger}
     )
   end
-  
+
   @doc """
   Emits telemetry when a batch is processed by a consumer.
   """
@@ -93,7 +93,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{priority: priority}
     )
   end
-  
+
   @doc """
   Emits telemetry when a batch processing fails.
   """
@@ -110,7 +110,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       }
     )
   end
-  
+
   @doc """
   Emits telemetry when consumer demands more events.
   """
@@ -127,7 +127,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       }
     )
   end
-  
+
   @doc """
   Emits telemetry when back-pressure is applied.
   """
@@ -141,7 +141,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{}
     )
   end
-  
+
   @doc """
   Emits telemetry when adaptive batch size changes.
   """
@@ -150,20 +150,21 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       new_size: new_size,
       count: 1
     }
-    
-    measurements = if old_size do
-      Map.put(measurements, :size_delta, new_size - old_size)
-    else
-      measurements
-    end
-    
+
+    measurements =
+      if old_size do
+        Map.put(measurements, :size_delta, new_size - old_size)
+      else
+        measurements
+      end
+
     :telemetry.execute(
       [:rubber_duck, :batching, :adaptive, :size_changed],
       measurements,
       %{}
     )
   end
-  
+
   @doc """
   Emits telemetry when configuration is updated.
   """
@@ -174,7 +175,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       %{config: config}
     )
   end
-  
+
   @doc """
   Returns all telemetry event names for the batching system.
   """
@@ -193,7 +194,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       [:rubber_duck, :batching, :config, :updated]
     ]
   end
-  
+
   @doc """
   Attaches default handlers for batching telemetry events.
   """
@@ -201,7 +202,7 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
     events()
     |> Enum.each(fn event ->
       handler_id = "#{__MODULE__}-#{Enum.join(event, "-")}"
-      
+
       :telemetry.attach(
         handler_id,
         event,
@@ -210,11 +211,11 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
       )
     end)
   end
-  
+
   # Default handler for logging telemetry events
   defp handle_event(event, measurements, metadata, _config) do
     event_name = Enum.join(event, ".")
-    
+
     Logger.debug(
       "Telemetry event: #{event_name}",
       measurements: measurements,

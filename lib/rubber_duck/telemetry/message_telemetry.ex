@@ -1,7 +1,7 @@
 defmodule RubberDuck.Telemetry.MessageTelemetry do
   @moduledoc """
   Telemetry module for tracking typed message routing and processing.
-  
+
   Provides comprehensive metrics for:
   - Message routing performance
   - Handler execution times
@@ -9,30 +9,30 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
   - Message type distribution
   - Priority-based metrics
   - Circuit breaker states
-  
+
   ## Metrics Emitted
-  
+
   ### Routing Metrics
   - `[:rubber_duck, :routing, :message, :start]` - Message routing started
   - `[:rubber_duck, :routing, :message, :stop]` - Message routing completed
   - `[:rubber_duck, :routing, :message, :exception]` - Message routing failed
-  
+
   ### Handler Metrics  
   - `[:rubber_duck, :handler, :execute, :start]` - Handler execution started
   - `[:rubber_duck, :handler, :execute, :stop]` - Handler execution completed
   - `[:rubber_duck, :handler, :execute, :exception]` - Handler execution failed
-  
+
   ### Batch Metrics
   - `[:rubber_duck, :routing, :batch, :start]` - Batch routing started
   - `[:rubber_duck, :routing, :batch, :stop]` - Batch routing completed
-  
+
   ### Circuit Breaker Metrics
   - `[:rubber_duck, :circuit_breaker, :opened]` - Circuit breaker opened
   - `[:rubber_duck, :circuit_breaker, :closed]` - Circuit breaker closed
   - `[:rubber_duck, :circuit_breaker, :half_open]` - Circuit breaker half-open
-  
+
   ## Usage
-  
+
       # Attach default handlers
       MessageTelemetry.attach_handlers()
       
@@ -43,9 +43,9 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
         &MyHandler.handle_event/4
       )
   """
-  
+
   require Logger
-  
+
   @doc """
   Attaches default telemetry handlers for logging and metrics collection.
   """
@@ -62,10 +62,10 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       {[:rubber_duck, :circuit_breaker, :opened], &handle_circuit_breaker_opened/4},
       {[:rubber_duck, :circuit_breaker, :closed], &handle_circuit_breaker_closed/4}
     ]
-    
+
     Enum.each(handlers, fn {event, handler} ->
       handler_id = "message-telemetry-#{inspect(event)}"
-      
+
       :telemetry.attach(
         handler_id,
         event,
@@ -73,10 +73,10 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
         nil
       )
     end)
-    
+
     :ok
   end
-  
+
   @doc """
   Detaches all default telemetry handlers.
   """
@@ -93,15 +93,15 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       [:rubber_duck, :circuit_breaker, :opened],
       [:rubber_duck, :circuit_breaker, :closed]
     ]
-    
+
     Enum.each(events, fn event ->
       handler_id = "message-telemetry-#{inspect(event)}"
       :telemetry.detach(handler_id)
     end)
-    
+
     :ok
   end
-  
+
   @doc """
   Emits telemetry for message routing start.
   """
@@ -119,7 +119,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     )
   end
-  
+
   @doc """
   Emits telemetry for successful message routing.
   """
@@ -142,7 +142,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     )
   end
-  
+
   @doc """
   Emits telemetry for message routing exceptions.
   """
@@ -166,7 +166,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     )
   end
-  
+
   @doc """
   Emits telemetry for batch routing operations.
   """
@@ -183,11 +183,11 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       }
     )
   end
-  
+
   def emit_batch_stop(messages, duration, results) do
     success_count = Enum.count(results, &match?({:ok, _}, &1))
     failure_count = length(results) - success_count
-    
+
     :telemetry.execute(
       [:rubber_duck, :routing, :batch, :stop],
       %{
@@ -204,7 +204,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       }
     )
   end
-  
+
   @doc """
   Emits telemetry for handler execution.
   """
@@ -216,7 +216,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       handler_function: handler_function,
       context_keys: Map.keys(context)
     }
-    
+
     :telemetry.span(
       [:rubber_duck, :handler, :execute],
       metadata,
@@ -226,9 +226,9 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       end
     )
   end
-  
+
   # Default event handlers
-  
+
   defp handle_routing_start(_event, _measurements, metadata, _config) do
     if Application.get_env(:rubber_duck, :log_telemetry, false) do
       Logger.debug(
@@ -239,10 +239,11 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     end
   end
-  
+
   defp handle_routing_stop(_event, measurements, metadata, _config) do
     if metadata.success do
-      if measurements.duration > 5_000_000 do  # 5 seconds in microseconds
+      # 5 seconds in microseconds
+      if measurements.duration > 5_000_000 do
         Logger.warning(
           "Slow message routing detected",
           message_type: metadata.message_type,
@@ -259,7 +260,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     end
   end
-  
+
   defp handle_routing_exception(_event, measurements, metadata, _config) do
     Logger.error(
       "Message routing exception",
@@ -269,7 +270,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       duration_ms: div(measurements.duration, 1_000)
     )
   end
-  
+
   defp handle_handler_start(_event, _measurements, metadata, _config) do
     if Application.get_env(:rubber_duck, :log_telemetry, false) do
       Logger.debug(
@@ -279,9 +280,10 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     end
   end
-  
+
   defp handle_handler_stop(_event, measurements, metadata, _config) do
-    if measurements.duration > 10_000_000 do  # 10 seconds in microseconds
+    # 10 seconds in microseconds
+    if measurements.duration > 10_000_000 do
       Logger.warning(
         "Slow handler execution detected",
         handler: "#{metadata.handler_module}.#{metadata.handler_function}",
@@ -291,7 +293,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     end
   end
-  
+
   defp handle_handler_exception(_event, measurements, metadata, _config) do
     Logger.error(
       "Handler execution failed",
@@ -302,7 +304,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       duration_ms: div(measurements.duration, 1_000)
     )
   end
-  
+
   defp handle_batch_start(_event, measurements, metadata, _config) do
     if Application.get_env(:rubber_duck, :log_telemetry, false) do
       Logger.info(
@@ -313,7 +315,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       )
     end
   end
-  
+
   defp handle_batch_stop(_event, measurements, metadata, _config) do
     Logger.info(
       "Batch routing completed",
@@ -323,7 +325,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       failed_types: metadata.failed_types
     )
   end
-  
+
   defp handle_circuit_breaker_opened(_event, _measurements, metadata, _config) do
     Logger.warning(
       "Circuit breaker opened",
@@ -332,7 +334,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       threshold: metadata.threshold
     )
   end
-  
+
   defp handle_circuit_breaker_closed(_event, _measurements, metadata, _config) do
     Logger.info(
       "Circuit breaker closed",
@@ -340,15 +342,15 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
       recovery_time_ms: metadata[:recovery_time_ms]
     )
   end
-  
+
   # Helper functions
-  
+
   defp generate_message_id(message) do
     # Generate a unique ID for tracking
     hash = :erlang.phash2({message.__struct__, System.unique_integer()})
     Base.encode16(<<hash::32>>, case: :lower)
   end
-  
+
   defp get_priority(message) do
     if function_exported?(RubberDuck.Protocol.Message, :priority, 1) do
       RubberDuck.Protocol.Message.priority(message)
@@ -358,7 +360,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
   rescue
     _ -> :normal
   end
-  
+
   defp classify_result({:ok, _}), do: :success
   defp classify_result({:error, :timeout}), do: :timeout
   defp classify_result({:error, :no_handler}), do: :no_handler
@@ -366,7 +368,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
   defp classify_result({:error, {:handler_not_available, _, _}}), do: :handler_unavailable
   defp classify_result({:error, _}), do: :error
   defp classify_result(_), do: :unknown
-  
+
   defp extract_failed_types(messages, results) do
     messages
     |> Enum.zip(results)

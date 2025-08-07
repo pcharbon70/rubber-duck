@@ -35,10 +35,10 @@ defmodule RubberDuck.Application do
 
       # Message Router for typed message dispatch
       RubberDuck.Routing.MessageRouter,
-      
+
       # Task Supervisor for async message processing
       {Task.Supervisor, name: RubberDuck.TaskSupervisor},
-      
+
       # Message telemetry reporter
       RubberDuck.Telemetry.MessageReporter,
 
@@ -88,7 +88,7 @@ defmodule RubberDuck.Application do
     RubberDuck.Telemetry.MessageTelemetry.attach_handlers()
     Logger.info("Message telemetry handlers attached")
   end
-  
+
   # Configure Jido signal system if needed
   defp configure_jido_signal_system do
     # Any global Jido configuration can go here
