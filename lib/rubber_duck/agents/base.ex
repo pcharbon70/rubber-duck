@@ -16,7 +16,7 @@ defmodule RubberDuck.Agents.Base do
 
       # Import the learning and persistence actions
       alias RubberDuck.Actions.Agent.{Learn, LoadAgentState, SaveAgentState}
-      
+
       # Import message routing support
       alias RubberDuck.Routing.MessageRouter
       alias RubberDuck.Adapters.SignalAdapter

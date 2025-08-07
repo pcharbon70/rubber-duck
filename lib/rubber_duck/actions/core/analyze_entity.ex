@@ -1035,7 +1035,8 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   end
 
   defp generate_analysis_id do
-    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+    bytes = :crypto.strong_rand_bytes(8)
+    bytes |> Base.encode16(case: :lower)
   end
 
   defp extract_learning_context(context) do

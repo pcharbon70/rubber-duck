@@ -5,7 +5,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   This skill provides comprehensive code analysis including dependency impact,
   performance implications, security concerns, and maintainability assessments.
   Enhanced with impact assessment capabilities for understanding change propagation.
-  
+
   Supports both legacy string-based signals and new typed messages for gradual migration.
   """
 
@@ -34,7 +34,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     ]
 
   require Logger
-  
+
   alias RubberDuck.Messages.Code.{
     Analyze,
     QualityCheck,
@@ -156,10 +156,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
     # Track security issues in state
     updated_state =
-      if length(security_scan.vulnerabilities) > 0 do
-        track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
-      else
+      if Enum.empty?(security_scan.vulnerabilities) do
         state
+      else
+        track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
       end
 
     {:ok, security_scan, updated_state}
@@ -171,13 +171,13 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   end
 
   # Typed message handlers
-  
+
   @doc """
   Handle typed Analyze message for code analysis
   """
   def handle_analyze(%Analyze{} = msg, context) do
     state = context[:state] || %{}
-    
+
     # Convert typed message to data format expected by existing logic
     data = %{
       file_path: msg.file_path,
@@ -188,7 +188,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       lines: msg.context[:lines],
       duplication: msg.context[:duplication]
     }
-    
+
     # Reuse existing analysis logic
     result = %{
       file: msg.file_path,
@@ -196,29 +196,29 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       issues: detect_issues(data, msg.depth),
       suggestions: generate_suggestions(data, msg.depth)
     }
-    
+
     # Add specialized analysis based on type
-    result = 
+    result =
       case msg.analysis_type do
         :comprehensive ->
           result
           |> Map.put(:impact, assess_change_impact(data, state))
           |> Map.put(:performance, analyze_performance(data))
           |> Map.put(:security, scan_security_issues(data))
-        
+
         :security ->
           Map.put(result, :security, scan_security_issues(data))
-        
+
         :performance ->
           Map.put(result, :performance, analyze_performance(data))
-        
+
         :quality ->
           result
       end
-    
+
     {:ok, result}
   end
-  
+
   @doc """
   Handle typed QualityCheck message
   """
@@ -228,23 +228,23 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       metrics: msg.metrics,
       thresholds: msg.thresholds
     }
-    
+
     result = %{
       status: :completed,
       metrics: extract_metrics(data),
       recommendations: build_recommendations(data),
       passed: check_thresholds(data.metrics, data.thresholds)
     }
-    
+
     {:ok, result}
   end
-  
+
   @doc """
   Handle typed ImpactAssess message
   """
   def handle_impact_assess(%ImpactAssess{} = msg, context) do
     state = context[:state] || %{}
-    
+
     impact_result = %{
       file: msg.file_path,
       direct_impact: analyze_direct_impact(msg.changes, state),
@@ -254,10 +254,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       affected_files: identify_affected_files(msg.file_path, state),
       suggested_tests: suggest_tests_for_changes(msg.changes)
     }
-    
+
     {:ok, impact_result}
   end
-  
+
   @doc """
   Handle typed PerformanceAnalyze message
   """
@@ -266,7 +266,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       content: msg.content,
       metrics: msg.metrics
     }
-    
+
     performance_result = %{
       hot_spots: identify_performance_hotspots(data.content),
       memory_usage: estimate_memory_usage(data.content),
@@ -274,15 +274,14 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       bottlenecks: detect_bottlenecks(data.content),
       optimizations: suggest_optimizations(data.content)
     }
-    
+
     {:ok, performance_result}
   end
-  
+
   @doc """
   Handle typed SecurityScan message
   """
   def handle_security_scan(%SecurityScan{} = msg, _context) do
-    
     security_scan = %{
       vulnerabilities: scan_for_vulnerabilities(msg.content, msg.file_type),
       unsafe_operations: detect_unsafe_operations(msg.content),
@@ -291,12 +290,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       risk_level: calculate_security_risk_level(msg.content),
       cwe_mappings: map_to_cwe_categories(msg.content, msg.file_type)
     }
-    
+
     # Track security issues if any found
     if length(security_scan.vulnerabilities) > 0 do
       Logger.warning("Security vulnerabilities found: #{inspect(security_scan.vulnerabilities)}")
     end
-    
+
     {:ok, security_scan}
   end
 
@@ -1003,33 +1002,33 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   end
 
   # Performance analysis helper functions
-  
+
   defp identify_performance_hotspots(content) when is_binary(content) do
     # Identify potential performance bottlenecks in code
     hotspots = []
-    
+
     # Check for nested loops
-    if String.contains?(content, ["for", "Enum.each"]) and 
-       String.contains?(content, ["Enum.map", "Enum.filter"]) do
+    if String.contains?(content, ["for", "Enum.each"]) and
+         String.contains?(content, ["Enum.map", "Enum.filter"]) do
       [{:nested_enumeration, :high, "Nested enumerations detected"}]
     else
       hotspots
     end
   end
-  
+
   defp identify_performance_hotspots(_), do: []
-  
+
   defp detect_bottlenecks(content) when is_binary(content) do
     bottlenecks = []
-    
+
     # Check for N+1 query patterns
-    bottlenecks = 
+    bottlenecks =
       if String.contains?(content, ["Repo.all", "Repo.get"]) do
-        [{:potential_n_plus_one, "Multiple database queries in loop"}| bottlenecks]
+        [{:potential_n_plus_one, "Multiple database queries in loop"} | bottlenecks]
       else
         bottlenecks
       end
-    
+
     # Check for large data operations without streaming
     if String.contains?(content, "Enum.") and not String.contains?(content, "Stream.") do
       [{:no_streaming, "Large data operations without Stream module"} | bottlenecks]
@@ -1037,15 +1036,17 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       bottlenecks
     end
   end
-  
+
   defp detect_bottlenecks(_), do: []
-  
+
   defp analyze_algorithmic_complexity(content) when is_binary(content) do
     # Simplified complexity analysis
     nested_loops = length(Regex.scan(~r/for.*do.*for/s, content))
-    recursion = String.contains?(content, ["defp", "def"]) and 
-                Regex.match?(~r/def\w*\s+(\w+).*\1\(/s, content)
-    
+
+    recursion =
+      String.contains?(content, ["defp", "def"]) and
+        Regex.match?(~r/def\w*\s+(\w+).*\1\(/s, content)
+
     cond do
       nested_loops > 1 -> :exponential
       nested_loops == 1 -> :quadratic
@@ -1053,44 +1054,44 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       true -> :linear
     end
   end
-  
+
   defp analyze_algorithmic_complexity(_), do: :unknown
-  
+
   defp suggest_optimizations(content) when is_binary(content) do
     optimizations = []
-    
+
     # Suggest Stream for large enumerations
-    optimizations = 
+    optimizations =
       if String.contains?(content, "Enum.") and not String.contains?(content, "Stream.") do
         ["Consider using Stream for large collections" | optimizations]
       else
         optimizations
       end
-    
+
     # Suggest pattern matching over conditionals
-    optimizations = 
+    optimizations =
       if String.contains?(content, ["if", "else", "cond"]) do
         ["Consider pattern matching instead of conditionals" | optimizations]
       else
         optimizations
       end
-    
+
     optimizations
   end
-  
+
   defp suggest_optimizations(_), do: []
 
   # Additional helper functions for typed messages
-  
+
   defp check_thresholds(metrics, thresholds) when is_list(metrics) and is_map(thresholds) do
     Enum.all?(metrics, fn metric ->
       threshold = Map.get(thresholds, metric)
       if threshold, do: metric_passes_threshold?(metric, threshold), else: true
     end)
   end
-  
+
   defp check_thresholds(_, _), do: true
-  
+
   defp metric_passes_threshold?(metric, threshold) do
     # Simple threshold check - would be more complex in real implementation
     case metric do
@@ -1100,27 +1101,27 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       _ -> true
     end
   end
-  
+
   defp calculate_impact_risk_score(changes) when is_map(changes) do
     # Calculate risk based on the nature and scope of changes
     base_risk = map_size(changes) * 10
-    
+
     # Add risk for critical file changes
-    critical_risk = 
-      if Map.keys(changes) |> Enum.any?(fn key ->
+    change_keys = Map.keys(changes)
+    has_critical_changes = 
+      change_keys
+      |> Enum.any?(fn key ->
         key_str = to_string(key)
         String.contains?(key_str, ["auth", "security", "payment"])
-      end) do
-        50
-      else
-        0
-      end
+      end)
     
+    critical_risk = if has_critical_changes, do: 50, else: 0
+
     min(base_risk + critical_risk, 100) / 100.0
   end
-  
+
   defp calculate_impact_risk_score(_), do: 0.0
-  
+
   defp identify_affected_files(file_path, _state) do
     # In a real implementation, this would use dependency tracking
     # For now, return a sample list
@@ -1129,26 +1130,25 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       String.replace(file_path, ".ex", "_spec.ex")
     ]
   end
-  
-  
+
   defp map_to_cwe_categories(content, file_type) do
     # Map vulnerabilities to CWE categories
     categories = []
-    
-    categories = 
+
+    categories =
       if String.contains?(content, ["eval", "Code.eval"]) do
         ["CWE-94: Code Injection" | categories]
       else
         categories
       end
-    
-    categories = 
+
+    categories =
       if String.contains?(content, "System.cmd") and file_type == :elixir do
         ["CWE-78: OS Command Injection" | categories]
       else
         categories
       end
-    
+
     categories
   end
 end

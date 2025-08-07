@@ -68,7 +68,14 @@ defmodule RubberDuck.Agents.UserAgent do
     ]
 
   alias RubberDuck.Routing.MessageRouter
-  alias RubberDuck.Messages.User.{ValidateSession, UpdatePreferences, TrackActivity, GenerateSuggestions}
+
+  alias RubberDuck.Messages.User.{
+    ValidateSession,
+    UpdatePreferences,
+    TrackActivity,
+    GenerateSuggestions
+  }
+
   require Logger
 
   # Signal definitions
@@ -451,9 +458,10 @@ defmodule RubberDuck.Agents.UserAgent do
       check_expiry: false,
       refresh_if_valid: true
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal(@signal_session_expired, payload) do
     # For expired sessions, use GenerateSuggestions to suggest re-authentication
     message = %GenerateSuggestions{
@@ -461,9 +469,10 @@ defmodule RubberDuck.Agents.UserAgent do
       context: %{session_expired: true, count: payload[:count] || 1},
       max_suggestions: 1
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal(@signal_pattern_detected, payload) do
     # Track pattern detection as navigation activity
     message = %TrackActivity{
@@ -472,27 +481,30 @@ defmodule RubberDuck.Agents.UserAgent do
       activity_data: %{patterns: payload.patterns},
       timestamp: DateTime.utc_now()
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal(@signal_preference_learned, payload) do
     message = %UpdatePreferences{
       user_id: payload.user_id,
       preferences: payload.preferences,
       merge_strategy: :deep
     }
+
     MessageRouter.route(message)
   end
-  
+
   defp emit_signal(@signal_suggestion_generated, payload) do
     message = %GenerateSuggestions{
       user_id: payload.user_id,
       context: %{count: payload.count},
       max_suggestions: 5
     }
+
     MessageRouter.route(message)
   end
-  
+
   # Fallback for unmapped signals
   defp emit_signal(signal_type, payload) do
     Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")

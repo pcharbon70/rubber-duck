@@ -5,7 +5,7 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
   This skill provides project structure optimization, dependency management,
   code quality monitoring, and refactoring recommendations based on continuous
   analysis of project metrics and patterns.
-  
+
   Supports both legacy string-based signals and new typed messages for gradual migration.
   """
 
@@ -38,7 +38,7 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
     ]
 
   require Logger
-  
+
   alias RubberDuck.Messages.Project.{
     AnalyzeStructure,
     UpdateStatus,
@@ -311,26 +311,27 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
   end
 
   # Typed message handlers
-  
+
   @doc """
   Handle typed AnalyzeStructure message
   """
   def handle_analyze_structure(%AnalyzeStructure{} = msg, context) do
     state = context[:state] || %{projects: %{}}
     project = get_in(state, [:projects, msg.project_id]) || %{}
-    
+
     # Analyze project structure
     structure_analysis = %{
       project_id: msg.project_id,
       modules: analyze_module_structure(project),
       dependencies: if(msg.include_dependencies, do: analyze_dependencies(project), else: nil),
-      complexity: if(msg.analyze_complexity, do: calculate_project_complexity(project), else: nil),
+      complexity:
+        if(msg.analyze_complexity, do: calculate_project_complexity(project), else: nil),
       depth: msg.depth || :shallow,
       recommendations: generate_structure_recommendations(project)
     }
-    
+
     # Add detailed analysis for deep inspection
-    structure_analysis = 
+    structure_analysis =
       if msg.depth == :deep do
         structure_analysis
         |> Map.put(:coupling_analysis, analyze_module_coupling(project))
@@ -339,19 +340,19 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       else
         structure_analysis
       end
-    
+
     {:ok, structure_analysis}
   end
-  
+
   @doc """
   Handle typed UpdateStatus message
   """
   def handle_update_status(%UpdateStatus{} = msg, context) do
     state = context[:state] || %{projects: %{}}
-    
+
     # Update project status
     timestamp = DateTime.utc_now()
-    
+
     status_update = %{
       project_id: msg.project_id,
       previous_status: get_in(state, [:projects, msg.project_id, :status]),
@@ -360,53 +361,56 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       updated_by: msg.updated_by,
       reason: msg.reason
     }
-    
+
     # Perform status-specific actions
-    actions_taken = 
+    actions_taken =
       case msg.status do
         :completed ->
           [archive_project_data(msg.project_id), generate_final_report(msg.project_id)]
+
         :paused ->
           [save_project_state(msg.project_id)]
+
         :archived ->
           [cleanup_project_resources(msg.project_id)]
+
         _ ->
           []
       end
-    
+
     result = %{
       success: true,
       status_update: status_update,
       actions_taken: actions_taken,
       next_steps: suggest_next_steps(msg.status)
     }
-    
+
     {:ok, result}
   end
-  
+
   @doc """
   Handle typed MonitorHealth message
   """
   def handle_monitor_health(%MonitorHealth{} = msg, context) do
     state = context[:state] || %{projects: %{}}
     project = get_in(state, [:projects, msg.project_id]) || %{}
-    
+
     # Calculate health metrics
-    health_metrics = 
+    health_metrics =
       msg.metrics
       |> Enum.map(fn metric ->
         {metric, calculate_health_metric(project, metric)}
       end)
       |> Enum.into(%{})
-    
+
     # Check against thresholds
-    alerts = 
+    alerts =
       if msg.threshold_alerts do
         check_health_thresholds(health_metrics, get_thresholds(state))
       else
         []
       end
-    
+
     # Generate health report
     health_report = %{
       project_id: msg.project_id,
@@ -417,41 +421,44 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       trends: analyze_health_trends(project, health_metrics),
       recommendations: generate_health_recommendations(health_metrics, alerts)
     }
-    
+
     {:ok, health_report}
   end
-  
+
   @doc """
   Handle typed OptimizeResources message
   """
   def handle_optimize_resources(%OptimizeResources{} = msg, context) do
     state = context[:state] || %{projects: %{}}
     project = get_in(state, [:projects, msg.project_id]) || %{}
-    
+
     # Analyze current resource usage
     current_usage = analyze_resource_usage(project)
-    
+
     # Generate optimization strategies based on goal
-    optimizations = 
+    optimizations =
       case msg.optimization_goal do
         :cost ->
           optimize_for_cost(current_usage, msg.constraints)
+
         :performance ->
           optimize_for_performance(current_usage, msg.constraints)
+
         :balanced ->
           optimize_balanced(current_usage, msg.constraints)
+
         _ ->
           []
       end
-    
+
     # Add recommendations if requested
-    recommendations = 
+    recommendations =
       if msg.include_recommendations do
         generate_optimization_recommendations(optimizations, project)
       else
         []
       end
-    
+
     result = %{
       project_id: msg.project_id,
       current_usage: current_usage,
@@ -462,7 +469,7 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       recommendations: recommendations,
       implementation_plan: create_optimization_plan(optimizations)
     }
-    
+
     {:ok, result}
   end
 
@@ -869,7 +876,7 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
   end
 
   # Additional helper functions for typed messages
-  
+
   defp analyze_dependencies(project) do
     # Analyze project dependencies
     %{
@@ -879,21 +886,23 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       vulnerabilities: []
     }
   end
-  
+
   defp analyze_module_structure(project) do
     # Analyze module structure in the project
-    project[:files] || []
-    |> Enum.filter(&String.ends_with?(&1, ".ex"))
-    |> Enum.map(fn file ->
-      %{
-        path: file,
-        module: extract_module_name(file),
-        functions: [],  # Would analyze in real implementation
-        dependencies: []
-      }
-    end)
+    project[:files] ||
+      []
+      |> Enum.filter(&String.ends_with?(&1, ".ex"))
+      |> Enum.map(fn file ->
+        %{
+          path: file,
+          module: extract_module_name(file),
+          # Would analyze in real implementation
+          functions: [],
+          dependencies: []
+        }
+      end)
   end
-  
+
   defp extract_module_name(file_path) do
     file_path
     |> String.split("/")
@@ -901,22 +910,22 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
     |> String.replace(".ex", "")
     |> Macro.camelize()
   end
-  
+
   defp calculate_project_complexity(project) do
     # Simple complexity calculation
     file_count = length(project[:files] || [])
     dependency_count = length(project[:dependencies][:direct] || [])
-    
+
     %{
       cyclomatic: file_count * 2,
       cognitive: dependency_count * 3,
       overall: (file_count + dependency_count) / 2
     }
   end
-  
+
   defp generate_structure_recommendations(project) do
     recommendations = []
-    
+
     # Check for large modules
     if length(project[:files] || []) > 100 do
       ["Consider breaking down large modules" | recommendations]
@@ -924,35 +933,35 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       recommendations
     end
   end
-  
+
   defp analyze_module_coupling(_project) do
     %{coupling_score: 0.3, highly_coupled: [], suggestions: []}
   end
-  
+
   defp calculate_cohesion_metrics(_project) do
     %{average_cohesion: 0.7, low_cohesion_modules: []}
   end
-  
+
   defp detect_architecture_violations(_project) do
     []
   end
-  
+
   defp archive_project_data(project_id) do
     "Archived data for project #{project_id}"
   end
-  
+
   defp generate_final_report(project_id) do
     "Generated final report for project #{project_id}"
   end
-  
+
   defp save_project_state(project_id) do
     "Saved state for project #{project_id}"
   end
-  
+
   defp cleanup_project_resources(project_id) do
     "Cleaned up resources for project #{project_id}"
   end
-  
+
   defp suggest_next_steps(status) do
     case status do
       :completed -> ["Archive project", "Generate metrics report"]
@@ -961,7 +970,7 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       _ -> []
     end
   end
-  
+
   defp calculate_health_metric(project, metric) do
     case metric do
       :quality -> project[:quality_metrics][:score] || 0.8
@@ -971,12 +980,12 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       :complexity -> project[:quality_metrics][:complexity] || 5
     end
   end
-  
+
   defp calculate_velocity(_project) do
     # Would calculate based on recent changes
     0.75
   end
-  
+
   defp get_thresholds(state) do
     %{
       quality: state[:opts][:quality_threshold] || 0.7,
@@ -986,25 +995,27 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       complexity: state[:opts][:max_complexity] || 10
     }
   end
-  
+
   defp check_health_thresholds(metrics, thresholds) do
     Enum.flat_map(metrics, fn {metric, value} ->
       threshold = thresholds[metric]
-      
+
       cond do
         metric in [:quality, :velocity, :coverage] and value < threshold ->
           [{:low, metric, value, threshold}]
+
         metric in [:debt, :complexity] and value > threshold ->
           [{:high, metric, value, threshold}]
+
         true ->
           []
       end
     end)
   end
-  
+
   defp calculate_overall_health(metrics) do
     # Simple average of normalized metrics
-    scores = 
+    scores =
       Enum.map(metrics, fn {metric, value} ->
         case metric do
           m when m in [:quality, :velocity, :coverage] -> value
@@ -1012,35 +1023,35 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
           :complexity -> max(0, 1 - value / 20)
         end
       end)
-    
+
     if length(scores) > 0 do
       Enum.sum(scores) / length(scores)
     else
       0.5
     end
   end
-  
+
   defp analyze_health_trends(_project, _metrics) do
     %{quality: :stable, velocity: :improving, debt: :increasing}
   end
-  
+
   defp generate_health_recommendations(metrics, alerts) do
     recommendations = []
-    
-    recommendations = 
+
+    recommendations =
       if length(alerts) > 0 do
         ["Address critical health alerts" | recommendations]
       else
         recommendations
       end
-    
+
     if metrics[:coverage] < 0.5 do
       ["Increase test coverage urgently" | recommendations]
     else
       recommendations
     end
   end
-  
+
   defp analyze_resource_usage(project) do
     %{
       memory: project[:resource_usage][:memory] || 100,
@@ -1049,43 +1060,43 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
       cost_per_month: 150
     }
   end
-  
+
   defp optimize_for_cost(usage, _constraints) do
     [
       %{type: :reduce_memory, current: usage[:memory], target: usage[:memory] * 0.8},
       %{type: :optimize_storage, current: usage[:storage], target: usage[:storage] * 0.7}
     ]
   end
-  
+
   defp optimize_for_performance(usage, _constraints) do
     [
       %{type: :increase_cpu, current: usage[:cpu], target: usage[:cpu] * 1.5},
       %{type: :add_caching, impact: :high}
     ]
   end
-  
+
   defp optimize_balanced(usage, constraints) do
-    optimize_for_cost(usage, constraints) ++ optimize_for_performance(usage, constraints)
+    (optimize_for_cost(usage, constraints) ++ optimize_for_performance(usage, constraints))
     |> Enum.take(3)
   end
-  
+
   defp generate_optimization_recommendations(optimizations, _project) do
     optimizations
     |> Enum.map(fn opt ->
       "Apply #{opt[:type]} optimization for #{opt[:impact] || :medium} impact"
     end)
   end
-  
+
   defp calculate_estimated_savings(optimizations) do
     # Simple calculation based on optimization count
     length(optimizations) * 25.0
   end
-  
+
   defp calculate_estimated_improvement(optimizations) do
     # Performance improvement percentage
     length(optimizations) * 0.1
   end
-  
+
   defp create_optimization_plan(optimizations) do
     optimizations
     |> Enum.with_index(1)

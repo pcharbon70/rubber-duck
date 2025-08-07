@@ -264,14 +264,10 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
 
     # Emit signal for other agents to avoid this provider temporarily
     # TODO: Convert to typed message once LLM domain messages are created
-    Logger.info("Would emit provider.quarantine signal: #{inspect(%{
-      provider: provider,
-      reason: error,
+    Logger.info(
       # 5 minute quarantine
-      duration_seconds: 300,
-      suggested_alternatives: suggest_alternatives(agent, provider),
-      timestamp: DateTime.utc_now()
-    })}")
+      "Would emit provider.quarantine signal: #{inspect(%{provider: provider, reason: error, duration_seconds: 300, suggested_alternatives: suggest_alternatives(agent, provider), timestamp: DateTime.utc_now()})}"
+    )
 
     # Record the action taken
     updated_agent = record_corrective_action(agent, provider, :quarantine)
@@ -338,11 +334,9 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       end
 
     # TODO: Convert to typed message once LLM domain messages are created
-    Logger.info("Would emit adjustment.suggested signal: #{inspect(%{
-      provider: provider,
-      adjustment: adjustment,
-      current_reason: reason
-    })}")
+    Logger.info(
+      "Would emit adjustment.suggested signal: #{inspect(%{provider: provider, adjustment: adjustment, current_reason: reason})}"
+    )
 
     {:ok, agent}
   end
@@ -352,18 +346,9 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
 
     # Emit crisis signal
     # TODO: Convert to typed message once LLM domain messages are created
-    Logger.warning("Would emit crisis signal: #{inspect(%{
-      health_ratio: health_data[:health_ratio],
-      failed_providers: health_data[:failed_count],
-      degraded_providers: health_data[:degraded_count],
-      recommended_actions: [
-        "Scale up healthy providers",
-        "Investigate root cause",
-        "Enable fallback modes",
-        "Alert operations team"
-      ],
-      timestamp: DateTime.utc_now()
-    })}")
+    Logger.warning(
+      "Would emit crisis signal: #{inspect(%{health_ratio: health_data[:health_ratio], failed_providers: health_data[:failed_count], degraded_providers: health_data[:degraded_count], recommended_actions: ["Scale up healthy providers", "Investigate root cause", "Enable fallback modes", "Alert operations team"], timestamp: DateTime.utc_now()})}"
+    )
 
     # Mark goal as critical
     updated_goals =

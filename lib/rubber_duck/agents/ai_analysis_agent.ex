@@ -625,6 +625,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
       confidence_threshold: 0.7,
       metadata: %{source: "ai_analysis_agent", pattern_count: length(patterns)}
     }
+
     RubberDuck.Routing.MessageRouter.route(message)
   end
 

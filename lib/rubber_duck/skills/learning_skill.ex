@@ -6,7 +6,7 @@ defmodule RubberDuck.Skills.LearningSkill do
   all agents, identifies successful patterns, and optimizes agent behaviors
   based on outcomes. It enables continuous improvement through feedback loops
   and adaptation strategies.
-  
+
   Supports both legacy string-based signals and new typed messages for gradual migration.
   """
 
@@ -35,7 +35,7 @@ defmodule RubberDuck.Skills.LearningSkill do
     ]
 
   require Logger
-  
+
   alias RubberDuck.Messages.Learning.{
     RecordExperience,
     ProcessFeedback,
@@ -269,13 +269,13 @@ defmodule RubberDuck.Skills.LearningSkill do
   end
 
   # Typed message handlers
-  
+
   @doc """
   Handle typed RecordExperience message
   """
   def handle_record_experience(%RecordExperience{} = msg, context) do
     state = context[:state] || %{experiences: %{}, patterns: %{}, learning_models: %{}}
-    
+
     experience = %{
       id: generate_experience_id(),
       timestamp: DateTime.utc_now(),
@@ -287,37 +287,40 @@ defmodule RubberDuck.Skills.LearningSkill do
       success: msg.success,
       tags: msg.tags
     }
-    
+
     # Record the experience
     experiences = Map.get(state.experiences, msg.agent_id, [])
     window_size = Map.get(state, :experience_window, 1000)
     updated_experiences = [experience | Enum.take(experiences, window_size - 1)]
-    
+
     # Detect patterns if enough experiences
-    patterns = 
+    patterns =
       if length(updated_experiences) >= 10 do
-        detect_experience_patterns(%{experiences: %{msg.agent_id => updated_experiences}}, msg.agent_id)
+        detect_experience_patterns(
+          %{experiences: %{msg.agent_id => updated_experiences}},
+          msg.agent_id
+        )
       else
         []
       end
-    
+
     result = %{
       recorded: true,
       experience_id: experience.id,
       patterns_detected: length(patterns),
       patterns: patterns
     }
-    
+
     {:ok, result}
   end
-  
+
   @doc """
   Handle typed ProcessFeedback message
   """
   def handle_process_feedback(%ProcessFeedback{} = msg, context) do
     state = context[:state] || %{}
     learning_rate = get_in(state, [:opts, :learning_rate]) || 0.1
-    
+
     # Process the feedback
     learning_update = %{
       agent_id: msg.agent_id,
@@ -327,9 +330,9 @@ defmodule RubberDuck.Skills.LearningSkill do
       adjustments: calculate_adjustments(msg.feedback.type, msg.score, learning_rate),
       metadata: msg.metadata
     }
-    
+
     # Generate optimization suggestions based on feedback
-    optimizations = 
+    optimizations =
       if msg.score < 0.5 do
         [
           %{
@@ -342,36 +345,36 @@ defmodule RubberDuck.Skills.LearningSkill do
       else
         []
       end
-    
+
     result = %{
       processed: true,
       learning_update: learning_update,
       optimizations: optimizations,
       improvement_potential: calculate_improvement_potential(msg.score, learning_rate)
     }
-    
+
     {:ok, result}
   end
-  
+
   @doc """
   Handle typed AnalyzePattern message
   """
   def handle_analyze_pattern(%AnalyzePattern{} = msg, context) do
     state = context[:state] || %{}
-    
+
     # Get experiences for the agent
     experiences = get_in(state, [:experiences, msg.agent_id]) || []
-    
+
     # Filter by pattern type if specified
-    filtered_experiences = 
+    filtered_experiences =
       case hd(msg.pattern_types || []) do
         :success -> Enum.filter(experiences, & &1[:success])
-        :failure -> Enum.filter(experiences, & !&1[:success])
+        :failure -> Enum.filter(experiences, &(!&1[:success]))
         _ -> experiences
       end
-    
+
     # Analyze patterns
-    patterns = 
+    patterns =
       filtered_experiences
       |> group_by_action()
       |> Enum.map(fn {action, exps} ->
@@ -383,8 +386,8 @@ defmodule RubberDuck.Skills.LearningSkill do
           performance_trend: calculate_performance_trend(exps)
         }
       end)
-      |> Enum.filter(& &1.frequency >= (msg.min_occurrences || 3))
-    
+      |> Enum.filter(&(&1.frequency >= (msg.min_occurrences || 3)))
+
     result = %{
       agent_id: msg.agent_id,
       patterns_found: length(patterns),
@@ -392,40 +395,43 @@ defmodule RubberDuck.Skills.LearningSkill do
       analysis_depth: length(filtered_experiences),
       confidence: calculate_pattern_confidence(patterns)
     }
-    
+
     {:ok, result}
   end
-  
+
   @doc """
   Handle typed OptimizeAgent message
   """
   def handle_optimize_agent(%OptimizeAgent{} = msg, context) do
     state = context[:state] || %{}
-    
+
     # Get agent's learning model and experiences
     learning_model = get_in(state, [:learning_models, msg.agent_id]) || %{}
     experiences = get_in(state, [:experiences, msg.agent_id]) || []
     patterns = get_in(state, [:patterns, msg.agent_id]) || []
-    
+
     # Generate optimization strategies
     strategies = []
-    
+
     # Add performance-based optimizations
-    strategies = 
+    strategies =
       if recent_performance_declining?(experiences) do
-        [%{
-          type: :performance_recovery,
-          actions: ["increase_exploration", "reset_parameters"],
-          priority: :high
-        } | strategies]
+        [
+          %{
+            type: :performance_recovery,
+            actions: ["increase_exploration", "reset_parameters"],
+            priority: :high
+          }
+          | strategies
+        ]
       else
         strategies
       end
-    
+
     # Add pattern-based optimizations  
-    strategies = 
+    strategies =
       patterns
-      |> Enum.filter(& &1[:success_rate] > 0.7)
+      |> Enum.filter(&(&1[:success_rate] > 0.7))
       |> Enum.map(fn pattern ->
         %{
           type: :reinforce_pattern,
@@ -435,16 +441,16 @@ defmodule RubberDuck.Skills.LearningSkill do
         }
       end)
       |> Kernel.++(strategies)
-    
+
     # Apply target metrics if provided
-    strategies = 
+    strategies =
       if msg.target_metrics do
         metric_strategies = generate_metric_strategies(learning_model, msg.target_metrics)
         strategies ++ metric_strategies
       else
         strategies
       end
-    
+
     result = %{
       agent_id: msg.agent_id,
       optimization_strategies: strategies,
@@ -452,7 +458,7 @@ defmodule RubberDuck.Skills.LearningSkill do
       current_performance: calculate_current_performance(experiences),
       recommendations: generate_recommendations(strategies)
     }
-    
+
     {:ok, result}
   end
 
@@ -1003,11 +1009,11 @@ defmodule RubberDuck.Skills.LearningSkill do
   end
 
   # Additional helper functions for typed messages
-  
+
   defp calculate_adjustments(feedback_type, score, learning_rate) do
     # Calculate parameter adjustments based on feedback
     adjustment_factor = (1.0 - score) * learning_rate
-    
+
     case feedback_type do
       :performance -> %{speed: adjustment_factor, accuracy: adjustment_factor * 0.5}
       :accuracy -> %{threshold: -adjustment_factor, validation: adjustment_factor}
@@ -1015,22 +1021,22 @@ defmodule RubberDuck.Skills.LearningSkill do
       _ -> %{general: adjustment_factor}
     end
   end
-  
+
   defp calculate_improvement_potential(score, learning_rate) do
     # Estimate potential improvement based on current score
     (1.0 - score) * learning_rate * 100
   end
-  
+
   defp group_by_action(experiences) do
     Enum.group_by(experiences, & &1[:action])
   end
-  
+
   defp calculate_success_rate(experiences) do
     successful = Enum.count(experiences, & &1[:success])
     total = length(experiences)
     if total > 0, do: successful / total, else: 0.0
   end
-  
+
   defp extract_common_context(experiences) do
     # Extract common context patterns from experiences
     experiences
@@ -1038,13 +1044,13 @@ defmodule RubberDuck.Skills.LearningSkill do
     |> Enum.filter(& &1)
     |> find_common_elements()
   end
-  
-  defp find_common_elements(contexts) when length(contexts) == 0, do: %{}
-  
+
+  defp find_common_elements([]), do: %{}
+
   defp find_common_elements(contexts) do
     # Find keys that appear in all contexts
     first = List.first(contexts)
-    
+
     first
     |> Enum.filter(fn {key, value} ->
       Enum.all?(contexts, fn ctx ->
@@ -1053,18 +1059,18 @@ defmodule RubberDuck.Skills.LearningSkill do
     end)
     |> Enum.into(%{})
   end
-  
+
   defp calculate_performance_trend(experiences) do
     # Calculate performance trend over time
     sorted = Enum.sort_by(experiences, & &1[:timestamp])
-    
+
     if length(sorted) >= 2 do
       recent = Enum.take(sorted, -5)
       older = Enum.take(sorted, 5)
-      
+
       recent_perf = calculate_average_performance(recent)
       older_perf = calculate_average_performance(older)
-      
+
       cond do
         recent_perf > older_perf * 1.1 -> :improving
         recent_perf < older_perf * 0.9 -> :declining
@@ -1074,10 +1080,10 @@ defmodule RubberDuck.Skills.LearningSkill do
       :insufficient_data
     end
   end
-  
+
   defp calculate_average_performance(experiences) do
     metrics = experiences |> Enum.map(& &1[:performance_metrics]) |> Enum.filter(& &1)
-    
+
     if length(metrics) > 0 do
       # Simple average of all numeric metrics
       metrics
@@ -1088,9 +1094,9 @@ defmodule RubberDuck.Skills.LearningSkill do
       0.5
     end
   end
-  
+
   defp calculate_pattern_confidence(patterns) do
-    if length(patterns) == 0 do
+    if Enum.empty?(patterns) do
       0.0
     else
       # Confidence based on pattern frequency and success rate
@@ -1100,11 +1106,11 @@ defmodule RubberDuck.Skills.LearningSkill do
       |> min(1.0)
     end
   end
-  
+
   defp recent_performance_declining?(experiences) do
     calculate_performance_trend(experiences) == :declining
   end
-  
+
   defp generate_metric_strategies(_model, target_metrics) do
     # Generate strategies to achieve target metrics
     Enum.map(target_metrics, fn {metric, target} ->
@@ -1117,19 +1123,19 @@ defmodule RubberDuck.Skills.LearningSkill do
       }
     end)
   end
-  
+
   defp calculate_total_improvement(strategies) do
     strategies
-    |> Enum.map(& &1[:expected_improvement] || 0.05)
+    |> Enum.map(&(&1[:expected_improvement] || 0.05))
     |> Enum.sum()
     |> min(1.0)
   end
-  
+
   defp calculate_current_performance(experiences) do
     recent = Enum.take(experiences, 20)
     calculate_average_performance(recent)
   end
-  
+
   defp generate_recommendations(strategies) do
     strategies
     |> Enum.sort_by(& &1[:priority])

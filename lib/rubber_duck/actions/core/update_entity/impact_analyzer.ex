@@ -1,7 +1,7 @@
 defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
   @moduledoc """
   Impact analysis module for UpdateEntity action.
-  
+
   Analyzes the potential impact of entity changes including:
   - Direct impact on the entity itself
   - Dependency impact on related entities
@@ -9,18 +9,18 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
   - System-wide effects
   - Risk assessment and mitigation strategies
   """
-  
+
   require Logger
-  
+
   @doc """
   Main impact analysis entry point that orchestrates all impact assessments.
-  
+
   Returns comprehensive impact analysis with scores, recommendations, and mitigation strategies.
   """
   def analyze(params, context) do
     entity = params.entity || params.current_entity
     validated_changes = params.validated_changes || params.changes
-    
+
     impact = %{
       direct_impact: analyze_direct_impact(entity, validated_changes),
       dependency_impact: analyze_dependency_impact(entity, validated_changes),
@@ -30,7 +30,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       affected_entities: identify_affected_entities(entity, validated_changes),
       propagation_analysis: analyze_propagation_requirements(entity, validated_changes)
     }
-    
+
     {:ok,
      %{
        entity: entity,
@@ -42,7 +42,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
        metadata: Map.get(context, :metadata, %{})
      }}
   end
-  
+
   @doc """
   Analyzes the direct impact of changes on the entity itself.
   """
@@ -55,34 +55,36 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       validation_score: calculate_validation_score(changes)
     }
   end
-  
+
   defp count_affected_fields(%{changes: changes}) when is_map(changes) do
     map_size(changes)
   end
+
   defp count_affected_fields(%{change_count: count}), do: count
   defp count_affected_fields(changes) when is_map(changes), do: map_size(changes)
   defp count_affected_fields(_), do: 0
-  
+
   defp get_change_severity(%{change_severity: severity}), do: severity
   defp get_change_severity(_), do: :unknown
-  
+
   defp calculate_validation_score(%{validations: validations}) do
-    valid_count = 
+    valid_count =
       validations
       |> Map.values()
       |> Enum.count(& &1[:valid])
-    
+
     total = map_size(validations)
     if total > 0, do: valid_count / total, else: 1.0
   end
+
   defp calculate_validation_score(_), do: 1.0
-  
+
   @doc """
   Analyzes the impact on dependent entities.
   """
   def analyze_dependency_impact(entity, changes) do
     dependencies = identify_entity_dependencies(entity)
-    
+
     %{
       dependent_count: length(dependencies),
       critical_dependencies: filter_critical_dependencies(dependencies),
@@ -91,7 +93,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       dependency_graph: build_dependency_graph(entity, dependencies)
     }
   end
-  
+
   defp identify_entity_dependencies(entity) do
     case entity[:type] || entity.__struct__ do
       :user -> [:sessions, :projects, :preferences, :activity_logs]
@@ -101,12 +103,12 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> []
     end
   end
-  
+
   defp filter_critical_dependencies(dependencies) do
     critical = [:sessions, :project, :target_entity, :deployments]
     Enum.filter(dependencies, &(&1 in critical))
   end
-  
+
   defp predict_cascade_effects(dependencies, changes) do
     Enum.map(dependencies, fn dep ->
       %{
@@ -117,7 +119,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       }
     end)
   end
-  
+
   defp determine_effect_type(dependency, _changes) do
     case dependency do
       :sessions -> :invalidation
@@ -128,10 +130,10 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> :notification
     end
   end
-  
+
   defp determine_effect_severity(dependency, changes) do
     severity = get_change_severity(changes)
-    
+
     case {dependency, severity} do
       {:deployments, :critical} -> :critical
       {:sessions, :high} -> :high
@@ -139,37 +141,37 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       {_, severity} -> severity
     end
   end
-  
+
   defp requires_propagation?(dependency, _changes) do
     dependency in [:code_files, :analyses, :deployments]
   end
-  
+
   defp identify_breaking_changes(dependencies, changes) do
     breaking = []
-    
+
     changes_map = get_changes_map(changes)
-    
-    breaking = 
+
+    breaking =
       if Map.has_key?(changes_map, :path) and :code_files in dependencies do
         [{:path_change, :affects_imports} | breaking]
       else
         breaking
       end
-    
+
     breaking =
       if Map.has_key?(changes_map, :api_version) and :deployments in dependencies do
         [{:api_version_change, :requires_migration} | breaking]
       else
         breaking
       end
-    
+
     breaking
   end
-  
+
   defp get_changes_map(%{changes: changes}) when is_map(changes), do: changes
   defp get_changes_map(changes) when is_map(changes), do: changes
   defp get_changes_map(_), do: %{}
-  
+
   defp build_dependency_graph(entity, dependencies) do
     %{
       root: entity[:id] || entity[:type],
@@ -177,13 +179,13 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       edges: Enum.map(dependencies, fn dep -> {entity[:type], dep} end)
     }
   end
-  
+
   @doc """
   Estimates the performance impact of changes.
   """
   def estimate_performance_impact(_entity, changes) do
     change_size = calculate_change_size(changes)
-    
+
     %{
       expected_latency_change: estimate_latency_impact(change_size),
       memory_impact: estimate_memory_impact(change_size),
@@ -192,65 +194,65 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       optimization_opportunities: identify_optimization_opportunities(changes)
     }
   end
-  
+
   defp calculate_change_size(changes) do
     changes_map = get_changes_map(changes)
-    
+
     changes_map
     |> Map.values()
     |> Enum.map(&estimate_value_size/1)
     |> Enum.sum()
   end
-  
+
   defp estimate_value_size(value) when is_binary(value), do: byte_size(value)
   defp estimate_value_size(value) when is_map(value), do: map_size(value) * 100
   defp estimate_value_size(value) when is_list(value), do: length(value) * 50
   defp estimate_value_size(value) when is_atom(value), do: 20
   defp estimate_value_size(value) when is_number(value), do: 8
   defp estimate_value_size(_), do: 10
-  
+
   defp estimate_latency_impact(size) when size < 1_000, do: "< 1ms"
   defp estimate_latency_impact(size) when size < 10_000, do: "1-10ms"
   defp estimate_latency_impact(size) when size < 100_000, do: "10-100ms"
   defp estimate_latency_impact(_), do: "> 100ms"
-  
+
   defp estimate_memory_impact(size) when size < 1_000, do: "negligible"
   defp estimate_memory_impact(size) when size < 10_000, do: "< 10KB"
   defp estimate_memory_impact(size) when size < 100_000, do: "10-100KB"
   defp estimate_memory_impact(size) when size < 1_000_000, do: "100KB-1MB"
   defp estimate_memory_impact(_), do: "> 1MB"
-  
+
   defp estimate_throughput_impact(field_count) when field_count <= 5, do: "no impact"
   defp estimate_throughput_impact(field_count) when field_count <= 20, do: "minimal impact"
   defp estimate_throughput_impact(field_count) when field_count <= 50, do: "moderate impact"
   defp estimate_throughput_impact(_), do: "significant impact"
-  
+
   defp estimate_resource_change(size) when size < 10_000, do: "minimal"
   defp estimate_resource_change(size) when size < 100_000, do: "moderate"
   defp estimate_resource_change(_), do: "significant"
-  
+
   defp identify_optimization_opportunities(changes) do
     opportunities = []
-    
+
     changes_map = get_changes_map(changes)
-    
+
     opportunities =
       if map_size(changes_map) > 10 do
         [:batch_processing | opportunities]
       else
         opportunities
       end
-    
+
     opportunities =
       if Enum.any?(Map.values(changes_map), &is_list/1) do
         [:parallel_processing | opportunities]
       else
         opportunities
       end
-    
+
     opportunities
   end
-  
+
   @doc """
   Assesses system-wide impact of changes.
   """
@@ -263,11 +265,11 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       replication_impact: assess_replication_impact(entity, changes)
     }
   end
-  
+
   defp requires_cache_invalidation?(entity, changes) do
     entity_type = entity[:type] || :unknown
     changes_map = get_changes_map(changes)
-    
+
     # Cache invalidation rules
     case entity_type do
       :user -> Map.has_key?(changes_map, :preferences) or Map.has_key?(changes_map, :permissions)
@@ -276,14 +278,14 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> map_size(changes_map) > 0
     end
   end
-  
+
   defp requires_index_updates?(entity, changes) do
     indexed_fields = get_indexed_fields(entity[:type])
     changes_map = get_changes_map(changes)
-    
+
     Enum.any?(Map.keys(changes_map), &(&1 in indexed_fields))
   end
-  
+
   defp get_indexed_fields(entity_type) do
     case entity_type do
       :user -> [:email, :username]
@@ -293,10 +295,10 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> []
     end
   end
-  
+
   defp determine_notification_scope(entity, changes) do
     severity = get_change_severity(changes)
-    
+
     case {entity[:type], severity} do
       {_, :critical} -> :organization
       {:project, :high} -> :team
@@ -304,17 +306,17 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> :none
     end
   end
-  
+
   defp assess_audit_impact(changes) do
     changes_map = get_changes_map(changes)
-    
+
     %{
       audit_required: map_size(changes_map) > 0,
       audit_level: determine_audit_level(changes),
       retention_period: determine_retention_period(changes)
     }
   end
-  
+
   defp determine_audit_level(changes) do
     case get_change_severity(changes) do
       :critical -> :detailed
@@ -322,7 +324,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> :minimal
     end
   end
-  
+
   defp determine_retention_period(changes) do
     case get_change_severity(changes) do
       :critical -> :permanent
@@ -330,7 +332,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> :standard
     end
   end
-  
+
   defp assess_replication_impact(entity, _changes) do
     case entity[:type] do
       :user -> :immediate
@@ -338,13 +340,13 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> :none
     end
   end
-  
+
   @doc """
   Assesses risks associated with the update.
   """
   def assess_update_risks(entity, changes) do
     risks = []
-    
+
     # Data loss risk
     risks =
       if has_data_loss_risk?(entity, changes) do
@@ -352,7 +354,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         risks
       end
-    
+
     # Consistency risk
     risks =
       if has_consistency_risk?(entity, changes) do
@@ -360,7 +362,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         risks
       end
-    
+
     # Performance degradation risk
     risks =
       if has_performance_risk?(changes) do
@@ -368,7 +370,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         risks
       end
-    
+
     # Security risk
     risks =
       if has_security_risk?(entity, changes) do
@@ -376,7 +378,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         risks
       end
-    
+
     %{
       identified_risks: risks,
       risk_level: calculate_risk_level(risks),
@@ -384,10 +386,10 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       risk_matrix: build_risk_matrix(risks)
     }
   end
-  
+
   defp has_data_loss_risk?(_entity, changes) do
     changes_map = get_changes_map(changes)
-    
+
     # Check if we're overwriting non-empty values with empty ones
     Enum.any?(changes_map, fn {_key, value} ->
       case value do
@@ -399,27 +401,27 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       end
     end)
   end
-  
+
   defp has_consistency_risk?(entity, changes) do
     # Risk if changing indexed or unique fields
     indexed_fields = get_indexed_fields(entity[:type])
     changes_map = get_changes_map(changes)
-    
+
     Enum.any?(Map.keys(changes_map), &(&1 in indexed_fields))
   end
-  
+
   defp has_performance_risk?(changes) do
     change_size = calculate_change_size(changes)
     change_size > 100_000
   end
-  
+
   defp has_security_risk?(entity, changes) do
     sensitive_fields = get_sensitive_fields(entity[:type])
     changes_map = get_changes_map(changes)
-    
+
     Enum.any?(Map.keys(changes_map), &(&1 in sensitive_fields))
   end
-  
+
   defp get_sensitive_fields(entity_type) do
     case entity_type do
       :user -> [:password_hash, :api_key, :permissions]
@@ -427,13 +429,13 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> []
     end
   end
-  
+
   defp calculate_risk_level(risks) do
     if Enum.any?(risks, fn {_type, level} -> level == :critical end) do
       :critical
     else
       risk_count = length(risks)
-      
+
       cond do
         risk_count == 0 -> :none
         risk_count == 1 -> :low
@@ -442,14 +444,14 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       end
     end
   end
-  
+
   defp build_risk_matrix(risks) do
     %{
       by_type: Enum.group_by(risks, fn {type, _} -> type end),
       by_level: Enum.group_by(risks, fn {_, level} -> level end)
     }
   end
-  
+
   @doc """
   Identifies entities affected by the changes.
   """
@@ -461,32 +463,32 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
           {:preferences, entity[:id], :update},
           {:activity_logs, entity[:id], :append}
         ]
-        
+
       :project ->
         [
           {:code_files, entity[:id], :revalidate},
           {:analyses, entity[:id], :recompute},
           {:deployments, entity[:id], :check}
         ]
-        
+
       :code_file ->
         [
           {:project, entity[:project_id], :update_metrics},
           {:analyses, entity[:id], :invalidate},
           {:dependencies, entity[:id], :revalidate}
         ]
-        
+
       :analysis ->
         [
           {:target, entity[:target_id], :notify},
           {:reports, entity[:id], :regenerate}
         ]
-        
+
       _ ->
         []
     end
   end
-  
+
   @doc """
   Analyzes propagation requirements for changes.
   """
@@ -498,14 +500,14 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       propagation_timeout: calculate_propagation_timeout(changes)
     }
   end
-  
+
   defp needs_propagation?(entity, changes) do
     entity_type = entity[:type]
     severity = get_change_severity(changes)
-    
+
     entity_type in [:project, :code_file] and severity in [:high, :critical]
   end
-  
+
   defp determine_propagation_strategy(_entity, changes) do
     case get_change_severity(changes) do
       :critical -> :immediate
@@ -513,7 +515,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> :lazy
     end
   end
-  
+
   defp determine_propagation_order(entity) do
     case entity[:type] do
       :user -> [:sessions, :preferences, :projects]
@@ -521,7 +523,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> []
     end
   end
-  
+
   defp calculate_propagation_timeout(changes) do
     case get_change_severity(changes) do
       :critical -> 5_000
@@ -529,7 +531,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> 60_000
     end
   end
-  
+
   @doc """
   Calculates overall impact score from all impact dimensions.
   """
@@ -541,26 +543,26 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       score_system_impact(impact.system_impact),
       score_risk_assessment(impact.risk_assessment)
     ]
-    
+
     # Weighted average
     (Enum.sum(scores) / length(scores)) |> Float.round(2)
   end
-  
+
   defp score_direct_impact(direct) do
     field_score = min(direct.fields_affected * 0.1, 1.0)
     severity_score = severity_to_score(direct.severity)
-    
+
     (field_score + severity_score) / 2
   end
-  
+
   defp score_dependency_impact(dependency) do
     dep_score = min(dependency.dependent_count * 0.1, 1.0)
     critical_score = length(dependency.critical_dependencies) * 0.3
     breaking_score = length(dependency.breaking_changes) * 0.5
-    
+
     min((dep_score + critical_score + breaking_score) / 3, 1.0)
   end
-  
+
   defp score_performance_impact(performance) do
     case performance.expected_latency_change do
       "< 1ms" -> 0.1
@@ -569,7 +571,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> 0.9
     end
   end
-  
+
   defp score_system_impact(system) do
     score = 0.0
     score = if system.cache_invalidation_required, do: score + 0.3, else: score
@@ -577,7 +579,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
     score = if system.notification_scope != :none, do: score + 0.2, else: score
     min(score, 1.0)
   end
-  
+
   defp score_risk_assessment(risk) do
     case risk.risk_level do
       :none -> 0.0
@@ -587,7 +589,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       :critical -> 1.0
     end
   end
-  
+
   defp severity_to_score(severity) do
     case severity do
       :minimal -> 0.1
@@ -598,13 +600,13 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       _ -> 0.5
     end
   end
-  
+
   @doc """
   Generates recommendations based on impact analysis.
   """
   def generate_impact_recommendations(impact) do
     recommendations = []
-    
+
     # Direct impact recommendations
     recommendations =
       if impact.direct_impact.fields_affected > 10 do
@@ -612,7 +614,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         recommendations
       end
-    
+
     # Dependency recommendations
     recommendations =
       if length(impact.dependency_impact.critical_dependencies) > 0 do
@@ -620,7 +622,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         recommendations
       end
-    
+
     # Performance recommendations
     recommendations =
       case impact.performance_impact.expected_latency_change do
@@ -628,7 +630,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
         "10-100ms" -> ["Consider caching strategy" | recommendations]
         _ -> recommendations
       end
-    
+
     # Risk recommendations
     recommendations =
       if impact.risk_assessment.mitigation_required do
@@ -636,16 +638,16 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         recommendations
       end
-    
+
     recommendations
   end
-  
+
   @doc """
   Suggests mitigation strategies based on identified impacts.
   """
   def suggest_mitigation_strategies(impact) do
     strategies = []
-    
+
     # Risk mitigation
     strategies =
       case impact.risk_assessment.risk_level do
@@ -653,7 +655,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
         :high -> ["Monitor closely after update" | strategies]
         _ -> strategies
       end
-    
+
     # Performance mitigation
     strategies =
       if impact.performance_impact.resource_usage_change == "significant" do
@@ -661,7 +663,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         strategies
       end
-    
+
     # System impact mitigation
     strategies =
       if impact.system_impact.cache_invalidation_required do
@@ -669,44 +671,44 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       else
         strategies
       end
-    
+
     strategies
   end
-  
+
   @doc """
   Identifies safe rollback points based on impact analysis.
   """
   def identify_rollback_points(impact) do
     points = []
-    
+
     points =
       if impact.direct_impact.fields_affected > 0 do
         [{:before_field_updates, :snapshot_required} | points]
       else
         points
       end
-    
+
     points =
       if length(impact.dependency_impact.breaking_changes) > 0 do
         [{:before_dependency_updates, :dependency_snapshot} | points]
       else
         points
       end
-    
+
     points =
       if impact.system_impact.index_updates_needed do
         [{:before_index_updates, :index_backup} | points]
       else
         points
       end
-    
+
     Enum.reverse(points)
   end
-  
+
   defp predict_immediate_effects(_entity, _changes) do
     [:cache_invalidation, :index_update, :audit_log_entry]
   end
-  
+
   defp assess_data_integrity_impact(%{validations: validations}) do
     if validations[:constraint_validation][:valid] do
       :minimal
@@ -714,5 +716,6 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ImpactAnalyzer do
       :significant
     end
   end
+
   defp assess_data_integrity_impact(_), do: :unknown
 end

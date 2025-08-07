@@ -153,6 +153,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
     # For now, log optimization suggestions (converted from legacy signal system)
     Enum.each(optimizations, fn _opt ->
       Logger.debug("Legacy signal: project.optimization.suggested for project #{project.id}")
+
       # Note: Converted from legacy signal system - optimization events now handled via MessageRouter
     end)
 
@@ -618,6 +619,7 @@ defmodule RubberDuck.Actions.Project.BridgeDomain do
 
     if get_in(analysis, [:structure, :naming_consistency, :consistent]) == false do
       Logger.debug("Legacy signal: project.inconsistency.detected for project #{project.id}")
+
       # Note: Converted from legacy signal system - consistency events now handled via MessageRouter
     end
   end
