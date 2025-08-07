@@ -156,7 +156,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
     # Track security issues in state
     updated_state =
-      if length(security_scan.vulnerabilities) > 0 do
+      if not Enum.empty?(security_scan.vulnerabilities) do
         track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
       else
         state
