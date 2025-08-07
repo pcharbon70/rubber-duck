@@ -43,7 +43,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     SecurityScan
   }
   
-  alias RubberDuck.Analyzers.Code.{Security, Performance, Quality}
+  alias RubberDuck.Analyzers.Code.{Security, Performance, Quality, Impact}
 
   @impl true
   def handle_signal(%{type: "code.analyze.file"} = signal, state) do
@@ -62,7 +62,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     # Add impact assessment if enabled
     result =
       if state.opts.impact_analysis do
-        Map.put(result, :impact, assess_change_impact(signal.data, state))
+        impact_analysis = perform_impact_analysis(signal.data, state, %{})
+        Map.put(result, :impact, impact_analysis)
       else
         result
       end
@@ -115,29 +116,40 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.impact.assess"} = signal, state) do
-    # Assess the impact of code changes
-    file_path = signal.data.file_path
-    changes = signal.data.changes || %{}
-
-    impact_result = %{
-      file: file_path,
-      direct_impact: analyze_direct_impact(changes, state),
-      dependency_impact: analyze_dependency_impact(file_path, state),
-      performance_impact: estimate_performance_impact(changes),
-      risk_assessment: assess_change_risk(changes, state),
-      affected_files: find_affected_files(file_path, state),
-      test_coverage_impact: assess_test_coverage_impact(changes)
+    # Create an ImpactAssess message for the Impact analyzer
+    impact_assess_msg = %ImpactAssess{
+      file_path: signal.data.file_path,
+      changes: signal.data.changes || %{}
     }
-
-    # Emit warning if high risk detected
-    if impact_result.risk_assessment.level == :high do
-      emit_signal("code.impact.high_risk", %{
-        file: file_path,
-        risk: impact_result.risk_assessment
-      })
+    
+    # Delegate to Impact analyzer
+    case Impact.analyze(impact_assess_msg, %{state: state}) do
+      {:ok, impact_result} ->
+        # Convert to expected legacy format
+        legacy_result = %{
+          file: impact_result.file_path,
+          direct_impact: impact_result.direct_impact,
+          dependency_impact: impact_result.dependency_impact,
+          performance_impact: impact_result.performance_impact,
+          risk_assessment: impact_result.risk_assessment,
+          affected_files: impact_result.affected_files,
+          test_coverage_impact: impact_result.test_coverage_impact
+        }
+        
+        # Emit warning if high risk detected
+        if impact_result.risk_assessment.level == :high do
+          emit_signal("code.impact.high_risk", %{
+            file: impact_result.file_path,
+            risk: impact_result.risk_assessment
+          })
+        end
+        
+        {:ok, legacy_result, state}
+        
+      {:error, reason} ->
+        Logger.error("Impact assessment failed: #{inspect(reason)}")
+        {:error, reason, state}
     end
-
-    {:ok, impact_result, state}
   end
 
   @impl true
@@ -227,8 +239,9 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
         :comprehensive ->
           security_analysis = perform_security_analysis(data)
           performance_analysis = perform_performance_analysis(data)
+          impact_analysis = perform_impact_analysis(data, state, context)
           result
-          |> Map.put(:impact, assess_change_impact(data, state))
+          |> Map.put(:impact, impact_analysis)
           |> Map.put(:performance, performance_analysis)
           |> Map.put(:security, security_analysis)
           |> Map.put(:quality, quality_analysis)
@@ -243,6 +256,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
         :quality ->
           Map.put(result, :quality, quality_analysis)
+
+        :impact ->
+          impact_analysis = perform_impact_analysis(data, state, context)
+          Map.put(result, :impact, impact_analysis)
       end
 
     {:ok, result}
@@ -267,19 +284,15 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   Handle typed ImpactAssess message
   """
   def handle_impact_assess(%ImpactAssess{} = msg, context) do
-    state = context[:state] || %{}
-
-    impact_result = %{
-      file: msg.file_path,
-      direct_impact: analyze_direct_impact(msg.changes, state),
-      dependency_impact: analyze_dependency_impact(msg.file_path, state),
-      performance_impact: estimate_performance_impact(msg.changes),
-      risk_score: calculate_impact_risk_score(msg.changes),
-      affected_files: identify_affected_files(msg.file_path, state),
-      suggested_tests: suggest_tests_for_changes(msg.changes)
-    }
-
-    {:ok, impact_result}
+    # Delegate to Impact analyzer
+    case Impact.analyze(msg, context) do
+      {:ok, impact_result} ->
+        {:ok, impact_result}
+      
+      {:error, reason} ->
+        Logger.error("Impact assessment failed: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -409,6 +422,60 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     end
   end
 
+  # Impact analysis delegation helper
+  
+  defp perform_impact_analysis(data, state, context) do
+    # Create an Analyze message for the Impact analyzer
+    analyze_msg = %Analyze{
+      file_path: data[:file_path] || "unknown",
+      analysis_type: :impact,
+      depth: :moderate,
+      auto_fix: false
+    }
+    
+    # Prepare context with the analysis data
+    impact_context = %{
+      lines_changed: data[:lines_changed] || data[:lines] || 0,
+      functions_modified: data[:functions_modified] || [],
+      modules_affected: data[:modules_affected] || [],
+      complexity_delta: data[:complexity_delta] || 0,
+      test_coverage_delta: data[:test_coverage_delta] || 0.0,
+      breaking_changes: data[:breaking_changes],
+      api_changes: data[:api_changes],
+      internal_only: data[:internal_only],
+      database_changes: data[:database_changes],
+      external_api_changes: data[:external_api_changes],
+      state: state
+    }
+    
+    case Impact.analyze(analyze_msg, impact_context) do
+      {:ok, impact_analysis} ->
+        # Convert to legacy format for compatibility
+        %{
+          scope: impact_analysis.scope,
+          severity: impact_analysis.severity,
+          dependencies: %{
+            direct: impact_analysis.dependency_impact.direct_dependencies,
+            transitive: impact_analysis.dependency_impact.transitive_dependencies,
+            affected_modules: impact_analysis.dependency_impact.affected_modules
+          },
+          estimated_effort: impact_analysis.estimated_effort,
+          rollback_complexity: impact_analysis.rollback_complexity
+        }
+      
+      {:error, reason} ->
+        Logger.error("Impact analysis failed: #{inspect(reason)}")
+        # Return empty analysis on error for backward compatibility
+        %{
+          scope: :minimal,
+          severity: :low,
+          dependencies: %{direct: 0, transitive: 0, affected_modules: []},
+          estimated_effort: :trivial,
+          rollback_complexity: :simple
+        }
+    end
+  end
+
   # Security analysis delegation helper
   
   defp perform_security_analysis(data) do
@@ -487,101 +554,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   # Quality analysis functions moved to RubberDuck.Analyzers.Code.Quality
   # This skill now delegates all quality analysis to the dedicated analyzer
 
-  # Impact Assessment Functions
-
-  defp assess_change_impact(data, state) do
-    %{
-      scope: determine_impact_scope(data),
-      severity: calculate_impact_severity(data),
-      dependencies: analyze_dependency_chain(data, state),
-      estimated_effort: estimate_fix_effort(data),
-      rollback_complexity: assess_rollback_complexity(data)
-    }
-  end
-
-  defp analyze_direct_impact(changes, _state) do
-    %{
-      lines_affected: changes[:lines_changed] || 0,
-      functions_modified: changes[:functions_modified] || [],
-      modules_affected: changes[:modules_affected] || [],
-      api_changes: detect_api_changes(changes),
-      breaking_changes: detect_breaking_changes(changes)
-    }
-  end
-
-  defp analyze_dependency_impact(file_path, state) do
-    dependencies = get_file_dependencies(file_path, state)
-
-    %{
-      direct_dependencies: length(dependencies.direct),
-      transitive_dependencies: length(dependencies.transitive),
-      affected_modules: dependencies.affected_modules,
-      impact_radius: calculate_impact_radius(dependencies),
-      critical_paths: identify_critical_paths(dependencies)
-    }
-  end
-
-  defp estimate_performance_impact(changes) do
-    %{
-      complexity_change: changes[:complexity_delta] || 0,
-      memory_impact: estimate_memory_change(changes),
-      runtime_impact: estimate_runtime_change(changes),
-      database_impact: estimate_database_impact(changes),
-      overall_impact: :neutral
-    }
-  end
-
-  defp assess_change_risk(changes, _state) do
-    risk_factors = []
-
-    risk_factors =
-      if changes[:breaking_changes] do
-        [{:breaking_changes, 0.8} | risk_factors]
-      else
-        risk_factors
-      end
-
-    risk_factors =
-      if changes[:complexity_delta] > 5 do
-        [{:high_complexity_increase, 0.6} | risk_factors]
-      else
-        risk_factors
-      end
-
-    risk_factors =
-      if changes[:test_coverage_delta] < -0.1 do
-        [{:reduced_test_coverage, 0.7} | risk_factors]
-      else
-        risk_factors
-      end
-
-    risk_score = Enum.reduce(risk_factors, 0.0, fn {_, weight}, acc -> acc + weight end)
-
-    %{
-      level: determine_risk_level(risk_score),
-      score: risk_score,
-      factors: risk_factors,
-      mitigation_suggestions: suggest_risk_mitigation(risk_factors)
-    }
-  end
-
-  defp find_affected_files(file_path, state) do
-    # Find files that depend on the changed file
-    analysis_history = Map.get(state, :analysis_history, %{})
-
-    Enum.filter(Map.keys(analysis_history), fn path ->
-      path != file_path && file_depends_on?(path, file_path, state)
-    end)
-  end
-
-  defp assess_test_coverage_impact(changes) do
-    %{
-      coverage_delta: changes[:test_coverage_delta] || 0,
-      uncovered_lines: changes[:uncovered_lines] || [],
-      test_suggestions: suggest_tests_for_changes(changes),
-      priority: determine_test_priority(changes)
-    }
-  end
+  # Impact assessment functions moved to RubberDuck.Analyzers.Code.Impact
+  # This skill now delegates all impact analysis to the dedicated analyzer
 
   # Performance Analysis Functions (delegating to Performance analyzer)
 
@@ -613,152 +587,9 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   end
 
   # Quality helper functions moved to RubberDuck.Analyzers.Code.Quality
+  # Impact helper functions moved to RubberDuck.Analyzers.Code.Impact
 
-  defp determine_impact_scope(data) do
-    cond do
-      data[:breaking_changes] -> :major
-      data[:api_changes] -> :moderate
-      data[:internal_only] -> :minor
-      true -> :unknown
-    end
-  end
-
-  defp calculate_impact_severity(data) do
-    severity_score = 0
-    severity_score = severity_score + if data[:breaking_changes], do: 10, else: 0
-    severity_score = severity_score + if data[:api_changes], do: 5, else: 0
-    severity_score = severity_score + if data[:complexity_increase], do: 3, else: 0
-
-    cond do
-      severity_score >= 10 -> :critical
-      severity_score >= 5 -> :high
-      severity_score >= 3 -> :medium
-      true -> :low
-    end
-  end
-
-  defp analyze_dependency_chain(data, state) do
-    %{
-      direct: data[:direct_deps] || [],
-      transitive: data[:transitive_deps] || [],
-      circular: detect_circular_dependencies(data, state)
-    }
-  end
-
-  defp estimate_fix_effort(data) do
-    base_effort = data[:lines_changed] || 0
-    complexity_factor = data[:complexity] || 1
-
-    effort_hours = base_effort * complexity_factor / 50
-
-    cond do
-      effort_hours < 1 -> :trivial
-      effort_hours < 4 -> :small
-      effort_hours < 8 -> :medium
-      effort_hours < 16 -> :large
-      true -> :extra_large
-    end
-  end
-
-  defp assess_rollback_complexity(data) do
-    if data[:database_changes] || data[:external_api_changes] do
-      :complex
-    else
-      :simple
-    end
-  end
-
-  defp detect_api_changes(changes) do
-    changes[:api_changes] || false
-  end
-
-  defp detect_breaking_changes(changes) do
-    changes[:breaking_changes] || false
-  end
-
-  defp get_file_dependencies(_file_path, _state) do
-    # Simplified dependency tracking
-    %{
-      direct: [],
-      transitive: [],
-      affected_modules: []
-    }
-  end
-
-  defp calculate_impact_radius(dependencies) do
-    length(dependencies.direct) + length(dependencies.transitive) * 0.5
-  end
-
-  defp identify_critical_paths(_dependencies) do
-    # Identify critical dependency paths
-    []
-  end
-
-  defp estimate_memory_change(changes) do
-    changes[:memory_delta] || 0
-  end
-
-  defp estimate_runtime_change(changes) do
-    changes[:runtime_delta] || 0
-  end
-
-  defp estimate_database_impact(changes) do
-    changes[:database_operations_delta] || 0
-  end
-
-  defp determine_risk_level(risk_score) do
-    cond do
-      risk_score >= 2.0 -> :critical
-      risk_score >= 1.5 -> :high
-      risk_score >= 1.0 -> :medium
-      risk_score >= 0.5 -> :low
-      true -> :minimal
-    end
-  end
-
-  defp suggest_risk_mitigation(risk_factors) do
-    Enum.map(risk_factors, fn {factor, _} ->
-      case factor do
-        :breaking_changes -> "Add compatibility layer or deprecation warnings"
-        :high_complexity_increase -> "Break down complex changes into smaller commits"
-        :reduced_test_coverage -> "Add tests before merging"
-        _ -> "Review changes carefully"
-      end
-    end)
-  end
-
-  defp file_depends_on?(_dependent_file, _target_file, _state) do
-    # Simplified dependency check
-    false
-  end
-
-  defp suggest_tests_for_changes(changes) do
-    suggestions = []
-
-    suggestions =
-      if changes[:new_functions] do
-        ["Add unit tests for new functions" | suggestions]
-      else
-        suggestions
-      end
-
-    suggestions =
-      if changes[:modified_functions] do
-        ["Update tests for modified functions" | suggestions]
-      else
-        suggestions
-      end
-
-    suggestions
-  end
-
-  defp determine_test_priority(changes) do
-    if changes[:api_changes] || changes[:breaking_changes] do
-      :critical
-    else
-      :normal
-    end
-  end
+  # Impact-related helper functions moved to RubberDuck.Analyzers.Code.Impact
 
 
   defp count_pattern(content, pattern) do
@@ -770,10 +601,6 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   # Input validation functions moved to Security analyzer
 
-  defp detect_circular_dependencies(_data, _state) do
-    # Simplified circular dependency detection
-    []
-  end
 
   defp detect_file_type(file_path) do
     cond do
@@ -790,34 +617,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   # Threshold checking functions moved to RubberDuck.Analyzers.Code.Quality
 
-  defp calculate_impact_risk_score(changes) when is_map(changes) do
-    # Calculate risk based on the nature and scope of changes
-    base_risk = map_size(changes) * 10
-
-    # Add risk for critical file changes
-    change_keys = Map.keys(changes)
-    has_critical_changes = 
-      change_keys
-      |> Enum.any?(fn key ->
-        key_str = to_string(key)
-        String.contains?(key_str, ["auth", "security", "payment"])
-      end)
-    
-    critical_risk = if has_critical_changes, do: 50, else: 0
-
-    min(base_risk + critical_risk, 100) / 100.0
-  end
-
-  defp calculate_impact_risk_score(_), do: 0.0
-
-  defp identify_affected_files(file_path, _state) do
-    # In a real implementation, this would use dependency tracking
-    # For now, return a sample list
-    [
-      "#{file_path}_test.exs",
-      String.replace(file_path, ".ex", "_spec.ex")
-    ]
-  end
+  # Impact risk calculation functions moved to RubberDuck.Analyzers.Code.Impact
 
   # CWE mapping functions moved to Security analyzer
 end
