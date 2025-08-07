@@ -43,7 +43,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     SecurityScan
   }
   
-  alias RubberDuck.Analyzers.Code.Security
+  alias RubberDuck.Analyzers.Code.{Security, Performance}
 
   @impl true
   def handle_signal(%{type: "code.analyze.file"} = signal, state) do
@@ -68,7 +68,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     # Add performance analysis if enabled
     result =
       if state.opts.performance_check do
-        Map.put(result, :performance, analyze_performance(signal.data))
+        performance_analysis = perform_performance_analysis(signal.data)
+        Map.put(result, :performance, performance_analysis)
       else
         result
       end
@@ -129,18 +130,21 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.performance.analyze"} = signal, state) do
-    # Analyze performance characteristics
-    content = signal.data.content
-
-    perf_analysis = %{
-      complexity: calculate_cyclomatic_complexity(content),
-      memory_usage: estimate_memory_usage(content),
-      database_queries: detect_database_queries(content),
-      potential_bottlenecks: identify_bottlenecks(content),
-      optimization_opportunities: suggest_performance_optimizations(content)
+    # Create a PerformanceAnalyze message for the Performance analyzer
+    performance_analyze_msg = %PerformanceAnalyze{
+      content: signal.data.content,
+      metrics: signal.data.metrics || [:complexity, :hotspots, :optimizations]
     }
-
-    {:ok, perf_analysis, state}
+    
+    # Delegate to Performance analyzer
+    case Performance.analyze(performance_analyze_msg, %{}) do
+      {:ok, performance_analysis} ->
+        {:ok, performance_analysis, state}
+        
+      {:error, reason} ->
+        Logger.error("Performance analysis failed: #{inspect(reason)}")
+        {:error, reason, state}
+    end
   end
 
   @impl true
@@ -208,9 +212,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       case msg.analysis_type do
         :comprehensive ->
           security_analysis = perform_security_analysis(data)
+          performance_analysis = perform_performance_analysis(data)
           result
           |> Map.put(:impact, assess_change_impact(data, state))
-          |> Map.put(:performance, analyze_performance(data))
+          |> Map.put(:performance, performance_analysis)
           |> Map.put(:security, security_analysis)
 
         :security ->
@@ -218,7 +223,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
           Map.put(result, :security, security_analysis)
 
         :performance ->
-          Map.put(result, :performance, analyze_performance(data))
+          performance_analysis = perform_performance_analysis(data)
+          Map.put(result, :performance, performance_analysis)
 
         :quality ->
           result
@@ -269,21 +275,16 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   @doc """
   Handle typed PerformanceAnalyze message
   """
-  def handle_performance_analyze(%PerformanceAnalyze{} = msg, _context) do
-    data = %{
-      content: msg.content,
-      metrics: msg.metrics
-    }
-
-    performance_result = %{
-      hot_spots: identify_performance_hotspots(data.content),
-      memory_usage: estimate_memory_usage(data.content),
-      complexity_analysis: analyze_algorithmic_complexity(data.content),
-      bottlenecks: detect_bottlenecks(data.content),
-      optimizations: suggest_optimizations(data.content)
-    }
-
-    {:ok, performance_result}
+  def handle_performance_analyze(%PerformanceAnalyze{} = msg, context) do
+    # Delegate to Performance analyzer
+    case Performance.analyze(msg, context) do
+      {:ok, performance_analysis} ->
+        {:ok, performance_analysis}
+      
+      {:error, reason} ->
+        Logger.error("Performance analysis failed: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -303,6 +304,49 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       {:error, reason} ->
         Logger.error("Security analysis failed: #{inspect(reason)}")
         {:error, reason}
+    end
+  end
+
+  # Performance analysis delegation helper
+  
+  defp perform_performance_analysis(data) do
+    # Create an Analyze message for the Performance analyzer
+    analyze_msg = %Analyze{
+      file_path: data[:file_path] || "unknown",
+      analysis_type: :performance,
+      depth: :moderate,
+      auto_fix: false
+    }
+    
+    # Prepare context with the analysis data
+    context = %{
+      content: data[:content],
+      state: %{}
+    }
+    
+    case Performance.analyze(analyze_msg, context) do
+      {:ok, performance_analysis} ->
+        # Convert to legacy format for compatibility
+        %{
+          time_complexity: performance_analysis.time_complexity,
+          space_complexity: performance_analysis.space_complexity,
+          database_operations: performance_analysis.database_operations,
+          bottlenecks: performance_analysis.bottlenecks,
+          optimization_opportunities: performance_analysis.optimization_opportunities,
+          optimization_potential: performance_analysis.optimization_potential
+        }
+      
+      {:error, reason} ->
+        Logger.error("Performance analysis failed: #{inspect(reason)}")
+        # Return empty analysis on error for backward compatibility
+        %{
+          time_complexity: :linear,
+          space_complexity: :constant,
+          database_operations: [],
+          bottlenecks: [],
+          optimization_opportunities: [],
+          optimization_potential: 0
+        }
     end
   end
 
@@ -595,92 +639,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     }
   end
 
-  # Performance Analysis Functions
+  # Performance Analysis Functions (delegating to Performance analyzer)
 
-  defp analyze_performance(data) do
-    %{
-      time_complexity: estimate_time_complexity(data),
-      space_complexity: estimate_space_complexity(data),
-      database_operations: count_database_operations(data),
-      external_calls: count_external_calls(data),
-      optimization_potential: calculate_optimization_potential(data)
-    }
-  end
-
-  defp calculate_cyclomatic_complexity(content) do
-    # Count decision points in the code
-    conditionals = count_pattern(content, ~r/\b(if|unless|case|cond|when)\b/)
-    loops = count_pattern(content, ~r/\b(for|while|Enum\.\w+|Stream\.\w+)\b/)
-
-    1 + conditionals + loops
-  end
-
-  defp estimate_memory_usage(content) do
-    # Estimate based on data structure usage
-    large_structures = count_pattern(content, ~r/\b(Map\.new|List\.duplicate|:ets\.new)\b/)
-    recursion = count_pattern(content, ~r/\bdef\s+\w+/)
-
-    %{
-      estimated_mb: large_structures * 10 + recursion * 5,
-      risk_level: if(large_structures + recursion > 5, do: :high, else: :low)
-    }
-  end
-
-  defp detect_database_queries(content) do
-    queries = []
-
-    queries =
-      if String.contains?(content, "Repo.") do
-        [%{type: :ecto, count: count_pattern(content, ~r/Repo\.\w+/)} | queries]
-      else
-        queries
-      end
-
-    queries
-  end
-
-  defp identify_bottlenecks(content) do
-    bottlenecks = []
-
-    bottlenecks =
-      if String.contains?(content, "Enum.") && String.contains?(content, "|> Enum.") do
-        [
-          %{type: :multiple_iterations, suggestion: "Consider using Stream or single pass"}
-          | bottlenecks
-        ]
-      else
-        bottlenecks
-      end
-
-    bottlenecks =
-      if count_pattern(content, ~r/\bn\+1\b|N\+1/) > 0 do
-        [%{type: :n_plus_one, suggestion: "Potential N+1 query pattern detected"} | bottlenecks]
-      else
-        bottlenecks
-      end
-
-    bottlenecks
-  end
-
-  defp suggest_performance_optimizations(content) do
-    optimizations = []
-
-    optimizations =
-      if String.contains?(content, "length(") && String.contains?(content, "== 0") do
-        [
-          %{
-            pattern: "length() == 0",
-            replacement: "Enum.empty?()",
-            impact: :low
-          }
-          | optimizations
-        ]
-      else
-        optimizations
-      end
-
-    optimizations
-  end
+  # Performance functions moved to RubberDuck.Analyzers.Code.Performance
+  # This skill now delegates all performance analysis to the dedicated analyzer
 
   # Security Analysis Functions (delegating to Security analyzer)
 
@@ -930,32 +892,6 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     end
   end
 
-  defp estimate_time_complexity(_data) do
-    # Simplified time complexity estimation
-    :linear
-  end
-
-  defp estimate_space_complexity(_data) do
-    # Simplified space complexity estimation
-    :linear
-  end
-
-  defp count_database_operations(data) do
-    data[:database_ops] || 0
-  end
-
-  defp count_external_calls(data) do
-    data[:external_calls] || 0
-  end
-
-  defp calculate_optimization_potential(data) do
-    potential = 0
-    potential = potential + if data[:complexity] > 10, do: 30, else: 0
-    potential = potential + if data[:database_ops] > 5, do: 20, else: 0
-    potential = potential + if data[:external_calls] > 3, do: 15, else: 0
-
-    min(100, potential)
-  end
 
   defp count_pattern(content, pattern) do
     content
@@ -980,85 +916,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     end
   end
 
-  # Performance analysis helper functions
-
-  defp identify_performance_hotspots(content) when is_binary(content) do
-    # Identify potential performance bottlenecks in code
-    hotspots = []
-
-    # Check for nested loops
-    if String.contains?(content, ["for", "Enum.each"]) and
-         String.contains?(content, ["Enum.map", "Enum.filter"]) do
-      [{:nested_enumeration, :high, "Nested enumerations detected"}]
-    else
-      hotspots
-    end
-  end
-
-  defp identify_performance_hotspots(_), do: []
-
-  defp detect_bottlenecks(content) when is_binary(content) do
-    bottlenecks = []
-
-    # Check for N+1 query patterns
-    bottlenecks =
-      if String.contains?(content, ["Repo.all", "Repo.get"]) do
-        [{:potential_n_plus_one, "Multiple database queries in loop"} | bottlenecks]
-      else
-        bottlenecks
-      end
-
-    # Check for large data operations without streaming
-    if String.contains?(content, "Enum.") and not String.contains?(content, "Stream.") do
-      [{:no_streaming, "Large data operations without Stream module"} | bottlenecks]
-    else
-      bottlenecks
-    end
-  end
-
-  defp detect_bottlenecks(_), do: []
-
-  defp analyze_algorithmic_complexity(content) when is_binary(content) do
-    # Simplified complexity analysis
-    nested_loops = length(Regex.scan(~r/for.*do.*for/s, content))
-
-    recursion =
-      String.contains?(content, ["defp", "def"]) and
-        Regex.match?(~r/def\w*\s+(\w+).*\1\(/s, content)
-
-    cond do
-      nested_loops > 1 -> :exponential
-      nested_loops == 1 -> :quadratic
-      recursion -> :logarithmic
-      true -> :linear
-    end
-  end
-
-  defp analyze_algorithmic_complexity(_), do: :unknown
-
-  defp suggest_optimizations(content) when is_binary(content) do
-    optimizations = []
-
-    # Suggest Stream for large enumerations
-    optimizations =
-      if String.contains?(content, "Enum.") and not String.contains?(content, "Stream.") do
-        ["Consider using Stream for large collections" | optimizations]
-      else
-        optimizations
-      end
-
-    # Suggest pattern matching over conditionals
-    optimizations =
-      if String.contains?(content, ["if", "else", "cond"]) do
-        ["Consider pattern matching instead of conditionals" | optimizations]
-      else
-        optimizations
-      end
-
-    optimizations
-  end
-
-  defp suggest_optimizations(_), do: []
+  # Performance analysis helper functions moved to RubberDuck.Analyzers.Code.Performance
 
   # Additional helper functions for typed messages
 
