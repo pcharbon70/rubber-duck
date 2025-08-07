@@ -28,6 +28,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
       validation_config: [type: :map, default: %{}]
     ]
   
+  alias RubberDuck.Actions.Core.Entity
   alias RubberDuck.Actions.Core.UpdateEntity.{
     Validator,
     ImpactAnalyzer,
@@ -87,7 +88,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   
   # Fetch the entity to be updated
   defp fetch_entity(params) do
-    case fetch_entity_by_type(params.entity_id, params.entity_type) do
+    case Entity.fetch(params.entity_type, params.entity_id) do
       {:ok, entity} ->
         Map.put(params, :entity, entity)
       
@@ -99,7 +100,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   # Validate changes and prepare for execution
   defp validate_and_prepare(%{entity: entity} = params) do
     validation_params = %{
-      current_entity: entity,  # Validator expects current_entity
+      current_entity: Entity.to_map(entity),  # Validator expects entity as map
       changes: params.changes,
       validation_config: params.validation_config
     }
@@ -127,7 +128,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   
   defp assess_impact(%{entity: entity, validated_changes: validated_changes} = params) do
     analyzer_params = %{
-      entity: entity,
+      entity: Entity.to_map(entity),
       validated_changes: validated_changes
     }
     
@@ -162,7 +163,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   # Execute the changes
   defp execute_changes(params) do
     executor_params = %{
-      entity: params.entity,
+      entity: Entity.to_map(params.entity),
       validated_changes: params.validated_changes,
       impact_assessment: params.impact_assessment,
       rollback_on_failure: params.options.rollback_on_failure
@@ -170,9 +171,14 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     
     case Executor.execute(executor_params, %{}) do
       {:ok, execution_result} ->
+        # The executor returns the updated entity as a map
+        # We need to apply those changes to our Entity wrapper
+        changes_map = Map.drop(execution_result.entity, [:id, :type])
+        {:ok, updated_entity} = Entity.apply_changes(params.entity, changes_map)
+        
         params
         |> Map.put(:execution_result, execution_result)
-        |> Map.put(:updated_entity, execution_result.entity)
+        |> Map.put(:updated_entity, updated_entity)
       
       {:error, _reason} = error ->
         {:error, %{step: :execution, error: error}}
@@ -189,7 +195,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   
   defp propagate_if_enabled(params) do
     propagator_params = %{
-      entity: params.updated_entity,
+      entity: Entity.to_map(params.updated_entity),
       impact_assessment: params.impact_assessment,
       propagation_options: extract_propagation_options(params)
     }
@@ -218,7 +224,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   
   defp learn_if_enabled(params) do
     learner_params = %{
-      entity: params.updated_entity,
+      entity: Entity.to_map(params.updated_entity),
       impact_assessment: params.impact_assessment,
       execution_result: params.execution_result
     }
@@ -260,7 +266,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   # Build the success response
   defp build_success_response(result) do
     %{
-      entity: result.updated_entity,
+      entity: Entity.to_map(result.updated_entity),
       previous_state: result.execution_result.previous_state,
       changes_applied: result.validated_changes,
       impact_assessment: result.impact_assessment,
@@ -275,8 +281,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   defp build_metadata(result) do
     %{
       action: "update_entity",
-      entity_id: result.entity.id,
-      entity_type: result.entity.type,
+      entity_id: result.updated_entity.id,
+      entity_type: result.updated_entity.type,
       timestamp: DateTime.utc_now(),
       validation_passed: true,
       impact_score: result.impact_assessment[:impact_score] || 0.0,
@@ -355,58 +361,4 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     :ok
   end
   
-  # Entity fetching (simplified - should move to repository)
-  defp fetch_entity_by_type(entity_id, entity_type) do
-    # This will be replaced by repository layer in Step 8
-    case entity_type do
-      :user ->
-        {:ok, %{
-          id: entity_id,
-          type: :user,
-          email: "user@example.com",
-          username: "testuser",
-          preferences: %{},
-          version: 1,
-          created_at: DateTime.utc_now()
-        }}
-      
-      :project ->
-        {:ok, %{
-          id: entity_id,
-          type: :project,
-          name: "Test Project",
-          description: "A test project",
-          status: :active,
-          version: 1,
-          created_at: DateTime.utc_now()
-        }}
-      
-      :code_file ->
-        {:ok, %{
-          id: entity_id,
-          type: :code_file,
-          path: "/lib/example.ex",
-          content: "defmodule Example do\nend",
-          language: :elixir,
-          project_id: "project_123",
-          version: 1,
-          created_at: DateTime.utc_now()
-        }}
-      
-      :analysis ->
-        {:ok, %{
-          id: entity_id,
-          type: :analysis,
-          analysis_type: :quality,
-          target: "project_123",
-          status: :completed,
-          results: %{},
-          version: 1,
-          created_at: DateTime.utc_now()
-        }}
-      
-      _ ->
-        {:error, :unknown_entity_type}
-    end
-  end
 end

@@ -9,7 +9,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntityTest do
         entity_id: "test-123",
         entity_type: :user,
         changes: %{
-          email: "newemail@example.com",
+          username: "newusername",
           preferences: %{theme: "dark"}
         },
         impact_analysis: true,
@@ -28,7 +28,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntityTest do
       
       assert result.entity.id == "test-123"
       assert result.entity.type == :user
-      assert result.entity.email == "newemail@example.com"
+      assert result.entity.username == "newusername"
       assert result.entity.preferences == %{theme: "dark"}
       assert is_map(result.impact_assessment)
       assert is_map(result.propagation_results)
@@ -45,7 +45,9 @@ defmodule RubberDuck.Actions.Core.UpdateEntityTest do
     end
     
     test "skips impact analysis when disabled", %{params: params} do
-      params = Map.put(params, :impact_analysis, false)
+      params = params 
+        |> Map.put(:impact_analysis, false)
+        |> Map.put(:changes, %{preferences: %{theme: "light"}})  # Avoid sensitive fields
       
       assert {:ok, result} = UpdateEntity.run(params, %{})
       assert result.impact_assessment.skipped == true
@@ -196,10 +198,10 @@ defmodule RubberDuck.Actions.Core.UpdateEntityTest do
         validation_config: %{}
       }
       
-      # This should fail in schema validation or entity fetch
-      assert_raise KeyError, fn ->
-        UpdateEntity.run(params, %{})
-      end
+      # This should fail in entity fetch
+      assert {:error, error} = UpdateEntity.run(params, %{})
+      assert error.step == :fetch_entity
+      assert error.reason == {:error, :unknown_entity_type}
     end
   end
   
