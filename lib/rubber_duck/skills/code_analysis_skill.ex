@@ -156,10 +156,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
     # Track security issues in state
     updated_state =
-      if not Enum.empty?(security_scan.vulnerabilities) do
-        track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
-      else
+      if Enum.empty?(security_scan.vulnerabilities) do
         state
+      else
+        track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
       end
 
     {:ok, security_scan, updated_state}
@@ -1108,16 +1108,14 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
     # Add risk for critical file changes
     change_keys = Map.keys(changes)
-    critical_risk =
-      if change_keys
-         |> Enum.any?(fn key ->
-           key_str = to_string(key)
-           String.contains?(key_str, ["auth", "security", "payment"])
-         end) do
-        50
-      else
-        0
-      end
+    has_critical_changes = 
+      change_keys
+      |> Enum.any?(fn key ->
+        key_str = to_string(key)
+        String.contains?(key_str, ["auth", "security", "payment"])
+      end)
+    
+    critical_risk = if has_critical_changes, do: 50, else: 0
 
     min(base_risk + critical_risk, 100) / 100.0
   end

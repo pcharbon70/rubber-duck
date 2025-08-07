@@ -154,7 +154,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Propagator do
     %{
       has_circular_dependencies: not Enum.empty?(cycles),
       cycles: cycles,
-      resolution_strategy: if(not Enum.empty?(cycles), do: :break_at_weakest_link, else: :none)
+      resolution_strategy: if(Enum.empty?(cycles), do: :none, else: :break_at_weakest_link)
     }
   end
 
@@ -191,11 +191,11 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Propagator do
     cycles = []
 
     Enum.reduce(Map.keys(graph), cycles, fn node, acc ->
-      if not MapSet.member?(visited, node) do
+      if MapSet.member?(visited, node) do
+        acc
+      else
         {_, _, new_cycles} = dfs_detect_cycles(node, graph, visited, rec_stack, [])
         acc ++ new_cycles
-      else
-        acc
       end
     end)
   end
@@ -779,17 +779,17 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Propagator do
     recommendations = []
 
     recommendations =
-      if not verifications.timing_constraints_met do
-        ["Consider using batched processing for better performance" | recommendations]
-      else
+      if verifications.timing_constraints_met do
         recommendations
+      else
+        ["Consider using batched processing for better performance" | recommendations]
       end
 
     recommendations =
-      if not verifications.no_conflicts do
-        ["Review propagation order to avoid conflicts" | recommendations]
-      else
+      if verifications.no_conflicts do
         recommendations
+      else
+        ["Review propagation order to avoid conflicts" | recommendations]
       end
 
     recommendations

@@ -170,7 +170,7 @@ defmodule RubberDuck.Telemetry.MessageReporter do
         total_succeeded:
           if(metadata.success, do: state.total_succeeded + 1, else: state.total_succeeded),
         total_failed:
-          if(not metadata.success, do: state.total_failed + 1, else: state.total_failed),
+          if(metadata.success, do: state.total_failed, else: state.total_failed + 1),
         total_duration_us: state.total_duration_us + measurements.duration
     }
 
@@ -181,7 +181,7 @@ defmodule RubberDuck.Telemetry.MessageReporter do
       type_stats
       | count: type_stats.count + 1,
         succeeded: if(metadata.success, do: type_stats.succeeded + 1, else: type_stats.succeeded),
-        failed: if(not metadata.success, do: type_stats.failed + 1, else: type_stats.failed),
+        failed: if(metadata.success, do: type_stats.failed, else: type_stats.failed + 1),
         total_duration_us: type_stats.total_duration_us + measurements.duration,
         min_duration_us: min(type_stats.min_duration_us, measurements.duration),
         max_duration_us: max(type_stats.max_duration_us, measurements.duration)

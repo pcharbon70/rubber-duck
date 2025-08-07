@@ -548,9 +548,8 @@ defmodule RubberDuck.Skills.UserManagementSkill do
       # Find matching sequence patterns
       matching_sequences =
         patterns
-        |> Enum.filter(&(&1.type == :action_sequence))
-        |> Enum.filter(fn pattern ->
-          Enum.take(pattern.sequence, 2) == recent_actions
+        |> Enum.filter(fn pattern -> 
+          pattern.type == :action_sequence && Enum.take(pattern.sequence, 2) == recent_actions
         end)
         |> Enum.map(fn pattern ->
           %{
