@@ -69,6 +69,24 @@ defmodule RubberDuck.Application do
       # - Phoenix endpoint (when added)
       # - Additional agents as needed
     ]
+    
+    # Add GenStage pipeline components if enabled
+    children = 
+      if Application.get_env(:rubber_duck, :pipeline_mode, :sequential) == :genstage do
+        Logger.info("GenStage pipeline mode enabled, starting pipeline components...")
+        
+        pipeline_children = [
+          # Start pipeline components with rest_for_one strategy
+          # so if producer fails, all downstream stages restart
+          {RubberDuck.Pipeline.EntityUpdateProducer, []},
+          {RubberDuck.Pipeline.EntityUpdateProcessor, []},
+          {RubberDuck.Pipeline.SideEffectProcessor, []}
+        ]
+        
+        children ++ pipeline_children
+      else
+        children
+      end
 
     # Using rest_for_one: if a child process terminates,
     # all processes started after it are also terminated and restarted
