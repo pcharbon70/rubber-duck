@@ -246,10 +246,12 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Validator do
   defp contains_sensitive_data?(_), do: false
 
   defp assess_security_risk_level(risks) do
+    risk_count = Enum.count(risks)
+    
     cond do
-      length(risks) == 0 -> :none
-      length(risks) == 1 -> :low
-      length(risks) <= 3 -> :medium
+      risk_count == 0 -> :none
+      risk_count == 1 -> :low
+      risk_count <= 3 -> :medium
       true -> :high
     end
   end

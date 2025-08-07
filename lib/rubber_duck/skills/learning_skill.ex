@@ -1045,7 +1045,7 @@ defmodule RubberDuck.Skills.LearningSkill do
     |> find_common_elements()
   end
 
-  defp find_common_elements(contexts) when length(contexts) == 0, do: %{}
+  defp find_common_elements([]), do: %{}
 
   defp find_common_elements(contexts) do
     # Find keys that appear in all contexts
@@ -1096,7 +1096,7 @@ defmodule RubberDuck.Skills.LearningSkill do
   end
 
   defp calculate_pattern_confidence(patterns) do
-    if length(patterns) == 0 do
+    if Enum.empty?(patterns) do
       0.0
     else
       # Confidence based on pattern frequency and success rate
