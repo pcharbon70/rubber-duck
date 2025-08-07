@@ -43,18 +43,20 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     SecurityScan
   }
   
-  alias RubberDuck.Analyzers.Code.{Security, Performance}
+  alias RubberDuck.Analyzers.Code.{Security, Performance, Quality}
 
   @impl true
   def handle_signal(%{type: "code.analyze.file"} = signal, state) do
     # Comprehensive file analysis with impact assessment
     analysis_depth = state.opts.depth || :moderate
 
+    quality_analysis = perform_quality_analysis(signal.data, analysis_depth)
+    
     result = %{
       file: signal.data.file_path,
-      quality_score: calculate_quality_score(signal.data),
-      issues: detect_issues(signal.data, analysis_depth),
-      suggestions: generate_suggestions(signal.data, analysis_depth)
+      quality_score: quality_analysis.quality_score,
+      issues: quality_analysis.issues,
+      suggestions: quality_analysis.suggestions
     }
 
     # Add impact assessment if enabled
@@ -91,14 +93,24 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.quality.check"} = signal, state) do
-    # Perform quality check
-    result = %{
-      status: :completed,
-      metrics: extract_metrics(signal.data),
-      recommendations: build_recommendations(signal.data)
+    # Create a QualityCheck message for the Quality analyzer
+    quality_check_msg = %QualityCheck{
+      target: signal.data.target || signal.data.file_path || "unknown",
+      metrics: signal.data.metrics || [:complexity, :coverage, :duplication],
+      thresholds: signal.data.thresholds || %{}
     }
-
-    {:ok, result, state}
+    
+    # Delegate to Quality analyzer
+    case Quality.analyze(quality_check_msg, %{}) do
+      {:ok, quality_result} ->
+        # Convert to expected legacy format with quality_score in root
+        legacy_result = Map.put(quality_result, :quality_score, quality_result.quality_score)
+        {:ok, legacy_result, state}
+        
+      {:error, reason} ->
+        Logger.error("Quality check failed: #{inspect(reason)}")
+        {:error, reason, state}
+    end
   end
 
   @impl true
@@ -193,18 +205,20 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       file_path: msg.file_path,
       depth: msg.depth,
       auto_fix: msg.auto_fix,
-      content: msg.context[:content],
-      complexity: msg.context[:complexity],
-      lines: msg.context[:lines],
-      duplication: msg.context[:duplication]
+      content: context[:content],
+      complexity: context[:complexity],
+      lines: context[:lines],
+      duplication: context[:duplication]
     }
 
-    # Reuse existing analysis logic
+    # Use quality analyzer for basic analysis
+    quality_analysis = perform_quality_analysis(data, msg.depth)
+    
     result = %{
       file: msg.file_path,
-      quality_score: calculate_quality_score(data),
-      issues: detect_issues(data, msg.depth),
-      suggestions: generate_suggestions(data, msg.depth)
+      quality_score: quality_analysis.quality_score,
+      issues: quality_analysis.issues,
+      suggestions: quality_analysis.suggestions
     }
 
     # Add specialized analysis based on type
@@ -217,6 +231,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
           |> Map.put(:impact, assess_change_impact(data, state))
           |> Map.put(:performance, performance_analysis)
           |> Map.put(:security, security_analysis)
+          |> Map.put(:quality, quality_analysis)
 
         :security ->
           security_analysis = perform_security_analysis(data)
@@ -227,7 +242,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
           Map.put(result, :performance, performance_analysis)
 
         :quality ->
-          result
+          Map.put(result, :quality, quality_analysis)
       end
 
     {:ok, result}
@@ -236,21 +251,16 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   @doc """
   Handle typed QualityCheck message
   """
-  def handle_quality_check(%QualityCheck{} = msg, _context) do
-    data = %{
-      target: msg.target,
-      metrics: msg.metrics,
-      thresholds: msg.thresholds
-    }
-
-    result = %{
-      status: :completed,
-      metrics: extract_metrics(data),
-      recommendations: build_recommendations(data),
-      passed: check_thresholds(data.metrics, data.thresholds)
-    }
-
-    {:ok, result}
+  def handle_quality_check(%QualityCheck{} = msg, context) do
+    # Delegate to Quality analyzer
+    case Quality.analyze(msg, context) do
+      {:ok, quality_result} ->
+        {:ok, quality_result}
+      
+      {:error, reason} ->
+        Logger.error("Quality check failed: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -304,6 +314,55 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       {:error, reason} ->
         Logger.error("Security analysis failed: #{inspect(reason)}")
         {:error, reason}
+    end
+  end
+
+  # Quality analysis delegation helper
+  
+  defp perform_quality_analysis(data, depth \\ :moderate) do
+    # Create an Analyze message for the Quality analyzer
+    analyze_msg = %Analyze{
+      file_path: data[:file_path] || "unknown",
+      analysis_type: :quality,
+      depth: depth,
+      auto_fix: false
+    }
+    
+    # Prepare context with the analysis data
+    context = %{
+      content: data[:content],
+      test_coverage: data[:test_coverage] || 0.0,
+      complexity: data[:complexity],
+      lines: data[:lines],
+      duplication: data[:duplication],
+      state: %{}
+    }
+    
+    case Quality.analyze(analyze_msg, context) do
+      {:ok, quality_analysis} ->
+        # Convert to legacy format for compatibility
+        %{
+          quality_score: quality_analysis.quality_score,
+          metrics: quality_analysis.metrics,
+          issues: quality_analysis.issues,
+          suggestions: quality_analysis.suggestions,
+          recommendations: quality_analysis.recommendations || [],
+          maintainability_score: quality_analysis.maintainability_score,
+          technical_debt_indicators: quality_analysis.technical_debt_indicators
+        }
+      
+      {:error, reason} ->
+        Logger.error("Quality analysis failed: #{inspect(reason)}")
+        # Return empty analysis on error for backward compatibility
+        %{
+          quality_score: 0.5,
+          metrics: %{loc: 0, complexity: 1, coverage: 0.0, duplication: 0.0, maintainability_index: 50.0, documentation_coverage: 0.0},
+          issues: [],
+          suggestions: [],
+          recommendations: [],
+          maintainability_score: 0.5,
+          technical_debt_indicators: []
+        }
     end
   end
 
@@ -425,123 +484,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     recommendations
   end
   
-  # Private helper functions
-
-  defp calculate_quality_score(data) do
-    # Simplified quality score calculation
-    base_score = 100
-
-    deductions = [
-      {data[:complexity] > 10, 20},
-      {data[:lines] > 100, 10},
-      {data[:duplication] > 0.2, 15}
-    ]
-
-    Enum.reduce(deductions, base_score, fn {condition, penalty}, score ->
-      if condition, do: score - penalty, else: score
-    end) / 100.0
-  end
-
-  defp detect_issues(data, depth) do
-    issues = []
-
-    issues =
-      if data[:complexity] > 10 do
-        [
-          %{
-            type: :complexity,
-            severity: :high,
-            message: "High complexity detected",
-            line: data[:line]
-          }
-          | issues
-        ]
-      else
-        issues
-      end
-
-    issues =
-      if data[:lines] > 100 do
-        [%{type: :length, severity: :medium, message: "File is too long"} | issues]
-      else
-        issues
-      end
-
-    # Add more issues for deeper analysis
-    issues =
-      if depth in [:moderate, :deep] do
-        issues
-        |> detect_naming_issues(data)
-        |> detect_documentation_issues(data)
-        |> detect_pattern_violations(data)
-      else
-        issues
-      end
-
-    issues
-  end
-
-  defp generate_suggestions(data, depth) do
-    suggestions = []
-
-    suggestions =
-      if data[:complexity] > 10 do
-        [
-          %{
-            type: :refactor,
-            priority: :high,
-            action: "Consider breaking down complex functions",
-            impact: :high,
-            effort: :medium
-          }
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    # Add more suggestions for deeper analysis
-    suggestions =
-      if depth in [:moderate, :deep] do
-        suggestions
-        |> add_performance_suggestions(data)
-        |> add_maintainability_suggestions(data)
-        |> add_testing_suggestions(data)
-      else
-        suggestions
-      end
-
-    suggestions
-  end
-
-  defp extract_metrics(data) do
-    %{
-      loc: data[:lines] || 0,
-      complexity: data[:complexity] || 0,
-      coverage: data[:coverage] || 0.0,
-      duplication: data[:duplication] || 0.0
-    }
-  end
-
-  defp build_recommendations(data) do
-    recs = []
-
-    recs =
-      if data[:coverage] < 0.8 do
-        ["Increase test coverage to at least 80%" | recs]
-      else
-        recs
-      end
-
-    recs =
-      if data[:duplication] > 0.1 do
-        ["Reduce code duplication" | recs]
-      else
-        recs
-      end
-
-    recs
-  end
+  # Quality analysis functions moved to RubberDuck.Analyzers.Code.Quality
+  # This skill now delegates all quality analysis to the dedicated analyzer
 
   # Impact Assessment Functions
 
@@ -668,83 +612,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     Map.put(state, :security_issues, updated_issues)
   end
 
-  defp detect_naming_issues(issues, data) do
-    if data[:poor_naming] do
-      [%{type: :naming, severity: :low, message: "Improve variable/function naming"} | issues]
-    else
-      issues
-    end
-  end
-
-  defp detect_documentation_issues(issues, data) do
-    if data[:doc_coverage] < 0.5 do
-      [%{type: :documentation, severity: :medium, message: "Insufficient documentation"} | issues]
-    else
-      issues
-    end
-  end
-
-  defp detect_pattern_violations(issues, data) do
-    if data[:pattern_violations] do
-      [
-        %{type: :pattern, severity: :medium, message: "Design pattern violations detected"}
-        | issues
-      ]
-    else
-      issues
-    end
-  end
-
-  defp add_performance_suggestions(suggestions, data) do
-    if data[:performance_issues] do
-      [
-        %{
-          type: :performance,
-          priority: :medium,
-          action: "Optimize performance bottlenecks",
-          impact: :medium,
-          effort: :medium
-        }
-        | suggestions
-      ]
-    else
-      suggestions
-    end
-  end
-
-  defp add_maintainability_suggestions(suggestions, data) do
-    if data[:maintainability_score] < 0.6 do
-      [
-        %{
-          type: :maintainability,
-          priority: :medium,
-          action: "Improve code maintainability",
-          impact: :medium,
-          effort: :low
-        }
-        | suggestions
-      ]
-    else
-      suggestions
-    end
-  end
-
-  defp add_testing_suggestions(suggestions, data) do
-    if data[:test_coverage] < 0.8 do
-      [
-        %{
-          type: :testing,
-          priority: :high,
-          action: "Increase test coverage",
-          impact: :high,
-          effort: :medium
-        }
-        | suggestions
-      ]
-    else
-      suggestions
-    end
-  end
+  # Quality helper functions moved to RubberDuck.Analyzers.Code.Quality
 
   defp determine_impact_scope(data) do
     cond do
@@ -920,24 +788,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   # Additional helper functions for typed messages
 
-  defp check_thresholds(metrics, thresholds) when is_list(metrics) and is_map(thresholds) do
-    Enum.all?(metrics, fn metric ->
-      threshold = Map.get(thresholds, metric)
-      if threshold, do: metric_passes_threshold?(metric, threshold), else: true
-    end)
-  end
-
-  defp check_thresholds(_, _), do: true
-
-  defp metric_passes_threshold?(metric, threshold) do
-    # Simple threshold check - would be more complex in real implementation
-    case metric do
-      :complexity -> threshold >= 10
-      :coverage -> threshold >= 80
-      :duplication -> threshold <= 5
-      _ -> true
-    end
-  end
+  # Threshold checking functions moved to RubberDuck.Analyzers.Code.Quality
 
   defp calculate_impact_risk_score(changes) when is_map(changes) do
     # Calculate risk based on the nature and scope of changes
