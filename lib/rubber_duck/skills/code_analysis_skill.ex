@@ -42,6 +42,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     PerformanceAnalyze,
     SecurityScan
   }
+  
+  alias RubberDuck.Analyzers.Code.Security
 
   @impl true
   def handle_signal(%{type: "code.analyze.file"} = signal, state) do
@@ -74,7 +76,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     # Add security scan if enabled
     result =
       if state.opts.security_scan do
-        Map.put(result, :security, scan_security_issues(signal.data))
+        security_analysis = perform_security_analysis(signal.data)
+        Map.put(result, :security, security_analysis)
       else
         result
       end
@@ -142,27 +145,30 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.security.scan"} = signal, state) do
-    # Scan for security vulnerabilities
-    content = signal.data.content
-    file_type = signal.data.file_type || detect_file_type(signal.data.file_path)
-
-    security_scan = %{
-      vulnerabilities: scan_for_vulnerabilities(content, file_type),
-      unsafe_operations: detect_unsafe_operations(content),
-      input_validation: check_input_validation(content),
-      authentication_issues: check_authentication_issues(content),
-      risk_level: calculate_security_risk_level(content)
+    # Create a SecurityScan message for the Security analyzer
+    security_scan_msg = %SecurityScan{
+      content: signal.data.content,
+      file_type: signal.data.file_type || detect_file_type(signal.data.file_path)
     }
+    
+    # Delegate to Security analyzer
+    case Security.analyze(security_scan_msg, %{}) do
+      {:ok, security_scan} ->
+        # Track security issues in state
+        updated_state =
+          if Enum.empty?(security_scan.vulnerabilities) do
+            state
+          else
+            track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
+          end
 
-    # Track security issues in state
-    updated_state =
-      if Enum.empty?(security_scan.vulnerabilities) do
-        state
-      else
-        track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
-      end
-
-    {:ok, security_scan, updated_state}
+        # Return the security scan result in the expected format
+        {:ok, security_scan, updated_state}
+        
+      {:error, reason} ->
+        Logger.error("Security scan failed: #{inspect(reason)}")
+        {:error, reason, state}
+    end
   end
 
   @impl true
@@ -201,13 +207,15 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     result =
       case msg.analysis_type do
         :comprehensive ->
+          security_analysis = perform_security_analysis(data)
           result
           |> Map.put(:impact, assess_change_impact(data, state))
           |> Map.put(:performance, analyze_performance(data))
-          |> Map.put(:security, scan_security_issues(data))
+          |> Map.put(:security, security_analysis)
 
         :security ->
-          Map.put(result, :security, scan_security_issues(data))
+          security_analysis = perform_security_analysis(data)
+          Map.put(result, :security, security_analysis)
 
         :performance ->
           Map.put(result, :performance, analyze_performance(data))
@@ -281,24 +289,98 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   @doc """
   Handle typed SecurityScan message
   """
-  def handle_security_scan(%SecurityScan{} = msg, _context) do
-    security_scan = %{
-      vulnerabilities: scan_for_vulnerabilities(msg.content, msg.file_type),
-      unsafe_operations: detect_unsafe_operations(msg.content),
-      input_validation: check_input_validation(msg.content),
-      authentication_issues: check_authentication_issues(msg.content),
-      risk_level: calculate_security_risk_level(msg.content),
-      cwe_mappings: map_to_cwe_categories(msg.content, msg.file_type)
-    }
-
-    # Track security issues if any found
-    if length(security_scan.vulnerabilities) > 0 do
-      Logger.warning("Security vulnerabilities found: #{inspect(security_scan.vulnerabilities)}")
+  def handle_security_scan(%SecurityScan{} = msg, context) do
+    # Delegate to Security analyzer
+    case Security.analyze(msg, context) do
+      {:ok, security_scan} ->
+        # Track security issues if any found
+        if length(security_scan.vulnerabilities) > 0 do
+          Logger.warning("Security vulnerabilities found: #{inspect(security_scan.vulnerabilities)}")
+        end
+        
+        {:ok, security_scan}
+      
+      {:error, reason} ->
+        Logger.error("Security analysis failed: #{inspect(reason)}")
+        {:error, reason}
     end
-
-    {:ok, security_scan}
   end
 
+  # Security analysis delegation helper
+  
+  defp perform_security_analysis(data) do
+    # Create an Analyze message for the Security analyzer
+    analyze_msg = %Analyze{
+      file_path: data[:file_path] || "unknown",
+      analysis_type: :security,
+      depth: :moderate,
+      auto_fix: false
+    }
+    
+    # Prepare context with the analysis data
+    context = %{
+      content: data[:content],
+      state: %{}
+    }
+    
+    case Security.analyze(analyze_msg, context) do
+      {:ok, security_analysis} ->
+        # Convert to legacy format for compatibility
+        %{
+          vulnerabilities: security_analysis.vulnerabilities,
+          risk_level: security_analysis.risk_level,
+          recommendations: build_security_recommendations(security_analysis)
+        }
+      
+      {:error, reason} ->
+        Logger.error("Security analysis failed: #{inspect(reason)}")
+        # Return empty analysis on error for backward compatibility
+        %{
+          vulnerabilities: [],
+          risk_level: :unknown,
+          recommendations: []
+        }
+    end
+  end
+  
+  defp build_security_recommendations(security_analysis) do
+    recommendations = []
+    
+    # Add recommendations based on vulnerabilities
+    recommendations =
+      if length(security_analysis.vulnerabilities) > 0 do
+        ["Address security vulnerabilities found in code" | recommendations]
+      else
+        recommendations
+      end
+    
+    # Add recommendations based on unsafe operations
+    recommendations =
+      if length(security_analysis.unsafe_operations) > 0 do
+        ["Review unsafe operations for potential security risks" | recommendations]
+      else
+        recommendations
+      end
+    
+    # Add recommendations based on input validation
+    recommendations =
+      if length(security_analysis.input_validation.unvalidated_risks) > 0 do
+        ["Improve input validation to prevent security issues" | recommendations]
+      else
+        recommendations
+      end
+    
+    # Add recommendations based on authentication issues
+    recommendations =
+      if length(security_analysis.authentication_issues) > 0 do
+        ["Review authentication bypasses and security controls" | recommendations]
+      else
+        recommendations
+      end
+    
+    recommendations
+  end
+  
   # Private helper functions
 
   defp calculate_quality_score(data) do
@@ -600,98 +682,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     optimizations
   end
 
-  # Security Analysis Functions
+  # Security Analysis Functions (delegating to Security analyzer)
 
-  defp scan_security_issues(_data) do
-    %{
-      vulnerabilities: [],
-      risk_level: :low,
-      recommendations: []
-    }
-  end
-
-  defp scan_for_vulnerabilities(content, _file_type) do
-    vulnerabilities = []
-
-    vulnerabilities =
-      if String.contains?(content, "eval(") || String.contains?(content, "Code.eval_string") do
-        [
-          %{type: :code_injection, severity: :critical, message: "Potential code injection"}
-          | vulnerabilities
-        ]
-      else
-        vulnerabilities
-      end
-
-    vulnerabilities =
-      if Regex.match?(~r/password|secret|token|key.*=.*"[^"]+"/i, content) do
-        [
-          %{type: :hardcoded_secret, severity: :high, message: "Potential hardcoded secret"}
-          | vulnerabilities
-        ]
-      else
-        vulnerabilities
-      end
-
-    vulnerabilities
-  end
-
-  defp detect_unsafe_operations(content) do
-    unsafe_ops = []
-
-    unsafe_ops =
-      if String.contains?(content, "System.cmd") do
-        [%{operation: "System.cmd", risk: :command_injection} | unsafe_ops]
-      else
-        unsafe_ops
-      end
-
-    unsafe_ops =
-      if String.contains?(content, ":os.cmd") do
-        [%{operation: ":os.cmd", risk: :command_injection} | unsafe_ops]
-      else
-        unsafe_ops
-      end
-
-    unsafe_ops
-  end
-
-  defp check_input_validation(content) do
-    %{
-      validated_inputs: count_pattern(content, ~r/validate|changeset|cast/),
-      unvalidated_risks: detect_unvalidated_inputs(content),
-      recommendation: suggest_validation_improvements(content)
-    }
-  end
-
-  defp check_authentication_issues(content) do
-    issues = []
-
-    issues =
-      if String.contains?(content, "skip_before_action :authenticate") do
-        [%{type: :skipped_auth, message: "Authentication bypass detected"} | issues]
-      else
-        issues
-      end
-
-    issues
-  end
-
-  defp calculate_security_risk_level(content) do
-    risk_score = 0
-
-    risk_score = risk_score + if String.contains?(content, "eval"), do: 10, else: 0
-    risk_score = risk_score + if String.contains?(content, "System.cmd"), do: 5, else: 0
-    risk_score = risk_score + if Regex.match?(~r/password.*=.*"/i, content), do: 7, else: 0
-
-    cond do
-      risk_score >= 10 -> :critical
-      risk_score >= 7 -> :high
-      risk_score >= 4 -> :medium
-      risk_score > 0 -> :low
-      true -> :none
-    end
-  end
+  # Security functions have been extracted to RubberDuck.Analyzers.Code.Security
+  # This skill now delegates all security analysis to the dedicated analyzer
 
   # Helper Functions
 
@@ -970,22 +964,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     |> Kernel.-(1)
   end
 
-  defp detect_unvalidated_inputs(content) do
-    # Check for direct parameter usage without validation
-    if String.contains?(content, "params[") && not String.contains?(content, "changeset") do
-      [:direct_param_usage]
-    else
-      []
-    end
-  end
-
-  defp suggest_validation_improvements(content) do
-    if String.contains?(content, "changeset") do
-      nil
-    else
-      "Consider using changesets for input validation"
-    end
-  end
+  # Input validation functions moved to Security analyzer
 
   defp detect_circular_dependencies(_data, _state) do
     # Simplified circular dependency detection
@@ -1131,24 +1110,5 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     ]
   end
 
-  defp map_to_cwe_categories(content, file_type) do
-    # Map vulnerabilities to CWE categories
-    categories = []
-
-    categories =
-      if String.contains?(content, ["eval", "Code.eval"]) do
-        ["CWE-94: Code Injection" | categories]
-      else
-        categories
-      end
-
-    categories =
-      if String.contains?(content, "System.cmd") and file_type == :elixir do
-        ["CWE-78: OS Command Injection" | categories]
-      else
-        categories
-      end
-
-    categories
-  end
+  # CWE mapping functions moved to Security analyzer
 end
