@@ -33,20 +33,14 @@ defmodule RubberDuck.Application do
       # Phoenix PubSub for legacy compatibility
       {Phoenix.PubSub, name: RubberDuck.PubSub},
 
+      # Circuit Breaker Registry for message type tracking
+      {Registry, keys: :unique, name: RubberDuck.CircuitBreakerRegistry},
+      
+      # Circuit Breaker Supervisor for fault tolerance
+      RubberDuck.Routing.CircuitBreakerSupervisor,
+      
       # Message Router for typed message dispatch
       RubberDuck.Routing.MessageRouter,
-      
-      # GenStage Pipeline Supervisor for high-throughput message processing
-      {RubberDuck.Routing.PipelineSupervisor, 
-       producer: [
-         min_batch_size: 10,
-         max_batch_size: 100,
-         batch_timeout_ms: 50,
-         buffer_size: 1000
-       ],
-       consumer: [
-         max_concurrency: System.schedulers_online() * 2
-       ]},
 
       # Task Supervisor for async message processing
       {Task.Supervisor, name: RubberDuck.TaskSupervisor},

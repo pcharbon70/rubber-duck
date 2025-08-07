@@ -330,7 +330,7 @@ defmodule RubberDuck.Telemetry.MessageTelemetry do
     Logger.warning(
       "Circuit breaker opened",
       message_type: metadata.message_type,
-      failure_count: metadata.failure_count,
+      error_count: metadata[:error_count] || metadata[:failure_count],
       threshold: metadata.threshold
     )
   end
