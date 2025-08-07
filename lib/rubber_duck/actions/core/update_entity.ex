@@ -29,6 +29,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     ]
 
   alias RubberDuck.Actions.Core.Entity
+  alias RubberDuck.Pipeline
 
   alias RubberDuck.Actions.Core.UpdateEntity.{
     Validator,
@@ -42,6 +43,35 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   @impl true
   def run(params, context) do
+    # Check if pipeline mode is enabled
+    pipeline_mode = Application.get_env(:rubber_duck, :pipeline_mode, :sequential)
+    
+    case pipeline_mode do
+      :genstage ->
+        # Use GenStage pipeline for processing
+        run_with_genstage(params, context)
+      
+      :sequential ->
+        # Use existing sequential processing
+        run_sequential(params, context)
+    end
+  end
+  
+  defp run_with_genstage(params, context) do
+    Logger.debug("Processing entity update via GenStage pipeline")
+    
+    case Pipeline.process_entity_update(params, context, async: false) do
+      {:ok, result} ->
+        {:ok, result}
+      
+      {:error, reason} ->
+        Logger.error("GenStage pipeline failed: #{inspect(reason)}")
+        # Fallback to sequential processing
+        run_sequential(params, context)
+    end
+  end
+  
+  defp run_sequential(params, context) do
     prepared_params = prepare_params(params)
     result = execute_pipeline(prepared_params, context)
 
