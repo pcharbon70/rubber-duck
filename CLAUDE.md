@@ -145,6 +145,50 @@ _
 - Predicate function names should not start with `is` and should end in a question mark.
 - Names like `is_thing` should be reserved for guards
 
+## Pipe Chains
+
+- ALWAYS start pipe chains with a raw value, not a function call
+- The first element in a pipe chain should be a variable, literal, or data structure
+- Extract the initial function call to a variable if needed
+
+### Good Examples
+```elixir
+# Good: starts with a raw value
+data
+|> Map.get(:users)
+|> Enum.filter(&active?/1)
+|> Enum.map(&transform/1)
+
+# Good: starts with a variable
+users = fetch_users()
+users
+|> Enum.filter(&active?/1)
+|> Enum.map(&transform/1)
+
+# Good: starts with a literal
+"hello world"
+|> String.upcase()
+|> String.split(" ")
+```
+
+### Bad Examples
+```elixir
+# Bad: starts with a function call
+fetch_users()
+|> Enum.filter(&active?/1)
+|> Enum.map(&transform/1)
+
+# Bad: starts with a function call
+Map.get(data, :users)
+|> Enum.filter(&active?/1)
+
+# Fix: extract to variable first
+users = fetch_users()
+users
+|> Enum.filter(&active?/1)
+|> Enum.map(&transform/1)
+```
+
 ## Data Structures
 
 - Use structs over maps when the shape is known: `defstruct [:name, :age]`
