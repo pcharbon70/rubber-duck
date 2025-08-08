@@ -73,17 +73,20 @@ defmodule RubberDuck.Agents.UserAgent do
     ValidateSession,
     UpdatePreferences,
     TrackActivity,
-    GenerateSuggestions
+    GenerateSuggestions,
+    SessionCreated,
+    SessionExpired,
+    PatternDetected,
+    PreferenceLearned,
+    SuggestionGenerated,
+    UserSignedIn,
+    UserSignedOut,
+    ActionPerformed
   }
 
   require Logger
 
-  # Signal definitions
-  @signal_session_created "user.session.created"
-  @signal_session_expired "user.session.expired"
-  @signal_pattern_detected "user.pattern.detected"
-  @signal_preference_learned "user.preference.learned"
-  @signal_suggestion_generated "user.suggestion.generated"
+  # All signal constants removed - using typed messages exclusively
 
   def init(opts) do
     # No longer need to subscribe to signals - messages are routed directly
@@ -97,7 +100,15 @@ defmodule RubberDuck.Agents.UserAgent do
     case create_user_session(agent, user_id) do
       {:ok, session} ->
         updated_agent = update_active_sessions(agent, user_id, session)
-        emit_signal(@signal_session_created, %{user_id: user_id, session_id: session.id})
+        
+        # Send typed message instead of signal
+        message = %SessionCreated{
+          user_id: user_id,
+          session_id: session.id,
+          timestamp: DateTime.utc_now()
+        }
+        MessageRouter.route(message)
+        
         {:ok, session, updated_agent}
 
       {:error, reason} ->
@@ -136,18 +147,18 @@ defmodule RubberDuck.Agents.UserAgent do
     {:ok, analysis, agent}
   end
 
-  def handle_signal("auth.user.signed_in", %{user_id: user_id}, agent) do
+  def handle_instruction({:user_signed_in, %UserSignedIn{user_id: user_id}}, agent) do
     # Automatically create session on sign in
     handle_instruction({:create_session, user_id}, agent)
   end
 
-  def handle_signal("auth.user.signed_out", %{user_id: user_id}, agent) do
+  def handle_instruction({:user_signed_out, %UserSignedOut{user_id: user_id}}, agent) do
     # Clean up session on sign out
     updated_agent = remove_user_session(agent, user_id)
-    {:ok, updated_agent}
+    {{:ok, %{status: :session_removed}}, updated_agent}
   end
 
-  def handle_signal("user.action.performed", payload, agent) do
+  def handle_instruction({:action_performed, %ActionPerformed{} = payload}, agent) do
     # Record user actions for learning
     handle_instruction({:record_interaction, payload}, agent)
   end
@@ -252,7 +263,15 @@ defmodule RubberDuck.Agents.UserAgent do
     patterns = detect_behavior_patterns(user_interactions, agent.state.min_pattern_occurrences)
 
     if map_size(patterns) > 0 do
-      emit_signal(@signal_pattern_detected, %{user_id: user_id, patterns: patterns})
+      # Send typed message instead of signal
+      message = %PatternDetected{
+        user_id: user_id,
+        patterns: patterns,
+        confidence: agent.state.pattern_confidence_threshold,
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
+      
       put_in(agent.state.recognized_patterns[user_id], patterns)
     else
       agent
@@ -294,7 +313,15 @@ defmodule RubberDuck.Agents.UserAgent do
       learn_from_interaction(current_prefs, interaction, agent.state.adaptation_rate)
 
     if prefs_changed?(current_prefs, updated_prefs) do
-      emit_signal(@signal_preference_learned, %{user_id: user_id, preferences: updated_prefs})
+      # Send typed message instead of signal
+      message = %PreferenceLearned{
+        user_id: user_id,
+        preferences: updated_prefs,
+        confidence: agent.state.pattern_confidence_threshold,
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
+      
       put_in(agent.state.user_preferences[user_id], updated_prefs)
     else
       agent
@@ -332,7 +359,14 @@ defmodule RubberDuck.Agents.UserAgent do
       build_suggestions(patterns, preferences, agent.state.suggestion_confidence_threshold)
 
     if length(suggestions) > 0 do
-      emit_signal(@signal_suggestion_generated, %{user_id: user_id, count: length(suggestions)})
+      # Send typed message instead of signal
+      message = %SuggestionGenerated{
+        user_id: user_id,
+        suggestions: suggestions,
+        count: length(suggestions),
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
 
       updated_queue =
         Enum.take(
@@ -430,7 +464,14 @@ defmodule RubberDuck.Agents.UserAgent do
         expired_count = length(sessions) - length(active_sessions)
 
         if expired_count > 0 do
-          emit_signal(@signal_session_expired, %{user_id: user_id, count: expired_count})
+          # Send typed message instead of signal
+          message = %SessionExpired{
+            user_id: user_id,
+            session_id: nil,
+            count: expired_count,
+            timestamp: DateTime.utc_now()
+          }
+          MessageRouter.route(message)
         end
 
         {user_id, active_sessions}
@@ -450,64 +491,5 @@ defmodule RubberDuck.Agents.UserAgent do
     "session_#{System.unique_integer([:positive])}_#{System.os_time(:nanosecond)}"
   end
 
-  # Use typed messages instead of string-based signals
-  defp emit_signal(@signal_session_created, payload) do
-    message = %ValidateSession{
-      user_id: payload.user_id,
-      session_id: payload.session_id,
-      check_expiry: false,
-      refresh_if_valid: true
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal(@signal_session_expired, payload) do
-    # For expired sessions, use GenerateSuggestions to suggest re-authentication
-    message = %GenerateSuggestions{
-      user_id: payload.user_id,
-      context: %{session_expired: true, count: payload[:count] || 1},
-      max_suggestions: 1
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal(@signal_pattern_detected, payload) do
-    # Track pattern detection as navigation activity
-    message = %TrackActivity{
-      user_id: payload.user_id,
-      activity_type: :navigation,
-      activity_data: %{patterns: payload.patterns},
-      timestamp: DateTime.utc_now()
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal(@signal_preference_learned, payload) do
-    message = %UpdatePreferences{
-      user_id: payload.user_id,
-      preferences: payload.preferences,
-      merge_strategy: :deep
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal(@signal_suggestion_generated, payload) do
-    message = %GenerateSuggestions{
-      user_id: payload.user_id,
-      context: %{count: payload.count},
-      max_suggestions: 5
-    }
-
-    MessageRouter.route(message)
-  end
-
-  # Fallback for unmapped signals
-  defp emit_signal(signal_type, payload) do
-    Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")
-    :ok
-  end
+  # All signal emission functions removed - using direct typed message routing
 end
