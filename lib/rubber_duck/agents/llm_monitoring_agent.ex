@@ -85,57 +85,52 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     {:ok, agent}
   end
 
-  def handle_signal("llm.health.provider.failed", payload, agent) do
-    provider = payload.provider
-    error = payload.error
+  def handle_instruction({:provider_failed, %{provider: provider, error: error} = msg}, agent) do
 
     Logger.error("Provider #{provider} failed: #{inspect(error)}")
 
     # Update failure history
-    updated_agent = record_provider_failure(agent, provider, error, payload)
+    updated_agent = record_provider_failure(agent, provider, error, msg)
 
     # Check if we need to take action
     if should_take_corrective_action?(updated_agent, provider) do
       take_corrective_action(updated_agent, provider, error)
     else
-      {:ok, updated_agent}
+      {{:ok, %{status: :monitoring}}, updated_agent}
     end
   end
 
-  def handle_signal("llm.health.provider.degraded", payload, agent) do
-    provider = payload.provider
-    reason = payload.reason
+  def handle_instruction({:provider_degraded, %{provider: provider, reason: reason} = msg}, agent) do
 
     Logger.warning("Provider #{provider} degraded: #{inspect(reason)}")
 
     # Learn from degradation patterns
-    updated_agent = learn_degradation_pattern(agent, provider, reason, payload)
+    updated_agent = learn_degradation_pattern(agent, provider, reason, msg)
 
     # Proactively adjust if needed
     if agent.state.auto_recovery_enabled do
       suggest_provider_adjustment(updated_agent, provider, reason)
     else
-      {:ok, updated_agent}
+      {{:ok, %{status: :monitoring}}, updated_agent}
     end
   end
 
-  def handle_signal("llm.health.provider.healthy", payload, agent) do
-    provider = payload.provider
+  def handle_instruction({:provider_healthy, %{provider: provider} = msg}, agent) do
 
     Logger.info("Provider #{provider} recovered to healthy state")
 
     # Record recovery
-    updated_agent = record_provider_recovery(agent, provider, payload)
+    updated_agent = record_provider_recovery(agent, provider, msg)
 
     # Learn from recovery patterns
-    {:ok, learn_recovery_pattern(updated_agent, provider)}
+    {{:ok, %{status: :recovered}}, learn_recovery_pattern(updated_agent, provider)}
   end
 
-  def handle_signal("llm.health.check.completed", payload, agent) do
+  def handle_instruction({:health_check_completed, msg}, agent) do
     # Analyze overall system health
-    healthy_count = payload.healthy_count
-    degraded_count = payload.degraded_count
-    failed_count = payload.failed_count
+    healthy_count = msg[:healthy_count] || 0
+    degraded_count = msg[:degraded_count] || 0
+    failed_count = msg[:failed_count] || 0
 
     total_providers = healthy_count + degraded_count + failed_count
     health_ratio = if total_providers > 0, do: healthy_count / total_providers, else: 0
@@ -146,21 +141,19 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
         health_ratio: health_ratio,
         degraded_count: degraded_count,
         failed_count: failed_count,
-        timestamp: payload.timestamp
+        timestamp: msg[:timestamp] || DateTime.utc_now()
       })
 
     # Check if system health is concerning
     if health_ratio < 0.5 && agent.state.monitoring_active do
-      handle_system_health_crisis(updated_agent, payload)
+      handle_system_health_crisis(updated_agent, msg)
     else
-      {:ok, updated_agent}
+      {{:ok, %{health_ratio: health_ratio}}, updated_agent}
     end
   end
 
-  def handle_signal("llm.fallback.triggered", payload, agent) do
+  def handle_instruction({:fallback_triggered, %{from_provider: from_provider, to_provider: to_provider}}, agent) do
     # Learn from fallback patterns
-    from_provider = payload.from_provider
-    to_provider = payload.to_provider
 
     updated_agent = record_fallback_event(agent, from_provider, to_provider)
 
@@ -168,7 +161,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     if count_recent_fallbacks(updated_agent, from_provider) > agent.state.alert_threshold do
       investigate_provider_issues(updated_agent, from_provider)
     else
-      {:ok, updated_agent}
+      {{:ok, %{status: :monitoring}}, updated_agent}
     end
   end
 
