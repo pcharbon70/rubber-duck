@@ -59,12 +59,7 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     action_module.run(params, %{})
   end
 
-  # Signal subscriptions
-  @project_changed "project.changed"
-  @file_modified "code_file.modified"
-  @analysis_requested "analysis.requested"
-  @feedback_received "analysis.feedback"
-  # @pattern_detected "pattern.detected"
+  # All signal constants removed - using typed messages exclusively
 
   def init(opts) do
     # No longer need to subscribe to signals - messages are routed directly
@@ -242,48 +237,46 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     )
   end
 
-  @doc """
-  Handle signals for autonomous behavior.
-  """
-  def handle_signal(@project_changed, %{project_id: project_id} = payload, agent) do
+  # Handle project change events via typed messages
+  def handle_instruction({:project_changed, %{project_id: project_id} = msg}, agent) do
     Logger.info("Project changed, scheduling analysis for project #{project_id}")
 
     # Track project activity
-    updated_agent = track_project_activity(agent, project_id, payload)
+    updated_agent = track_project_activity(agent, project_id, msg)
 
     # Determine if analysis should be triggered
     if should_trigger_analysis?(updated_agent, project_id) do
       schedule_project_analysis(updated_agent, project_id)
     else
-      {:ok, updated_agent}
+      {{:ok, %{status: :tracking_only}}, updated_agent}
     end
   end
 
-  def handle_signal(@file_modified, %{file_id: file_id, project_id: project_id} = payload, agent) do
+  def handle_instruction({:file_modified, %{file_id: file_id, project_id: project_id} = msg}, agent) do
     Logger.debug("File modified: #{file_id}")
 
     # Track file changes
-    updated_agent = track_file_change(agent, file_id, payload)
+    updated_agent = track_file_change(agent, file_id, msg)
 
     # Check if cumulative changes warrant analysis
     if significant_changes_detected?(updated_agent, project_id) do
       schedule_incremental_analysis(updated_agent, project_id, file_id)
     else
-      {:ok, updated_agent}
+      {{:ok, %{status: :changes_tracked}}, updated_agent}
     end
   end
 
-  def handle_signal(@analysis_requested, payload, agent) do
-    Logger.info("Analysis requested: #{inspect(payload)}")
+  def handle_instruction({:analysis_requested, msg}, agent) do
+    Logger.info("Analysis requested: #{inspect(msg)}")
 
     # Add to priority queue
-    updated_agent = add_priority_analysis(agent, payload)
+    updated_agent = add_priority_analysis(agent, msg)
 
     # Process immediately if possible
     process_next_analysis(updated_agent)
   end
 
-  def handle_signal(@feedback_received, %{analysis_id: analysis_id, feedback: feedback}, agent) do
+  def handle_instruction({:feedback_received, %{analysis_id: analysis_id, feedback: feedback}}, agent) do
     Logger.info("Feedback received for analysis #{analysis_id}")
 
     # Process feedback and learn

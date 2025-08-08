@@ -55,12 +55,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   alias RubberDuck.Routing.MessageRouter
   require Logger
 
-  # Signal definitions
-  @signal_provider_selected "llm.provider.selected"
-  @signal_request_completed "llm.request.completed"
-  @signal_request_failed "llm.request.failed"
-  @signal_fallback_triggered "llm.fallback.triggered"
-  @signal_cache_hit "llm.cache.hit"
+  # All signal constants removed - using typed messages exclusively
 
   def init(opts) do
     # No longer need to subscribe to signals - messages are routed directly
@@ -120,6 +115,50 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       {{:error, :provider_selection_failed}, agent}
   end
 
+  def handle_instruction({:request_completed, msg}, agent) do
+    # Learn from completed requests
+    if msg[:provider] do
+      updated_performance =
+        Map.update(
+          agent.state.provider_performance,
+          msg.provider,
+          %{success_count: 1, total_duration: msg[:duration] || 0},
+          fn stats ->
+            %{
+              stats
+              | success_count: stats.success_count + 1,
+                total_duration: stats.total_duration + (msg[:duration] || 0)
+            }
+          end
+        )
+
+      updated_agent = %{agent | state: Map.put(agent.state, :provider_performance, updated_performance)}
+      {{:ok, %{status: :performance_updated}}, updated_agent}
+    else
+      {{:ok, %{status: :no_provider}}, agent}
+    end
+  end
+
+  def handle_instruction({:request_failed, msg}, agent) do
+    # Learn from failures
+    if msg[:provider] do
+      updated_performance =
+        Map.update(
+          agent.state.provider_performance,
+          msg.provider,
+          %{failure_count: 1},
+          fn stats ->
+            Map.update(stats, :failure_count, 1, &(&1 + 1))
+          end
+        )
+
+      updated_agent = %{agent | state: Map.put(agent.state, :provider_performance, updated_performance)}
+      {{:ok, %{status: :failure_tracked}}, updated_agent}
+    else
+      {{:ok, %{status: :no_provider}}, agent}
+    end
+  end
+
   defp validate_completion_request!(request) do
     unless is_map(request) do
       throw({:error, :invalid_request})
@@ -135,13 +174,15 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
         handle_cache_hit(request, cache_key, cached_response, agent)
 
       :miss ->
-        execute_fresh_completion(agent, request, start_time, cache_key)
+        updated_agent = update_cache_metrics(agent, :miss)
+        execute_fresh_completion(updated_agent, request, start_time, cache_key)
     end
   end
 
-  defp handle_cache_hit(request, cache_key, cached_response, agent) do
-    emit_signal(@signal_cache_hit, %{request_id: request[:id], cache_key: cache_key})
-    {:ok, cached_response, agent}
+  defp handle_cache_hit(_request, _cache_key, cached_response, agent) do
+    # Cache hits are tracked internally via performance metrics
+    updated_agent = update_cache_metrics(agent, :hit)
+    {:ok, cached_response, updated_agent}
   end
 
   defp execute_fresh_completion(agent, request, start_time, cache_key) do
@@ -156,11 +197,17 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   end
 
   defp emit_provider_selected_signal(provider, request) do
-    emit_signal(@signal_provider_selected, %{
-      provider: provider.name,
-      request_id: request[:id],
-      selection_reason: provider.selection_reason
-    })
+    # Use typed message for provider selection
+    message = %RubberDuck.Messages.LLM.ProviderSelect{
+      request_type: :completion,
+      preferred_providers: [provider.name],
+      metadata: %{
+        request_id: request[:id],
+        selection_reason: provider.selection_reason
+      }
+    }
+    
+    MessageRouter.route(message)
   end
 
   defp finalize_successful_completion(agent, provider, request, response, start_time, cache_key) do
@@ -180,13 +227,9 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     {:ok, response, final_agent}
   end
 
-  defp emit_completion_success_signal(provider, request, duration, response) do
-    emit_signal(@signal_request_completed, %{
-      provider: provider.name,
-      request_id: request[:id],
-      duration: duration,
-      tokens: response.usage.total_tokens
-    })
+  defp emit_completion_success_signal(_provider, _request, _duration, _response) do
+    # Track completion internally - metrics are updated via update_provider_performance
+    :ok
   end
 
   defp handle_completion_exception(exception, agent) do
@@ -255,48 +298,6 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   def handle_info(msg, agent) do
     Logger.debug("Unhandled message in orchestrator agent: #{inspect(msg)}")
     {:ok, agent}
-  end
-
-  def handle_signal(@signal_request_completed, payload, agent) do
-    # Learn from completed requests
-    if payload.provider do
-      updated_performance =
-        Map.update(
-          agent.state.provider_performance,
-          payload.provider,
-          %{success_count: 1, total_duration: payload.duration},
-          fn stats ->
-            %{
-              stats
-              | success_count: stats.success_count + 1,
-                total_duration: stats.total_duration + payload.duration
-            }
-          end
-        )
-
-      {:ok, %{agent | state: Map.put(agent.state, :provider_performance, updated_performance)}}
-    else
-      {:ok, agent}
-    end
-  end
-
-  def handle_signal(@signal_request_failed, payload, agent) do
-    # Learn from failures
-    if payload.provider do
-      updated_performance =
-        Map.update(
-          agent.state.provider_performance,
-          payload.provider,
-          %{failure_count: 1},
-          fn stats ->
-            Map.update(stats, :failure_count, 1, &(&1 + 1))
-          end
-        )
-
-      {:ok, %{agent | state: Map.put(agent.state, :provider_performance, updated_performance)}}
-    else
-      {:ok, agent}
-    end
   end
 
   # Private functions
@@ -455,12 +456,8 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     end
   end
 
-  defp handle_completion_failure(agent, request, reason, start_time) do
-    emit_signal(@signal_request_failed, %{
-      request_id: request[:id],
-      reason: reason,
-      duration: System.monotonic_time(:millisecond) - start_time
-    })
+  defp handle_completion_failure(agent, request, reason, _start_time) do
+    # Track failure internally - metrics are updated via fallback mechanism
 
     if agent.state.fallback_enabled do
       attempt_fallback(agent, request, reason)
@@ -476,11 +473,17 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
            Map.put(request, :exclude_providers, [request[:attempted_provider]])
          ) do
       {:ok, fallback_provider} ->
-        emit_signal(@signal_fallback_triggered, %{
-          request_id: request[:id],
-          from_provider: request[:attempted_provider],
-          to_provider: fallback_provider.name
-        })
+        # Use typed message for fallback
+        message = %RubberDuck.Messages.LLM.Fallback{
+          original_provider: request[:attempted_provider],
+          reason: :provider_failure,
+          metadata: %{
+            request_id: request[:id],
+            to_provider: fallback_provider.name
+          }
+        }
+        
+        MessageRouter.route(message)
 
         updated_request = Map.put(request, :attempted_provider, fallback_provider.name)
         handle_instruction({:complete, updated_request}, agent)
@@ -556,40 +559,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
     String.length(chunk) / 4
   end
 
-  defp emit_signal(signal_type, payload) do
-    # Use typed LLM messages
-    case signal_type do
-      @signal_provider_selected ->
-        message = %RubberDuck.Messages.LLM.ProviderSelect{
-          request_type: :completion,
-          preferred_providers: [payload[:provider]],
-          metadata: payload
-        }
-
-        MessageRouter.route(message)
-
-      @signal_request_completed ->
-        Logger.debug("LLM request completed: #{inspect(payload)}")
-        :ok
-
-      @signal_request_failed ->
-        message = %RubberDuck.Messages.LLM.Fallback{
-          original_provider: payload[:provider],
-          reason: payload[:error] || :error,
-          metadata: payload
-        }
-
-        MessageRouter.route(message)
-
-      _ ->
-        Logger.debug("Would emit signal: #{signal_type}, payload: #{inspect(payload)}")
-        :ok
-    end
-  rescue
-    exception ->
-      Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")
-      :ok
-  end
+  # Signal emission removed - all communication via typed messages
 
   defp update_provider_performance(agent, provider_name, metrics) do
     updated_performance =
@@ -766,5 +736,25 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
 
     {best_provider, _score} = Enum.max_by(scored, fn {_provider, score} -> score end)
     best_provider
+  end
+
+  defp update_cache_metrics(agent, :hit) do
+    metrics = agent.state.performance_metrics || %{}
+    cache_stats = Map.get(metrics, :cache, %{hits: 0, misses: 0})
+    
+    updated_cache_stats = Map.update(cache_stats, :hits, 1, &(&1 + 1))
+    updated_metrics = Map.put(metrics, :cache, updated_cache_stats)
+    
+    %{agent | state: Map.put(agent.state, :performance_metrics, updated_metrics)}
+  end
+
+  defp update_cache_metrics(agent, :miss) do
+    metrics = agent.state.performance_metrics || %{}
+    cache_stats = Map.get(metrics, :cache, %{hits: 0, misses: 0})
+    
+    updated_cache_stats = Map.update(cache_stats, :misses, 1, &(&1 + 1))
+    updated_metrics = Map.put(metrics, :cache, updated_cache_stats)
+    
+    %{agent | state: Map.put(agent.state, :performance_metrics, updated_metrics)}
   end
 end
