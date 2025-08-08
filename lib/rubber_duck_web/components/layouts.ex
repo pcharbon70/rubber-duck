@@ -5,8 +5,6 @@ defmodule RubberDuckWeb.Layouts do
   """
   use RubberDuckWeb, :html
 
-  embed_templates "layouts/*"
-
   @doc """
   Renders your app layout.
   """
@@ -173,4 +171,6 @@ defmodule RubberDuckWeb.Layouts do
     </div>
     """
   end
+
+  embed_templates "layouts/*"
 end
