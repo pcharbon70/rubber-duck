@@ -247,7 +247,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Validator do
 
   defp assess_security_risk_level(risks) do
     risk_count = Enum.count(risks)
-    
+
     cond do
       risk_count == 0 -> :none
       risk_count == 1 -> :low

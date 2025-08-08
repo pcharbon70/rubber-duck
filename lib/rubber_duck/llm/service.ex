@@ -102,12 +102,12 @@ defmodule RubberDuck.LLM.Service do
         {:error, :circuit_open} ->
           Logger.warning("Circuit open for provider #{provider_name}, attempting fallback")
           attempt_fallback(:complete, request, opts, provider_name)
-          
+
         {:error, :cost_exceeded} ->
           Logger.warning("Cost limit exceeded for provider #{provider_name}")
           attempt_fallback(:complete, request, opts, provider_name)
-          
-        error -> 
+
+        error ->
           handle_provider_error(error, provider_name)
       end
 
@@ -133,18 +133,18 @@ defmodule RubberDuck.LLM.Service do
              ) do
         {:ok, stream}
       else
-        false -> 
+        false ->
           {:error, :streaming_not_supported}
-          
+
         {:error, :circuit_open} ->
           Logger.warning("Circuit open for provider #{provider_name}, attempting fallback")
           attempt_fallback(:stream, request, opts, provider_name)
-          
+
         {:error, :cost_exceeded} ->
           Logger.warning("Cost limit exceeded for provider #{provider_name}")
           attempt_fallback(:stream, request, opts, provider_name)
-          
-        error -> 
+
+        error ->
           handle_provider_error(error, provider_name)
       end
 
@@ -170,18 +170,18 @@ defmodule RubberDuck.LLM.Service do
              ) do
         {:ok, response}
       else
-        false -> 
+        false ->
           {:error, :embeddings_not_supported}
-          
+
         {:error, :circuit_open} ->
           Logger.warning("Circuit open for provider #{provider_name}, attempting fallback")
           attempt_fallback(:embed, request, opts, provider_name)
-          
+
         {:error, :cost_exceeded} ->
           Logger.warning("Cost limit exceeded for provider #{provider_name}")
           attempt_fallback(:embed, request, opts, provider_name)
-          
-        error -> 
+
+        error ->
           handle_provider_error(error, provider_name)
       end
 
@@ -310,16 +310,19 @@ defmodule RubberDuck.LLM.Service do
           latency_ms: response_time,
           cost: estimate_cost(request, response)
         })
+
         HealthMonitor.record_success(provider_name, response_time)
         success
 
       {:error, reason} = error ->
         # Categorize and record failure
         failure_type = categorize_failure(reason)
+
         ProviderCircuitBreaker.record_failure(provider_name, failure_type, %{
           reason: reason,
           retry_after: extract_retry_after(reason)
         })
+
         HealthMonitor.record_failure(provider_name, reason)
 
         if Keyword.get(opts, :fallback, true) do
@@ -334,6 +337,7 @@ defmodule RubberDuck.LLM.Service do
       ProviderCircuitBreaker.record_failure(provider_name, :exception, %{
         error: error
       })
+
       HealthMonitor.record_failure(provider_name, error)
 
       if Keyword.get(opts, :fallback, true) do
@@ -342,7 +346,7 @@ defmodule RubberDuck.LLM.Service do
         {:error, error}
       end
   end
-  
+
   defp categorize_failure(reason) do
     case reason do
       :timeout -> :timeout
@@ -352,14 +356,14 @@ defmodule RubberDuck.LLM.Service do
       _ -> :unknown
     end
   end
-  
+
   defp extract_retry_after(reason) do
     case reason do
       {:rate_limit, %{retry_after: seconds}} -> seconds * 1000
       _ -> nil
     end
   end
-  
+
   defp estimate_cost(_request, _response) do
     # Simplified cost estimation
     # In production, calculate based on tokens/usage
@@ -370,11 +374,12 @@ defmodule RubberDuck.LLM.Service do
     Logger.warning("Attempting fallback for #{operation} after #{failed_provider} failed")
 
     # Use circuit breaker to find healthy fallback providers
-    fallback_providers = ProviderCircuitBreaker.find_fallback_providers(
-      failed_provider,
-      exclude: [failed_provider],
-      max_cost: Keyword.get(opts, :max_cost, 1000.0)
-    )
+    fallback_providers =
+      ProviderCircuitBreaker.find_fallback_providers(
+        failed_provider,
+        exclude: [failed_provider],
+        max_cost: Keyword.get(opts, :max_cost, 1000.0)
+      )
 
     # Filter by available providers and operation support
     available_fallbacks =
@@ -383,6 +388,7 @@ defmodule RubberDuck.LLM.Service do
         case ProviderRegistry.get(provider_name) do
           {:ok, provider} ->
             provider.available && operation_supported?(provider.module, operation)
+
           _ ->
             false
         end

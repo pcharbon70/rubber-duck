@@ -42,6 +42,7 @@ defmodule RubberDuck.Messages.Project.AnalyzeStructure do
 
     def to_jido_signal(%AnalyzeStructure{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "project.structure.analyze",
         data: data |> Map.delete(:metadata),

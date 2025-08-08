@@ -183,6 +183,65 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     end
   end
 
+  # Additional handlers for message routing compatibility
+
+  def handle_instruction({:assess_quality, msg}, agent) do
+    # Map to existing analyze_code_file functionality
+    case msg.target do
+      file_path when is_binary(file_path) ->
+        handle_instruction({:analyze_code_file, file_path}, agent)
+
+      _ ->
+        # General quality assessment
+        case execute_action(agent, RubberDuck.Actions.AI.RunAnalysis, %{
+               type: :quality_assessment,
+               target: msg.target,
+               criteria: msg.criteria || [],
+               baseline: msg.baseline
+             }) do
+          {:ok, result} -> {:ok, result, agent}
+          error -> {error, agent}
+        end
+    end
+  end
+
+  def handle_instruction({:analyze, msg}, agent) do
+    # Map to appropriate analysis based on type
+    case msg.analysis_type do
+      :project ->
+        handle_instruction({:analyze_project, msg.target}, agent)
+
+      :code_file ->
+        handle_instruction({:analyze_code_file, msg.target}, agent)
+
+      _ ->
+        # General analysis
+        case execute_action(agent, RubberDuck.Actions.AI.RunAnalysis, %{
+               type: msg.analysis_type,
+               target: msg.target,
+               context: msg.context,
+               depth: msg.depth
+             }) do
+          {:ok, result} -> {:ok, result, agent}
+          error -> {error, agent}
+        end
+    end
+  end
+
+  def handle_instruction({:detect_patterns, msg}, agent) do
+    # Map to discover_patterns functionality
+    handle_instruction(
+      {:discover_patterns,
+       %{
+         data_source: msg.data_source,
+         pattern_types: msg.pattern_types,
+         confidence_threshold: msg.confidence_threshold || 0.7,
+         time_window: msg.time_window
+       }},
+      agent
+    )
+  end
+
   @doc """
   Handle signals for autonomous behavior.
   """

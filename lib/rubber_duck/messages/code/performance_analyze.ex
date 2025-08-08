@@ -51,6 +51,7 @@ defmodule RubberDuck.Messages.Code.PerformanceAnalyze do
 
     def to_jido_signal(%PerformanceAnalyze{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "code.performance.analyze",
         data: data |> Map.delete(:metadata),

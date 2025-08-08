@@ -43,6 +43,7 @@ defmodule RubberDuck.Messages.Project.MonitorHealth do
 
     def to_jido_signal(%MonitorHealth{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "project.health.monitor",
         data: data |> Map.delete(:metadata),

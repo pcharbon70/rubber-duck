@@ -93,6 +93,33 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
       {{:error, reason}, agent}
   end
 
+  def handle_instruction({:fallback, msg}, agent) do
+    # Handle fallback to alternative provider
+    case process_fallback_request(msg, agent) do
+      {:ok, result, updated_agent} -> {{:ok, result}, updated_agent}
+      {:error, reason} -> {{:error, reason}, agent}
+    end
+  rescue
+    exception ->
+      Logger.error("Fallback handling failed: #{inspect(exception)}")
+      {{:error, :fallback_failed}, agent}
+  end
+
+  def handle_instruction({:select_provider, msg}, agent) do
+    # Handle provider selection
+    case select_provider_for_message(msg, agent) do
+      {:ok, provider, updated_agent} ->
+        {{:ok, %{selected_provider: provider}}, updated_agent}
+
+      {:error, reason} ->
+        {{:error, reason}, agent}
+    end
+  rescue
+    exception ->
+      Logger.error("Provider selection failed: #{inspect(exception)}")
+      {{:error, :provider_selection_failed}, agent}
+  end
+
   defp validate_completion_request!(request) do
     unless is_map(request) do
       throw({:error, :invalid_request})
@@ -655,5 +682,89 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
 
   defp quality_recommendation?(rec, provider) do
     String.contains?(rec, "quality") && provider.name in [:openai, :anthropic]
+  end
+
+  # Helper functions for new handlers
+
+  defp process_fallback_request(msg, agent) do
+    # Extract fallback logic from existing implementations
+    case msg.original_request do
+      nil ->
+        {:error, :no_original_request}
+
+      request ->
+        # Try fallback providers
+        fallback_providers = get_fallback_providers(msg.attempted_providers, agent)
+
+        case fallback_providers do
+          [] ->
+            {:error, :no_fallback_available}
+
+          [provider | _] ->
+            case execute_completion(agent, provider, request) do
+              {:ok, result} -> {:ok, result, agent}
+              {:error, reason} -> {:error, reason}
+            end
+        end
+    end
+  end
+
+  defp select_provider_for_message(msg, agent) do
+    available_providers = ProviderRegistry.list_available()
+    # Filter based on requirements
+    suitable_providers = filter_providers_by_requirements(available_providers, msg)
+
+    case suitable_providers do
+      [] ->
+        {:error, :no_suitable_providers}
+
+      providers ->
+        # Select best provider based on agent's optimization preference
+        selected = select_best_provider(providers, agent, msg)
+        {:ok, selected, agent}
+    end
+  end
+
+  defp get_fallback_providers(attempted_providers, _agent) do
+    all_providers = ProviderRegistry.list_available()
+    attempted_names = Enum.map(attempted_providers || [], & &1.name)
+    Enum.reject(all_providers, fn provider -> provider.name in attempted_names end)
+  end
+
+  defp filter_providers_by_requirements(providers, msg) do
+    # Basic filtering - can be enhanced based on message requirements
+    Enum.filter(providers, fn provider ->
+      case msg do
+        %{cost_constraint: cost} when not is_nil(cost) ->
+          provider.cost_per_token <= cost
+
+        %{quality_threshold: quality} when not is_nil(quality) ->
+          provider.quality_score >= quality
+
+        _ ->
+          true
+      end
+    end)
+  end
+
+  defp select_best_provider(providers, agent, _msg) do
+    # Use existing selection logic
+    case agent.state.optimization_preference do
+      :cost -> Enum.min_by(providers, & &1.cost_per_token)
+      :quality -> Enum.max_by(providers, & &1.quality_score)
+      :balanced -> select_balanced_provider(providers)
+    end
+  end
+
+  defp select_balanced_provider(providers) do
+    # Score providers based on cost/quality balance
+    scored =
+      Enum.map(providers, fn provider ->
+        score = provider.quality_score * 0.7 - provider.cost_per_token * 0.3
+        {provider, score}
+      end)
+
+    {best_provider, _score} = Enum.max_by(scored, fn {_provider, score} -> score end)
+    best_provider
   end
 end

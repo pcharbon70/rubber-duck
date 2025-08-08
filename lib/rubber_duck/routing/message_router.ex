@@ -258,11 +258,12 @@ defmodule RubberDuck.Routing.MessageRouter do
 
   defp route_critical(message, context, timeout) do
     # Critical messages get dedicated resources
-    task = Task.Supervisor.async_nolink(
-      RubberDuck.TaskSupervisor,
-      fn -> do_route(message, context) end
-    )
-    
+    task =
+      Task.Supervisor.async_nolink(
+        RubberDuck.TaskSupervisor,
+        fn -> do_route(message, context) end
+      )
+
     task
     |> Task.await(timeout)
   catch
@@ -272,21 +273,22 @@ defmodule RubberDuck.Routing.MessageRouter do
   defp route_high_priority(message, context, timeout) do
     # High priority messages use controlled concurrency
     message_type = message.__struct__
-    
+
     case check_circuit_breaker(message_type) do
       {:ok, _} ->
         result = do_route_with_timeout(message, context, timeout)
-        
+
         # Record result to circuit breaker
         case result do
-          {:ok, _} -> 
+          {:ok, _} ->
             RubberDuck.Routing.CircuitBreaker.record_success(message_type)
-          _ -> 
+
+          _ ->
             RubberDuck.Routing.CircuitBreaker.record_failure(message_type)
         end
-        
+
         result
-        
+
       {:error, _reason} = error ->
         # Circuit is open or at limit
         error
@@ -296,21 +298,22 @@ defmodule RubberDuck.Routing.MessageRouter do
   defp route_normal(message, context, timeout) do
     # Normal messages use standard routing with circuit breaker
     message_type = message.__struct__
-    
+
     case check_circuit_breaker(message_type) do
       {:ok, _} ->
         result = do_route_with_timeout(message, context, timeout)
-        
+
         # Record result to circuit breaker
         case result do
-          {:ok, _} -> 
+          {:ok, _} ->
             RubberDuck.Routing.CircuitBreaker.record_success(message_type)
-          _ -> 
+
+          _ ->
             RubberDuck.Routing.CircuitBreaker.record_failure(message_type)
         end
-        
+
         result
-        
+
       {:error, _reason} = error ->
         # Circuit is open or at limit
         error
@@ -372,7 +375,7 @@ defmodule RubberDuck.Routing.MessageRouter do
   defp check_circuit_breaker(message_type) do
     # Ensure circuit breaker exists for this message type
     RubberDuck.Routing.CircuitBreakerSupervisor.ensure_circuit_breaker(message_type)
-    
+
     # Check if circuit allows the request
     case RubberDuck.Routing.CircuitBreaker.call(message_type) do
       :ok -> {:ok, :closed}

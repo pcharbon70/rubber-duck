@@ -48,6 +48,7 @@ defmodule RubberDuck.Messages.Learning.OptimizeAgent do
 
     def to_jido_signal(%OptimizeAgent{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "learning.optimize.agent",
         data: data |> Map.delete(:metadata),

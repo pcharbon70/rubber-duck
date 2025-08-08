@@ -190,6 +190,28 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     {:ok, summary, agent}
   end
 
+  def handle_instruction({:health_check, msg}, agent) do
+    # Map to appropriate health check based on message
+    case msg.check_type do
+      :provider_specific ->
+        handle_instruction({:diagnose_provider, msg.provider}, agent)
+
+      :system_wide ->
+        handle_instruction(:get_health_summary, agent)
+
+      _ ->
+        # General health check
+        health_status = %{
+          overall_status: determine_overall_health(agent),
+          provider_status: get_all_provider_status(agent),
+          last_check: DateTime.utc_now(),
+          check_type: msg.check_type
+        }
+
+        {:ok, health_status, agent}
+    end
+  end
+
   # Private functions
 
   defp record_provider_failure(agent, provider, error, payload) do
@@ -683,5 +705,32 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
       })
 
     %{agent | state: Map.put(agent.state, :performance_metrics, updated_metrics)}
+  end
+
+  # Helper functions for new health check handler
+
+  defp determine_overall_health(agent) do
+    provider_health = get_all_provider_status(agent)
+    healthy_count = Enum.count(provider_health, fn {_name, status} -> status == :healthy end)
+    total_count = Enum.count(provider_health)
+
+    cond do
+      healthy_count == total_count -> :healthy
+      healthy_count > total_count / 2 -> :degraded
+      true -> :unhealthy
+    end
+  end
+
+  defp get_all_provider_status(agent) do
+    Enum.map(agent.state.provider_health, fn {provider, metrics} ->
+      status =
+        case metrics do
+          %{consecutive_failures: 0} -> :healthy
+          %{consecutive_failures: failures} when failures < 3 -> :degraded
+          _ -> :unhealthy
+        end
+
+      {provider, status}
+    end)
   end
 end

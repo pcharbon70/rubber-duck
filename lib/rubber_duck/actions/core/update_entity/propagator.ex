@@ -87,13 +87,14 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Propagator do
         []
 
     # Convert to consistent format
-    normalized = Enum.map(affected, fn
-      {type, id, action} -> %{type: type, id: id, action: action}
-      {type, id} -> %{type: type, id: id, action: :update}
-      entity when is_map(entity) -> entity
-      _ -> nil
-    end)
-    
+    normalized =
+      Enum.map(affected, fn
+        {type, id, action} -> %{type: type, id: id, action: action}
+        {type, id} -> %{type: type, id: id, action: :update}
+        entity when is_map(entity) -> entity
+        _ -> nil
+      end)
+
     normalized
     |> Enum.reject(&is_nil/1)
   end
@@ -528,18 +529,20 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Propagator do
 
     results =
       Enum.flat_map(batches, fn batch ->
-        results = Task.async_stream(
-          batch,
-          fn entity -> propagate_to_entity(entity, plan.source_entity, context) end,
-          max_concurrency: plan.propagation_strategy.max_parallelism,
-          timeout: plan.timeout_config.batch_timeout_ms
-        )
-        
-        batch_results = results
-        |> Enum.map(fn
-          {:ok, result} -> result
-          {:exit, reason} -> {:error, {:task_failed, reason}}
-        end)
+        results =
+          Task.async_stream(
+            batch,
+            fn entity -> propagate_to_entity(entity, plan.source_entity, context) end,
+            max_concurrency: plan.propagation_strategy.max_parallelism,
+            timeout: plan.timeout_config.batch_timeout_ms
+          )
+
+        batch_results =
+          results
+          |> Enum.map(fn
+            {:ok, result} -> result
+            {:exit, reason} -> {:error, {:task_failed, reason}}
+          end)
 
         # Delay between batches
         if batch != List.last(batches) do

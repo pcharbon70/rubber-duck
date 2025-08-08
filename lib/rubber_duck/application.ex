@@ -35,10 +35,10 @@ defmodule RubberDuck.Application do
 
       # Circuit Breaker Registry for message type tracking
       {Registry, keys: :unique, name: RubberDuck.CircuitBreakerRegistry},
-      
+
       # Circuit Breaker Supervisor for fault tolerance
       RubberDuck.Routing.CircuitBreakerSupervisor,
-      
+
       # Message Router for typed message dispatch
       RubberDuck.Routing.MessageRouter,
 
@@ -69,12 +69,12 @@ defmodule RubberDuck.Application do
       # - Phoenix endpoint (when added)
       # - Additional agents as needed
     ]
-    
+
     # Add GenStage pipeline components if enabled
-    children = 
+    children =
       if Application.get_env(:rubber_duck, :pipeline_mode, :sequential) == :genstage do
         Logger.info("GenStage pipeline mode enabled, starting pipeline components...")
-        
+
         pipeline_children = [
           # Start pipeline components with rest_for_one strategy
           # so if producer fails, all downstream stages restart
@@ -82,7 +82,7 @@ defmodule RubberDuck.Application do
           {RubberDuck.Pipeline.EntityUpdateProcessor, []},
           {RubberDuck.Pipeline.SideEffectProcessor, []}
         ]
-        
+
         children ++ pipeline_children
       else
         children

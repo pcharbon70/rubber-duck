@@ -68,17 +68,19 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
   # Entity fetching using EntityRepository
   defp fetch_entity(entity_id, entity_type) do
     case EntityRepository.fetch(entity_id, entity_type) do
-      {:ok, entity} -> 
+      {:ok, entity} ->
         # Convert Ash resource to optimization-ready format
         {:ok, entity_to_optimization_format(entity, entity_type)}
+
       {:error, :not_found} ->
         {:error, "Entity not found: #{entity_type} with id #{entity_id}"}
+
       {:error, reason} ->
         Logger.error("Failed to fetch entity for optimization: #{inspect(reason)}")
         {:error, reason}
     end
   end
-  
+
   # Convert Ash resources to optimization format with performance metrics
   defp entity_to_optimization_format(entity, :user) do
     %{
@@ -94,7 +96,7 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       _original: entity
     }
   end
-  
+
   defp entity_to_optimization_format(entity, :project) do
     %{
       id: entity.id,
@@ -111,7 +113,7 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       _original: entity
     }
   end
-  
+
   defp entity_to_optimization_format(entity, :code_file) do
     %{
       id: entity.id,
@@ -127,7 +129,7 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       _original: entity
     }
   end
-  
+
   defp entity_to_optimization_format(entity, :analysis) do
     %{
       id: entity.id,
@@ -141,13 +143,15 @@ defmodule RubberDuck.Actions.Core.OptimizeEntity do
       _original: entity
     }
   end
-  
+
   defp count_lines(nil), do: 0
+
   defp count_lines(content) when is_binary(content) do
     content
     |> String.split("\n")
     |> length()
   end
+
   defp count_lines(_), do: 0
 
   # Baseline metrics capture

@@ -226,6 +226,7 @@ defmodule RubberDuck.Action.Base do
 
   defp calculate_checksum(params) do
     hash = :crypto.hash(:md5, :erlang.term_to_binary(params))
+
     hash
     |> Base.encode16(case: :lower)
   end

@@ -169,8 +169,7 @@ defmodule RubberDuck.Telemetry.MessageReporter do
       | total_routed: state.total_routed + 1,
         total_succeeded:
           if(metadata.success, do: state.total_succeeded + 1, else: state.total_succeeded),
-        total_failed:
-          if(metadata.success, do: state.total_failed, else: state.total_failed + 1),
+        total_failed: if(metadata.success, do: state.total_failed, else: state.total_failed + 1),
         total_duration_us: state.total_duration_us + measurements.duration
     }
 

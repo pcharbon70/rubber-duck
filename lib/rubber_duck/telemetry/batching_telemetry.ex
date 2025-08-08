@@ -177,6 +177,18 @@ defmodule RubberDuck.Telemetry.BatchingTelemetry do
   end
 
   @doc """
+  Gets current telemetry metrics.
+  """
+  def get_metrics do
+    # Return basic metrics - this could be enhanced to get actual telemetry data
+    %{
+      events: length(events()),
+      last_updated: DateTime.utc_now(),
+      status: :active
+    }
+  end
+
+  @doc """
   Returns all telemetry event names for the batching system.
   """
   def events do

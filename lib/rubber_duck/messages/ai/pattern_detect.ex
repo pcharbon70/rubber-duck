@@ -51,6 +51,7 @@ defmodule RubberDuck.Messages.AI.PatternDetect do
 
     def to_jido_signal(%PatternDetect{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "ai.pattern.detect",
         data: data |> Map.delete(:metadata),
