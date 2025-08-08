@@ -6,7 +6,7 @@ defmodule RubberDuck.Skills.UserManagementSkill do
   preference adaptation, and proactive assistance suggestions based on
   user interaction patterns.
 
-  Supports both legacy string-based signals and new typed messages for gradual migration.
+  Uses typed messages exclusively for all user management operations.
   """
 
   use RubberDuck.Skills.Base,
@@ -14,15 +14,8 @@ defmodule RubberDuck.Skills.UserManagementSkill do
     description: "Manages user sessions and learns from behavioral patterns",
     category: "user",
     tags: ["user", "session", "behavior", "learning", "preferences"],
-    vsn: "1.0.0",
+    vsn: "2.0.0",
     opts_key: :user_management,
-    signal_patterns: [
-      "user.session.*",
-      "user.behavior.*",
-      "user.preference.*",
-      "user.interaction.*",
-      "user.pattern.*"
-    ],
     opts_schema: [
       session_timeout: [type: :pos_integer, default: 1800],
       max_concurrent_sessions: [type: :pos_integer, default: 5],
@@ -40,212 +33,6 @@ defmodule RubberDuck.Skills.UserManagementSkill do
     TrackActivity,
     GenerateSuggestions
   }
-
-  @impl true
-  def handle_signal(%{type: "user.session.start"} = signal, state) do
-    user_id = signal.data.user_id
-
-    # Initialize or retrieve user session state
-    user_state = Map.get(state.users, user_id, initialize_user_state(user_id))
-
-    # Start session with behavioral tracking
-    session = %{
-      id: generate_session_id(),
-      user_id: user_id,
-      started_at: DateTime.utc_now(),
-      ip_address: signal.data[:ip_address],
-      user_agent: signal.data[:user_agent],
-      behavior_tracking: state.opts.behavior_learning_enabled,
-      patterns: user_state.behavioral_patterns
-    }
-
-    # Update state with new session
-    updated_user_state = Map.put(user_state, :current_session, session)
-    updated_state = put_in(state, [:users, user_id], updated_user_state)
-
-    # Emit session started signal
-    emit_signal("user.session.started", %{
-      user_id: user_id,
-      session_id: session.id,
-      predicted_actions: predict_initial_actions(user_state)
-    })
-
-    {:ok, session, updated_state}
-  end
-
-  @impl true
-  def handle_signal(%{type: "user.session.end"} = signal, state) do
-    user_id = signal.data.user_id
-
-    case get_in(state, [:users, user_id, :current_session]) do
-      nil ->
-        {:ok, %{status: :no_active_session}, state}
-
-      session ->
-        # Calculate session metrics
-        duration = DateTime.diff(DateTime.utc_now(), session.started_at)
-
-        # Update behavioral patterns if learning is enabled
-        updated_state =
-          if state.opts.behavior_learning_enabled do
-            update_behavioral_patterns(state, user_id, signal.data[:interactions] || [])
-          else
-            state
-          end
-
-        # Clear current session
-        updated_state = put_in(updated_state, [:users, user_id, :current_session], nil)
-
-        # Store session history
-        session_record = Map.put(session, :ended_at, DateTime.utc_now())
-
-        updated_state =
-          update_in(updated_state, [:users, user_id, :session_history], fn history ->
-            [session_record | Enum.take(history || [], 99)]
-          end)
-
-        {:ok, %{status: :session_ended, duration: duration}, updated_state}
-    end
-  end
-
-  @impl true
-  def handle_signal(%{type: "user.behavior.track"} = signal, state) do
-    user_id = signal.data.user_id
-    action = signal.data.action
-    context = signal.data.context || %{}
-
-    if state.opts.behavior_learning_enabled do
-      # Track the behavior
-      behavior = %{
-        action: action,
-        context: context,
-        timestamp: DateTime.utc_now(),
-        session_id: get_in(state, [:users, user_id, :current_session, :id])
-      }
-
-      # Update behavior history
-      updated_state =
-        update_in(state, [:users, user_id, :behavior_history], fn history ->
-          [behavior | Enum.take(history || [], state.opts.prediction_window - 1)]
-        end)
-
-      # Learn patterns if we have enough data
-      updated_state =
-        if length(get_in(updated_state, [:users, user_id, :behavior_history]) || []) >= 10 do
-          learn_behavioral_patterns(updated_state, user_id)
-        else
-          updated_state
-        end
-
-      # Generate predictions for next likely actions
-      predictions = predict_next_actions(updated_state, user_id)
-
-      {:ok, %{tracked: true, predictions: predictions}, updated_state}
-    else
-      {:ok, %{tracked: false}, state}
-    end
-  end
-
-  @impl true
-  def handle_signal(%{type: "user.preference.update"} = signal, state) do
-    user_id = signal.data.user_id
-    preference_key = signal.data.key
-    preference_value = signal.data.value
-
-    # Adapt preferences with learning
-    updated_state =
-      update_in(state, [:users, user_id, :preferences], fn prefs ->
-        current_prefs = prefs || %{}
-
-        # Apply adaptation rate if preference exists
-        new_value =
-          if Map.has_key?(current_prefs, preference_key) do
-            adapt_preference(
-              current_prefs[preference_key],
-              preference_value,
-              state.opts.adaptation_rate
-            )
-          else
-            preference_value
-          end
-
-        Map.put(current_prefs, preference_key, new_value)
-      end)
-
-    # Track preference changes for learning
-    updated_state =
-      update_in(updated_state, [:users, user_id, :preference_history], fn history ->
-        change = %{
-          key: preference_key,
-          old_value: get_in(state, [:users, user_id, :preferences, preference_key]),
-          new_value: preference_value,
-          timestamp: DateTime.utc_now()
-        }
-
-        [change | Enum.take(history || [], 49)]
-      end)
-
-    {:ok, %{preference_updated: true}, updated_state}
-  end
-
-  @impl true
-  def handle_signal(%{type: "user.pattern.detect"} = signal, state) do
-    user_id = signal.data.user_id
-
-    user_state = get_in(state, [:users, user_id]) || initialize_user_state(user_id)
-
-    # Detect patterns from recent behavior
-    patterns = detect_behavioral_patterns(user_state.behavior_history || [])
-
-    # Filter by confidence threshold
-    confident_patterns =
-      Enum.filter(patterns, fn pattern ->
-        pattern.confidence >= state.opts.pattern_confidence_threshold
-      end)
-
-    # Update stored patterns
-    updated_state = put_in(state, [:users, user_id, :behavioral_patterns], confident_patterns)
-
-    # Generate proactive suggestions based on patterns
-    suggestions = generate_proactive_suggestions(confident_patterns, user_state)
-
-    {:ok, %{patterns: confident_patterns, suggestions: suggestions}, updated_state}
-  end
-
-  @impl true
-  def handle_signal(%{type: "user.interaction.complete"} = signal, state) do
-    user_id = signal.data.user_id
-    interaction = signal.data.interaction
-
-    # Learn from the completed interaction
-    updated_state =
-      if state.opts.behavior_learning_enabled do
-        learn_from_interaction(state, user_id, interaction)
-      else
-        state
-      end
-
-    # Update interaction statistics
-    updated_state =
-      update_in(updated_state, [:users, user_id, :stats], fn stats ->
-        current_stats = stats || %{total_interactions: 0, successful: 0, failed: 0}
-
-        current_stats
-        |> Map.update(:total_interactions, 1, &(&1 + 1))
-        |> Map.update(
-          if(interaction.success, do: :successful, else: :failed),
-          1,
-          &(&1 + 1)
-        )
-      end)
-
-    {:ok, %{learned: state.opts.behavior_learning_enabled}, updated_state}
-  end
-
-  @impl true
-  def handle_signal(_signal, state) do
-    {:ok, state}
-  end
 
   # Typed message handlers
 
