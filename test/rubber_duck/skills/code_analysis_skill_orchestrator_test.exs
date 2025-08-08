@@ -2,7 +2,14 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillOrchestratorTest do
   use ExUnit.Case, async: true
   
   alias RubberDuck.Skills.CodeAnalysisSkill
-  alias RubberDuck.Messages.Code.Analyze
+  
+  alias RubberDuck.Messages.Code.{
+    Analyze,
+    QualityCheck,
+    ImpactAssess,
+    PerformanceAnalyze,
+    SecurityScan
+  }
   
   @vulnerable_code """
   defmodule VulnerableModule do
@@ -454,14 +461,14 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillOrchestratorTest do
   end
   
   describe "end-to-end workflow" do
-    test "signal to orchestrator to analyzers to results flow" do
-      # Test the complete flow from signal to final results
-      signal = %{
-        type: "code.analyze.file",
-        data: %{
-          file_path: "workflow_test.ex",
-          content: @vulnerable_code
-        }
+    test "typed message to orchestrator to analyzers to results flow" do
+      # Test the complete flow from typed message to final results
+      message = %Analyze{
+        file_path: "workflow_test.ex",
+        analysis_type: :comprehensive,
+        depth: :moderate,
+        auto_fix: false,
+        context: %{content: @vulnerable_code}
       }
       
       state = %{
@@ -473,7 +480,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillOrchestratorTest do
         }
       }
       
-      assert {:ok, result, updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
+      assert {:ok, result, updated_state} = CodeAnalysisSkill.handle_analyze(message, state)
       
       # Verify complete results
       assert result.file == "workflow_test.ex"
@@ -486,20 +493,24 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillOrchestratorTest do
       assert updated_state != nil
     end
     
-    test "backward compatibility with legacy signals" do
-      # Test various legacy signal formats still work
-      signals = [
-        %{type: "code.quality.check", data: %{file_path: "test.ex", content: @healthy_code}},
-        %{type: "code.security.scan", data: %{content: @vulnerable_code}},
-        %{type: "code.performance.analyze", data: %{content: @performant_code}},
-        %{type: "code.impact.assess", data: %{file_path: "test.ex", changes: %{}}}
+    test "all analyzer types via typed messages" do
+      # Test various typed message formats
+      messages = [
+        {%QualityCheck{target: "test.ex", metrics: [:complexity, :coverage]}, %{content: @healthy_code}},
+        {%SecurityScan{content: @vulnerable_code, file_type: :elixir}, %{}},
+        {%PerformanceAnalyze{content: @performant_code, metrics: [:complexity]}, %{}},
+        {%ImpactAssess{file_path: "test.ex", changes: %{}}, %{state: %{}}}
       ]
       
-      state = %{opts: %{}}
-      
-      for signal <- signals do
-        result = CodeAnalysisSkill.handle_signal(signal, state)
-        assert match?({:ok, _, _}, result) or match?({:ok, _}, result)
+      for {message, context_or_state} <- messages do
+        # Different analyzers expect different handler functions
+        result = case message do
+          %QualityCheck{} -> CodeAnalysisSkill.handle_quality_check(message, context_or_state)
+          %SecurityScan{} -> CodeAnalysisSkill.handle_security_scan(message, context_or_state)
+          %PerformanceAnalyze{} -> CodeAnalysisSkill.handle_performance_analyze(message, context_or_state)
+          %ImpactAssess{} -> CodeAnalysisSkill.handle_impact_assess(message, context_or_state)
+        end
+        assert match?({:ok, _}, result) or match?({:ok, _, _}, result)
       end
     end
     

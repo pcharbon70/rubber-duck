@@ -6,7 +6,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   performance implications, security concerns, and maintainability assessments.
   Enhanced with impact assessment capabilities for understanding change propagation.
 
-  Supports both legacy string-based signals and new typed messages for gradual migration.
+  Uses typed messages exclusively for all analysis operations.
   """
 
   use RubberDuck.Skills.Base,
@@ -14,15 +14,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     description: "Analyzes code quality with impact assessment and improvement suggestions",
     category: "development",
     tags: ["code", "analysis", "quality", "impact", "performance", "security"],
-    vsn: "2.0.0",
+    vsn: "3.0.0",
     opts_key: :code_analysis,
-    signal_patterns: [
-      "code.analyze.*",
-      "code.quality.*",
-      "code.impact.*",
-      "code.performance.*",
-      "code.security.*"
-    ],
     opts_schema: [
       enabled: [type: :boolean, default: true],
       depth: [type: :atom, default: :moderate, values: [:shallow, :moderate, :deep]],
@@ -46,198 +39,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   alias RubberDuck.Analyzers.Code.{Security, Performance, Quality, Impact}
   alias RubberDuck.Analyzers.Orchestrator
 
-  # Handle legacy signals that don't convert well to typed messages
-  def handle_signal_legacy(%{type: "code.analyze.file"} = signal, state) do
-    handle_code_analyze_file(signal, state)
-  end
-  
-  def handle_signal_legacy(%{type: "code.quality.check"} = signal, state) do
-    handle_code_quality_check(signal, state)
-  end
-  
-  def handle_signal_legacy(%{type: "code.impact.assess"} = signal, state) do
-    handle_code_impact_assess(signal, state)
-  end
-  
-  def handle_signal_legacy(%{type: "code.performance.analyze"} = signal, state) do
-    handle_code_performance_analyze(signal, state)
-  end
-  
-  def handle_signal_legacy(%{type: "code.security.scan"} = signal, state) do
-    handle_code_security_scan(signal, state)
-  end
-  
-  def handle_signal_legacy(_signal, state) do
-    {:ok, state}
-  end
-
-  @impl true
-  def handle_signal(%{type: "code.analyze.file"} = signal, state) do
-    handle_code_analyze_file(signal, state)
-  end
-  
-  defp handle_code_analyze_file(signal, state) do
-    # Use Orchestrator for comprehensive file analysis
-    data = signal[:data] || %{}
-    opts = state[:opts] || %{}
-    
-    request = %{
-      file_path: data[:file_path] || "unknown",
-      content: data[:content],
-      analyzers: determine_analyzers_from_opts(opts),
-      strategy: determine_strategy_from_depth(opts[:depth] || :moderate),
-      context: %{
-        state: state,
-        signal_data: data
-      },
-      options: %{
-        timeout: 30000
-      }
-    }
-    
-    case Orchestrator.orchestrate(request) do
-      {:ok, orchestrated_result} ->
-        # Convert orchestrator result to expected format
-        result = convert_orchestrator_result(orchestrated_result)
-        
-        # Update state with analysis history
-        updated_state = track_analysis_history(state, data[:file_path] || "unknown", result)
-        
-        {:ok, result, updated_state}
-        
-      {:error, reason} ->
-        Logger.error("Orchestrated analysis failed: #{inspect(reason)}")
-        {:error, reason, state}
-    end
-  end
-
-  @impl true
-  def handle_signal(%{type: "code.quality.check"} = signal, state) do
-    handle_code_quality_check(signal, state)
-  end
-  
-  defp handle_code_quality_check(signal, state) do
-    # Create a QualityCheck message for the Quality analyzer
-    quality_check_msg = %QualityCheck{
-      target: signal.data.target || signal.data.file_path || "unknown",
-      metrics: signal.data.metrics || [:complexity, :coverage, :duplication],
-      thresholds: signal.data.thresholds || %{}
-    }
-    
-    # Delegate to Quality analyzer
-    case Quality.analyze(quality_check_msg, %{}) do
-      {:ok, quality_result} ->
-        # Convert to expected legacy format with quality_score in root
-        legacy_result = Map.put(quality_result, :quality_score, quality_result.quality_score)
-        {:ok, legacy_result, state}
-        
-      {:error, reason} ->
-        Logger.error("Quality check failed: #{inspect(reason)}")
-        {:error, reason, state}
-    end
-  end
-
-  @impl true
-  def handle_signal(%{type: "code.impact.assess"} = signal, state) do
-    handle_code_impact_assess(signal, state)
-  end
-  
-  defp handle_code_impact_assess(signal, state) do
-    # Create an ImpactAssess message for the Impact analyzer
-    impact_assess_msg = %ImpactAssess{
-      file_path: signal.data.file_path,
-      changes: signal.data.changes || %{}
-    }
-    
-    # Delegate to Impact analyzer
-    case Impact.analyze(impact_assess_msg, %{state: state}) do
-      {:ok, impact_result} ->
-        # Convert to expected legacy format
-        legacy_result = %{
-          file: impact_result.file_path,
-          direct_impact: impact_result.direct_impact,
-          dependency_impact: impact_result.dependency_impact,
-          performance_impact: impact_result.performance_impact,
-          risk_assessment: impact_result.risk_assessment,
-          affected_files: impact_result.affected_files,
-          test_coverage_impact: impact_result.test_coverage_impact
-        }
-        
-        # Emit warning if high risk detected
-        if impact_result.risk_assessment.level == :high do
-          emit_signal("code.impact.high_risk", %{
-            file: impact_result.file_path,
-            risk: impact_result.risk_assessment
-          })
-        end
-        
-        {:ok, legacy_result, state}
-        
-      {:error, reason} ->
-        Logger.error("Impact assessment failed: #{inspect(reason)}")
-        {:error, reason, state}
-    end
-  end
-
-  @impl true
-  def handle_signal(%{type: "code.performance.analyze"} = signal, state) do
-    handle_code_performance_analyze(signal, state)
-  end
-  
-  defp handle_code_performance_analyze(signal, state) do
-    # Create a PerformanceAnalyze message for the Performance analyzer
-    performance_analyze_msg = %PerformanceAnalyze{
-      content: signal.data.content,
-      metrics: signal.data.metrics || [:complexity, :hotspots, :optimizations]
-    }
-    
-    # Delegate to Performance analyzer
-    case Performance.analyze(performance_analyze_msg, %{}) do
-      {:ok, performance_analysis} ->
-        {:ok, performance_analysis, state}
-        
-      {:error, reason} ->
-        Logger.error("Performance analysis failed: #{inspect(reason)}")
-        {:error, reason, state}
-    end
-  end
-
-  @impl true
-  def handle_signal(%{type: "code.security.scan"} = signal, state) do
-    handle_code_security_scan(signal, state)
-  end
-  
-  defp handle_code_security_scan(signal, state) do
-    # Create a SecurityScan message for the Security analyzer
-    security_scan_msg = %SecurityScan{
-      content: signal.data.content,
-      file_type: signal.data.file_type || detect_file_type(signal.data.file_path)
-    }
-    
-    # Delegate to Security analyzer
-    case Security.analyze(security_scan_msg, %{}) do
-      {:ok, security_scan} ->
-        # Track security issues in state
-        updated_state =
-          if Enum.empty?(security_scan.vulnerabilities) do
-            state
-          else
-            track_security_issues(state, signal.data.file_path, security_scan.vulnerabilities)
-          end
-
-        # Return the security scan result in the expected format
-        {:ok, security_scan, updated_state}
-        
-      {:error, reason} ->
-        Logger.error("Security scan failed: #{inspect(reason)}")
-        {:error, reason, state}
-    end
-  end
-
-  @impl true
-  def handle_signal(_signal, state) do
-    {:ok, state}
-  end
+  # No legacy signal handlers - using typed messages exclusively
 
   # Typed message handlers
 
@@ -342,10 +144,9 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   @doc """
   Handle typed QualityCheck message
   """
-  def handle_quality_check(%QualityCheck{} = msg, state) do
-    context = msg.context || %{}
+  def handle_quality_check(%QualityCheck{} = msg, _state) do
     # Delegate to Quality analyzer
-    case Quality.analyze(msg, context) do
+    case Quality.analyze(msg, %{}) do
       {:ok, quality_result} ->
         {:ok, quality_result}
       
@@ -389,9 +190,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   Handle typed SecurityScan message
   """
   def handle_security_scan(%SecurityScan{} = msg, state) do
-    context = msg.context || %{}
     # Delegate to Security analyzer
-    case Security.analyze(msg, context) do
+    case Security.analyze(msg, %{}) do
       {:ok, security_scan} ->
         # Track security issues if any found
         if length(security_scan.vulnerabilities) > 0 do
@@ -408,46 +208,6 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   end
 
   # Helper functions for Orchestrator integration
-  
-  defp determine_analyzers_from_opts(opts) do
-    analyzers = []
-    
-    # Check if options are explicitly enabled (default is true per opts_schema)
-    analyzers = if Map.get(opts, :security_scan, true), do: analyzers ++ [:security], else: analyzers
-    analyzers = if Map.get(opts, :performance_check, true), do: analyzers ++ [:performance], else: analyzers
-    analyzers = if Map.get(opts, :impact_analysis, true), do: analyzers ++ [:impact], else: analyzers
-    
-    # Always include quality analysis
-    [:quality | analyzers]
-  end
-  
-  defp determine_strategy_from_depth(depth) do
-    case depth do
-      :shallow -> :quick
-      :moderate -> :standard
-      :deep -> :deep
-      _ -> :standard
-    end
-  end
-  
-  defp convert_orchestrator_result(orchestrated_result) do
-    results = orchestrated_result.results
-    
-    base_result = %{
-      file: orchestrated_result.file_path,
-      quality_score: results[:quality][:quality_score] || 0.5,
-      issues: extract_all_issues(results),
-      suggestions: extract_all_suggestions(orchestrated_result),
-      overall_health: orchestrated_result.overall_health
-    }
-    
-    # Add individual analysis results if present
-    base_result
-    |> maybe_add_result(:security, results[:security])
-    |> maybe_add_result(:performance, results[:performance])
-    |> maybe_add_result(:impact, results[:impact])
-    |> maybe_add_result(:quality, results[:quality])
-  end
   
   defp format_analyze_result(orchestrated_result, analysis_type) do
     results = orchestrated_result.results
@@ -477,29 +237,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     end
   end
   
-  defp extract_all_issues(results) do
-    issues = []
-    
-    issues = issues ++ (results[:quality][:issues] || [])
-    issues = issues ++ (results[:security][:vulnerabilities] || [])
-    
-    if results[:performance][:bottlenecks] do
-      issues ++ Enum.map(results[:performance][:bottlenecks], fn bottleneck ->
-        %{type: :performance, description: bottleneck}
-      end)
-    else
-      issues
-    end
-  end
-  
-  defp extract_all_suggestions(orchestrated_result) do
-    orchestrated_result.recommendations
-    |> Enum.take(5)
-    |> Enum.map(& &1.action)
-  end
-  
-  defp maybe_add_result(result, _key, nil), do: result
-  defp maybe_add_result(result, key, value), do: Map.put(result, key, value)
+  # Functions moved to individual analyzers or no longer needed
   
   defp format_security_result(nil), do: %{vulnerabilities: [], risk_level: :none}
   defp format_security_result(security) do
@@ -612,38 +350,13 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     Map.put(state, :analysis_history, updated_history)
   end
 
-  defp track_security_issues(state, file_path, vulnerabilities) do
-    issues = Map.get(state, :security_issues, %{})
-    updated_issues = Map.put(issues, file_path, vulnerabilities)
-    Map.put(state, :security_issues, updated_issues)
-  end
-
-  # Quality helper functions moved to RubberDuck.Analyzers.Code.Quality
-  # Impact helper functions moved to RubberDuck.Analyzers.Code.Impact
-
-  # Impact-related helper functions moved to RubberDuck.Analyzers.Code.Impact
+  # Legacy file_path version no longer needed - removed
 
 
 
-  # Input validation functions moved to Security analyzer
-
-
-  defp detect_file_type(file_path) do
-    cond do
-      String.ends_with?(file_path, ".ex") -> :elixir
-      String.ends_with?(file_path, ".exs") -> :elixir_script
-      String.ends_with?(file_path, ".js") -> :javascript
-      true -> :unknown
-    end
-  end
-
-  # Performance analysis helper functions moved to RubberDuck.Analyzers.Code.Performance
-
-  # Additional helper functions for typed messages
-
-  # Threshold checking functions moved to RubberDuck.Analyzers.Code.Quality
-
-  # Impact risk calculation functions moved to RubberDuck.Analyzers.Code.Impact
-
-  # CWE mapping functions moved to Security analyzer
+  # All analyzer-specific functions have been moved to their respective analyzer modules:
+  # - Security functions -> RubberDuck.Analyzers.Code.Security
+  # - Performance functions -> RubberDuck.Analyzers.Code.Performance
+  # - Quality functions -> RubberDuck.Analyzers.Code.Quality
+  # - Impact functions -> RubberDuck.Analyzers.Code.Impact
 end

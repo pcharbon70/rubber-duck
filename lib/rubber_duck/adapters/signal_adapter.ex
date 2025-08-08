@@ -159,6 +159,8 @@ defmodule RubberDuck.Adapters.SignalAdapter do
 
   @doc """
   Checks if a signal type can be converted to a typed message.
+  
+  Supports wildcard patterns.
   """
   @spec convertible?(String.t() | map()) :: boolean()
   def convertible?(type) when is_binary(type) do
@@ -170,6 +172,33 @@ defmodule RubberDuck.Adapters.SignalAdapter do
   end
 
   def convertible?(_), do: false
+  
+  @doc """
+  Routes a wildcard signal to all matching message handlers.
+  
+  Returns a list of results from all matching handlers.
+  """
+  @spec route_wildcard_signal(map()) :: [{:ok, struct()} | {:error, term()}]
+  def route_wildcard_signal(%{type: pattern} = signal) when is_binary(pattern) do
+    alias RubberDuck.Messages.PatternMatcher
+    
+    if PatternMatcher.has_wildcard?(pattern) do
+      # Find all message types that match the wildcard pattern
+      matching_modules = Registry.lookup_types_matching(pattern)
+      
+      # Convert the signal to each matching message type
+      Enum.map(matching_modules, fn module ->
+        # Create a signal with the concrete type for this module
+        concrete_type = Registry.pattern_for_type(module)
+        concrete_signal = %{signal | type: concrete_type}
+        
+        from_signal(concrete_signal)
+      end)
+    else
+      # Not a wildcard, use normal conversion
+      [from_signal(signal)]
+    end
+  end
 
   # Private functions
 

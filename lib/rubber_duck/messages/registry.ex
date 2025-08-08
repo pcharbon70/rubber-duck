@@ -56,10 +56,46 @@ defmodule RubberDuck.Messages.Registry do
   Looks up the message type module for a given string pattern.
 
   Returns the module if found, nil otherwise.
+  For wildcard patterns, returns the first matching module.
   """
   @spec lookup_type(String.t()) :: module() | nil
   def lookup_type(string_pattern) when is_binary(string_pattern) do
-    Map.get(@type_mappings, string_pattern)
+    if RubberDuck.Messages.PatternMatcher.has_wildcard?(string_pattern) do
+      # For wildcard patterns, find the first matching registered type
+      matching_type = 
+        @type_mappings
+        |> Enum.find(fn {type, _module} ->
+          RubberDuck.Messages.PatternMatcher.matches?(type, string_pattern)
+        end)
+      
+      case matching_type do
+        {_type, module} -> module
+        nil -> nil
+      end
+    else
+      Map.get(@type_mappings, string_pattern)
+    end
+  end
+  
+  @doc """
+  Looks up all message type modules that match a pattern.
+  
+  Supports wildcard patterns. Returns a list of modules.
+  """
+  @spec lookup_types_matching(String.t()) :: [module()]
+  def lookup_types_matching(pattern) when is_binary(pattern) do
+    if RubberDuck.Messages.PatternMatcher.has_wildcard?(pattern) do
+      @type_mappings
+      |> Enum.filter(fn {type, _module} ->
+        RubberDuck.Messages.PatternMatcher.matches?(type, pattern)
+      end)
+      |> Enum.map(fn {_type, module} -> module end)
+    else
+      case Map.get(@type_mappings, pattern) do
+        nil -> []
+        module -> [module]
+      end
+    end
   end
 
   @doc """
@@ -90,10 +126,19 @@ defmodule RubberDuck.Messages.Registry do
 
   @doc """
   Checks if a string pattern is registered.
+  
+  Supports wildcard patterns using PatternMatcher.
   """
   @spec pattern_registered?(String.t()) :: boolean()
   def pattern_registered?(pattern) when is_binary(pattern) do
-    Map.has_key?(@type_mappings, pattern)
+    if RubberDuck.Messages.PatternMatcher.has_wildcard?(pattern) do
+      # For wildcard patterns, check if any registered type would match
+      @type_mappings
+      |> Map.keys()
+      |> Enum.any?(&RubberDuck.Messages.PatternMatcher.matches?(&1, pattern))
+    else
+      Map.has_key?(@type_mappings, pattern)
+    end
   end
 
   @doc """
