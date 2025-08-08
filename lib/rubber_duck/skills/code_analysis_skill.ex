@@ -46,8 +46,37 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   alias RubberDuck.Analyzers.Code.{Security, Performance, Quality, Impact}
   alias RubberDuck.Analyzers.Orchestrator
 
+  # Handle legacy signals that don't convert well to typed messages
+  def handle_signal_legacy(%{type: "code.analyze.file"} = signal, state) do
+    handle_code_analyze_file(signal, state)
+  end
+  
+  def handle_signal_legacy(%{type: "code.quality.check"} = signal, state) do
+    handle_code_quality_check(signal, state)
+  end
+  
+  def handle_signal_legacy(%{type: "code.impact.assess"} = signal, state) do
+    handle_code_impact_assess(signal, state)
+  end
+  
+  def handle_signal_legacy(%{type: "code.performance.analyze"} = signal, state) do
+    handle_code_performance_analyze(signal, state)
+  end
+  
+  def handle_signal_legacy(%{type: "code.security.scan"} = signal, state) do
+    handle_code_security_scan(signal, state)
+  end
+  
+  def handle_signal_legacy(_signal, state) do
+    {:ok, state}
+  end
+
   @impl true
   def handle_signal(%{type: "code.analyze.file"} = signal, state) do
+    handle_code_analyze_file(signal, state)
+  end
+  
+  defp handle_code_analyze_file(signal, state) do
     # Use Orchestrator for comprehensive file analysis
     data = signal[:data] || %{}
     opts = state[:opts] || %{}
@@ -84,6 +113,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.quality.check"} = signal, state) do
+    handle_code_quality_check(signal, state)
+  end
+  
+  defp handle_code_quality_check(signal, state) do
     # Create a QualityCheck message for the Quality analyzer
     quality_check_msg = %QualityCheck{
       target: signal.data.target || signal.data.file_path || "unknown",
@@ -106,6 +139,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.impact.assess"} = signal, state) do
+    handle_code_impact_assess(signal, state)
+  end
+  
+  defp handle_code_impact_assess(signal, state) do
     # Create an ImpactAssess message for the Impact analyzer
     impact_assess_msg = %ImpactAssess{
       file_path: signal.data.file_path,
@@ -144,6 +181,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.performance.analyze"} = signal, state) do
+    handle_code_performance_analyze(signal, state)
+  end
+  
+  defp handle_code_performance_analyze(signal, state) do
     # Create a PerformanceAnalyze message for the Performance analyzer
     performance_analyze_msg = %PerformanceAnalyze{
       content: signal.data.content,
@@ -163,6 +204,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @impl true
   def handle_signal(%{type: "code.security.scan"} = signal, state) do
+    handle_code_security_scan(signal, state)
+  end
+  
+  defp handle_code_security_scan(signal, state) do
     # Create a SecurityScan message for the Security analyzer
     security_scan_msg = %SecurityScan{
       content: signal.data.content,
@@ -198,8 +243,65 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   @doc """
   Handle typed Analyze message for code analysis
+  Called by Base module with state parameter
   """
-  def handle_analyze(%Analyze{} = msg, context) do
+  def handle_analyze(%Analyze{} = msg, state) when is_map(state) do
+    # Check if this is being called from Base (state) or tests (context with content)
+    if Map.has_key?(state, :content) do
+      # This is actually a context from tests, handle differently
+      handle_analyze_with_context(msg, state)
+    else
+      # This is the real state from Base module
+      handle_analyze_with_state(msg, state)
+    end
+  end
+  
+  defp handle_analyze_with_state(msg, state) do
+    # Use Orchestrator for all analysis types
+    analyzers = case msg.analysis_type do
+      :comprehensive -> :all
+      other -> [other]
+    end
+    
+    strategy = case msg.depth do
+      :shallow -> :quick
+      :moderate -> :standard
+      :deep -> :deep
+      _ -> :standard
+    end
+    
+    # Extract context from message or use empty context
+    context = msg.context || %{}
+    
+    request = %{
+      file_path: msg.file_path,
+      content: context[:content],
+      analyzers: analyzers,
+      strategy: strategy,
+      context: Map.merge(context, %{state: state}),
+      options: %{
+        auto_fix: msg.auto_fix,
+        timeout: 30000
+      }
+    }
+    
+    case Orchestrator.orchestrate(request) do
+      {:ok, orchestrated_result} ->
+        # Convert to expected format based on analysis type
+        result = format_analyze_result(orchestrated_result, msg.analysis_type)
+        
+        # Update state if needed
+        updated_state = track_analysis_history(state, msg.file_path, result)
+        
+        {:ok, result, updated_state}
+        
+      {:error, reason} ->
+        Logger.error("Orchestrated analysis failed: #{inspect(reason)}")
+        {:error, reason, state}
+    end
+  end
+  
+  defp handle_analyze_with_context(msg, context) do
     # Use Orchestrator for all analysis types
     analyzers = case msg.analysis_type do
       :comprehensive -> :all
@@ -240,7 +342,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   @doc """
   Handle typed QualityCheck message
   """
-  def handle_quality_check(%QualityCheck{} = msg, context) do
+  def handle_quality_check(%QualityCheck{} = msg, state) do
+    context = msg.context || %{}
     # Delegate to Quality analyzer
     case Quality.analyze(msg, context) do
       {:ok, quality_result} ->
@@ -285,7 +388,8 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   @doc """
   Handle typed SecurityScan message
   """
-  def handle_security_scan(%SecurityScan{} = msg, context) do
+  def handle_security_scan(%SecurityScan{} = msg, state) do
+    context = msg.context || %{}
     # Delegate to Security analyzer
     case Security.analyze(msg, context) do
       {:ok, security_scan} ->
@@ -294,11 +398,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
           Logger.warning("Security vulnerabilities found: #{inspect(security_scan.vulnerabilities)}")
         end
         
-        {:ok, security_scan}
+        updated_state = track_security_issues(state, security_scan.vulnerabilities)
+        {:ok, security_scan, updated_state}
       
       {:error, reason} ->
         Logger.error("Security analysis failed: #{inspect(reason)}")
-        {:error, reason}
+        {:error, reason, state}
     end
   end
 
@@ -490,6 +595,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   # Helper Functions
 
+  defp track_security_issues(state, vulnerabilities) do
+    existing_issues = Map.get(state, :security_issues, [])
+    updated_issues = existing_issues ++ vulnerabilities
+    Map.put(state, :security_issues, updated_issues)
+  end
+  
   defp track_analysis_history(state, file_path, result) do
     history = Map.get(state, :analysis_history, %{})
 

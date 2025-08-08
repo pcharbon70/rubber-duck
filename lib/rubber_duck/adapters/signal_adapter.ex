@@ -67,6 +67,9 @@ defmodule RubberDuck.Adapters.SignalAdapter do
           # Normalize the data
           normalized_data = normalize_signal_data(data)
 
+          # Apply signal-specific transformations
+          normalized_data = apply_signal_transformations(type, normalized_data)
+
           # Add metadata if present
           normalized_data =
             if Map.has_key?(signal, :metadata) do
@@ -177,6 +180,41 @@ defmodule RubberDuck.Adapters.SignalAdapter do
   end
 
   defp normalize_signal_data(data), do: data
+  
+  # Apply signal-specific transformations to map legacy signal data to message fields
+  defp apply_signal_transformations("code.analyze.file", data) do
+    data
+    |> Map.put_new(:analysis_type, :comprehensive)
+    |> Map.put_new(:depth, :moderate)
+    |> Map.put_new(:auto_fix, false)
+  end
+  
+  defp apply_signal_transformations("code.quality.check", data) do
+    data
+    |> Map.put_new(:analysis_type, :quality)
+    |> Map.put_new(:depth, :moderate)
+  end
+  
+  defp apply_signal_transformations("code.security.scan", data) do
+    data
+    |> Map.put_new(:scan_type, :comprehensive)
+    |> Map.put_new(:severity_threshold, :medium)
+  end
+  
+  defp apply_signal_transformations("code.performance.analyze", data) do
+    data
+    |> Map.put_new(:analysis_depth, :moderate)
+    |> Map.put_new(:include_suggestions, true)
+  end
+  
+  defp apply_signal_transformations("code.impact.assess", data) do
+    data
+    |> Map.put_new(:assessment_scope, :comprehensive)
+    |> Map.put_new(:include_dependencies, true)
+  end
+  
+  # Default: no transformation needed
+  defp apply_signal_transformations(_type, data), do: data
 
   defp ensure_atom_key(key) when is_atom(key), do: key
 
