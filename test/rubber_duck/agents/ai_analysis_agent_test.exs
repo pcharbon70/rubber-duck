@@ -308,72 +308,73 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
     end
   end
 
-  describe "signal handling" do
-    test "handles project changed signal" do
+  describe "typed message handling" do
+    test "handles project changed message" do
       agent = AIAnalysisAgent.new()
 
-      payload = %{
+      msg = %{
         project_id: "project123",
         change_type: :code_update
       }
 
-      {:ok, updated_agent} =
-        AIAnalysisAgent.handle_signal(
-          "project.changed",
-          payload,
+      {{:ok, result}, updated_agent} =
+        AIAnalysisAgent.handle_instruction(
+          {:project_changed, msg},
           agent
         )
 
+      assert result.status in [:tracking_only, :analysis_scheduled]
       activity = updated_agent.state.project_activity["project123"]
       assert activity.change_count == 1
     end
 
-    test "handles file modified signal" do
+    test "handles file modified message" do
       agent = AIAnalysisAgent.new()
 
-      payload = %{
+      msg = %{
         file_id: "file123",
         project_id: "project123",
         change_type: :content_update
       }
 
-      {:ok, updated_agent} =
-        AIAnalysisAgent.handle_signal(
-          "code_file.modified",
-          payload,
+      {{:ok, result}, updated_agent} =
+        AIAnalysisAgent.handle_instruction(
+          {:file_modified, msg},
           agent
         )
 
+      assert result.status in [:changes_tracked, :analysis_scheduled]
       tracking = updated_agent.state.file_change_tracking["file123"]
       assert tracking.modification_count == 1
     end
 
-    test "handles analysis requested signal" do
+    test "handles analysis requested message" do
       agent = AIAnalysisAgent.new()
 
-      payload = %{
+      msg = %{
         project_id: "urgent_project",
         analysis_types: [:security],
         priority: :high
       }
 
-      {:ok, updated_agent} =
-        AIAnalysisAgent.handle_signal(
-          "analysis.requested",
-          payload,
+      result =
+        AIAnalysisAgent.handle_instruction(
+          {:analysis_requested, msg},
           agent
         )
 
       # Should be added to queue with high priority
+      {status, _result, updated_agent} = result
+      assert status == :ok
       assert length(updated_agent.state.analysis_queue) > 0
       queue_item = hd(updated_agent.state.analysis_queue)
       assert queue_item.priority == :high
     end
 
-    test "handles feedback received signal" do
+    test "handles feedback received message" do
       agent = AIAnalysisAgent.new()
 
-      payload = %{
+      msg = %{
         analysis_id: "analysis789",
         feedback: %{
           rating: 4,
@@ -382,9 +383,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
       }
 
       result =
-        AIAnalysisAgent.handle_signal(
-          "analysis.feedback",
-          payload,
+        AIAnalysisAgent.handle_instruction(
+          {:feedback_received, msg},
           agent
         )
 
@@ -400,8 +400,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
       # Simulate multiple changes to trigger analysis
       agent =
         Enum.reduce(1..10, agent, fn i, acc ->
-          payload = %{project_id: "active_project", change_count: i}
-          {:ok, updated} = AIAnalysisAgent.handle_signal("project.changed", payload, acc)
+          msg = %{project_id: "active_project", change_count: i}
+          {{:ok, _result}, updated} = AIAnalysisAgent.handle_instruction({:project_changed, msg}, acc)
           updated
         end)
 
@@ -424,8 +424,8 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
       agent = %{agent | state: %{agent.state | project_activity: project_activity}}
 
       # Should not trigger due to time constraint
-      payload = %{project_id: "project123"}
-      {:ok, updated_agent} = AIAnalysisAgent.handle_signal("project.changed", payload, agent)
+      msg = %{project_id: "project123"}
+      {{:ok, _result}, updated_agent} = AIAnalysisAgent.handle_instruction({:project_changed, msg}, agent)
 
       # Verify no new analysis scheduled immediately
       assert updated_agent.state.project_activity["project123"].change_count == 6
