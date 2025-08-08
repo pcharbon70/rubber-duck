@@ -17,7 +17,7 @@ defmodule RubberDuck.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :runtime_tools],
       mod: {RubberDuck.Application, []}
     ]
   end
@@ -66,6 +66,33 @@ defmodule RubberDuck.MixProject do
 
       # PubSub for signal system
       {:phoenix_pubsub, "~> 2.1"},
+      
+      # Phoenix framework and LiveView
+      {:phoenix, "~> 1.7.18"},
+      {:phoenix_html, "~> 4.1"},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:phoenix_live_view, "~> 1.0"},
+      {:phoenix_live_dashboard, "~> 0.8.3"},
+      {:floki, ">= 0.30.0", only: :test},
+      
+      # Authentication UI
+      {:ash_authentication_phoenix, "~> 2.0"},
+      
+      # Asset building
+      {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
+      
+      # HTTP server
+      {:bandit, "~> 1.5"},
+      {:plug_cowboy, "~> 2.7"},
+      {:gettext, "~> 0.20"},
+      {:heroicons, "~> 0.5"},
+      
+      # Monaco editor
+      {:live_monaco_editor, "~> 0.1"},
+      
+      # Development tools
+      {:swoosh, "~> 1.5"},
 
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
@@ -73,7 +100,17 @@ defmodule RubberDuck.MixProject do
   end
 
   defp aliases() do
-    [test: ["ash.setup --quiet", "test"], setup: "ash.setup"]
+    [
+      setup: ["deps.get", "ash.setup", "assets.setup", "assets.build"],
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+      "assets.build": ["tailwind rubberduck", "esbuild rubberduck"],
+      "assets.deploy": [
+        "tailwind rubberduck --minify",
+        "esbuild rubberduck --minify",
+        "phx.digest"
+      ],
+      test: ["ash.setup --quiet", "test"]
+    ]
   end
 
   defp elixirc_paths(:test),

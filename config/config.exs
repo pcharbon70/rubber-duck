@@ -9,6 +9,42 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+# Configure Phoenix
+config :rubber_duck, RubberDuckWeb.Endpoint,
+  url: [host: "localhost"],
+  adapter: Bandit.PhoenixAdapter,
+  render_errors: [
+    formats: [html: RubberDuckWeb.ErrorHTML, json: RubberDuckWeb.ErrorJSON],
+    layout: false
+  ],
+  pubsub_server: RubberDuck.PubSub,
+  live_view: [signing_salt: "nR3qgxhM"]
+
+# Configure esbuild (the version is required)
+config :esbuild,
+  version: "0.17.11",
+  rubberduck: [
+    args:
+      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+# Configure tailwind (the version is required)
+config :tailwind,
+  version: "3.4.3",
+  rubberduck: [
+    args: ~w(
+      --config=tailwind.config.js
+      --input=css/app.css
+      --output=../priv/static/assets/app.css
+    ),
+    cd: Path.expand("../assets", __DIR__)
+  ]
+
+# Use Jason for JSON parsing in Phoenix
+config :phoenix, :json_library, Jason
+
 # Configure Ash Framework
 config :rubber_duck,
   ash_domains: [

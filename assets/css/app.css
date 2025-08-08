@@ -1,0 +1,113 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-base-200;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-base-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary;
+}
+
+/* Monaco Editor styles */
+.monaco-editor {
+  @apply rounded-lg;
+}
+
+/* Animation for floating duck */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Phoenix specific styles */
+.phx-no-feedback.invalid-feedback,
+.phx-no-feedback .invalid-feedback {
+  display: none;
+}
+
+.phx-click-loading {
+  opacity: 0.5;
+  transition: opacity 1s ease-out;
+}
+
+.phx-loading {
+  cursor: wait;
+}
+
+.phx-modal {
+  opacity: 1 !important;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.phx-modal-content {
+  background-color: var(--fallback-b1, oklch(var(--b1)));
+  margin: 15vh auto;
+  padding: 20px;
+  border-radius: 1rem;
+  width: 80%;
+  max-width: 600px;
+}
+
+.phx-modal-close {
+  color: var(--fallback-bc, oklch(var(--bc)));
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.phx-modal-close:hover,
+.phx-modal-close:focus {
+  color: var(--fallback-p, oklch(var(--p)));
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Alerts and form feedback */
+.alert.alert-info {
+  @apply alert-info;
+}
+
+.alert.alert-danger {
+  @apply alert-error;
+}
+
+/* LiveView specific */
+.phx-hero {
+  @apply text-center bg-base-200 rounded-lg p-8 m-8;
+}
+
+.phx-hero h1 {
+  @apply text-4xl font-bold mb-4;
+}
+
+.phx-hero p {
+  @apply text-lg mb-6;
+}
+
+/* Custom utility classes */
+.min-h-screen-nav {
+  min-height: calc(100vh - 4rem);
+}

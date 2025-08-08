@@ -1,0 +1,117 @@
+<div class="h-screen flex flex-col bg-base-100">
+  <!-- Header -->
+  <header class="navbar bg-base-200 px-4 border-b border-base-300">
+    <div class="flex-1">
+      <a href="/" class="flex items-center gap-2">
+        <.rubber_duck size="sm" />
+        <span class="text-xl font-bold">RubberDuck</span>
+      </a>
+      <div class="ml-4">
+        <span class="badge badge-success gap-1">
+          <div class="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+          <%= @connection_state %>
+        </span>
+      </div>
+    </div>
+    <div class="flex-none">
+      <div class="flex items-center gap-4">
+        <span class="text-sm opacity-70">
+          <%= @user[:email] || @user[:username] || "Demo User" %>
+        </span>
+        <div class="dropdown dropdown-end">
+          <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+            <div class="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center">
+              <%= String.first(@user[:email] || @user[:username] || "D") |> String.upcase() %>
+            </div>
+          </label>
+          <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+            <li><a href="/settings">Settings</a></li>
+            <li>
+              <form action="/demo-logout" method="post">
+                <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+                <button type="submit">Sign Out</button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Code Editor Panel -->
+    <div 
+      class="bg-base-200 border-r border-base-300 flex flex-col"
+      style={"width: #{@layout_config.editor_width_percent}%"}
+    >
+      <div class="p-2 border-b border-base-300 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold">Code Editor</span>
+          <span class="badge badge-sm">main.ex</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <%= if @agents.status == :connected do %>
+            <span class="badge badge-success badge-sm gap-1">
+              <div class="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+              Agents Online
+            </span>
+          <% end %>
+        </div>
+      </div>
+      <div class="flex-1 p-4">
+        <.live_component
+          module={EditorComponent}
+          id="editor-component"
+          session_id={@session_id}
+          user={@user}
+        />
+      </div>
+    </div>
+
+    <!-- Resizable Handle -->
+    <div 
+      class="w-1 bg-base-300 hover:bg-primary cursor-col-resize transition-colors"
+      phx-hook="ResizeHandle"
+      id="resize-handle"
+    ></div>
+
+    <!-- Chat Panel -->
+    <div 
+      class="bg-base-100 flex flex-col"
+      style={"width: #{@layout_config.chat_width_percent}%"}
+    >
+      <div class="p-2 border-b border-base-300">
+        <div class="flex items-center gap-2">
+          <.rubber_duck size="sm" />
+          <span class="text-sm font-semibold">Duck Assistant</span>
+          <span class="badge badge-primary badge-sm">AI Ready</span>
+        </div>
+      </div>
+      <div class="flex-1 overflow-hidden">
+        <.live_component
+          module={ChatComponent}
+          id="chat-component"
+          session_id={@session_id}
+          user={@user}
+          agents={@agents}
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile View -->
+<div class="lg:hidden fixed bottom-4 right-4 z-50">
+  <div class="dropdown dropdown-top dropdown-end">
+    <label tabindex="0" class="btn btn-circle btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </label>
+    <ul tabindex="0" class="menu menu-sm dropdown-content mb-3 p-2 shadow bg-base-100 rounded-box w-52">
+      <li><a phx-click="toggle_view" phx-value-view="editor">Show Editor</a></li>
+      <li><a phx-click="toggle_view" phx-value-view="chat">Show Chat</a></li>
+    </ul>
+  </div>
+</div>

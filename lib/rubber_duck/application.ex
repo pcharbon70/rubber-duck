@@ -63,11 +63,11 @@ defmodule RubberDuck.Application do
 
       # Core Agents
       {RubberDuck.Agents.LLMOrchestratorAgent, id: "llm_orchestrator"},
-      {RubberDuck.Agents.LLMMonitoringAgent, id: "llm_monitoring"}
+      {RubberDuck.Agents.LLMMonitoringAgent, id: "llm_monitoring"},
 
-      # Future children:
-      # - Phoenix endpoint (when added)
-      # - Additional agents as needed
+      # Web interface
+      RubberDuckWeb.Telemetry,
+      RubberDuckWeb.Endpoint
     ]
 
     # Add GenStage pipeline components if enabled

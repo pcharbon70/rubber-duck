@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title default="RubberDuck" suffix=" · AI Programming Assistant">
+      <%= assigns[:page_title] || "RubberDuck" %>
+    </.live_title>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
+    <script>
+      (() => {
+        const setTheme = (theme) => {
+          if (theme === "system") {
+            localStorage.removeItem("phx:theme");
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            document.documentElement.setAttribute("data-theme", prefersDark ? "dark" : "light");
+          } else {
+            localStorage.setItem("phx:theme", theme);
+            document.documentElement.setAttribute("data-theme", theme);
+          }
+        };
+        
+        // Initialize theme
+        const savedTheme = localStorage.getItem("phx:theme");
+        setTheme(savedTheme || "system");
+        
+        // Listen for storage changes
+        window.addEventListener("storage", (e) => {
+          if (e.key === "phx:theme") {
+            setTheme(e.newValue || "system");
+          }
+        });
+        
+        // Listen for theme toggle events
+        window.addEventListener("phx:set-theme", (e) => {
+          setTheme(e.target.dataset.phxTheme);
+        });
+      })();
+    </script>
+  </head>
+  <body class="antialiased">
+    <%= @inner_content %>
+  </body>
+</html>

@@ -1,0 +1,360 @@
+<.flash_group flash={@flash} />
+
+<!-- Hero Section -->
+<div class="hero min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200">
+  <div class="hero-overlay bg-opacity-10"></div>
+  <div class="hero-content text-center">
+    <div class="max-w-4xl">
+      <!-- Animated Duck Logo -->
+      <div class="mb-8 float-animation">
+        <.rubber_duck size="lg" class="mx-auto" />
+      </div>
+      
+      <!-- Title and Subtitle -->
+      <h1 class="text-5xl md:text-7xl font-bold text-base-content mb-6">
+        RubberDuck
+      </h1>
+      <p class="text-xl md:text-2xl text-base-content/80 mb-2">
+        Your AI Pair Programming Partner
+      </p>
+      <p class="text-lg text-base-content/60 mb-8">
+        Collaborative coding with real-time AI assistance. Debug faster, code smarter.
+      </p>
+      
+      <!-- System Status -->
+      <div class="flex justify-center mb-8">
+        <div class="badge badge-success gap-2">
+          <div class="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+          System Online
+        </div>
+      </div>
+      
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+          onclick="auth_modal.showModal()"
+          class="btn btn-primary btn-lg"
+        >
+          🚀 Start Coding
+        </button>
+        <a href="#features" class="btn btn-outline btn-lg">
+          Learn More
+        </a>
+      </div>
+      
+      <!-- Quick Demo Info -->
+      <div class="mt-8 p-4 bg-base-200/50 rounded-lg">
+        <p class="text-sm text-base-content/60">
+          🔓 Demo Access: Use <code class="text-primary">rubberduck</code>
+          / <code class="text-primary">rubberduck</code>
+          to login
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<section id="features" class="py-20 px-4 bg-base-100">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl font-bold text-base-content mb-4">
+        Why RubberDuck?
+      </h2>
+      <p class="text-lg text-base-content/70">
+        Experience the future of collaborative programming
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- AI Assistant Feature -->
+      <div class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <div class="card-body items-center text-center">
+          <div class="text-5xl mb-4">🤖</div>
+          <h3 class="card-title text-2xl mb-2">AI Assistant</h3>
+          <p class="text-base-content/70">
+            Chat with Duck, your intelligent coding companion. Get instant help with debugging,
+            code suggestions, and explanations.
+          </p>
+          <div class="card-actions justify-center mt-4">
+            <div class="badge badge-primary">GPT-Powered</div>
+            <div class="badge badge-secondary">Context-Aware</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Collaborative Editor Feature -->
+      <div class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <div class="card-body items-center text-center">
+          <div class="text-5xl mb-4">👥</div>
+          <h3 class="card-title text-2xl mb-2">Collaborative Editor</h3>
+          <p class="text-base-content/70">
+            Code together in real-time with Monaco Editor. See live cursors,
+            share sessions, and collaborate seamlessly.
+          </p>
+          <div class="card-actions justify-center mt-4">
+            <div class="badge badge-primary">Real-Time</div>
+            <div class="badge badge-secondary">Multi-User</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Smart Analysis Feature -->
+      <div class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <div class="card-body items-center text-center">
+          <div class="text-5xl mb-4">🔍</div>
+          <h3 class="card-title text-2xl mb-2">Smart Analysis</h3>
+          <p class="text-base-content/70">
+            Get intelligent code reviews, optimization suggestions,
+            and best practice recommendations automatically.
+          </p>
+          <div class="card-actions justify-center mt-4">
+            <div class="badge badge-primary">Auto-Review</div>
+            <div class="badge badge-secondary">Best Practices</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="py-20 px-4 bg-base-200">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl font-bold text-base-content mb-4">
+        How It Works
+      </h2>
+      <p class="text-lg text-base-content/70">
+        Get started in three simple steps
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Step 1 -->
+      <div class="text-center">
+        <div class="w-16 h-16 mx-auto mb-4 bg-primary text-primary-content rounded-full flex items-center justify-center text-2xl font-bold">
+          1
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Sign In</h3>
+        <p class="text-base-content/70">
+          Login with the demo credentials or create your account
+        </p>
+      </div>
+      
+      <!-- Step 2 -->
+      <div class="text-center">
+        <div class="w-16 h-16 mx-auto mb-4 bg-primary text-primary-content rounded-full flex items-center justify-center text-2xl font-bold">
+          2
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Start Coding</h3>
+        <p class="text-base-content/70">
+          Open the collaborative editor and begin your session
+        </p>
+      </div>
+      
+      <!-- Step 3 -->
+      <div class="text-center">
+        <div class="w-16 h-16 mx-auto mb-4 bg-primary text-primary-content rounded-full flex items-center justify-center text-2xl font-bold">
+          3
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Collaborate</h3>
+        <p class="text-base-content/70">
+          Chat with Duck AI and invite team members to join
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-20 px-4 bg-base-100">
+  <div class="max-w-4xl mx-auto">
+    <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+      <div class="stat">
+        <div class="stat-figure text-primary">
+          <div class="text-3xl">⚡</div>
+        </div>
+        <div class="stat-title">Response Time</div>
+        <div class="stat-value text-primary">&lt; 100ms</div>
+        <div class="stat-desc">Real-time collaboration</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-figure text-secondary">
+          <div class="text-3xl">🧠</div>
+        </div>
+        <div class="stat-title">AI Models</div>
+        <div class="stat-value text-secondary">GPT-4</div>
+        <div class="stat-desc">Latest AI technology</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-figure text-accent">
+          <div class="text-3xl">🔒</div>
+        </div>
+        <div class="stat-title">Security</div>
+        <div class="stat-value text-accent">100%</div>
+        <div class="stat-desc">End-to-end encrypted</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20 px-4 bg-gradient-to-r from-primary to-secondary">
+  <div class="max-w-4xl mx-auto text-center">
+    <h2 class="text-4xl font-bold text-primary-content mb-4">
+      Ready to Level Up Your Coding?
+    </h2>
+    <p class="text-xl text-primary-content/90 mb-8">
+      Join developers who are already coding smarter with RubberDuck
+    </p>
+    <button
+      onclick="auth_modal.showModal()"
+      class="btn btn-lg bg-base-100 text-base-content hover:bg-base-200"
+    >
+      Get Started Now
+    </button>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer footer-center p-10 bg-base-200 text-base-content">
+  <div>
+    <div class="mb-4">
+      <.rubber_duck size="md" class="mx-auto" />
+    </div>
+    <p class="font-bold">
+      RubberDuck AI Programming Assistant
+    </p>
+    <p>Copyright © 2024 - All rights reserved</p>
+  </div>
+  <div>
+    <div class="grid grid-flow-col gap-4">
+      <a href="https://github.com" class="link link-hover">GitHub</a>
+      <a href="https://twitter.com" class="link link-hover">Twitter</a>
+      <a href="https://discord.com" class="link link-hover">Discord</a>
+      <a href="/docs" class="link link-hover">Documentation</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Authentication Modal -->
+<dialog id="auth_modal" class="modal">
+  <div class="modal-box">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+    </form>
+
+    <h3 class="font-bold text-2xl mb-6 text-center flex items-center justify-center gap-2">
+      Welcome Back! <.rubber_duck size="sm" class="inline-block" />
+    </h3>
+
+    <form action="/demo-login" method="post" class="space-y-4">
+      <input type="hidden" name="_csrf_token" value={Plug.CSRFProtection.get_csrf_token()} />
+
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Username</span>
+        </label>
+        <input
+          type="text"
+          name="username"
+          placeholder="Enter username"
+          class="input input-bordered w-full"
+          required
+          autofocus
+        />
+        <label class="label">
+          <span class="label-text-alt text-info">Hint: try "rubberduck"</span>
+        </label>
+      </div>
+
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Password</span>
+        </label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Enter password"
+          class="input input-bordered w-full"
+          required
+        />
+        <label class="label">
+          <span class="label-text-alt text-info">Hint: same as username</span>
+        </label>
+      </div>
+
+      <div class="form-control mt-6">
+        <button type="submit" class="btn btn-primary w-full">
+          Sign In
+        </button>
+      </div>
+    </form>
+
+    <div class="divider">OR</div>
+
+    <div class="text-center">
+      <p class="text-sm text-base-content/60 mb-4">
+        New to RubberDuck?
+      </p>
+      <button class="btn btn-outline btn-sm" disabled>
+        Create Account (Coming Soon)
+      </button>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Custom Styles -->
+<style>
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Card hover effects */
+  .card {
+    transition: all 0.3s ease;
+  }
+
+  /* Button press effect */
+  .btn:active {
+    transform: scale(0.95);
+  }
+</style>
+
+<!-- JavaScript for smooth scrolling and modal -->
+<script>
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Auto-focus username field when modal opens
+  const authModal = document.getElementById('auth_modal');
+  authModal.addEventListener('shown.bs.modal', () => {
+    const usernameInput = authModal.querySelector('input[name="username"]');
+    if (usernameInput) usernameInput.focus();
+  });
+</script>

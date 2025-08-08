@@ -42,6 +42,9 @@
 12. **[Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)**
     - Intelligent budget management, cost optimization, hierarchical budgeting
 
+13. **[Phase 13: Integrated Web Interface & Collaborative Platform](phase-13-web-interface.md)**
+    - LiveView interface, agent-enhanced collaboration, real-time coding with AI partners
+
 ### Supporting Documentation
 
 - **[Implementation Appendices](implementation-appendices.md)**
