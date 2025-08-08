@@ -44,52 +44,42 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   }
   
   alias RubberDuck.Analyzers.Code.{Security, Performance, Quality, Impact}
+  alias RubberDuck.Analyzers.Orchestrator
 
   @impl true
   def handle_signal(%{type: "code.analyze.file"} = signal, state) do
-    # Comprehensive file analysis with impact assessment
-    analysis_depth = state.opts.depth || :moderate
-
-    quality_analysis = perform_quality_analysis(signal.data, analysis_depth)
+    # Use Orchestrator for comprehensive file analysis
+    data = signal[:data] || %{}
+    opts = state[:opts] || %{}
     
-    result = %{
-      file: signal.data.file_path,
-      quality_score: quality_analysis.quality_score,
-      issues: quality_analysis.issues,
-      suggestions: quality_analysis.suggestions
+    request = %{
+      file_path: data[:file_path] || "unknown",
+      content: data[:content],
+      analyzers: determine_analyzers_from_opts(opts),
+      strategy: determine_strategy_from_depth(opts[:depth] || :moderate),
+      context: %{
+        state: state,
+        signal_data: data
+      },
+      options: %{
+        timeout: 30000
+      }
     }
-
-    # Add impact assessment if enabled
-    result =
-      if state.opts.impact_analysis do
-        impact_analysis = perform_impact_analysis(signal.data, state, %{})
-        Map.put(result, :impact, impact_analysis)
-      else
-        result
-      end
-
-    # Add performance analysis if enabled
-    result =
-      if state.opts.performance_check do
-        performance_analysis = perform_performance_analysis(signal.data)
-        Map.put(result, :performance, performance_analysis)
-      else
-        result
-      end
-
-    # Add security scan if enabled
-    result =
-      if state.opts.security_scan do
-        security_analysis = perform_security_analysis(signal.data)
-        Map.put(result, :security, security_analysis)
-      else
-        result
-      end
-
-    # Update state with analysis history
-    updated_state = track_analysis_history(state, signal.data.file_path, result)
-
-    {:ok, result, updated_state}
+    
+    case Orchestrator.orchestrate(request) do
+      {:ok, orchestrated_result} ->
+        # Convert orchestrator result to expected format
+        result = convert_orchestrator_result(orchestrated_result)
+        
+        # Update state with analysis history
+        updated_state = track_analysis_history(state, data[:file_path] || "unknown", result)
+        
+        {:ok, result, updated_state}
+        
+      {:error, reason} ->
+        Logger.error("Orchestrated analysis failed: #{inspect(reason)}")
+        {:error, reason, state}
+    end
   end
 
   @impl true
@@ -210,59 +200,41 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   Handle typed Analyze message for code analysis
   """
   def handle_analyze(%Analyze{} = msg, context) do
-    state = context[:state] || %{}
-
-    # Convert typed message to data format expected by existing logic
-    data = %{
-      file_path: msg.file_path,
-      depth: msg.depth,
-      auto_fix: msg.auto_fix,
-      content: context[:content],
-      complexity: context[:complexity],
-      lines: context[:lines],
-      duplication: context[:duplication]
-    }
-
-    # Use quality analyzer for basic analysis
-    quality_analysis = perform_quality_analysis(data, msg.depth)
+    # Use Orchestrator for all analysis types
+    analyzers = case msg.analysis_type do
+      :comprehensive -> :all
+      other -> [other]
+    end
     
-    result = %{
-      file: msg.file_path,
-      quality_score: quality_analysis.quality_score,
-      issues: quality_analysis.issues,
-      suggestions: quality_analysis.suggestions
+    strategy = case msg.depth do
+      :shallow -> :quick
+      :moderate -> :standard
+      :deep -> :deep
+      _ -> :standard
+    end
+    
+    request = %{
+      file_path: msg.file_path,
+      content: context[:content],
+      analyzers: analyzers,
+      strategy: strategy,
+      context: context,
+      options: %{
+        auto_fix: msg.auto_fix,
+        timeout: 30000
+      }
     }
-
-    # Add specialized analysis based on type
-    result =
-      case msg.analysis_type do
-        :comprehensive ->
-          security_analysis = perform_security_analysis(data)
-          performance_analysis = perform_performance_analysis(data)
-          impact_analysis = perform_impact_analysis(data, state, context)
-          result
-          |> Map.put(:impact, impact_analysis)
-          |> Map.put(:performance, performance_analysis)
-          |> Map.put(:security, security_analysis)
-          |> Map.put(:quality, quality_analysis)
-
-        :security ->
-          security_analysis = perform_security_analysis(data)
-          Map.put(result, :security, security_analysis)
-
-        :performance ->
-          performance_analysis = perform_performance_analysis(data)
-          Map.put(result, :performance, performance_analysis)
-
-        :quality ->
-          Map.put(result, :quality, quality_analysis)
-
-        :impact ->
-          impact_analysis = perform_impact_analysis(data, state, context)
-          Map.put(result, :impact, impact_analysis)
-      end
-
-    {:ok, result}
+    
+    case Orchestrator.orchestrate(request) do
+      {:ok, orchestrated_result} ->
+        # Convert to expected format based on analysis type
+        result = format_analyze_result(orchestrated_result, msg.analysis_type)
+        {:ok, result}
+        
+      {:error, reason} ->
+        Logger.error("Orchestrated analysis failed: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -330,7 +302,137 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     end
   end
 
-  # Quality analysis delegation helper
+  # Helper functions for Orchestrator integration
+  
+  defp determine_analyzers_from_opts(opts) do
+    analyzers = []
+    
+    # Check if options are explicitly enabled (default is true per opts_schema)
+    analyzers = if Map.get(opts, :security_scan, true), do: analyzers ++ [:security], else: analyzers
+    analyzers = if Map.get(opts, :performance_check, true), do: analyzers ++ [:performance], else: analyzers
+    analyzers = if Map.get(opts, :impact_analysis, true), do: analyzers ++ [:impact], else: analyzers
+    
+    # Always include quality analysis
+    [:quality | analyzers]
+  end
+  
+  defp determine_strategy_from_depth(depth) do
+    case depth do
+      :shallow -> :quick
+      :moderate -> :standard
+      :deep -> :deep
+      _ -> :standard
+    end
+  end
+  
+  defp convert_orchestrator_result(orchestrated_result) do
+    results = orchestrated_result.results
+    
+    base_result = %{
+      file: orchestrated_result.file_path,
+      quality_score: results[:quality][:quality_score] || 0.5,
+      issues: extract_all_issues(results),
+      suggestions: extract_all_suggestions(orchestrated_result),
+      overall_health: orchestrated_result.overall_health
+    }
+    
+    # Add individual analysis results if present
+    base_result
+    |> maybe_add_result(:security, results[:security])
+    |> maybe_add_result(:performance, results[:performance])
+    |> maybe_add_result(:impact, results[:impact])
+    |> maybe_add_result(:quality, results[:quality])
+  end
+  
+  defp format_analyze_result(orchestrated_result, analysis_type) do
+    results = orchestrated_result.results
+    
+    base = %{
+      file: orchestrated_result.file_path,
+      quality_score: results[:quality][:quality_score] || 0.5,
+      issues: results[:quality][:issues] || [],
+      suggestions: orchestrated_result.recommendations |> Enum.map(& &1.action)
+    }
+    
+    case analysis_type do
+      :comprehensive ->
+        base
+        |> Map.put(:quality, results[:quality])
+        |> Map.put(:security, format_security_result(results[:security]))
+        |> Map.put(:performance, format_performance_result(results[:performance]))
+        |> Map.put(:impact, format_impact_result(results[:impact]))
+        |> Map.put(:insights, orchestrated_result.insights)
+        |> Map.put(:overall_health, orchestrated_result.overall_health)
+        
+      type when type in [:security, :performance, :quality, :impact] ->
+        Map.put(base, type, results[type])
+        
+      _ ->
+        base
+    end
+  end
+  
+  defp extract_all_issues(results) do
+    issues = []
+    
+    issues = issues ++ (results[:quality][:issues] || [])
+    issues = issues ++ (results[:security][:vulnerabilities] || [])
+    
+    if results[:performance][:bottlenecks] do
+      issues ++ Enum.map(results[:performance][:bottlenecks], fn bottleneck ->
+        %{type: :performance, description: bottleneck}
+      end)
+    else
+      issues
+    end
+  end
+  
+  defp extract_all_suggestions(orchestrated_result) do
+    orchestrated_result.recommendations
+    |> Enum.take(5)
+    |> Enum.map(& &1.action)
+  end
+  
+  defp maybe_add_result(result, _key, nil), do: result
+  defp maybe_add_result(result, key, value), do: Map.put(result, key, value)
+  
+  defp format_security_result(nil), do: %{vulnerabilities: [], risk_level: :none}
+  defp format_security_result(security) do
+    %{
+      vulnerabilities: security[:vulnerabilities] || [],
+      risk_level: security[:risk_level] || :none,
+      recommendations: build_security_recommendations(security)
+    }
+  end
+  
+  defp format_performance_result(nil), do: %{optimization_potential: 0}
+  defp format_performance_result(performance) do
+    %{
+      time_complexity: performance[:time_complexity] || :linear,
+      space_complexity: performance[:space_complexity] || :constant,
+      database_operations: performance[:database_operations] || [],
+      bottlenecks: performance[:bottlenecks] || [],
+      optimization_opportunities: performance[:optimization_opportunities] || [],
+      optimization_potential: performance[:optimization_potential] || 0
+    }
+  end
+  
+  defp format_impact_result(nil), do: %{scope: :minimal, severity: :low}
+  defp format_impact_result(impact) do
+    %{
+      scope: impact[:scope] || :minimal,
+      severity: impact[:severity] || :low,
+      dependencies: %{
+        direct: impact[:dependency_impact][:direct_dependencies] || 0,
+        transitive: impact[:dependency_impact][:transitive_dependencies] || 0,
+        affected_modules: impact[:dependency_impact][:affected_modules] || []
+      },
+      estimated_effort: impact[:estimated_effort] || :trivial,
+      rollback_complexity: impact[:rollback_complexity] || :simple
+    }
+  end
+  
+  # Quality analysis delegation helper (for backward compatibility)
   
   defp perform_quality_analysis(data, depth \\ :moderate) do
     # Create an Analyze message for the Quality analyzer
@@ -424,7 +526,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
 
   # Impact analysis delegation helper
   
-  defp perform_impact_analysis(data, state, context) do
+  defp perform_impact_analysis(data, state, _context) do
     # Create an Analyze message for the Impact analyzer
     analyze_msg = %Analyze{
       file_path: data[:file_path] || "unknown",
