@@ -45,6 +45,7 @@ defmodule RubberDuck.Messages.Project.OptimizeResources do
 
     def to_jido_signal(%OptimizeResources{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "project.resources.optimize",
         data: data |> Map.delete(:metadata),

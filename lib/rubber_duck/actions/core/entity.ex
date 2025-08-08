@@ -12,7 +12,7 @@ defmodule RubberDuck.Actions.Core.Entity do
   Entities are NOT meant to replace Ash resources but to coordinate
   them during complex multi-step actions.
   """
-  
+
   alias RubberDuck.EntityRepository
 
   defstruct [

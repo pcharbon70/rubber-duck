@@ -12,7 +12,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         lines_changed: 75,
         functions_modified: ["func1", "func2"],
@@ -33,12 +33,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
 
     test "comprehensive analysis includes impact" do
       message = %Analyze{
-        file_path: "test.ex", 
+        file_path: "test.ex",
         analysis_type: :comprehensive,
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: "defmodule SimpleModule do\n  def simple_function(x), do: x + 1\nend",
         lines_changed: 25,
@@ -60,7 +60,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
         api_changes: true,
         breaking_changes: false
       }
-      
+
       message = %ImpactAssess{
         file_path: "lib/user_service.ex",
         changes: changes
@@ -88,7 +88,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
           }
         }
       }
-      
+
       state = %{}
 
       assert {:ok, impact_result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
@@ -121,10 +121,19 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
           api_changes: true
         }
       }
-      
-      state = %{opts: %{depth: :moderate, impact_analysis: true, performance_check: false, security_scan: false}}
 
-      assert {:ok, analysis_result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
+      state = %{
+        opts: %{
+          depth: :moderate,
+          impact_analysis: true,
+          performance_check: false,
+          security_scan: false
+        }
+      }
+
+      assert {:ok, analysis_result, _updated_state} =
+               CodeAnalysisSkill.handle_signal(signal, state)
+
       assert Map.has_key?(analysis_result, :impact)
       assert is_map(analysis_result.impact)
       assert Map.has_key?(analysis_result.impact, :scope)
@@ -138,7 +147,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
         depth: :deep,
         auto_fix: false
       }
-      
+
       context = %{
         lines_changed: 150,
         complexity_delta: 10,
@@ -150,7 +159,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
 
       assert {:ok, result} = CodeAnalysisSkill.handle_analyze(message, context)
       impact_analysis = result.impact
-      
+
       # Should detect high-risk changes
       assert impact_analysis.scope in [:major, :moderate]
       assert impact_analysis.severity in [:critical, :high, :medium]
@@ -163,7 +172,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         lines_changed: 200,
         complexity_delta: 8,
@@ -174,7 +183,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
 
       assert {:ok, result} = CodeAnalysisSkill.handle_analyze(message, context)
       impact_analysis = result.impact
-      
+
       assert Map.has_key?(impact_analysis, :estimated_effort)
       assert impact_analysis.estimated_effort in [:medium, :large, :extra_large]
     end
@@ -188,7 +197,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       # Empty context should still work but with limited functionality
       context = %{}
 
@@ -222,11 +231,11 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
           }
         }
       }
-      
+
       state = %{}
 
       assert {:ok, result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
-      
+
       # Should maintain the same structure as before
       assert Map.has_key?(result, :file)
       assert Map.has_key?(result, :direct_impact)
@@ -244,11 +253,18 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
           content: "def simple, do: :ok"
         }
       }
-      
-      state = %{opts: %{depth: :shallow, impact_analysis: false, performance_check: false, security_scan: false}}
+
+      state = %{
+        opts: %{
+          depth: :shallow,
+          impact_analysis: false,
+          performance_check: false,
+          security_scan: false
+        }
+      }
 
       assert {:ok, result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
-      
+
       # Should not include impact analysis when disabled
       refute Map.has_key?(result, :impact)
       assert Map.has_key?(result, :quality_score)
@@ -265,7 +281,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         lines_changed: 80,
         complexity_delta: 6,
@@ -275,7 +291,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
       }
 
       assert {:ok, result} = CodeAnalysisSkill.handle_analyze(message, context)
-      
+
       # Verify that we get the comprehensive impact analysis structure
       # that only the Impact analyzer provides
       impact = result.impact
@@ -283,7 +299,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
       assert Map.has_key?(impact, :severity)
       assert Map.has_key?(impact, :estimated_effort)
       assert Map.has_key?(impact, :rollback_complexity)
-      
+
       # Verify the dependencies structure includes detailed impact metrics
       assert Map.has_key?(impact, :dependencies)
       dependencies = impact.dependencies
@@ -299,7 +315,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: """
         defmodule Comprehensive do
@@ -322,13 +338,13 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillImpactIntegrationTest do
       }
 
       assert {:ok, result} = CodeAnalysisSkill.handle_analyze(message, context)
-      
+
       # Should include all analyzers for comprehensive analysis
       assert Map.has_key?(result, :quality)
       assert Map.has_key?(result, :security)
       assert Map.has_key?(result, :performance)
       assert Map.has_key?(result, :impact)
-      
+
       # Verify each analyzer provides its expected structure
       assert is_map(result.quality)
       assert is_map(result.security)

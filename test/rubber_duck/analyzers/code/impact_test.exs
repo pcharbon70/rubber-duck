@@ -10,7 +10,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/my_module.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         lines_changed: 50,
         functions_modified: ["func1", "func2"],
@@ -33,7 +33,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/critical.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         lines_changed: 150,
         complexity_delta: 8,
@@ -43,12 +43,12 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       risk = result.risk_assessment
-      
+
       assert Map.has_key?(risk, :level)
       assert Map.has_key?(risk, :score)
       assert Map.has_key?(risk, :factors)
       assert Map.has_key?(risk, :mitigation_suggestions)
-      
+
       # Should detect at least medium risk due to large change and reduced coverage
       assert risk.level in [:medium, :high, :critical]
       assert risk.score > 1.0
@@ -60,7 +60,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/test.ex",
         analysis_type: :comprehensive
       }
-      
+
       context = %{lines_changed: 10, state: %{}}
 
       assert {:ok, result} = Impact.analyze(message, context)
@@ -74,7 +74,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/api.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         breaking_changes: true,
         state: %{}
@@ -82,7 +82,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       assert result.scope == :major
-      
+
       # Test API changes - moderate scope
       context = %{
         api_changes: true,
@@ -92,7 +92,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       assert result.scope == :moderate
-      
+
       # Test minimal changes
       context = %{
         lines_changed: 5,
@@ -109,7 +109,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/complex.ex",
         analysis_type: :impact
       }
-      
+
       # Critical severity test
       context = %{
         breaking_changes: true,
@@ -121,7 +121,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       assert result.severity == :critical
-      
+
       # Low severity test
       context = %{
         lines_changed: 10,
@@ -138,7 +138,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/effort_test.ex",
         analysis_type: :impact
       }
-      
+
       # Large effort
       context = %{
         lines_changed: 500,
@@ -148,7 +148,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       assert result.estimated_effort in [:large, :extra_large]
-      
+
       # Trivial effort
       context = %{
         lines_changed: 5,
@@ -169,7 +169,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         breaking_changes: false,
         complexity_delta: 3
       }
-      
+
       message = %ImpactAssess{
         file_path: "lib/assess_test.ex",
         changes: changes
@@ -191,7 +191,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         modules_affected: ["Auth", "Security", "Payment"],
         file_path: "lib/critical_auth.ex"
       }
-      
+
       message = %ImpactAssess{
         file_path: "lib/critical_auth.ex",
         changes: changes
@@ -209,14 +209,14 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         api_changes: true,
         breaking_changes: true
       }
-      
+
       message = %ImpactAssess{
         file_path: "lib/api_module.ex",
         changes: changes
       }
 
       assert {:ok, result} = Impact.analyze(message, %{state: %{}})
-      
+
       suggestions = result.suggested_tests
       assert is_list(suggestions)
       assert length(suggestions) >= 2
@@ -233,16 +233,16 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
           }
         }
       }
-      
+
       changes = %{lines_changed: 50, api_changes: true}
-      
+
       message = %ImpactAssess{
         file_path: "lib/core.ex",
         changes: changes
       }
 
       assert {:ok, result} = Impact.analyze(message, %{state: state})
-      
+
       dep_impact = result.dependency_impact
       assert dep_impact.direct_dependencies == 2
       assert dep_impact.transitive_dependencies == 2
@@ -256,7 +256,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/breaking.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         breaking_changes: true,
         state: %{}
@@ -264,7 +264,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       risk_factors = result.risk_assessment.factors
-      
+
       assert Enum.any?(risk_factors, fn {type, _} -> type == :breaking_changes end)
       assert result.risk_assessment.level in [:medium, :high, :critical]
     end
@@ -274,7 +274,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/complex.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         complexity_delta: 10,
         state: %{}
@@ -282,7 +282,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       risk_factors = result.risk_assessment.factors
-      
+
       assert Enum.any?(risk_factors, fn {type, _} -> type == :high_complexity_increase end)
     end
 
@@ -291,7 +291,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/coverage.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         test_coverage_delta: -0.3,
         state: %{}
@@ -299,7 +299,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       risk_factors = result.risk_assessment.factors
-      
+
       assert Enum.any?(risk_factors, fn {type, _} -> type == :reduced_test_coverage end)
     end
 
@@ -308,7 +308,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/risky.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         breaking_changes: true,
         complexity_delta: 8,
@@ -318,7 +318,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       suggestions = result.risk_assessment.mitigation_suggestions
-      
+
       assert is_list(suggestions)
       assert length(suggestions) >= 2
       assert Enum.any?(suggestions, &String.contains?(&1, "compatibility"))
@@ -332,7 +332,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/perf.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         complexity_delta: 5,
         lines_changed: 100,
@@ -342,12 +342,12 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       perf_impact = result.performance_impact
-      
+
       assert Map.has_key?(perf_impact, :complexity_change)
       assert Map.has_key?(perf_impact, :memory_impact)
       assert Map.has_key?(perf_impact, :runtime_impact)
       assert Map.has_key?(perf_impact, :overall_impact)
-      
+
       assert perf_impact.complexity_change == 5
       assert perf_impact.memory_impact == 50
       assert perf_impact.overall_impact in [:negative, :slightly_negative, :neutral]
@@ -359,7 +359,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/optimized.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         complexity_delta: -3,
         memory_delta: -10,
@@ -368,7 +368,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       assert result.performance_impact.overall_impact in [:positive, :slightly_positive]
-      
+
       # Negative impact
       context = %{
         complexity_delta: 10,
@@ -392,20 +392,21 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
           }
         }
       }
-      
+
       message = %Analyze{
         file_path: "lib/main.ex",
         analysis_type: :impact
       }
-      
+
       context = %{state: state}
 
       assert {:ok, result} = Impact.analyze(message, context)
       dep_impact = result.dependency_impact
-      
+
       assert dep_impact.direct_dependencies == 2
       assert dep_impact.transitive_dependencies == 3
-      assert dep_impact.impact_radius == 3.5  # 2 + (3 * 0.5)
+      # 2 + (3 * 0.5)
+      assert dep_impact.impact_radius == 3.5
       assert is_list(dep_impact.affected_modules)
     end
 
@@ -418,17 +419,17 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
           }
         }
       }
-      
+
       message = %Analyze{
         file_path: "lib/core.ex",
         analysis_type: :impact
       }
-      
+
       context = %{state: state}
 
       assert {:ok, result} = Impact.analyze(message, context)
       critical_paths = result.dependency_impact.critical_paths
-      
+
       # Should identify auth, security, and payment as critical
       assert length(critical_paths) >= 2
     end
@@ -445,17 +446,17 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
           "lib/dependent2.ex" => %{transitive: ["lib/main.ex"], direct: []}
         }
       }
-      
+
       message = %Analyze{
         file_path: "lib/main.ex",
         analysis_type: :impact
       }
-      
+
       context = %{state: state}
 
       assert {:ok, result} = Impact.analyze(message, context)
       affected = result.affected_files
-      
+
       assert is_list(affected)
       # Should find files that depend on lib/main.ex
       assert "lib/dependent1.ex" in affected
@@ -470,17 +471,17 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         api_changes: true,
         breaking_changes: true
       }
-      
+
       message = %ImpactAssess{
         file_path: "lib/api.ex",
         changes: changes
       }
 
       assert {:ok, result} = Impact.analyze(message, %{state: %{}})
-      
+
       test_impact = result.test_coverage_impact
       suggestions = test_impact.test_suggestions
-      
+
       assert is_list(suggestions)
       assert length(suggestions) >= 3
       assert Enum.any?(suggestions, &String.contains?(&1, "unit tests"))
@@ -495,14 +496,14 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, %{state: %{}})
       assert result.test_coverage_impact.priority == :critical
-      
+
       # High priority for API changes
       changes = %{api_changes: true, breaking_changes: false}
       message = %ImpactAssess{file_path: "lib/api.ex", changes: changes}
 
       assert {:ok, result} = Impact.analyze(message, %{state: %{}})
       assert result.test_coverage_impact.priority == :high
-      
+
       # Normal priority for small changes
       changes = %{lines_changed: 10, functions_modified: ["small_func"]}
       message = %ImpactAssess{file_path: "lib/small.ex", changes: changes}
@@ -518,7 +519,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/db_change.ex",
         analysis_type: :impact
       }
-      
+
       # Complex rollback due to database changes
       context = %{
         database_changes: true,
@@ -529,7 +530,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       assert result.rollback_complexity in [:complex, :moderate]
-      
+
       # Complex rollback due to external API changes
       context = %{
         external_api_changes: true,
@@ -539,7 +540,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, context)
       assert result.rollback_complexity == :complex
-      
+
       # Moderate rollback for breaking changes
       context = %{
         breaking_changes: true,
@@ -557,7 +558,7 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
         file_path: "lib/simple.ex",
         analysis_type: :impact
       }
-      
+
       context = %{
         lines_changed: 20,
         functions_modified: ["helper_func"],
@@ -624,9 +625,9 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
     test "returns error for unsupported message types" do
       unsupported_message = %{__struct__: :unsupported}
-      
-      assert {:error, {:unsupported_message_type, :unsupported}} = 
-        Impact.analyze(unsupported_message, %{})
+
+      assert {:error, {:unsupported_message_type, :unsupported}} =
+               Impact.analyze(unsupported_message, %{})
     end
   end
 
@@ -639,13 +640,13 @@ defmodule RubberDuck.Analyzers.Code.ImpactTest do
 
       assert {:ok, result} = Impact.analyze(message, %{state: %{}})
       affected = result.affected_files
-      
+
       assert is_list(affected)
       assert length(affected) > 0
-      
+
       # Should include test files
       assert Enum.any?(affected, &String.contains?(&1, "test"))
-      
+
       # Should not include the original file
       refute "lib/user_service.ex" in affected
     end

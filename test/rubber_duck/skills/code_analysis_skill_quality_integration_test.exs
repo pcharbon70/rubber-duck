@@ -12,7 +12,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: """
         defmodule ComplexModule do
@@ -47,12 +47,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
 
     test "comprehensive analysis includes quality" do
       message = %Analyze{
-        file_path: "test.ex", 
+        file_path: "test.ex",
         analysis_type: :comprehensive,
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: "defmodule SimpleModule do\n  def simple_function(x), do: x + 1\nend",
         state: %{}
@@ -90,10 +90,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
           thresholds: %{complexity: 15, coverage: 70}
         }
       }
-      
+
       state = %{}
 
-      assert {:ok, quality_result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
+      assert {:ok, quality_result, _updated_state} =
+               CodeAnalysisSkill.handle_signal(signal, state)
+
       assert Map.has_key?(quality_result, :status)
       assert quality_result.status == :completed
       assert Map.has_key?(quality_result, :quality_score)
@@ -118,10 +120,19 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
           """
         }
       }
-      
-      state = %{opts: %{depth: :moderate, impact_analysis: false, performance_check: false, security_scan: false}}
 
-      assert {:ok, analysis_result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
+      state = %{
+        opts: %{
+          depth: :moderate,
+          impact_analysis: false,
+          performance_check: false,
+          security_scan: false
+        }
+      }
+
+      assert {:ok, analysis_result, _updated_state} =
+               CodeAnalysisSkill.handle_signal(signal, state)
+
       assert Map.has_key?(analysis_result, :quality_score)
       assert Map.has_key?(analysis_result, :issues)
       assert Map.has_key?(analysis_result, :suggestions)
@@ -137,7 +148,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
         depth: :deep,
         auto_fix: false
       }
-      
+
       context = %{
         content: """
         def poor_quality_function(a, b, c, d, e, f) do
@@ -165,7 +176,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
 
       assert {:ok, result} = CodeAnalysisSkill.handle_analyze(message, context)
       quality_analysis = result.quality
-      
+
       assert Map.has_key?(quality_analysis, :maintainability_score)
       assert Map.has_key?(quality_analysis, :technical_debt_indicators)
       assert is_list(quality_analysis.technical_debt_indicators)
@@ -180,7 +191,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: """
         defmodule MetricsTest do
@@ -204,7 +215,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
 
       assert {:ok, result} = CodeAnalysisSkill.handle_analyze(message, context)
       metrics = result.quality.metrics
-      
+
       assert Map.has_key?(metrics, :complexity)
       assert Map.has_key?(metrics, :loc)
       assert Map.has_key?(metrics, :maintainability_index)
@@ -222,7 +233,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       # Empty context should still work but with limited functionality
       context = %{}
 
@@ -253,11 +264,18 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
           content: "def simple, do: :ok"
         }
       }
-      
-      state = %{opts: %{depth: :shallow, impact_analysis: false, performance_check: false, security_scan: false}}
+
+      state = %{
+        opts: %{
+          depth: :shallow,
+          impact_analysis: false,
+          performance_check: false,
+          security_scan: false
+        }
+      }
 
       assert {:ok, result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
-      
+
       # Should maintain the same structure as before
       assert Map.has_key?(result, :file)
       assert Map.has_key?(result, :quality_score)
@@ -274,11 +292,11 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
           metrics: [:complexity, :duplication]
         }
       }
-      
+
       state = %{}
 
       assert {:ok, result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
-      
+
       # Should have the expected QualityCheck result structure
       assert Map.has_key?(result, :status)
       assert Map.has_key?(result, :target)
@@ -295,7 +313,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: """
         def test_function do
@@ -311,14 +329,14 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillQualityIntegrationTest do
       }
 
       assert {:ok, result} = CodeAnalysisSkill.handle_analyze(message, context)
-      
+
       # Verify that we get the comprehensive quality analysis structure
       # that only the Quality analyzer provides
       quality = result.quality
       assert Map.has_key?(quality, :maintainability_score)
       assert Map.has_key?(quality, :technical_debt_indicators)
       assert Map.has_key?(quality, :metrics)
-      
+
       # Verify that metrics include the detailed metrics from Quality analyzer
       assert Map.has_key?(quality.metrics, :maintainability_index)
       assert Map.has_key?(quality.metrics, :documentation_coverage)

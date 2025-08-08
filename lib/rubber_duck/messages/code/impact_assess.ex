@@ -46,6 +46,7 @@ defmodule RubberDuck.Messages.Code.ImpactAssess do
 
     def to_jido_signal(%ImpactAssess{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "code.impact.assess",
         data: data |> Map.delete(:metadata),

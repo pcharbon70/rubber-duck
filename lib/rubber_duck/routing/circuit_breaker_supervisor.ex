@@ -1,23 +1,23 @@
 defmodule RubberDuck.Routing.CircuitBreakerSupervisor do
   @moduledoc """
   Supervisor for circuit breaker instances.
-  
+
   Manages individual circuit breakers for each message type,
   creating them on demand and supervising their lifecycle.
   """
-  
+
   use DynamicSupervisor
-  
+
   @doc """
   Starts the circuit breaker supervisor.
   """
   def start_link(opts \\ []) do
     DynamicSupervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end
-  
+
   @doc """
   Ensures a circuit breaker exists for the given message type.
-  
+
   Creates one if it doesn't exist, or returns :ok if it already does.
   """
   @spec ensure_circuit_breaker(module(), keyword()) :: :ok | {:error, term()}
@@ -28,7 +28,7 @@ defmodule RubberDuck.Routing.CircuitBreakerSupervisor do
       error -> error
     end
   end
-  
+
   @doc """
   Starts a circuit breaker for a specific message type.
   """
@@ -36,14 +36,14 @@ defmodule RubberDuck.Routing.CircuitBreakerSupervisor do
   def start_circuit_breaker(message_type, opts \\ []) do
     child_spec = %{
       id: {RubberDuck.Routing.CircuitBreaker, message_type},
-      start: {RubberDuck.Routing.CircuitBreaker, :start_link, 
-              [[message_type: message_type] ++ opts]},
+      start:
+        {RubberDuck.Routing.CircuitBreaker, :start_link, [[message_type: message_type] ++ opts]},
       restart: :permanent
     }
-    
+
     DynamicSupervisor.start_child(__MODULE__, child_spec)
   end
-  
+
   @doc """
   Stops a circuit breaker for a specific message type.
   """
@@ -53,11 +53,12 @@ defmodule RubberDuck.Routing.CircuitBreakerSupervisor do
       [{pid, _}] ->
         DynamicSupervisor.terminate_child(__MODULE__, pid)
         :ok
+
       [] ->
         {:error, :not_found}
     end
   end
-  
+
   @doc """
   Lists all active circuit breakers.
   """
@@ -65,7 +66,7 @@ defmodule RubberDuck.Routing.CircuitBreakerSupervisor do
   def list_circuit_breakers do
     Registry.select(RubberDuck.CircuitBreakerRegistry, [{{:"$1", :_, :_}, [], [:"$1"]}])
   end
-  
+
   @doc """
   Gets statistics for all circuit breakers.
   """
@@ -81,7 +82,7 @@ defmodule RubberDuck.Routing.CircuitBreakerSupervisor do
     |> Enum.reject(&is_nil/1)
     |> Map.new()
   end
-  
+
   @impl true
   def init(_opts) do
     DynamicSupervisor.init(strategy: :one_for_one)

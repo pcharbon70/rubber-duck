@@ -43,6 +43,7 @@ defmodule RubberDuck.Messages.User.ValidateSession do
 
     def to_jido_signal(%ValidateSession{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "user.session.validate",
         data: data |> Map.delete(:metadata),

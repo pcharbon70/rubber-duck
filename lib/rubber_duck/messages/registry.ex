@@ -62,12 +62,12 @@ defmodule RubberDuck.Messages.Registry do
   def lookup_type(string_pattern) when is_binary(string_pattern) do
     if RubberDuck.Messages.PatternMatcher.has_wildcard?(string_pattern) do
       # For wildcard patterns, find the first matching registered type
-      matching_type = 
+      matching_type =
         @type_mappings
         |> Enum.find(fn {type, _module} ->
           RubberDuck.Messages.PatternMatcher.matches?(type, string_pattern)
         end)
-      
+
       case matching_type do
         {_type, module} -> module
         nil -> nil
@@ -76,10 +76,10 @@ defmodule RubberDuck.Messages.Registry do
       Map.get(@type_mappings, string_pattern)
     end
   end
-  
+
   @doc """
   Looks up all message type modules that match a pattern.
-  
+
   Supports wildcard patterns. Returns a list of modules.
   """
   @spec lookup_types_matching(String.t()) :: [module()]
@@ -126,7 +126,7 @@ defmodule RubberDuck.Messages.Registry do
 
   @doc """
   Checks if a string pattern is registered.
-  
+
   Supports wildcard patterns using PatternMatcher.
   """
   @spec pattern_registered?(String.t()) :: boolean()

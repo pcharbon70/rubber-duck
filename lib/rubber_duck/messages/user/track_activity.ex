@@ -47,6 +47,7 @@ defmodule RubberDuck.Messages.User.TrackActivity do
 
     def to_jido_signal(%TrackActivity{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "user.activity.track",
         data: data |> Map.delete(:metadata),

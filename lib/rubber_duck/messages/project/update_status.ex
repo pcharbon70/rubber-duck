@@ -45,6 +45,7 @@ defmodule RubberDuck.Messages.Project.UpdateStatus do
 
     def to_jido_signal(%UpdateStatus{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "project.status.update",
         data: data |> Map.delete(:metadata),

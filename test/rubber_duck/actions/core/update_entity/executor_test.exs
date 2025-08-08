@@ -361,6 +361,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.ExecutorTest do
 
       # Fix checksum
       {_, snapshot_result} = Executor.create_snapshot(snapshot.data)
+
       snapshot = %{
         snapshot
         | checksum: snapshot_result |> Map.get(:checksum)

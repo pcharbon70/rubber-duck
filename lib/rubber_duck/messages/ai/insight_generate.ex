@@ -51,6 +51,7 @@ defmodule RubberDuck.Messages.AI.InsightGenerate do
 
     def to_jido_signal(%InsightGenerate{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "ai.insight.generate",
         data: data |> Map.delete(:metadata),

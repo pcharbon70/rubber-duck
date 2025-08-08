@@ -35,7 +35,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     PerformanceAnalyze,
     SecurityScan
   }
-  
+
   alias RubberDuck.Analyzers.Code.{Security, Performance, Quality, Impact}
   alias RubberDuck.Analyzers.Orchestrator
 
@@ -57,24 +57,26 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       handle_analyze_with_state(msg, state)
     end
   end
-  
+
   defp handle_analyze_with_state(msg, state) do
     # Use Orchestrator for all analysis types
-    analyzers = case msg.analysis_type do
-      :comprehensive -> :all
-      other -> [other]
-    end
-    
-    strategy = case msg.depth do
-      :shallow -> :quick
-      :moderate -> :standard
-      :deep -> :deep
-      _ -> :standard
-    end
-    
+    analyzers =
+      case msg.analysis_type do
+        :comprehensive -> :all
+        other -> [other]
+      end
+
+    strategy =
+      case msg.depth do
+        :shallow -> :quick
+        :moderate -> :standard
+        :deep -> :deep
+        _ -> :standard
+      end
+
     # Extract context from message or use empty context
     context = msg.context || %{}
-    
+
     request = %{
       file_path: msg.file_path,
       content: context[:content],
@@ -86,37 +88,39 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
         timeout: 30000
       }
     }
-    
+
     case Orchestrator.orchestrate(request) do
       {:ok, orchestrated_result} ->
         # Convert to expected format based on analysis type
         result = format_analyze_result(orchestrated_result, msg.analysis_type)
-        
+
         # Update state if needed
         updated_state = track_analysis_history(state, msg.file_path, result)
-        
+
         {:ok, result, updated_state}
-        
+
       {:error, reason} ->
         Logger.error("Orchestrated analysis failed: #{inspect(reason)}")
         {:error, reason, state}
     end
   end
-  
+
   defp handle_analyze_with_context(msg, context) do
     # Use Orchestrator for all analysis types
-    analyzers = case msg.analysis_type do
-      :comprehensive -> :all
-      other -> [other]
-    end
-    
-    strategy = case msg.depth do
-      :shallow -> :quick
-      :moderate -> :standard
-      :deep -> :deep
-      _ -> :standard
-    end
-    
+    analyzers =
+      case msg.analysis_type do
+        :comprehensive -> :all
+        other -> [other]
+      end
+
+    strategy =
+      case msg.depth do
+        :shallow -> :quick
+        :moderate -> :standard
+        :deep -> :deep
+        _ -> :standard
+      end
+
     request = %{
       file_path: msg.file_path,
       content: context[:content],
@@ -128,13 +132,13 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
         timeout: 30000
       }
     }
-    
+
     case Orchestrator.orchestrate(request) do
       {:ok, orchestrated_result} ->
         # Convert to expected format based on analysis type
         result = format_analyze_result(orchestrated_result, msg.analysis_type)
         {:ok, result}
-        
+
       {:error, reason} ->
         Logger.error("Orchestrated analysis failed: #{inspect(reason)}")
         {:error, reason}
@@ -149,7 +153,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     case Quality.analyze(msg, %{}) do
       {:ok, quality_result} ->
         {:ok, quality_result}
-      
+
       {:error, reason} ->
         Logger.error("Quality check failed: #{inspect(reason)}")
         {:error, reason}
@@ -164,7 +168,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     case Impact.analyze(msg, context) do
       {:ok, impact_result} ->
         {:ok, impact_result}
-      
+
       {:error, reason} ->
         Logger.error("Impact assessment failed: #{inspect(reason)}")
         {:error, reason}
@@ -179,7 +183,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     case Performance.analyze(msg, context) do
       {:ok, performance_analysis} ->
         {:ok, performance_analysis}
-      
+
       {:error, reason} ->
         Logger.error("Performance analysis failed: #{inspect(reason)}")
         {:error, reason}
@@ -195,12 +199,14 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       {:ok, security_scan} ->
         # Track security issues if any found
         if length(security_scan.vulnerabilities) > 0 do
-          Logger.warning("Security vulnerabilities found: #{inspect(security_scan.vulnerabilities)}")
+          Logger.warning(
+            "Security vulnerabilities found: #{inspect(security_scan.vulnerabilities)}"
+          )
         end
-        
+
         updated_state = track_security_issues(state, security_scan.vulnerabilities)
         {:ok, security_scan, updated_state}
-      
+
       {:error, reason} ->
         Logger.error("Security analysis failed: #{inspect(reason)}")
         {:error, reason, state}
@@ -208,17 +214,17 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   end
 
   # Helper functions for Orchestrator integration
-  
+
   defp format_analyze_result(orchestrated_result, analysis_type) do
     results = orchestrated_result.results
-    
+
     base = %{
       file: orchestrated_result.file_path,
       quality_score: results[:quality][:quality_score] || 0.5,
       issues: results[:quality][:issues] || [],
       suggestions: orchestrated_result.recommendations |> Enum.map(& &1.action)
     }
-    
+
     case analysis_type do
       :comprehensive ->
         base
@@ -228,18 +234,19 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
         |> Map.put(:impact, format_impact_result(results[:impact]))
         |> Map.put(:insights, orchestrated_result.insights)
         |> Map.put(:overall_health, orchestrated_result.overall_health)
-        
+
       type when type in [:security, :performance, :quality, :impact] ->
         Map.put(base, type, results[type])
-        
+
       _ ->
         base
     end
   end
-  
+
   # Functions moved to individual analyzers or no longer needed
-  
+
   defp format_security_result(nil), do: %{vulnerabilities: [], risk_level: :none}
+
   defp format_security_result(security) do
     %{
       vulnerabilities: security[:vulnerabilities] || [],
@@ -247,8 +254,9 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       recommendations: build_security_recommendations(security)
     }
   end
-  
+
   defp format_performance_result(nil), do: %{optimization_potential: 0}
+
   defp format_performance_result(performance) do
     %{
       time_complexity: performance[:time_complexity] || :linear,
@@ -259,8 +267,9 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       optimization_potential: performance[:optimization_potential] || 0
     }
   end
-  
+
   defp format_impact_result(nil), do: %{scope: :minimal, severity: :low}
+
   defp format_impact_result(impact) do
     %{
       scope: impact[:scope] || :minimal,
@@ -274,12 +283,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       rollback_complexity: impact[:rollback_complexity] || :simple
     }
   end
-  
+
   # Helper functions
-  
+
   defp build_security_recommendations(security_analysis) do
     recommendations = []
-    
+
     # Add recommendations based on vulnerabilities
     recommendations =
       if length(security_analysis.vulnerabilities) > 0 do
@@ -287,7 +296,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       else
         recommendations
       end
-    
+
     # Add recommendations based on unsafe operations
     recommendations =
       if length(security_analysis.unsafe_operations) > 0 do
@@ -295,7 +304,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       else
         recommendations
       end
-    
+
     # Add recommendations based on input validation
     recommendations =
       if length(security_analysis.input_validation.unvalidated_risks) > 0 do
@@ -303,7 +312,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       else
         recommendations
       end
-    
+
     # Add recommendations based on authentication issues
     recommendations =
       if length(security_analysis.authentication_issues) > 0 do
@@ -311,10 +320,10 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
       else
         recommendations
       end
-    
+
     recommendations
   end
-  
+
   # Quality analysis functions moved to RubberDuck.Analyzers.Code.Quality
   # This skill now delegates all quality analysis to the dedicated analyzer
 
@@ -338,7 +347,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
     updated_issues = existing_issues ++ vulnerabilities
     Map.put(state, :security_issues, updated_issues)
   end
-  
+
   defp track_analysis_history(state, file_path, result) do
     history = Map.get(state, :analysis_history, %{})
 
@@ -351,8 +360,6 @@ defmodule RubberDuck.Skills.CodeAnalysisSkill do
   end
 
   # Legacy file_path version no longer needed - removed
-
-
 
   # All analyzer-specific functions have been moved to their respective analyzer modules:
   # - Security functions -> RubberDuck.Analyzers.Code.Security

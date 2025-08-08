@@ -45,32 +45,32 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   def run(params, context) do
     # Check if pipeline mode is enabled
     pipeline_mode = Application.get_env(:rubber_duck, :pipeline_mode, :sequential)
-    
+
     case pipeline_mode do
       :genstage ->
         # Use GenStage pipeline for processing
         run_with_genstage(params, context)
-      
+
       :sequential ->
         # Use existing sequential processing
         run_sequential(params, context)
     end
   end
-  
+
   defp run_with_genstage(params, context) do
     Logger.debug("Processing entity update via GenStage pipeline")
-    
+
     case Pipeline.process_entity_update(params, context, async: false) do
       {:ok, result} ->
         {:ok, result}
-      
+
       {:error, reason} ->
         Logger.error("GenStage pipeline failed: #{inspect(reason)}")
         # Fallback to sequential processing
         run_sequential(params, context)
     end
   end
-  
+
   defp run_sequential(params, context) do
     prepared_params = prepare_params(params)
     result = execute_pipeline(prepared_params, context)
@@ -168,9 +168,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     case ImpactAnalyzer.analyze(analyzer_params, %{}) do
       {:ok, impact_result} ->
         Map.put(params, :impact_assessment, impact_result)
-
-      {:error, _reason} = error ->
-        {:error, %{step: :impact_analysis, error: error}}
+        # Note: ImpactAnalyzer.analyze/2 currently always returns {:ok, _}
+        # If error handling is needed in the future, add error clause here
     end
   end
 
@@ -268,15 +267,8 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
     case Learner.learn(learner_params, %{}) do
       {:ok, learning_result} ->
         Map.put(params, :learning_result, learning_result)
-
-      {:error, _reason} = error ->
-        # Learning failures are non-fatal
-        Logger.warning("Learning failed: #{inspect(error)}")
-
-        Map.put(params, :learning_result, %{
-          learned: false,
-          error: error
-        })
+        # Note: Learner.learn/2 currently always returns {:ok, _}
+        # Learning failures would be non-fatal if they occur in future
     end
   end
 

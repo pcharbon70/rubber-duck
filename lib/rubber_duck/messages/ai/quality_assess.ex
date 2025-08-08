@@ -52,6 +52,7 @@ defmodule RubberDuck.Messages.AI.QualityAssess do
 
     def to_jido_signal(%QualityAssess{} = msg) do
       data = Map.from_struct(msg)
+
       %{
         type: "ai.quality.assess",
         data: data |> Map.delete(:metadata),

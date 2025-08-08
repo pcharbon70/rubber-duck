@@ -12,7 +12,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillPerformanceIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: """
         def slow_function(data) do
@@ -35,14 +35,15 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillPerformanceIntegrationTest do
 
     test "comprehensive analysis includes performance" do
       message = %Analyze{
-        file_path: "test.ex", 
+        file_path: "test.ex",
         analysis_type: :comprehensive,
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
-        content: "def inefficient, do: Enum.map(data, &Enum.filter(&1, fn x -> expensive(x) end))",
+        content:
+          "def inefficient, do: Enum.map(data, &Enum.filter(&1, fn x -> expensive(x) end))",
         state: %{}
       }
 
@@ -82,10 +83,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillPerformanceIntegrationTest do
           metrics: [:complexity, :optimizations]
         }
       }
-      
+
       state = %{}
 
-      assert {:ok, performance_result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
+      assert {:ok, performance_result, _updated_state} =
+               CodeAnalysisSkill.handle_signal(signal, state)
+
       assert Map.has_key?(performance_result, :complexity_analysis)
       assert performance_result.complexity_analysis.has_recursion
     end
@@ -105,10 +108,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillPerformanceIntegrationTest do
           """
         }
       }
-      
+
       state = %{opts: %{performance_check: true}}
 
-      assert {:ok, analysis_result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
+      assert {:ok, analysis_result, _updated_state} =
+               CodeAnalysisSkill.handle_signal(signal, state)
+
       assert Map.has_key?(analysis_result, :performance)
       assert is_map(analysis_result.performance)
       assert Map.has_key?(analysis_result.performance, :bottlenecks)
@@ -116,13 +121,13 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillPerformanceIntegrationTest do
 
     test "performance analysis disabled in legacy signal" do
       signal = %{
-        type: "code.analyze.file", 
+        type: "code.analyze.file",
         data: %{
           file_path: "test.ex",
           content: "def simple_function, do: :ok"
         }
       }
-      
+
       state = %{opts: %{performance_check: false}}
 
       assert {:ok, result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
@@ -138,7 +143,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillPerformanceIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       # Empty context should still work but with limited functionality
       context = %{}
 

@@ -10,7 +10,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         defmodule TestModule do
@@ -58,7 +58,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         def extremely_complex_function(a, b, c, d, e) do
@@ -104,11 +104,12 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       # Create content with more than 100 lines
-      long_content = Enum.map(1..120, fn i -> "# Comment line #{i}" end)
-                    |> Enum.join("\n")
-      
+      long_content =
+        Enum.map(1..120, fn i -> "# Comment line #{i}" end)
+        |> Enum.join("\n")
+
       context = %{content: long_content}
 
       assert {:ok, result} = Quality.analyze(message, context)
@@ -122,7 +123,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         def function1 do
@@ -145,7 +146,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         defmodule SimpleModule do
@@ -166,7 +167,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         def complex_with_duplication(x) do
@@ -201,7 +202,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :comprehensive
       }
-      
+
       context = %{content: "def simple_function, do: :ok"}
 
       assert {:ok, result} = Quality.analyze(message, context)
@@ -215,7 +216,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         analysis_type: :quality,
         depth: :moderate
       }
-      
+
       context = %{
         content: """
         defmodule UndocumentedModule do
@@ -237,7 +238,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         analysis_type: :quality,
         depth: :deep
       }
-      
+
       context = %{
         content: """
         defmodule BadModule do
@@ -264,14 +265,15 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
 
       assert {:ok, result} = Quality.analyze(message, context)
       maintainability_issues = Enum.filter(result.issues, &(&1.type == :maintainability))
-      assert length(maintainability_issues) >= 0  # May or may not detect based on thresholds
+      # May or may not detect based on thresholds
+      assert length(maintainability_issues) >= 0
     end
 
     test "returns error for unsupported message types" do
       unsupported_message = %{__struct__: :unsupported}
-      
-      assert {:error, {:unsupported_message_type, :unsupported}} = 
-        Quality.analyze(unsupported_message, %{})
+
+      assert {:error, {:unsupported_message_type, :unsupported}} =
+               Quality.analyze(unsupported_message, %{})
     end
   end
 
@@ -322,7 +324,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         defmodule WellWritten do
@@ -346,22 +348,26 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       # Create a long, complex file with duplication
-      complex_content = """
-      defmodule BadCode do
-        def bad_function(x, y, z, a, b, c) do
-          if x > 5 do
-            if y > 3 do
-              if z > 2 do
-                if a > 1 do
-                  if b > 0 do
-                    if c > -1 do
-                      result = x + y + z + a + b + c
-                      IO.puts result
-                      IO.puts result
-                      IO.puts result
-                      result * 2
+      complex_content =
+        """
+        defmodule BadCode do
+          def bad_function(x, y, z, a, b, c) do
+            if x > 5 do
+              if y > 3 do
+                if z > 2 do
+                  if a > 1 do
+                    if b > 0 do
+                      if c > -1 do
+                        result = x + y + z + a + b + c
+                        IO.puts result
+                        IO.puts result
+                        IO.puts result
+                        result * 2
+                      else
+                        0
+                      end
                     else
                       0
                     end
@@ -377,13 +383,10 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
             else
               0
             end
-          else
-            0
           end
         end
-      end
-      """ <> String.duplicate("# Extra line to make it long\n", 100)
-      
+        """ <> String.duplicate("# Extra line to make it long\n", 100)
+
       context = %{content: complex_content}
 
       assert {:ok, result} = Quality.analyze(message, context)
@@ -397,7 +400,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         defmodule Maintainable do
@@ -424,7 +427,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         def problematic_function(x) do
@@ -462,13 +465,14 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
       assert Map.has_key?(result, :technical_debt_indicators)
       debt_indicators = result.technical_debt_indicators
       assert is_list(debt_indicators)
-      
+
       # Should detect some technical debt (various types)
       assert length(debt_indicators) > 0
-      
+
       # Should have different types of debt indicators
       debt_types = Enum.map(debt_indicators, & &1.type)
-      assert length(debt_types) >= 2  # Multiple debt types detected
+      # Multiple debt types detected
+      assert length(debt_types) >= 2
     end
   end
 
@@ -479,10 +483,11 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         analysis_type: :quality,
         depth: :deep
       }
-      
+
       context = %{
         content: "def untested_function(x), do: x * 2",
-        test_coverage: 0.3  # Low test coverage
+        # Low test coverage
+        test_coverage: 0.3
       }
 
       assert {:ok, result} = Quality.analyze(message, context)
@@ -497,7 +502,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         analysis_type: :quality,
         depth: :moderate
       }
-      
+
       context = %{
         content: """
         defmodule UndocumentedModule do
@@ -571,9 +576,10 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
-        content: "def incomplete_function("  # Malformed Elixir code
+        # Malformed Elixir code
+        content: "def incomplete_function("
       }
 
       assert {:ok, result} = Quality.analyze(message, context)
@@ -588,7 +594,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         defmodule Test do
@@ -602,7 +608,8 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
       }
 
       assert {:ok, result} = Quality.analyze(message, context)
-      assert result.metrics.loc == 6  # Non-empty lines
+      # Non-empty lines
+      assert result.metrics.loc == 6
     end
 
     test "calculates complexity correctly" do
@@ -610,7 +617,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         def complex_function(x) do
@@ -637,7 +644,7 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "test.ex",
         analysis_type: :quality
       }
-      
+
       context = %{
         content: """
         def func1 do
@@ -660,8 +667,9 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
         file_path: "nonexistent.ex",
         analysis_type: :quality
       }
-      
-      context = %{}  # No content provided
+
+      # No content provided
+      context = %{}
 
       assert {:ok, result} = Quality.analyze(message, context)
       # Should handle missing file gracefully
@@ -674,7 +682,8 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
       message = %QualityCheck{
         target: "test.ex",
         metrics: [:complexity, :coverage],
-        thresholds: %{complexity: 15, coverage: 70}  # Lenient thresholds
+        # Lenient thresholds
+        thresholds: %{complexity: 15, coverage: 70}
       }
 
       assert {:ok, result} = Quality.analyze(message, %{})
@@ -690,7 +699,8 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
       }
 
       assert {:ok, result} = Quality.analyze(message, %{})
-      assert result.passed == true  # Should pass when no thresholds set
+      # Should pass when no thresholds set
+      assert result.passed == true
     end
   end
 end

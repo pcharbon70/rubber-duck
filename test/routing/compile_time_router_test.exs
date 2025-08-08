@@ -65,7 +65,7 @@ defmodule RubberDuck.Routing.CompileTimeRouterTest do
       result = EnhancedMessageRouter.dispatch_fast(message, %{})
 
       # The actual handler would be called - for now we test it doesn't crash
-      assert match?({:error, _} | {:ok, _}, result)
+      assert match?({:error, _}, result) or match?({:ok, _}, result)
     end
 
     test "dispatches Learning.RecordExperience message correctly" do
@@ -106,7 +106,7 @@ defmodule RubberDuck.Routing.CompileTimeRouterTest do
       assert length(results) == 3
 
       Enum.each(results, fn result ->
-        assert match?({:error, _} | {:ok, _}, result)
+        assert match?({:error, _}, result) or match?({:ok, _}, result)
       end)
     end
 
@@ -156,7 +156,7 @@ defmodule RubberDuck.Routing.CompileTimeRouterTest do
       assert length(results) == 3
       # All messages should be processed regardless of priority
       Enum.each(results, fn result ->
-        assert match?({:error, _} | {:ok, _}, result)
+        assert match?({:error, _}, result) or match?({:ok, _}, result)
       end)
     end
   end

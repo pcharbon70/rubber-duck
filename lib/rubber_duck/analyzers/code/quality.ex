@@ -1,34 +1,34 @@
 defmodule RubberDuck.Analyzers.Code.Quality do
   @moduledoc """
   Quality-focused code analysis.
-  
+
   Analyzes code quality metrics including complexity, maintainability,
   documentation coverage, naming conventions, and provides improvement suggestions.
-  
+
   ## Supported Analysis Types
-  
+
   - Code quality scoring and metrics
   - Issue detection (complexity, length, patterns)
   - Maintainability assessments
   - Documentation coverage analysis
   - Improvement suggestion generation
   - Testing coverage recommendations
-  
+
   ## Integration
-  
+
   This analyzer extracts quality-specific logic from CodeAnalysisSkill
   while maintaining the same analysis capabilities in a focused module.
   """
-  
+
   @behaviour RubberDuck.Analyzer
-  
+
   alias RubberDuck.Messages.Code.{Analyze, QualityCheck}
-  
+
   @impl true
   def analyze(%Analyze{analysis_type: :quality} = msg, context) do
     content = get_content_from_context(msg, context)
     data = build_analysis_data(msg, context, content)
-    
+
     quality_analysis = %{
       quality_score: calculate_quality_score(data),
       metrics: extract_metrics(data),
@@ -40,15 +40,15 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       analyzed_at: DateTime.utc_now(),
       file_path: msg.file_path
     }
-    
+
     {:ok, quality_analysis}
   end
-  
+
   def analyze(%Analyze{analysis_type: :comprehensive} = msg, context) do
     # For comprehensive analysis, return quality subset
     analyze(%{msg | analysis_type: :quality}, context)
   end
-  
+
   def analyze(%QualityCheck{} = msg, _context) do
     # Convert QualityCheck to analysis data
     data = %{
@@ -60,7 +60,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       coverage: get_coverage_from_target(msg.target),
       duplication: get_duplication_from_target(msg.target)
     }
-    
+
     quality_check_result = %{
       status: :completed,
       metrics: extract_metrics(data),
@@ -70,25 +70,25 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       analyzed_at: DateTime.utc_now(),
       target: msg.target
     }
-    
+
     {:ok, quality_check_result}
   end
-  
+
   def analyze(message, _context) do
     {:error, {:unsupported_message_type, message.__struct__}}
   end
-  
+
   @impl true
   def supported_types do
     [Analyze, QualityCheck]
   end
-  
+
   @impl true
   def priority, do: :normal
-  
-  @impl true  
+
+  @impl true
   def timeout, do: 10_000
-  
+
   @impl true
   def metadata do
     %{
@@ -99,29 +99,31 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       tags: ["quality", "metrics", "maintainability", "documentation", "suggestions"]
     }
   end
-  
+
   # Core quality analysis functions extracted from CodeAnalysisSkill
-  
+
   defp calculate_quality_score(data) do
     # Simplified quality score calculation
     base_score = 100
 
     deductions = [
       {data[:complexity] && data[:complexity] > 10, 25},
-      {data[:complexity] && data[:complexity] > 15, 15},  # Additional penalty for very high complexity
+      # Additional penalty for very high complexity
+      {data[:complexity] && data[:complexity] > 15, 15},
       {data[:lines] && data[:lines] > 100, 15},
       {data[:duplication] && data[:duplication] > 0.2, 20},
       {data[:doc_coverage] && data[:doc_coverage] < 0.5, 15},
       {data[:test_coverage] && data[:test_coverage] < 0.8, 20}
     ]
 
-    final_score = Enum.reduce(deductions, base_score, fn {condition, penalty}, score ->
-      if condition, do: score - penalty, else: score
-    end)
-    
+    final_score =
+      Enum.reduce(deductions, base_score, fn {condition, penalty}, score ->
+        if condition, do: score - penalty, else: score
+      end)
+
     max(0, final_score) / 100.0
   end
-  
+
   defp extract_metrics(data) do
     %{
       loc: data[:lines] || 0,
@@ -132,7 +134,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       documentation_coverage: data[:doc_coverage] || 0.0
     }
   end
-  
+
   defp detect_issues(data, depth) do
     issues = []
 
@@ -154,24 +156,31 @@ defmodule RubberDuck.Analyzers.Code.Quality do
 
     issues =
       if data[:lines] && data[:lines] > 100 do
-        [%{
-          type: :length, 
-          severity: :medium, 
-          message: "File is too long (#{data[:lines]} lines)",
-          suggestion: "Consider splitting into smaller modules"
-        } | issues]
+        [
+          %{
+            type: :length,
+            severity: :medium,
+            message: "File is too long (#{data[:lines]} lines)",
+            suggestion: "Consider splitting into smaller modules"
+          }
+          | issues
+        ]
       else
         issues
       end
-      
+
     issues =
       if data[:duplication] && data[:duplication] > 0.1 do
-        [%{
-          type: :duplication,
-          severity: :medium,
-          message: "High code duplication detected (#{Float.round(data[:duplication] * 100, 1)}%)",
-          suggestion: "Extract common patterns into shared functions"
-        } | issues]
+        [
+          %{
+            type: :duplication,
+            severity: :medium,
+            message:
+              "High code duplication detected (#{Float.round(data[:duplication] * 100, 1)}%)",
+            suggestion: "Extract common patterns into shared functions"
+          }
+          | issues
+        ]
       else
         issues
       end
@@ -210,7 +219,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       else
         suggestions
       end
-      
+
     suggestions =
       if data[:duplication] && data[:duplication] > 0.1 do
         [
@@ -242,7 +251,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
 
     suggestions
   end
-  
+
   defp build_recommendations(data) do
     recs = []
 
@@ -259,14 +268,14 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       else
         recs
       end
-        
+
     recs =
       if data[:complexity] && data[:complexity] > 15 do
         ["Break down complex functions for better maintainability" | recs]
       else
         recs
       end
-        
+
     recs =
       if data[:doc_coverage] && data[:doc_coverage] < 0.6 do
         ["Improve documentation coverage for better maintainability" | recs]
@@ -276,78 +285,96 @@ defmodule RubberDuck.Analyzers.Code.Quality do
 
     recs
   end
-  
+
   # Quality-specific analysis functions
-  
+
   defp calculate_maintainability_score(data) do
     # Maintainability index calculation (simplified)
     complexity_factor = if data[:complexity], do: min(data[:complexity] / 10.0, 1.0), else: 0.1
     length_factor = if data[:lines], do: min(data[:lines] / 200.0, 1.0), else: 0.1
     duplication_factor = data[:duplication] || 0.0
     doc_factor = 1.0 - (data[:doc_coverage] || 0.8)
-    
+
     base_score = 1.0
-    penalty = complexity_factor * 0.4 + length_factor * 0.2 + duplication_factor * 0.3 + doc_factor * 0.1
-    
+
+    penalty =
+      complexity_factor * 0.4 + length_factor * 0.2 + duplication_factor * 0.3 + doc_factor * 0.1
+
     max(0.0, base_score - penalty)
   end
-  
+
   defp calculate_maintainability_index(data) do
     # Microsoft's Maintainability Index (simplified version)
     complexity = data[:complexity] || 1
     loc = data[:lines] || 10
-    
+
     # Simplified formula: MI = max(0, (171 - 5.2 * ln(Halstead Volume) - 0.23 * (Cyclomatic Complexity) - 16.2 * ln(Lines of Code)) * 100 / 171)
     # Using simplified approximation since we don't have Halstead volume
-    raw_mi = 171 - (0.23 * complexity) - (16.2 * :math.log(max(loc, 1)))
-    
-    max(0, (raw_mi * 100) / 171) |> Float.round(1)
+    raw_mi = 171 - 0.23 * complexity - 16.2 * :math.log(max(loc, 1))
+
+    result = max(0, raw_mi * 100 / 171)
+    if is_float(result), do: Float.round(result, 1), else: result * 1.0
   end
-  
+
   defp detect_technical_debt(data) do
     indicators = []
-    
+
     indicators =
       if data[:complexity] && data[:complexity] > 10 do
-        [%{type: :high_complexity, severity: :high, impact: "Difficult to test and maintain"} | indicators]
+        [
+          %{type: :high_complexity, severity: :high, impact: "Difficult to test and maintain"}
+          | indicators
+        ]
       else
         indicators
       end
-        
+
     indicators =
       if data[:duplication] && data[:duplication] > 0.2 do
-        [%{type: :code_duplication, severity: :medium, impact: "Increases maintenance effort"} | indicators]
+        [
+          %{type: :code_duplication, severity: :medium, impact: "Increases maintenance effort"}
+          | indicators
+        ]
       else
         indicators
       end
-        
+
     indicators =
       if data[:doc_coverage] && data[:doc_coverage] < 0.3 do
-        [%{type: :poor_documentation, severity: :low, impact: "Reduces code understandability"} | indicators]
+        [
+          %{type: :poor_documentation, severity: :low, impact: "Reduces code understandability"}
+          | indicators
+        ]
       else
         indicators
       end
-        
+
     indicators =
       if data[:test_coverage] && data[:test_coverage] < 0.5 do
-        [%{type: :low_test_coverage, severity: :high, impact: "Increases risk of regressions"} | indicators]
+        [
+          %{type: :low_test_coverage, severity: :high, impact: "Increases risk of regressions"}
+          | indicators
+        ]
       else
         indicators
       end
-    
+
     indicators
   end
 
   # Issue detection helper functions
-  
+
   defp detect_naming_issues(issues, data) do
     if data[:poor_naming] do
-      [%{
-        type: :naming, 
-        severity: :low, 
-        message: "Improve variable/function naming",
-        suggestion: "Use descriptive names that clearly express intent"
-      } | issues]
+      [
+        %{
+          type: :naming,
+          severity: :low,
+          message: "Improve variable/function naming",
+          suggestion: "Use descriptive names that clearly express intent"
+        }
+        | issues
+      ]
     else
       issues
     end
@@ -355,12 +382,15 @@ defmodule RubberDuck.Analyzers.Code.Quality do
 
   defp detect_documentation_issues(issues, data) do
     if data[:doc_coverage] && data[:doc_coverage] < 0.5 do
-      [%{
-        type: :documentation, 
-        severity: :medium, 
-        message: "Insufficient documentation (#{Float.round(data[:doc_coverage] * 100, 1)}%)",
-        suggestion: "Add module and function documentation"
-      } | issues]
+      [
+        %{
+          type: :documentation,
+          severity: :medium,
+          message: "Insufficient documentation (#{Float.round(data[:doc_coverage] * 100, 1)}%)",
+          suggestion: "Add module and function documentation"
+        }
+        | issues
+      ]
     else
       issues
     end
@@ -370,8 +400,8 @@ defmodule RubberDuck.Analyzers.Code.Quality do
     if data[:pattern_violations] do
       [
         %{
-          type: :pattern, 
-          severity: :medium, 
+          type: :pattern,
+          severity: :medium,
           message: "Design pattern violations detected",
           suggestion: "Review code structure and apply appropriate patterns"
         }
@@ -381,17 +411,20 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       issues
     end
   end
-  
+
   defp detect_maintainability_issues(issues, data) do
     maintainability_score = calculate_maintainability_score(data)
-    
+
     if maintainability_score < 0.6 do
-      [%{
-        type: :maintainability,
-        severity: :medium,
-        message: "Low maintainability score (#{Float.round(maintainability_score * 100, 1)}%)",
-        suggestion: "Improve code structure, reduce complexity, and add documentation"
-      } | issues]
+      [
+        %{
+          type: :maintainability,
+          severity: :medium,
+          message: "Low maintainability score (#{Float.round(maintainability_score * 100, 1)}%)",
+          suggestion: "Improve code structure, reduce complexity, and add documentation"
+        }
+        | issues
+      ]
     else
       issues
     end
@@ -401,7 +434,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
 
   defp add_maintainability_suggestions(suggestions, data) do
     maintainability_score = calculate_maintainability_score(data)
-    
+
     if maintainability_score < 0.6 do
       [
         %{
@@ -436,7 +469,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       suggestions
     end
   end
-  
+
   defp add_documentation_suggestions(suggestions, data) do
     if data[:doc_coverage] && data[:doc_coverage] < 0.6 do
       [
@@ -454,7 +487,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       suggestions
     end
   end
-  
+
   defp add_performance_suggestions(suggestions, data) do
     if data[:performance_issues] do
       [
@@ -472,9 +505,9 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       suggestions
     end
   end
-  
+
   # Helper functions
-  
+
   defp get_content_from_context(%{file_path: file_path}, context) do
     # Try to get content from context first, then read file
     case Map.get(context, :content) do
@@ -482,14 +515,14 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       content -> content
     end
   end
-  
+
   defp read_file_content(file_path) do
     case File.read(file_path) do
       {:ok, content} -> content
       {:error, _} -> ""
     end
   end
-  
+
   defp build_analysis_data(msg, context, content) do
     %{
       file_path: msg.file_path,
@@ -504,7 +537,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       performance_issues: detect_performance_issues(content)
     }
   end
-  
+
   defp calculate_complexity_from_content(content) when is_binary(content) do
     # Count decision points in the code
     conditionals = count_pattern(content, ~r/\b(if|unless|case|cond|when)\b/)
@@ -512,91 +545,99 @@ defmodule RubberDuck.Analyzers.Code.Quality do
 
     1 + conditionals + loops
   end
-  
+
   defp calculate_complexity_from_content(_), do: 1
-  
+
   defp count_lines(content) when is_binary(content) do
     content
     |> String.split(["\n", "\r\n"])
     |> Enum.reject(&(String.trim(&1) == ""))
     |> length()
   end
-  
+
   defp count_lines(_), do: 0
-  
+
   defp estimate_duplication(content) when is_binary(content) do
     lines = String.split(content, ["\n", "\r\n"])
     unique_lines = lines |> Enum.map(&String.trim/1) |> Enum.uniq() |> length()
     total_lines = length(lines)
-    
+
     if total_lines > 0 do
-      1.0 - (unique_lines / total_lines)
+      1.0 - unique_lines / total_lines
     else
       0.0
     end
   end
-  
+
   defp estimate_duplication(_), do: 0.0
-  
+
   defp estimate_doc_coverage(content) when is_binary(content) do
     # Count @doc, @moduledoc, and # comment lines
     doc_patterns = [~r/@doc/, ~r/@moduledoc/, ~r/^\s*#/]
-    total_doc_lines = Enum.reduce(doc_patterns, 0, fn pattern, acc ->
-      acc + count_pattern(content, pattern)
-    end)
-    
+
+    total_doc_lines =
+      Enum.reduce(doc_patterns, 0, fn pattern, acc ->
+        acc + count_pattern(content, pattern)
+      end)
+
     # Count functions and modules that should be documented
     functions = count_pattern(content, ~r/def\s+\w+/)
     modules = count_pattern(content, ~r/defmodule\s+\w+/)
-    
+
     total_documentable = functions + modules
-    
+
     if total_documentable > 0 do
       min(1.0, total_doc_lines / total_documentable)
     else
       1.0
     end
   end
-  
+
   defp estimate_doc_coverage(_), do: 1.0
-  
+
   defp detect_poor_naming(content) when is_binary(content) do
     # Simple heuristics for poor naming
     poor_names = [~r/\b[a-z]\b/, ~r/\bdata\d+\b/, ~r/\btemp\w*\b/, ~r/\bx\d*\b/]
-    
+
     Enum.any?(poor_names, fn pattern ->
       String.match?(content, pattern)
     end)
   end
-  
+
   defp detect_poor_naming(_), do: false
-  
+
   defp detect_pattern_violations_in_content(content) when is_binary(content) do
     # Check for common anti-patterns
     violations = [
-      String.contains?(content, "God."),  # God object pattern
-      Regex.match?(~r/def\s+\w+.*do\s*$.*end$/s, content) && String.length(content) > 1000,  # Long methods
-      count_pattern(content, ~r/if.*else.*if.*else/) > 2  # Deep nesting
+      # God object pattern
+      String.contains?(content, "God."),
+      # Long methods
+      Regex.match?(~r/def\s+\w+.*do\s*$.*end$/s, content) && String.length(content) > 1000,
+      # Deep nesting
+      count_pattern(content, ~r/if.*else.*if.*else/) > 2
     ]
-    
+
     Enum.any?(violations)
   end
-  
+
   defp detect_pattern_violations_in_content(_), do: false
-  
+
   defp detect_performance_issues(content) when is_binary(content) do
     # Simple performance issue detection
     issues = [
-      String.contains?(content, "Enum.") && String.contains?(content, "|> Enum."),  # Multiple enumerations
-      String.contains?(content, "length(") && String.contains?(content, "== 0"),   # Inefficient empty check
-      count_pattern(content, ~r/for.*do.*for/) > 0  # Nested loops
+      # Multiple enumerations
+      String.contains?(content, "Enum.") && String.contains?(content, "|> Enum."),
+      # Inefficient empty check
+      String.contains?(content, "length(") && String.contains?(content, "== 0"),
+      # Nested loops
+      count_pattern(content, ~r/for.*do.*for/) > 0
     ]
-    
+
     Enum.any?(issues)
   end
-  
+
   defp detect_performance_issues(_), do: false
-  
+
   defp count_pattern(content, pattern) do
     content
     |> String.split(pattern)
@@ -604,15 +645,15 @@ defmodule RubberDuck.Analyzers.Code.Quality do
     |> Kernel.-(1)
     |> max(0)
   end
-  
+
   # QualityCheck-specific helper functions
-  
+
   defp get_complexity_from_target(_target) do
     # In a real implementation, this would analyze the target
     # For now, return a default value
     5
   end
-  
+
   defp get_lines_from_target(target) do
     # In a real implementation, this would count lines in the target
     case File.read(target) do
@@ -620,12 +661,12 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       {:error, _} -> 50
     end
   end
-  
+
   defp get_coverage_from_target(_target) do
     # In a real implementation, this would get coverage metrics
     0.75
   end
-  
+
   defp get_duplication_from_target(target) do
     # In a real implementation, this would analyze duplication
     case File.read(target) do
@@ -633,7 +674,7 @@ defmodule RubberDuck.Analyzers.Code.Quality do
       {:error, _} -> 0.1
     end
   end
-  
+
   defp check_thresholds(metrics, thresholds) when is_list(metrics) and is_map(thresholds) do
     Enum.all?(metrics, fn metric ->
       threshold = Map.get(thresholds, metric)
@@ -646,9 +687,12 @@ defmodule RubberDuck.Analyzers.Code.Quality do
   defp metric_passes_threshold?(metric, threshold) do
     # Simple threshold check - would be more complex in real implementation
     case metric do
-      :complexity -> threshold <= 15  # Pass if threshold allows higher complexity
-      :coverage -> threshold <= 80    # Pass if threshold allows lower coverage  
-      :duplication -> threshold >= 5  # Pass if threshold allows higher duplication
+      # Pass if threshold allows higher complexity
+      :complexity -> threshold <= 15
+      # Pass if threshold allows lower coverage  
+      :coverage -> threshold <= 80
+      # Pass if threshold allows higher duplication
+      :duplication -> threshold >= 5
       _ -> true
     end
   end

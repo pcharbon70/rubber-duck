@@ -31,6 +31,7 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
     CodeAnalysisSkill,
     LearningSkill
   }
+
   alias RubberDuck.EntityRepository
 
   require Logger
@@ -67,17 +68,19 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   defp fetch_entity(entity_id, entity_type) do
     # Use the EntityRepository for real database access
     case EntityRepository.fetch(entity_id, entity_type) do
-      {:ok, entity} -> 
+      {:ok, entity} ->
         # Convert Ash resource to map format expected by the action
         {:ok, entity_to_map(entity, entity_type)}
+
       {:error, :not_found} ->
         {:error, "Entity not found: #{entity_type} with id #{entity_id}"}
+
       {:error, reason} ->
         Logger.error("Failed to fetch entity: #{inspect(reason)}")
         {:error, reason}
     end
   end
-  
+
   # Convert Ash resources to the map format expected by the action
   defp entity_to_map(entity, :user) do
     %{
@@ -90,7 +93,7 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
       created_at: entity.inserted_at || DateTime.utc_now()
     }
   end
-  
+
   defp entity_to_map(entity, :project) do
     %{
       id: entity.id,
@@ -103,7 +106,7 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
       created_at: entity.inserted_at || DateTime.utc_now()
     }
   end
-  
+
   defp entity_to_map(entity, :code_file) do
     %{
       id: entity.id,
@@ -116,7 +119,7 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
       created_at: entity.inserted_at || DateTime.utc_now()
     }
   end
-  
+
   defp entity_to_map(entity, :analysis) do
     %{
       id: entity.id,

@@ -10,7 +10,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       context = %{
         content: "def dangerous_function(user_input), do: Code.eval_string(user_input)"
       }
@@ -26,7 +26,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       context = %{
         content: ~s(def get_api_key, do: "secret_key_12345")
       }
@@ -38,10 +38,10 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
 
     test "detects unsafe operations" do
       message = %Analyze{
-        file_path: "test.ex", 
+        file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       context = %{
         content: "def run_command(cmd), do: System.cmd(cmd, [])"
       }
@@ -56,7 +56,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       context = %{
         content: "skip_before_action :authenticate_user"
       }
@@ -71,7 +71,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       # High risk content
       context = %{
         content: """
@@ -92,7 +92,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :comprehensive
       }
-      
+
       context = %{content: "def safe_function, do: :ok"}
 
       assert {:ok, result} = Security.analyze(message, context)
@@ -102,9 +102,9 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
 
     test "returns error for unsupported message types" do
       unsupported_message = %{__struct__: :unsupported}
-      
-      assert {:error, {:unsupported_message_type, :unsupported}} = 
-        Security.analyze(unsupported_message, %{})
+
+      assert {:error, {:unsupported_message_type, :unsupported}} =
+               Security.analyze(unsupported_message, %{})
     end
   end
 
@@ -138,7 +138,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       context = %{
         content: """
         def create_user(params) do
@@ -159,7 +159,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       context = %{
         content: """
         def unsafe_query(params) do
@@ -180,7 +180,7 @@ defmodule RubberDuck.Analyzers.Code.SecurityTest do
         file_path: "test.ex",
         analysis_type: :security
       }
-      
+
       context = %{
         content: """
         def dangerous(params) do

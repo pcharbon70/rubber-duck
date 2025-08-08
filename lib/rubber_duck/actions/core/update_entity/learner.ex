@@ -73,6 +73,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.Learner do
 
       entity when is_map(entity) ->
         metadata = Map.get(entity, :metadata, %{})
+
         metadata
         |> Map.get(:change_count, 0)
 

@@ -12,7 +12,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: "def vulnerable(input), do: Code.eval_string(input)",
         state: %{}
@@ -28,12 +28,12 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillIntegrationTest do
 
     test "comprehensive analysis includes security" do
       message = %Analyze{
-        file_path: "test.ex", 
+        file_path: "test.ex",
         analysis_type: :comprehensive,
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: "def bad_function, do: System.cmd(\"rm -rf /\", [])",
         state: %{}
@@ -66,21 +66,21 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillIntegrationTest do
           file_type: :elixir
         }
       }
-      
+
       state = %{}
 
       # The signal handling should delegate to Security analyzer
       result = CodeAnalysisSkill.handle_signal(signal, state)
-      
+
       case result do
         {:ok, security_scan, _updated_state} ->
           assert Map.has_key?(security_scan, :vulnerabilities)
           assert is_list(security_scan.vulnerabilities)
-          
+
         {:ok, _state} ->
           # If only state returned, that might be from fallback handling
           :ok
-          
+
         other ->
           flunk("Unexpected result: #{inspect(other)}")
       end
@@ -94,20 +94,20 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillIntegrationTest do
           content: "def insecure, do: System.cmd(params[:cmd], [])"
         }
       }
-      
+
       state = %{opts: %{security_scan: true}}
 
       result = CodeAnalysisSkill.handle_signal(signal, state)
-      
+
       case result do
         {:ok, analysis_result, _updated_state} ->
           assert Map.has_key?(analysis_result, :security)
           assert is_map(analysis_result.security)
-          
+
         {:ok, _state} ->
           # Sometimes just state is returned
           :ok
-          
+
         other ->
           flunk("Unexpected result: #{inspect(other)}")
       end
@@ -115,13 +115,13 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillIntegrationTest do
 
     test "security analysis disabled in legacy signal" do
       signal = %{
-        type: "code.analyze.file", 
+        type: "code.analyze.file",
         data: %{
           file_path: "test.ex",
           content: "def safe_function, do: :ok"
         }
       }
-      
+
       state = %{opts: %{security_scan: false}}
 
       assert {:ok, result, _updated_state} = CodeAnalysisSkill.handle_signal(signal, state)
@@ -139,7 +139,7 @@ defmodule RubberDuck.Skills.CodeAnalysisSkillIntegrationTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       # Empty context should still work but with limited functionality
       context = %{}
 

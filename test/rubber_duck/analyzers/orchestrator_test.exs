@@ -1,9 +1,9 @@
 defmodule RubberDuck.Analyzers.OrchestratorTest do
   use ExUnit.Case, async: true
-  
+
   alias RubberDuck.Analyzers.Orchestrator
   alias RubberDuck.Messages.Code.Analyze
-  
+
   describe "orchestrate/1" do
     setup do
       request = %{
@@ -36,13 +36,13 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       {:ok, request: request}
     end
-    
+
     test "performs standard orchestration with all analyzers", %{request: request} do
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       assert result.file_path == "lib/example.ex"
       assert result.strategy == :standard
       assert is_map(result.results)
@@ -51,36 +51,38 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
       assert is_map(result.overall_health)
       assert is_integer(result.execution_time)
     end
-    
+
     test "runs quick strategy with minimal analyzers", %{request: request} do
       quick_request = %{request | strategy: :quick}
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(quick_request)
-      
+
       assert result.strategy == :quick
-      assert map_size(result.results) <= 2  # Should only run quality and maybe security
+      # Should only run quality and maybe security
+      assert map_size(result.results) <= 2
     end
-    
+
     test "runs deep strategy with comprehensive analysis", %{request: request} do
       deep_request = %{request | strategy: :deep}
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(deep_request)
-      
+
       assert result.strategy == :deep
-      assert map_size(result.results) >= 3  # Should run most/all analyzers
+      # Should run most/all analyzers
+      assert map_size(result.results) >= 3
     end
-    
+
     test "runs specific analyzers when requested", %{request: request} do
       specific_request = %{request | analyzers: [:security, :performance]}
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(specific_request)
-      
+
       assert Map.has_key?(result.results, :security)
       assert Map.has_key?(result.results, :performance)
       refute Map.has_key?(result.results, :impact)
     end
   end
-  
+
   describe "adaptive_analysis/1" do
     test "adapts analysis based on initial findings" do
       request = %{
@@ -97,14 +99,14 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.adaptive_analysis(request)
-      
+
       # Should detect security issue and run additional analyzers
       assert Map.has_key?(result.results, :security)
       assert length(result.results[:security][:vulnerabilities] || []) > 0
     end
-    
+
     test "skips additional analysis when code is healthy" do
       request = %{
         file_path: "lib/healthy.ex",
@@ -121,14 +123,14 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.adaptive_analysis(request)
-      
+
       # Should only run initial quick analysis
       assert map_size(result.results) <= 2
     end
   end
-  
+
   describe "run_analyzer/3" do
     test "runs security analyzer with context" do
       message = %Analyze{
@@ -137,15 +139,15 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: "System.cmd(user_input, [])"
       }
-      
+
       assert {:ok, result} = Orchestrator.run_analyzer(:security, message, context)
       assert is_list(result.vulnerabilities)
     end
-    
+
     test "runs performance analyzer with context" do
       message = %Analyze{
         file_path: "test.ex",
@@ -153,15 +155,15 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       context = %{
         content: "Enum.map(1..1000000, fn x -> x * x end)"
       }
-      
+
       assert {:ok, result} = Orchestrator.run_analyzer(:performance, message, context)
       assert Map.has_key?(result, :optimization_potential)
     end
-    
+
     test "returns error for unknown analyzer" do
       message = %Analyze{
         file_path: "test.ex",
@@ -169,11 +171,11 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         depth: :moderate,
         auto_fix: false
       }
-      
+
       assert {:error, :unknown_analyzer} = Orchestrator.run_analyzer(:unknown, message, %{})
     end
   end
-  
+
   describe "cross-analyzer insights" do
     test "generates insights from correlated findings" do
       request = %{
@@ -219,15 +221,15 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       # Should generate insights about security + complexity correlation
       assert Enum.any?(result.insights, fn insight ->
-        insight.type in [:security_performance_tradeoff, :complex_high_impact_change]
-      end)
+               insight.type in [:security_performance_tradeoff, :complex_high_impact_change]
+             end)
     end
-    
+
     test "identifies critical code health issues" do
       request = %{
         file_path: "lib/critical.ex",
@@ -252,16 +254,16 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       # Should identify critical health issues
       assert Enum.any?(result.insights, fn insight ->
-        insight.severity == :critical
-      end)
+               insight.severity == :critical
+             end)
     end
   end
-  
+
   describe "recommendations" do
     test "generates prioritized recommendations" do
       request = %{
@@ -288,31 +290,29 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       assert length(result.recommendations) > 0
-      
+
       # Security recommendations should be prioritized
       first_rec = hd(result.recommendations)
       assert first_rec.priority in [:critical, :high]
-      
+
       # Should have recommendations from multiple analyzers
       all_analyzers = Enum.flat_map(result.recommendations, & &1.analyzers)
       assert :security in all_analyzers
       assert :performance in all_analyzers
     end
-    
+
     test "limits recommendations to top 10" do
       # Create content with many issues
       content = """
       defmodule ManyIssues do
-        #{Enum.map(1..20, fn i ->
-          "def issue_#{i}(x), do: System.cmd(x, [])\n"
-        end)}
+        #{Enum.map(1..20, fn i -> "def issue_#{i}(x), do: System.cmd(x, [])\n" end)}
       end
       """
-      
+
       request = %{
         file_path: "lib/many_issues.ex",
         content: content,
@@ -321,13 +321,13 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       assert length(result.recommendations) <= 10
     end
   end
-  
+
   describe "overall health calculation" do
     test "calculates health scores from analyzer results" do
       request = %{
@@ -345,9 +345,9 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       health = result.overall_health
       assert health.overall >= 0 and health.overall <= 1
       assert health.security >= 0 and health.security <= 1
@@ -355,7 +355,7 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
       assert health.quality >= 0 and health.quality <= 1
       assert health.maintainability >= 0 and health.maintainability <= 1
     end
-    
+
     test "reflects poor health for problematic code" do
       request = %{
         file_path: "lib/bad.ex",
@@ -373,14 +373,14 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       assert result.overall_health.overall < 0.5
       assert result.overall_health.security < 0.5
     end
   end
-  
+
   describe "execution strategies" do
     test "focused strategy for security audit" do
       request = %{
@@ -391,13 +391,13 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{focus: :security_audit},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       assert Map.has_key?(result.results, :security)
       assert Map.has_key?(result.results, :impact)
     end
-    
+
     test "focused strategy for performance optimization" do
       request = %{
         file_path: "lib/optimize.ex",
@@ -407,13 +407,13 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{focus: :performance_optimization},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       assert Map.has_key?(result.results, :performance)
       assert Map.has_key?(result.results, :quality)
     end
-    
+
     test "focused strategy for refactoring" do
       request = %{
         file_path: "lib/refactor.ex",
@@ -423,30 +423,31 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         context: %{focus: :refactoring},
         options: %{}
       }
-      
+
       assert {:ok, result} = Orchestrator.orchestrate(request)
-      
+
       assert Map.has_key?(result.results, :quality)
       assert Map.has_key?(result.results, :impact) or Map.has_key?(result.results, :performance)
     end
   end
-  
+
   describe "error handling" do
     test "handles analyzer failures gracefully" do
       request = %{
-        file_path: nil,  # This will cause some analyzers to fail
+        # This will cause some analyzers to fail
+        file_path: nil,
         content: "invalid",
         analyzers: :all,
         strategy: :standard,
         context: %{},
         options: %{}
       }
-      
+
       # Should still return a result even if some analyzers fail
       assert {:ok, result} = Orchestrator.orchestrate(request)
       assert is_map(result.results)
     end
-    
+
     test "respects timeout option" do
       request = %{
         file_path: "lib/timeout.ex",
@@ -454,9 +455,10 @@ defmodule RubberDuck.Analyzers.OrchestratorTest do
         analyzers: [:quality],
         strategy: :quick,
         context: %{},
-        options: %{timeout: 100}  # Very short timeout
+        # Very short timeout
+        options: %{timeout: 100}
       }
-      
+
       # Should complete quickly or timeout gracefully
       assert {:ok, _result} = Orchestrator.orchestrate(request)
     end

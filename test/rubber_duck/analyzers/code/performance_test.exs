@@ -10,7 +10,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def slow_function(data) do
@@ -36,7 +36,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def complex_function(x) do
@@ -66,7 +66,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def get_users do
@@ -88,7 +88,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def process_data(items) do
@@ -110,7 +110,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def create_large_data do
@@ -124,7 +124,8 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
       assert {:ok, result} = Performance.analyze(message, context)
       assert Map.has_key?(result.memory_usage, :estimated_mb)
       assert Map.has_key?(result.memory_usage, :risk_level)
-      assert result.memory_usage.risk_level in [:high, :low]  # Allow both since threshold is 5
+      # Allow both since threshold is 5
+      assert result.memory_usage.risk_level in [:high, :low]
     end
 
     test "suggests performance optimizations" do
@@ -132,7 +133,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def inefficient_check(list) do
@@ -147,9 +148,10 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
 
       assert {:ok, result} = Performance.analyze(message, context)
       assert length(result.optimization_opportunities) > 0
+
       assert Enum.any?(result.optimization_opportunities, fn opt ->
-        String.contains?(opt.pattern, "length() == 0")
-      end)
+               String.contains?(opt.pattern, "length() == 0")
+             end)
     end
 
     test "handles comprehensive analysis type" do
@@ -157,7 +159,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :comprehensive
       }
-      
+
       context = %{content: "def simple_function, do: :ok"}
 
       assert {:ok, result} = Performance.analyze(message, context)
@@ -167,9 +169,9 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
 
     test "returns error for unsupported message types" do
       unsupported_message = %{__struct__: :unsupported}
-      
-      assert {:error, {:unsupported_message_type, :unsupported}} = 
-        Performance.analyze(unsupported_message, %{})
+
+      assert {:error, {:unsupported_message_type, :unsupported}} =
+               Performance.analyze(unsupported_message, %{})
     end
   end
 
@@ -215,7 +217,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def nested_operations(data) do
@@ -233,10 +235,10 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
 
     test "detects string concatenation in loops" do
       message = %Analyze{
-        file_path: "test.ex", 
+        file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def build_string(items) do
@@ -258,7 +260,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def triple_nested(data) do
@@ -286,7 +288,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def bubble_sort(list) do
@@ -309,7 +311,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def factorial(0), do: 1
@@ -329,7 +331,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def complex_database_ops do
@@ -347,7 +349,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
       db_ops = List.first(result.database_operations)
       assert db_ops.type == :ecto
       assert length(db_ops.operations) >= 6
-      
+
       operation_types = Enum.map(db_ops.operations, & &1.operation)
       assert :read_many in operation_types
       assert :read_one_bang in operation_types
@@ -362,7 +364,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def raw_query do
@@ -489,7 +491,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: """
         def very_inefficient(data) do
@@ -507,7 +509,8 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
       }
 
       assert {:ok, result} = Performance.analyze(message, context)
-      assert result.optimization_potential > 60  # Adjust threshold based on actual calculation
+      # Adjust threshold based on actual calculation
+      assert result.optimization_potential > 60
     end
 
     test "calculates low potential for simple code" do
@@ -515,7 +518,7 @@ defmodule RubberDuck.Analyzers.Code.PerformanceTest do
         file_path: "test.ex",
         analysis_type: :performance
       }
-      
+
       context = %{
         content: "def simple_function(x), do: x + 1"
       }
