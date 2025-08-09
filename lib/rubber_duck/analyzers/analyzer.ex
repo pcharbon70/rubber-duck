@@ -191,7 +191,7 @@ defmodule RubberDuck.Analyzer do
 
     {successes, failures} = Enum.split_with(results, &match?({_, {:ok, _}}, &1))
 
-    if length(failures) == 0 do
+    if Enum.empty?(failures) do
       {:ok, successes}
     else
       {:error, failures}

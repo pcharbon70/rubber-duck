@@ -106,9 +106,8 @@ defmodule RubberDuck.Analyzers.Code.QualityTest do
       }
 
       # Create content with more than 100 lines
-      long_content =
-        Enum.map(1..120, fn i -> "# Comment line #{i}" end)
-        |> Enum.join("\n")
+      lines = Enum.map(1..120, fn i -> "# Comment line #{i}" end)
+      long_content = Enum.join(lines, "\n")
 
       context = %{content: long_content}
 

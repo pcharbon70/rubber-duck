@@ -37,7 +37,7 @@ defmodule RubberDuckWeb.CollaborativeCodingLive.ChatComponent do
 
       socket =
         socket
-        |> update(:messages, &(&1 ++ [new_message]))
+        |> update(:messages, &([new_message | &1]))
         |> assign(:message_input, "")
 
       {:noreply, socket}
@@ -54,7 +54,7 @@ defmodule RubberDuckWeb.CollaborativeCodingLive.ChatComponent do
       timestamp: DateTime.utc_now()
     }
 
-    update(socket, :messages, &(&1 ++ [agent_message]))
+    update(socket, :messages, &([agent_message | &1]))
   end
 
   defp handle_new_message(socket, _), do: socket
@@ -65,7 +65,7 @@ defmodule RubberDuckWeb.CollaborativeCodingLive.ChatComponent do
     <div class="flex flex-col h-full">
       <!-- Messages Area -->
       <div class="flex-1 overflow-y-auto p-4 space-y-4">
-        <%= for message <- @messages do %>
+        <%= for message <- Enum.reverse(@messages) do %>
           <div class={[
             "chat",
             message.sender == :user && "chat-end",

@@ -145,7 +145,7 @@ defmodule RubberDuck.Database.AshCircuitBreaker do
 
     defp check_circuit_breaker(operation_type, query) do
       if circuit_breaker_enabled?(query.resource) do
-        CircuitBreaker.with_circuit_breaker(
+        result = CircuitBreaker.with_circuit_breaker(
           operation_type,
           fn ->
             {:ok, :proceed}
@@ -153,7 +153,8 @@ defmodule RubberDuck.Database.AshCircuitBreaker do
           # Quick check
           timeout: 100
         )
-        |> case do
+        
+        case result do
           {:ok, :proceed} -> :ok
           error -> error
         end
@@ -262,14 +263,15 @@ defmodule RubberDuck.Database.AshCircuitBreaker do
 
     defp check_circuit_breaker(operation_type, changeset) do
       if circuit_breaker_enabled?(changeset.resource) do
-        CircuitBreaker.with_circuit_breaker(
+        result = CircuitBreaker.with_circuit_breaker(
           operation_type,
           fn ->
             {:ok, :proceed}
           end,
           timeout: 100
         )
-        |> case do
+        
+        case result do
           {:ok, :proceed} -> :ok
           error -> error
         end

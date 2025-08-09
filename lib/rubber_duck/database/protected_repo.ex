@@ -41,14 +41,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by read circuit breaker.
   """
   def get(queryable, id, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         Repo.get(queryable, id, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   @doc """
@@ -66,14 +67,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by read circuit breaker.
   """
   def get_by(queryable, clauses, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         Repo.get_by(queryable, clauses, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   @doc """
@@ -91,14 +93,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by read circuit breaker.
   """
   def all(queryable, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         Repo.all(queryable, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   @doc """
@@ -106,14 +109,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by read circuit breaker.
   """
   def exists?(queryable, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         Repo.exists?(queryable, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   @doc """
@@ -121,14 +125,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by read circuit breaker.
   """
   def one(queryable, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         Repo.one(queryable, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   @doc """
@@ -148,14 +153,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by write circuit breaker.
   """
   def insert(struct_or_changeset, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :write,
       fn ->
         Repo.insert(struct_or_changeset, opts)
       end,
       opts
     )
-    |> handle_changeset_result()
+    
+    handle_changeset_result(result)
   end
 
   @doc """
@@ -173,14 +179,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by write circuit breaker.
   """
   def update(changeset, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :write,
       fn ->
         Repo.update(changeset, opts)
       end,
       opts
     )
-    |> handle_changeset_result()
+    
+    handle_changeset_result(result)
   end
 
   @doc """
@@ -198,14 +205,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by write circuit breaker.
   """
   def insert_or_update(changeset, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :write,
       fn ->
         Repo.insert_or_update(changeset, opts)
       end,
       opts
     )
-    |> handle_changeset_result()
+    
+    handle_changeset_result(result)
   end
 
   @doc """
@@ -223,14 +231,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by write circuit breaker.
   """
   def delete(struct, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :write,
       fn ->
         Repo.delete(struct, opts)
       end,
       opts
     )
-    |> handle_changeset_result()
+    
+    handle_changeset_result(result)
   end
 
   @doc """
@@ -250,14 +259,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by bulk circuit breaker.
   """
   def insert_all(schema_or_source, entries, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :bulk,
       fn ->
         Repo.insert_all(schema_or_source, entries, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   @doc """
@@ -265,14 +275,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by bulk circuit breaker.
   """
   def update_all(queryable, updates, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :bulk,
       fn ->
         Repo.update_all(queryable, updates, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   @doc """
@@ -280,14 +291,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by bulk circuit breaker.
   """
   def delete_all(queryable, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :bulk,
       fn ->
         Repo.delete_all(queryable, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   # Transaction Operations
@@ -297,14 +309,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by transaction circuit breaker.
   """
   def transaction(fun_or_multi, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :transaction,
       fn ->
         Repo.transaction(fun_or_multi, opts)
       end,
       Keyword.put(opts, :timeout, 30_000)
     )
-    |> handle_transaction_result()
+    
+    handle_transaction_result(result)
   end
 
   @doc """
@@ -321,14 +334,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   def query(sql, params \\ [], opts \\ []) do
     operation_type = determine_query_operation_type(sql)
 
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       operation_type,
       fn ->
         Repo.query(sql, params, opts)
       end,
       opts
     )
-    |> handle_query_result()
+    
+    handle_query_result(result)
   end
 
   @doc """
@@ -348,14 +362,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by read circuit breaker.
   """
   def aggregate(queryable, aggregate, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         Repo.aggregate(queryable, aggregate, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   # Stream Operations
@@ -367,14 +382,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   def stream(queryable, opts \\ []) do
     # Circuit breaker only protects the stream initialization
     # The actual streaming happens outside the circuit breaker
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         {:ok, Repo.stream(queryable, opts)}
       end,
       Keyword.put(opts, :timeout, 5000)
     )
-    |> case do
+    
+    case result do
       {:ok, stream} ->
         stream
 
@@ -391,14 +407,15 @@ defmodule RubberDuck.Database.ProtectedRepo do
   Protected by read circuit breaker.
   """
   def preload(struct_or_structs_or_nil, preloads, opts \\ []) do
-    CircuitBreaker.with_circuit_breaker(
+    result = CircuitBreaker.with_circuit_breaker(
       :read,
       fn ->
         Repo.preload(struct_or_structs_or_nil, preloads, opts)
       end,
       opts
     )
-    |> handle_result()
+    
+    handle_result(result)
   end
 
   # Private Functions
@@ -433,13 +450,13 @@ defmodule RubberDuck.Database.ProtectedRepo do
   defp handle_changeset_result(result), do: result
 
   defp handle_transaction_result({:ok, _} = result), do: result
-  defp handle_transaction_result({:error, _} = result), do: result
-
+  
   defp handle_transaction_result({:error, :database_unavailable}) do
     Logger.error("Transaction failed: circuit breaker open")
     {:error, :database_unavailable}
   end
-
+  
+  defp handle_transaction_result({:error, _} = result), do: result
   defp handle_transaction_result(result), do: result
 
   defp handle_query_result({:ok, %Postgrex.Result{}} = result), do: result

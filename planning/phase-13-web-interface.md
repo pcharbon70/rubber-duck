@@ -68,15 +68,81 @@ Integrate a comprehensive web interface directly into the RubberDuck backend, pr
 - [ ] 13.1.2.5 Create floating action buttons for mobile agent interaction
 - [ ] 13.1.2.6 Ensure accessibility with 44px minimum touch targets
 
-### 13.1.3 Monaco Editor Integration
+### 13.1.3 Multi-File Editor System with Tabs
 
 #### Tasks:
-- [ ] 13.1.3.1 Install and configure live_monaco_editor with agent-aware hooks
-- [ ] 13.1.3.2 Create MonacoEditorHook with agent suggestion integration
-- [ ] 13.1.3.3 Set up bidirectional data flow between LiveView, Monaco, and agents
-- [ ] 13.1.3.4 Implement editor change handling with 250ms debouncing for agent analysis
-- [ ] 13.1.3.5 Configure comprehensive language support with agent-specific highlighting
-- [ ] 13.1.3.6 Add agent code action buttons and inline suggestions
+- [ ] 13.1.3.1 Create multi-file state management in LiveView
+  - [ ] Add `open_files` map to track all open files: `%{file_id => %{path, content, language, modified}}`
+  - [ ] Add `active_file_id` to track currently active tab
+  - [ ] Add `file_counter` for generating unique IDs for new files
+  - [ ] Implement file state persistence across session reconnects
+  - [ ] Create file modification tracking with unsaved changes warnings
+  - [ ] Add maximum open files limit (configurable, default 20)
+
+- [ ] 13.1.3.2 Implement TabBarComponent for file tab management
+  - [ ] Create horizontal tab bar with auto-sizing based on filename length
+  - [ ] Add close button (×) on each tab with hover effects
+  - [ ] Implement active tab highlighting with visual indicators
+  - [ ] Add tab overflow handling with horizontal scroll
+  - [ ] Create "+" button for opening new untitled files
+  - [ ] Implement tab reordering via drag-and-drop
+
+- [ ] 13.1.3.3 Create FileTabComponent for individual tabs
+  - [ ] Display filename with truncation for long names
+  - [ ] Show modified indicator (*) for unsaved changes
+  - [ ] Implement close confirmation dialog for modified files
+  - [ ] Add context menu (right-click) with tab actions
+  - [ ] Create tooltip showing full file path on hover
+  - [ ] Implement double-click to rename untitled files
+
+- [ ] 13.1.3.4 Refactor EditorComponent to EditorContainerComponent
+  - [ ] Manage multiple Monaco Editor instances (one per file)
+  - [ ] Implement lazy loading - only render active editor
+  - [ ] Maintain editor state for inactive tabs in memory
+  - [ ] Create editor instance pooling for performance
+  - [ ] Handle editor disposal and cleanup on tab close
+  - [ ] Implement editor configuration persistence per file type
+
+- [ ] 13.1.3.5 Create Monaco Editor manager JavaScript hook
+  - [ ] Implement `EditorManager` to handle multiple editor instances
+  - [ ] Create editor mounting/unmounting for tab switches
+  - [ ] Add editor state preservation during tab changes
+  - [ ] Implement diff editor support for file comparisons
+  - [ ] Create split editor view for side-by-side editing
+  - [ ] Add minimap synchronization across related files
+
+- [ ] 13.1.3.6 Implement file operations and keyboard shortcuts
+  - [ ] Add Ctrl+Tab / Ctrl+Shift+Tab for tab navigation
+  - [ ] Implement Ctrl+W to close current tab
+  - [ ] Add Ctrl+N for new file creation
+  - [ ] Implement Ctrl+S for saving current file
+  - [ ] Create Ctrl+Shift+T to reopen recently closed tab
+  - [ ] Add Alt+[1-9] for quick tab switching
+
+#### Unit Tests:
+- [ ] 13.1.3.7 Test multi-file state management
+  - [ ] Test opening multiple files simultaneously
+  - [ ] Test file modification tracking
+  - [ ] Test maximum file limit enforcement
+  - [ ] Test state recovery after disconnect
+
+- [ ] 13.1.3.8 Test tab bar functionality
+  - [ ] Test tab creation and deletion
+  - [ ] Test tab switching and active state
+  - [ ] Test overflow behavior with many tabs
+  - [ ] Test drag-and-drop reordering
+
+- [ ] 13.1.3.9 Test editor instance management
+  - [ ] Test editor creation and disposal
+  - [ ] Test state preservation between tab switches
+  - [ ] Test memory cleanup for closed tabs
+  - [ ] Test performance with multiple editors
+
+- [ ] 13.1.3.10 Test keyboard shortcuts and file operations
+  - [ ] Test all keyboard shortcuts functionality
+  - [ ] Test unsaved changes warnings
+  - [ ] Test file save operations
+  - [ ] Test recently closed tab restoration
 
 ### 13.1.4 Agent-Aware Channel Foundation
 
@@ -90,10 +156,166 @@ Integrate a comprehensive web interface directly into the RubberDuck backend, pr
   - `"session:#{id}:presence"` - User and agent presence tracking
 - [ ] 13.1.4.4 Set up WebSocket reconnection with agent state recovery
 
+### 13.1.5 Advanced Multi-File Features with Collapsible File Tree
+
+#### Tasks:
+- [ ] 13.1.5.1 Implement file tree integration (positioned between chat and editor)
+  - [ ] **Create FileTreeComponent LiveView Component**
+    - [ ] Define component module with state management for tree structure
+    - [ ] Implement recursive rendering for nested folder structures
+    - [ ] Add Phoenix.JS toggle commands for folder collapse/expand
+    - [ ] Store expansion state in component assigns
+    - [ ] Handle deep nesting with proper indentation (20px per level)
+    - [ ] Implement virtual scrolling for large file trees (1000+ files)
+
+  - [ ] **Implement collapsible file explorer panel**
+    - [ ] Create 250px default width panel between chat and editor
+    - [ ] Add toggle button in header bar for show/hide
+    - [ ] Implement slide animation (300ms) for collapse/expand
+    - [ ] Adjust editor width dynamically when tree is toggled
+    - [ ] Persist sidebar state in user preferences
+    - [ ] Create keyboard shortcut (Ctrl+Shift+E) for toggle
+
+  - [ ] **Add file/folder icons based on file type with color coding**
+    - [ ] Create comprehensive icon mapping system with pattern matching
+    - [ ] **Elixir files** (.ex, .exs, .eex, .heex):
+      - [ ] Purple hexagon icon (#9333EA)
+      - [ ] Darker shade for test files (*_test.exs)
+    - [ ] **JavaScript files** (.js, .jsx, .mjs):
+      - [ ] Yellow square icon with "JS" (#F7DF1E)
+      - [ ] Different shade for minified files (.min.js)
+    - [ ] **TypeScript files** (.ts, .tsx, .d.ts):
+      - [ ] Blue square icon with "TS" (#3178C6)
+      - [ ] Lighter shade for declaration files
+    - [ ] **Folders**:
+      - [ ] Folder icon (open/closed based on expansion state)
+      - [ ] Special icons for common folders (lib, test, assets, deps)
+    - [ ] Default file icon for unrecognized extensions
+    - [ ] Consistent icon sizing (16px × 16px)
+
+  - [ ] **Implement status colors for files and folders**
+    - [ ] Define comprehensive status color system:
+      - **Modified** (unsaved): Orange dot indicator (#FB923C) + italic filename
+      - **Error/issues**: Red background highlight (#EF4444, 10% opacity)
+      - **Active/open**: Blue left border (3px, #3B82F6)
+      - **Agent analyzing**: Purple pulsing dot animation (#A855F7)
+      - **Recently changed**: Green fade animation (3s, #10B981)
+      - **Staged for commit**: Green checkmark icon (#10B981)
+      - **Untracked**: Gray text (#9CA3AF)
+      - **Ignored**: Semi-transparent (50% opacity)
+    - [ ] Support multiple simultaneous status indicators
+    - [ ] Add hover tooltips showing detailed status information
+    - [ ] Create status priority system for conflicting states
+
+  - [ ] **Implement click and interaction behaviors**
+    - [ ] Single-click to select and preview file
+    - [ ] Double-click to open in editor tab
+    - [ ] Right-click context menu with options:
+      - [ ] Open in new tab
+      - [ ] Open to the side (split view)
+      - [ ] Rename (F2 shortcut)
+      - [ ] Delete (with confirmation)
+      - [ ] Copy relative/absolute path
+      - [ ] Show in system explorer
+    - [ ] Integrate with multi-file tab system from 13.1.3
+    - [ ] Show loading spinner during file operations
+
+  - [ ] **Add drag-and-drop capabilities**
+    - [ ] Implement HTML5 drag-and-drop API integration
+    - [ ] Visual feedback during drag (semi-transparent ghost)
+    - [ ] Drop zone highlighting in editor area
+    - [ ] Support dragging files to reorder in tabs
+    - [ ] Support dragging folders to batch open files
+    - [ ] Drag files between folders for moving
+    - [ ] External file drop support for uploading
+
+  - [ ] **Create search and filter functionality**
+    - [ ] Add search input at top of tree with clear button
+    - [ ] Real-time filtering with debounce (150ms)
+    - [ ] Fuzzy matching with highlighting of matches
+    - [ ] Auto-expand folders containing search results
+    - [ ] Show match count badge
+    - [ ] Filter by file type toggles (Elixir, JS, TS, etc.)
+    - [ ] Regex search mode for advanced users
+
+  - [ ] **Implement state persistence and synchronization**
+    - [ ] Store expansion state in LiveView session
+    - [ ] Persist to database per user/project
+    - [ ] Restore state on component mount
+    - [ ] Sync state across multiple browser tabs
+    - [ ] Handle file system changes gracefully
+    - [ ] Add "Collapse All" / "Expand All" toolbar buttons
+    - [ ] Remember scroll position and selection
+
+  - [ ] **Create file system watching and real-time updates**
+    - [ ] Connect to Phoenix.PubSub for file system events
+    - [ ] Update tree on file CRUD operations
+    - [ ] Show real-time status changes from external tools
+    - [ ] Handle file/folder moves and renames
+    - [ ] Batch rapid changes with 100ms debounce
+    - [ ] Toast notifications for external changes
+    - [ ] Conflict resolution for simultaneous edits
+
+  - [ ] **Implement agent integration features**
+    - [ ] Show agent activity indicators per file/folder
+    - [ ] Display agent suggestions for file organization
+    - [ ] Agent-recommended files section at top
+    - [ ] Test coverage badges from agent analysis
+    - [ ] Code quality scores (A-F rating)
+    - [ ] Agent-powered file search with natural language
+    - [ ] Smart grouping suggestions from agents
+    - [ ] Refactoring recommendations with preview
+
 #### Unit Tests:
-- [ ] 13.1.5 Test LiveView component lifecycle with agent integration
-- [ ] 13.1.6 Test layout responsiveness and panel resizing
-- [ ] 13.1.7 Test Monaco Editor agent suggestion integration
+- [ ] 13.1.5.10 Test FileTreeComponent rendering and structure
+  - [ ] Test recursive folder rendering with deep nesting
+  - [ ] Test proper indentation calculations
+  - [ ] Test icon display for all file types
+  - [ ] Test status color application and priority
+
+- [ ] 13.1.5.11 Test collapsible and expansion functionality
+  - [ ] Test folder expand/collapse toggling
+  - [ ] Test state persistence across LiveView updates
+  - [ ] Test keyboard navigation (arrow keys, Enter, Space)
+  - [ ] Test expand/collapse all operations
+
+- [ ] 13.1.5.12 Test file operations and interactions
+  - [ ] Test single-click selection
+  - [ ] Test double-click file opening
+  - [ ] Test context menu operations
+  - [ ] Test drag-and-drop scenarios
+  - [ ] Test keyboard shortcuts (F2, Delete, etc.)
+
+- [ ] 13.1.5.13 Test search and filtering
+  - [ ] Test real-time search with debouncing
+  - [ ] Test fuzzy matching accuracy
+  - [ ] Test folder auto-expansion for results
+  - [ ] Test file type filtering
+  - [ ] Test regex search mode
+
+- [ ] 13.1.5.14 Test performance and scalability
+  - [ ] Test with large file trees (5000+ files)
+  - [ ] Test virtual scrolling performance
+  - [ ] Test search performance on large trees
+  - [ ] Test memory usage with all folders expanded
+  - [ ] Test rapid file system changes
+
+- [ ] 13.1.5.15 Test agent integration
+  - [ ] Test agent activity indicators
+  - [ ] Test agent suggestion display
+  - [ ] Test real-time updates from agents
+  - [ ] Test natural language search
+  - [ ] Test quality score displays
+
+- [ ] 13.1.5.16 Test layout integration
+  - [ ] Test positioning between chat and editor
+  - [ ] Test collapse/expand effects on layout
+  - [ ] Test responsive behavior on different screen sizes
+  - [ ] Test mobile drawer implementation
+
+#### Unit Tests for Core Foundation:
+- [ ] 13.1.6 Test LiveView component lifecycle with agent integration
+- [ ] 13.1.7 Test layout responsiveness and panel resizing
 - [ ] 13.1.8 Test channel communication with agent message routing
 
 ## 13.2 Agent Chat System & Collaboration
