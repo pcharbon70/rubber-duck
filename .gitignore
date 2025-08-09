@@ -21,3 +21,6 @@ rubber_duck-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Node modules from assets
+/assets/node_modules/
