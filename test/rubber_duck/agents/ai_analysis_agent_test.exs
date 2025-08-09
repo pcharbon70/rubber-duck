@@ -401,7 +401,10 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
       agent =
         Enum.reduce(1..10, agent, fn i, acc ->
           msg = %{project_id: "active_project", change_count: i}
-          {{:ok, _result}, updated} = AIAnalysisAgent.handle_instruction({:project_changed, msg}, acc)
+
+          {{:ok, _result}, updated} =
+            AIAnalysisAgent.handle_instruction({:project_changed, msg}, acc)
+
           updated
         end)
 
@@ -425,7 +428,9 @@ defmodule RubberDuck.Agents.AIAnalysisAgentTest do
 
       # Should not trigger due to time constraint
       msg = %{project_id: "project123"}
-      {{:ok, _result}, updated_agent} = AIAnalysisAgent.handle_instruction({:project_changed, msg}, agent)
+
+      {{:ok, _result}, updated_agent} =
+        AIAnalysisAgent.handle_instruction({:project_changed, msg}, agent)
 
       # Verify no new analysis scheduled immediately
       assert updated_agent.state.project_activity["project123"].change_count == 6

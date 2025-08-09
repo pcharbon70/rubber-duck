@@ -14,7 +14,7 @@ defmodule RubberDuckWeb.CollaborativeCodingLive.ChatComponent do
 
   @impl true
   def update(assigns, socket) do
-    socket = 
+    socket =
       socket
       |> assign(assigns)
       |> handle_new_message(assigns)

@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.DependencyUpdate do
   @moduledoc """
   Message to trigger dependency updates.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

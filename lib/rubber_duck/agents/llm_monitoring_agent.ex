@@ -86,7 +86,6 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   end
 
   def handle_instruction({:provider_failed, %{provider: provider, error: error} = msg}, agent) do
-
     Logger.error("Provider #{provider} failed: #{inspect(error)}")
 
     # Update failure history
@@ -101,7 +100,6 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   end
 
   def handle_instruction({:provider_degraded, %{provider: provider, reason: reason} = msg}, agent) do
-
     Logger.warning("Provider #{provider} degraded: #{inspect(reason)}")
 
     # Learn from degradation patterns
@@ -116,7 +114,6 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
   end
 
   def handle_instruction({:provider_healthy, %{provider: provider} = msg}, agent) do
-
     Logger.info("Provider #{provider} recovered to healthy state")
 
     # Record recovery
@@ -152,7 +149,10 @@ defmodule RubberDuck.Agents.LLMMonitoringAgent do
     end
   end
 
-  def handle_instruction({:fallback_triggered, %{from_provider: from_provider, to_provider: to_provider}}, agent) do
+  def handle_instruction(
+        {:fallback_triggered, %{from_provider: from_provider, to_provider: to_provider}},
+        agent
+      ) do
     # Learn from fallback patterns
 
     updated_agent = record_fallback_event(agent, from_provider, to_provider)

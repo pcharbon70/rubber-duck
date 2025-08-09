@@ -8,9 +8,9 @@ defmodule RubberDuckWeb.Layouts do
   @doc """
   Renders your app layout.
   """
-  attr :flash, :map, required: true, doc: "the map of flash messages"
-  attr :current_user, :map, default: nil, doc: "the current authenticated user"
-  slot :inner_block, required: true
+  attr(:flash, :map, required: true, doc: "the map of flash messages")
+  attr(:current_user, :map, default: nil, doc: "the current authenticated user")
+  slot(:inner_block, required: true)
 
   def app(assigns) do
     ~H"""
@@ -58,7 +58,6 @@ defmodule RubberDuckWeb.Layouts do
     """
   end
 
-
   @doc """
   Provides dark vs light theme toggle.
   """
@@ -90,5 +89,5 @@ defmodule RubberDuckWeb.Layouts do
     """
   end
 
-  embed_templates "layouts/*"
+  embed_templates("layouts/*")
 end

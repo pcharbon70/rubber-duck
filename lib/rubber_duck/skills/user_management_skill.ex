@@ -238,246 +238,30 @@ defmodule RubberDuck.Skills.UserManagementSkill do
     }
   end
 
-  defp generate_session_id do
-    16
-    |> :crypto.strong_rand_bytes()
-    |> Base.encode16(case: :lower)
-  end
+  # Removed unused function generate_session_id/0
 
-  defp update_behavioral_patterns(state, user_id, interactions) do
-    current_patterns = get_in(state, [:users, user_id, :behavioral_patterns]) || []
+  # Removed unused functions:
+  # - update_behavioral_patterns/3
+  # - learn_behavioral_patterns/2
 
-    # Analyze interactions to update patterns
-    new_patterns = analyze_interactions_for_patterns(interactions)
+  # Removed unused function detect_behavioral_patterns/1
 
-    # Merge with existing patterns, updating confidence scores
-    merged_patterns = merge_patterns(current_patterns, new_patterns, state.opts.adaptation_rate)
+  # Removed unused functions:
+  # - detect_action_sequences/1
+  # - predict_next_actions/2  
+  # - predict_initial_actions/1
+  # - generate_proactive_suggestions/2
 
-    put_in(state, [:users, user_id, :behavioral_patterns], merged_patterns)
-  end
+  # Removed unused function generate_proactive_suggestions_unused/2
 
-  defp learn_behavioral_patterns(state, user_id) do
-    behavior_history = get_in(state, [:users, user_id, :behavior_history]) || []
-
-    # Detect sequential patterns
-    patterns = detect_behavioral_patterns(behavior_history)
-
-    # Update stored patterns
-    put_in(state, [:users, user_id, :behavioral_patterns], patterns)
-  end
-
-  defp detect_behavioral_patterns(behaviors) when length(behaviors) < 2, do: []
-
-  defp detect_behavioral_patterns(behaviors) do
-    # Group behaviors by action type
-    grouped = Enum.group_by(behaviors, & &1.action)
-
-    # Find sequential patterns
-    patterns =
-      Enum.flat_map(grouped, fn {action, instances} ->
-        if length(instances) >= 3 do
-          # Calculate pattern metrics
-          timestamps = Enum.map(instances, & &1.timestamp)
-          intervals = calculate_intervals(timestamps)
-
-          [
-            %{
-              type: :recurring_action,
-              action: action,
-              frequency: length(instances),
-              avg_interval: average(intervals),
-              confidence: min(1.0, length(instances) / 10.0),
-              detected_at: DateTime.utc_now()
-            }
-          ]
-        else
-          []
-        end
-      end)
-
-    # Detect action sequences
-    sequence_patterns = detect_action_sequences(behaviors)
-
-    patterns ++ sequence_patterns
-  end
-
-  defp detect_action_sequences(behaviors) when length(behaviors) < 3, do: []
-
-  defp detect_action_sequences(behaviors) do
-    # Look for common action sequences (trigrams)
-    behaviors
-    |> Enum.chunk_every(3, 1, :discard)
-    |> Enum.map(fn [a, b, c] -> [a.action, b.action, c.action] end)
-    |> Enum.frequencies()
-    |> Enum.filter(fn {_, count} -> count >= 2 end)
-    |> Enum.map(fn {sequence, count} ->
-      %{
-        type: :action_sequence,
-        sequence: sequence,
-        frequency: count,
-        confidence: min(1.0, count / 5.0),
-        detected_at: DateTime.utc_now()
-      }
-    end)
-  end
-
-  defp predict_next_actions(state, user_id) do
-    patterns = get_in(state, [:users, user_id, :behavioral_patterns]) || []
-    recent_behaviors = get_in(state, [:users, user_id, :behavior_history]) || []
-
-    if length(recent_behaviors) >= 2 do
-      recent_actions =
-        recent_behaviors
-        |> Enum.take(2)
-        |> Enum.map(& &1.action)
-        |> Enum.reverse()
-
-      # Find matching sequence patterns
-      matching_sequences =
-        patterns
-        |> Enum.filter(fn pattern ->
-          pattern.type == :action_sequence && Enum.take(pattern.sequence, 2) == recent_actions
-        end)
-        |> Enum.map(fn pattern ->
-          %{
-            action: Enum.at(pattern.sequence, 2),
-            confidence: pattern.confidence,
-            reason: :sequence_pattern
-          }
-        end)
-
-      # Sort by confidence
-      matching_sequences
-      |> Enum.sort_by(& &1.confidence, :desc)
-      |> Enum.take(3)
-    else
-      []
-    end
-  end
-
-  defp predict_initial_actions(user_state) do
-    # Predict likely initial actions based on historical patterns
-    user_state.behavioral_patterns
-    |> Enum.filter(&(&1.type == :recurring_action))
-    |> Enum.sort_by(& &1.confidence, :desc)
-    |> Enum.take(3)
-    |> Enum.map(fn pattern ->
-      %{
-        action: pattern.action,
-        confidence: pattern.confidence,
-        reason: :historical_pattern
-      }
-    end)
-  end
-
-  defp generate_proactive_suggestions(patterns, _user_state) do
-    suggestions = []
-
-    # Suggest based on recurring patterns
-    recurring_suggestions =
-      patterns
-      |> Enum.filter(&(&1.type == :recurring_action && &1.confidence >= 0.8))
-      |> Enum.map(fn pattern ->
-        %{
-          type: :automation,
-          action: pattern.action,
-          message: "Automate #{pattern.action} - performed #{pattern.frequency} times",
-          confidence: pattern.confidence
-        }
-      end)
-
-    # Suggest based on sequences
-    sequence_suggestions =
-      patterns
-      |> Enum.filter(&(&1.type == :action_sequence && &1.confidence >= 0.7))
-      |> Enum.map(fn pattern ->
-        %{
-          type: :workflow,
-          sequence: pattern.sequence,
-          message: "Create workflow for: #{Enum.join(pattern.sequence, " → ")}",
-          confidence: pattern.confidence
-        }
-      end)
-
-    suggestions ++ recurring_suggestions ++ sequence_suggestions
-  end
-
-  defp learn_from_interaction(state, user_id, interaction) do
-    # Update success/failure patterns
-    pattern_key = {interaction.action, interaction.success}
-
-    update_in(state, [:users, user_id, :interaction_patterns, pattern_key], fn count ->
-      (count || 0) + 1
-    end)
-  end
-
-  defp adapt_preference(old_value, new_value, adaptation_rate)
-       when is_number(old_value) and is_number(new_value) do
-    old_value * (1 - adaptation_rate) + new_value * adaptation_rate
-  end
-
-  defp adapt_preference(_old_value, new_value, _adaptation_rate), do: new_value
-
-  defp analyze_interactions_for_patterns(interactions) do
-    interactions
-    |> Enum.group_by(& &1.type)
-    |> Enum.map(fn {type, instances} ->
-      %{
-        type: :interaction_pattern,
-        interaction_type: type,
-        frequency: length(instances),
-        confidence: min(1.0, length(instances) / 5.0),
-        detected_at: DateTime.utc_now()
-      }
-    end)
-  end
-
-  defp merge_patterns(existing, new_patterns, adaptation_rate) do
-    # Create a map of existing patterns by key
-    existing_map =
-      Map.new(existing, fn pattern ->
-        key = pattern_key(pattern)
-        {key, pattern}
-      end)
-
-    # Merge new patterns
-    new_patterns
-    |> Enum.reduce(existing_map, fn new_pattern, acc ->
-      key = pattern_key(new_pattern)
-
-      Map.update(acc, key, new_pattern, fn existing_pattern ->
-        # Adapt confidence score
-        %{
-          existing_pattern
-          | confidence:
-              adapt_preference(
-                existing_pattern.confidence,
-                new_pattern.confidence,
-                adaptation_rate
-              ),
-            frequency: existing_pattern.frequency + new_pattern.frequency
-        }
-      end)
-    end)
-    |> Map.values()
-  end
-
-  defp pattern_key(%{type: :recurring_action, action: action}), do: {:recurring, action}
-  defp pattern_key(%{type: :action_sequence, sequence: seq}), do: {:sequence, seq}
-
-  defp pattern_key(%{type: :interaction_pattern, interaction_type: type}),
-    do: {:interaction, type}
-
-  defp pattern_key(pattern), do: {:unknown, :erlang.phash2(pattern)}
-
-  defp calculate_intervals([_]), do: []
-
-  defp calculate_intervals([t1, t2 | rest]) do
-    [DateTime.diff(t2, t1) | calculate_intervals([t2 | rest])]
-  end
-
-  defp average([]), do: 0
-  defp average(list), do: Enum.sum(list) / length(list)
+  # Removed unused functions:
+  # - learn_from_interaction/3
+  # - adapt_preference/3 
+  # - analyze_interactions_for_patterns/1
+  # - merge_patterns/3
+  # - pattern_key/1
+  # - calculate_intervals/1
+  # - average/1
 
   # Additional helper functions for typed messages
 

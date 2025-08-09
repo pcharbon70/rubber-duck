@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.User.PatternDetected do
   @moduledoc """
   Message indicating a user behavior pattern was detected.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

@@ -70,10 +70,6 @@ defmodule RubberDuck.Agents.UserAgent do
   alias RubberDuck.Routing.MessageRouter
 
   alias RubberDuck.Messages.User.{
-    ValidateSession,
-    UpdatePreferences,
-    TrackActivity,
-    GenerateSuggestions,
     SessionCreated,
     SessionExpired,
     PatternDetected,
@@ -100,15 +96,16 @@ defmodule RubberDuck.Agents.UserAgent do
     case create_user_session(agent, user_id) do
       {:ok, session} ->
         updated_agent = update_active_sessions(agent, user_id, session)
-        
+
         # Send typed message instead of signal
         message = %SessionCreated{
           user_id: user_id,
           session_id: session.id,
           timestamp: DateTime.utc_now()
         }
+
         MessageRouter.route(message)
-        
+
         {:ok, session, updated_agent}
 
       {:error, reason} ->
@@ -271,8 +268,9 @@ defmodule RubberDuck.Agents.UserAgent do
         details: patterns,
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
-      
+
       put_in(agent.state.recognized_patterns[user_id], patterns)
     else
       agent
@@ -324,9 +322,10 @@ defmodule RubberDuck.Agents.UserAgent do
           confidence: agent.state.pattern_confidence_threshold,
           timestamp: DateTime.utc_now()
         }
+
         MessageRouter.route(message)
       end
-      
+
       put_in(agent.state.user_preferences[user_id], updated_prefs)
     else
       agent
@@ -371,6 +370,7 @@ defmodule RubberDuck.Agents.UserAgent do
         context: %{count: length(suggestions)},
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
 
       updated_queue =
@@ -476,6 +476,7 @@ defmodule RubberDuck.Agents.UserAgent do
             reason: :auto_cleanup,
             timestamp: DateTime.utc_now()
           }
+
           MessageRouter.route(message)
         end
 

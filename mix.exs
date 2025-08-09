@@ -69,7 +69,7 @@ defmodule RubberDuck.MixProject do
 
       # PubSub for signal system
       {:phoenix_pubsub, "~> 2.1"},
-      
+
       # Phoenix framework and LiveView
       {:phoenix, "~> 1.7.18"},
       {:phoenix_html, "~> 4.1"},
@@ -77,23 +77,23 @@ defmodule RubberDuck.MixProject do
       {:phoenix_live_view, "~> 1.0"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:floki, ">= 0.30.0", only: :test},
-      
+
       # Authentication UI
       {:ash_authentication_phoenix, "~> 2.0"},
-      
+
       # Asset building
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
-      
+
       # HTTP server
       {:bandit, "~> 1.5"},
       {:plug_cowboy, "~> 2.7"},
       {:gettext, "~> 0.20"},
       {:heroicons, "~> 0.5"},
-      
+
       # Monaco editor
       {:live_monaco_editor, "~> 0.1"},
-      
+
       # Development tools
       {:swoosh, "~> 1.5"},
 

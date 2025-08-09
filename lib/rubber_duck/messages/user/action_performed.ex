@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.User.ActionPerformed do
   @moduledoc """
   Message indicating a user performed an action.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

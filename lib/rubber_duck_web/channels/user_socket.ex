@@ -2,10 +2,10 @@ defmodule RubberDuckWeb.UserSocket do
   use Phoenix.Socket
 
   # Channels
-  channel "session:*", RubberDuckWeb.CollaborativeChannel
+  channel("session:*", RubberDuckWeb.CollaborativeChannel)
 
   @impl true
-  def connect(%{"token" => token}, socket, _connect_info) do
+  def connect(%{"token" => _token}, socket, _connect_info) do
     # TODO: verify token
     {:ok, assign(socket, :user_id, "user_#{:rand.uniform(1000)}")}
   end

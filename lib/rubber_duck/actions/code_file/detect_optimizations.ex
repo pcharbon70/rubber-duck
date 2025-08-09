@@ -367,7 +367,7 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
 
       :balanced ->
         Enum.filter(optimizations, fn opt -> opt.risk in [:low, :medium] end)
-        
+
       :moderate ->
         Enum.filter(optimizations, fn opt -> opt.risk in [:low, :medium] end)
     end

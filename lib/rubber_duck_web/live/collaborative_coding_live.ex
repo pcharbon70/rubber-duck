@@ -41,12 +41,13 @@ defmodule RubberDuckWeb.CollaborativeCodingLive do
   def handle_event("update_layout", %{"width" => width}, socket) do
     editor_width = String.to_integer(width)
     chat_width = 100 - editor_width
-    
-    layout_config = %{socket.assigns.layout_config | 
-      editor_width_percent: editor_width,
-      chat_width_percent: chat_width
+
+    layout_config = %{
+      socket.assigns.layout_config
+      | editor_width_percent: editor_width,
+        chat_width_percent: chat_width
     }
-    
+
     {:noreply, assign(socket, :layout_config, layout_config)}
   end
 
@@ -66,10 +67,10 @@ defmodule RubberDuckWeb.CollaborativeCodingLive do
     cond do
       demo_user = session["demo_user"] ->
         {:ok, demo_user}
-      
+
       user = session["current_user"] ->
         {:ok, user}
-      
+
       true ->
         {:error, "not_authenticated"}
     end

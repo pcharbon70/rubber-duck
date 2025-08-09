@@ -314,7 +314,9 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
         last_analysis_at: nil
       }
 
-      {:ok, state1} = CodeFileAgent.handle_instruction({:file_created, create_message}, initial_state)
+      {:ok, state1} =
+        CodeFileAgent.handle_instruction({:file_created, create_message}, initial_state)
+
       assert state1.file_id == "lifecycle_file"
 
       # Modify
@@ -378,7 +380,8 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
       message = %FileCreated{
         file_id: "empty_file",
         file_path: "lib/empty.ex",
-        content: nil,  # Missing content
+        # Missing content
+        content: nil,
         timestamp: DateTime.utc_now()
       }
 

@@ -17,7 +17,7 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
   def run(params, _context) do
     content = params[:content]
     analyze_depth = params[:analyze_depth] || :normal
-    
+
     with {:ok, changes} <- detect_changes(params),
          {:ok, metrics} <- calculate_quality_metrics(content),
          {:ok, issues} <- detect_issues(content, analyze_depth),
@@ -39,7 +39,7 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
   defp detect_changes(params) do
     content = params[:content]
     previous = params[:previous_content]
-    
+
     cond do
       is_binary(previous) and is_binary(content) ->
         changes = %{
@@ -47,11 +47,12 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
           deletions: count_deletions(previous, content),
           modifications: count_modifications(previous, content)
         }
+
         {:ok, changes}
-        
+
       is_binary(content) ->
         {:ok, %{additions: count_lines(content), deletions: 0, modifications: 0}}
-        
+
       true ->
         {:ok, %{additions: 0, deletions: 0, modifications: 0}}
     end
@@ -67,14 +68,15 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     {:ok, metrics}
   end
-  
+
   defp calculate_quality_metrics(_) do
-    {:ok, %{
-      complexity: 1,
-      maintainability: 100.0,
-      duplication: 0.0,
-      nesting_depth: 0
-    }}
+    {:ok,
+     %{
+       complexity: 1,
+       maintainability: 100.0,
+       duplication: 0.0,
+       nesting_depth: 0
+     }}
   end
 
   defp detect_issues(content, depth) when is_binary(content) do
@@ -102,7 +104,7 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     {:ok, issues}
   end
-  
+
   defp detect_issues(_, _), do: {:ok, []}
 
   defp assess_change_impact(changes, content) when is_binary(content) do
@@ -115,14 +117,15 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     {:ok, impact}
   end
-  
+
   defp assess_change_impact(changes, _) do
-    {:ok, %{
-      risk_level: calculate_risk_level(changes),
-      affected_functions: [],
-      breaking_changes: [],
-      performance_impact: :neutral
-    }}
+    {:ok,
+     %{
+       risk_level: calculate_risk_level(changes),
+       affected_functions: [],
+       breaking_changes: [],
+       performance_impact: :neutral
+     }}
   end
 
   defp calculate_quality_score(metrics, issues) do
@@ -147,7 +150,7 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
     |> Enum.reject(&(String.trim(&1) == ""))
     |> length()
   end
-  
+
   defp count_lines(_), do: 0
 
   defp count_additions(old_content, new_content) do

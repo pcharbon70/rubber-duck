@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.User.SessionExpired do
   @moduledoc """
   Message indicating a user session has expired.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

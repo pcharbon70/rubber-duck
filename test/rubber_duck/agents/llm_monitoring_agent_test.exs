@@ -242,6 +242,7 @@ defmodule RubberDuck.Agents.LLMMonitoringAgentTest do
       agent =
         Enum.reduce(failures, agent, fn failure, acc ->
           msg = Map.merge(failure, %{error: failure.error})
+
           {{:ok, _}, updated} =
             LLMMonitoringAgent.handle_instruction({:provider_failed, msg}, acc)
 

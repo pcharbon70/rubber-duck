@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.ProjectDeleted do
   @moduledoc """
   Message indicating a project was deleted.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

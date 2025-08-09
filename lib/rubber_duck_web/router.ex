@@ -3,28 +3,28 @@ defmodule RubberDuckWeb.Router do
   use AshAuthentication.Phoenix.Router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {RubberDuckWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-    plug :load_from_session
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, html: {RubberDuckWeb.Layouts, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(:load_from_session)
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
-    plug :load_from_bearer
+    plug(:accepts, ["json"])
+    plug(:load_from_bearer)
   end
 
   scope "/", RubberDuckWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
-    get "/", PageController, :home
+    get("/", PageController, :home)
 
     # Demo authentication routes
-    post "/demo-login", PageController, :demo_login
-    post "/demo-logout", PageController, :demo_logout
+    post("/demo-login", PageController, :demo_login)
+    post("/demo-logout", PageController, :demo_logout)
 
     # Authentication routes with DaisyUI overrides
     auth_routes(AuthController, RubberDuck.Accounts.User, path: "/auth")
@@ -41,7 +41,7 @@ defmodule RubberDuckWeb.Router do
     )
 
     # Protected routes
-    live "/code", CollaborativeCodingLive
+    live("/code", CollaborativeCodingLive)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
@@ -49,10 +49,10 @@ defmodule RubberDuckWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through(:browser)
 
-      live_dashboard "/dashboard", metrics: RubberDuckWeb.Telemetry
-      forward "/mailbox", Plug.Swoosh.MailboxPreview
+      live_dashboard("/dashboard", metrics: RubberDuckWeb.Telemetry)
+      forward("/mailbox", Plug.Swoosh.MailboxPreview)
     end
   end
 end

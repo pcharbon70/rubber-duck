@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.RefactoringSuggested do
   @moduledoc """
   Message indicating refactoring suggestions are available.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """
@@ -10,7 +10,7 @@ defmodule RubberDuck.Messages.Project.RefactoringSuggested do
   defstruct [:project_id, :suggestions, :priority, :impact, :timestamp]
 
   @type priority :: :low | :medium | :high
-  
+
   @type t :: %__MODULE__{
           project_id: String.t(),
           suggestions: list() | nil,

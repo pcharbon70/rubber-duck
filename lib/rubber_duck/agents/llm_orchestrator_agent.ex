@@ -132,7 +132,11 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
           end
         )
 
-      updated_agent = %{agent | state: Map.put(agent.state, :provider_performance, updated_performance)}
+      updated_agent = %{
+        agent
+        | state: Map.put(agent.state, :provider_performance, updated_performance)
+      }
+
       {{:ok, %{status: :performance_updated}}, updated_agent}
     else
       {{:ok, %{status: :no_provider}}, agent}
@@ -152,7 +156,11 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
           end
         )
 
-      updated_agent = %{agent | state: Map.put(agent.state, :provider_performance, updated_performance)}
+      updated_agent = %{
+        agent
+        | state: Map.put(agent.state, :provider_performance, updated_performance)
+      }
+
       {{:ok, %{status: :failure_tracked}}, updated_agent}
     else
       {{:ok, %{status: :no_provider}}, agent}
@@ -206,7 +214,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
         selection_reason: provider.selection_reason
       }
     }
-    
+
     MessageRouter.route(message)
   end
 
@@ -482,7 +490,7 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
             to_provider: fallback_provider.name
           }
         }
-        
+
         MessageRouter.route(message)
 
         updated_request = Map.put(request, :attempted_provider, fallback_provider.name)
@@ -741,20 +749,20 @@ defmodule RubberDuck.Agents.LLMOrchestratorAgent do
   defp update_cache_metrics(agent, :hit) do
     metrics = agent.state.performance_metrics || %{}
     cache_stats = Map.get(metrics, :cache, %{hits: 0, misses: 0})
-    
+
     updated_cache_stats = Map.update(cache_stats, :hits, 1, &(&1 + 1))
     updated_metrics = Map.put(metrics, :cache, updated_cache_stats)
-    
+
     %{agent | state: Map.put(agent.state, :performance_metrics, updated_metrics)}
   end
 
   defp update_cache_metrics(agent, :miss) do
     metrics = agent.state.performance_metrics || %{}
     cache_stats = Map.get(metrics, :cache, %{hits: 0, misses: 0})
-    
+
     updated_cache_stats = Map.update(cache_stats, :misses, 1, &(&1 + 1))
     updated_metrics = Map.put(metrics, :cache, updated_cache_stats)
-    
+
     %{agent | state: Map.put(agent.state, :performance_metrics, updated_metrics)}
   end
 end

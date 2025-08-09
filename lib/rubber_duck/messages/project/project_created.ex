@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.ProjectCreated do
   @moduledoc """
   Message indicating a project was created.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

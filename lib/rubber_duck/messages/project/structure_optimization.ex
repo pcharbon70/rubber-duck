@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.StructureOptimization do
   @moduledoc """
   Message for structure optimization operations.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

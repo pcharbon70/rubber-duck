@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.ImpactAnalysis do
   @moduledoc """
   Message to request impact analysis.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

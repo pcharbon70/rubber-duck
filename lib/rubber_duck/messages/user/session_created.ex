@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.User.SessionCreated do
   @moduledoc """
   Message indicating a user session was created.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

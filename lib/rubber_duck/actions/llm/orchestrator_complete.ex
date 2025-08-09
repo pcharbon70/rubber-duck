@@ -15,10 +15,7 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   require Logger
 
   # Signal definitions
-  @signal_provider_selected "llm.provider.selected"
-  @signal_request_completed "llm.request.completed"
-  @signal_request_failed "llm.request.failed"
-  @signal_cache_hit "llm.cache.hit"
+  # Signal constants removed - now using typed messages via MessageRouter
 
   @impl true
   def run(params, context) do
@@ -54,7 +51,8 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   end
 
   defp handle_cache_hit_response(request, cache_key, cached_response) do
-    emit_signal(@signal_cache_hit, %{request_id: request[:id], cache_key: cache_key})
+    # Cache hit - now handled via MessageRouter
+    Logger.debug("Cache hit for request #{request[:id]} with key #{cache_key}")
     {:ok, cached_response}
   end
 
@@ -70,22 +68,17 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   end
 
   defp emit_provider_selection_signal(provider, request) do
-    emit_signal(@signal_provider_selected, %{
-      provider: provider.name,
-      request_id: request[:id],
-      selection_reason: provider.selection_reason
-    })
+    # Provider selected - now handled via MessageRouter
+    Logger.debug(
+      "Provider #{provider.name} selected for request #{request[:id]}, reason: #{provider.selection_reason}"
+    )
   end
 
   defp finalize_completion_success(provider, request, response, start_time) do
     duration = System.monotonic_time(:millisecond) - start_time
 
-    emit_signal(@signal_request_completed, %{
-      provider: provider.name,
-      request_id: request[:id],
-      duration: duration,
-      tokens: response.usage.total_tokens
-    })
+    # Request completed - now handled via MessageRouter
+    Logger.debug("Request #{request[:id]} completed via #{provider.name} in #{duration}ms")
 
     {:ok, response}
   end
@@ -141,11 +134,9 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
   end
 
   defp handle_completion_failure(_agent, request, reason, start_time) do
-    emit_signal(@signal_request_failed, %{
-      request_id: request[:id],
-      reason: reason,
-      duration: System.monotonic_time(:millisecond) - start_time
-    })
+    # Request failed - now handled via MessageRouter
+    duration = System.monotonic_time(:millisecond) - start_time
+    Logger.warning("Request #{request[:id]} failed after #{duration}ms: #{inspect(reason)}")
 
     {:error, reason}
   end
@@ -155,16 +146,6 @@ defmodule RubberDuck.Actions.LLM.OrchestratorComplete do
     |> :erlang.term_to_binary()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16()
-  end
-
-  defp emit_signal(signal_type, payload) do
-    Logger.debug("Legacy signal emission: #{signal_type}, payload: #{inspect(payload)}")
-    # Note: Converted from legacy signal system - signals are now handled via MessageRouter
-    :ok
-  rescue
-    exception ->
-      Logger.warning("Failed to emit signal #{signal_type}: #{inspect(exception)}")
-      :ok
   end
 
   defp validate_orchestrator_params(params) do

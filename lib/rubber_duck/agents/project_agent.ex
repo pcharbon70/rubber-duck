@@ -87,24 +87,17 @@ defmodule RubberDuck.Agents.ProjectAgent do
 
   alias RubberDuck.Projects
   alias RubberDuck.Routing.MessageRouter
-  
+
   alias RubberDuck.Messages.Project.{
-    AnalyzeStructure,
-    MonitorHealth,
-    OptimizeResources,
-    UpdateStatus,
     ProjectCreated,
     ProjectUpdated,
     ProjectDeleted,
     QualityDegraded,
     DependencyOutdated,
     RefactoringSuggested,
-    OptimizationCompleted,
-    DependencyUpdate,
-    ImpactAnalysis,
-    StructureOptimization
+    OptimizationCompleted
   }
-  
+
   require Logger
 
   # All signal constants removed - using typed messages exclusively
@@ -154,6 +147,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
         improvements: %{count: length(results)},
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
 
       {:ok, results, updated_agent}
@@ -180,6 +174,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
         impact: %{count: length(suggestions)},
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
     end
 
@@ -202,6 +197,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
         vulnerabilities: vulnerabilities,
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
 
       updated_agent = %{
@@ -225,6 +221,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
         agent
       ) do
     file_path = msg.changes[:file_path]
+
     if Map.has_key?(agent.state.monitored_projects, project_id) do
       # Trigger quality check for the changed file
       updated_agent =
@@ -346,6 +343,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
         severity: determine_severity(violations),
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
     end
 
@@ -427,17 +425,12 @@ defmodule RubberDuck.Agents.ProjectAgent do
   end
 
   # All signal emission functions removed - using direct typed message routing
-  
+
   defp determine_severity(violations) do
     cond do
       length(violations) >= 3 -> :high
       length(violations) >= 2 -> :medium
       true -> :low
     end
-  end
-  
-  defp calculate_impact(_suggestions) do
-    # Placeholder for impact calculation
-    %{estimated_improvement: :moderate}
   end
 end

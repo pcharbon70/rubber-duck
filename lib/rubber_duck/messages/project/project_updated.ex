@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.ProjectUpdated do
   @moduledoc """
   Message indicating a project was updated.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

@@ -15,7 +15,7 @@ defmodule RubberDuckWeb.CollaborativeCodingLive.EditorComponent do
 
   @impl true
   def update(assigns, socket) do
-    socket = 
+    socket =
       socket
       |> assign(assigns)
       |> handle_agent_suggestion(assigns)
@@ -27,7 +27,7 @@ defmodule RubberDuckWeb.CollaborativeCodingLive.EditorComponent do
   def handle_event("code_change", %{"value" => value}, socket) do
     # Forward to agents for analysis
     send(self(), {:analyze_code, value})
-    
+
     {:noreply, assign(socket, :code, value)}
   end
 

@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.User.PreferenceLearned do
   @moduledoc """
   Message indicating a user preference was learned.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

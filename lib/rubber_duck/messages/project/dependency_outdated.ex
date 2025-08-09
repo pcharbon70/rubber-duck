@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.DependencyOutdated do
   @moduledoc """
   Message indicating dependencies are outdated.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.User.UserSignedOut do
   @moduledoc """
   Message indicating a user signed out.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

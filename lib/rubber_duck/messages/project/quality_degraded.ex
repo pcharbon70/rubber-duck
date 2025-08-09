@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.QualityDegraded do
   @moduledoc """
   Message indicating project quality has degraded.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """
@@ -10,7 +10,7 @@ defmodule RubberDuck.Messages.Project.QualityDegraded do
   defstruct [:project_id, :metrics, :violations, :severity, :timestamp]
 
   @type severity :: :low | :medium | :high | :critical
-  
+
   @type t :: %__MODULE__{
           project_id: String.t(),
           metrics: map() | nil,

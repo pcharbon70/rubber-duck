@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.Project.OptimizationCompleted do
   @moduledoc """
   Message indicating optimization has been completed.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

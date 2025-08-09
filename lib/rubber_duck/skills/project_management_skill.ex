@@ -38,14 +38,6 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
     OptimizeResources
   }
 
-
-
-
-
-
-
-
-
   # Typed message handlers
 
   @doc """
@@ -211,405 +203,53 @@ defmodule RubberDuck.Skills.ProjectManagementSkill do
 
   # Private helper functions
 
-  defp schedule_analysis(project_id) do
-    # In a real implementation, this would schedule recurring analysis
-    Logger.debug("Scheduling analysis for project: #{project_id}")
-    :ok
-  end
+  # Removed unused function check_quality_thresholds/2
 
-  defp update_project_metrics(project, changes) do
-    # Update metrics based on changes
-    project
-    |> update_in([:quality_metrics, :score], fn score ->
-      # Adjust score based on change type
-      case changes[:type] do
-        :improvement -> min(1.0, score + 0.05)
-        :degradation -> max(0.0, score - 0.05)
-        _ -> score
-      end
-    end)
-  end
+  # Removed unused function generate_refactoring_suggestions/2
 
-  defp check_quality_thresholds(project, opts) do
-    alerts = []
-    metrics = project.quality_metrics
+  # Removed unused function update_structure_metrics/4
+  # Removed unused function analyze_file_impact/3
+  # Removed unused function detect_dependency_changes/2
+  # Removed unused function analyze_change_impact/2
+  # Removed unused function apply_change_impact/2
+  # Removed unused function update_quality_trend/2
+  # Removed unused function suggest_optimizations/4
+  # Removed unused function check_project_dependencies/1
+  # Removed unused function analyze_project_quality/2
+  # Removed unused function determine_quality_trend/2
+  # Removed unused function check_quality_violations/2
+  # Removed unused function suggest_project_refactoring/2
+  # Removed unused function suggest_module_refactoring/3
+  # Removed unused function suggest_file_refactoring/3
+  # Removed unused function rank_refactoring_suggestions/1
+  # Removed unused function assess_quality_impact/1
+  # Removed unused function estimate_file_complexity/1
+  # Removed unused function lines_count/1
 
-    alerts =
-      if metrics.score < opts.quality_threshold do
-        [%{type: :low_quality, value: metrics.score, threshold: opts.quality_threshold} | alerts]
-      else
-        alerts
-      end
+  # Removed unused function _generate_refactoring_suggestions/2
 
-    alerts =
-      if metrics.complexity > opts.max_complexity do
-        [
-          %{type: :high_complexity, value: metrics.complexity, threshold: opts.max_complexity}
-          | alerts
-        ]
-      else
-        alerts
-      end
+  # Removed unused function update_structure_metrics/4
 
-    alerts =
-      if metrics.test_coverage < opts.min_test_coverage do
-        [
-          %{
-            type: :low_test_coverage,
-            value: metrics.test_coverage,
-            threshold: opts.min_test_coverage
-          }
-          | alerts
-        ]
-      else
-        alerts
-      end
+  # Removed unused functions:
+  # - analyze_file_impact/3
+  # - detect_dependency_changes/2
+  # - analyze_change_impact/2
+  # - apply_change_impact/2
+  # - update_quality_trend/2
 
-    alerts
-  end
-
-  defp generate_refactoring_suggestions(project, opts) do
-    suggestions = []
-
-    # Check for high complexity modules
-    suggestions =
-      if project.quality_metrics.complexity > opts.max_complexity do
-        [
-          %{
-            type: :reduce_complexity,
-            priority: :high,
-            description: "Break down complex modules",
-            effort: :medium,
-            impact: :high
-          }
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    # Check for low test coverage
-    suggestions =
-      if project.quality_metrics.test_coverage < opts.min_test_coverage do
-        [
-          %{
-            type: :improve_test_coverage,
-            priority: :high,
-            description: "Add missing tests",
-            effort: :medium,
-            impact: :medium
-          }
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    # Check for technical debt
-    suggestions =
-      if project.quality_metrics.technical_debt > 100 do
-        [
-          %{
-            type: :reduce_technical_debt,
-            priority: :medium,
-            description: "Address accumulated technical debt",
-            effort: :high,
-            impact: :high
-          }
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    suggestions
-  end
-
-  defp update_structure_metrics(project, file_path, content, action) do
-    lines =
-      content
-      |> Kernel.||("")
-      |> String.split("\n")
-      |> length()
-
-    is_test = String.contains?(file_path, "_test.exs")
-
-    case action do
-      :added ->
-        project
-        |> update_in([:structure, :files], &(&1 + 1))
-        |> update_in([:structure, :lines_of_code], &(&1 + lines))
-        |> update_in([:structure, :test_files], &if(is_test, do: &1 + 1, else: &1))
-
-      :modified ->
-        # For modifications, we'd need to track the delta
-        project
-
-      :removed ->
-        project
-        |> update_in([:structure, :files], &max(0, &1 - 1))
-        |> update_in([:structure, :lines_of_code], &max(0, &1 - lines))
-        |> update_in([:structure, :test_files], &if(is_test, do: max(0, &1 - 1), else: &1))
-    end
-  end
-
-  defp analyze_file_impact(project, _file_path, content) do
-    # Analyze the impact of the file on project quality
-    complexity = estimate_file_complexity(content)
-
-    # Update complexity metrics
-    update_in(project, [:quality_metrics, :complexity], fn current ->
-      # Simple average for now
-      (current + complexity) / 2
-    end)
-  end
-
-  defp detect_dependency_changes(project, content) do
-    # Detect if dependencies have changed (mix.exs modifications)
-    if String.contains?(content || "", "deps do") do
-      # Mark dependencies as needing refresh
-      put_in(project, [:dependencies, :needs_refresh], true)
-    else
-      project
-    end
-  end
-
-  defp analyze_change_impact(old_content, new_content) do
-    old_lines =
-      (old_content || "")
-      |> String.split("\n")
-      |> length()
-
-    new_lines =
-      (new_content || "")
-      |> String.split("\n")
-      |> length()
-
-    %{
-      lines_added: max(0, new_lines - old_lines),
-      lines_removed: max(0, old_lines - new_lines),
-      complexity_change:
-        estimate_file_complexity(new_content) - estimate_file_complexity(old_content)
-    }
-  end
-
-  defp apply_change_impact(project, change_analysis) do
-    update_in(project, [:quality_metrics, :complexity], fn current ->
-      current + change_analysis.complexity_change * 0.1
-    end)
-  end
-
-  defp update_quality_trend(project, change_analysis) do
-    current_trend = project.monitoring.trend
-
-    new_trend =
-      cond do
-        change_analysis.complexity_change > 5 -> :degrading
-        change_analysis.complexity_change < -5 -> :improving
-        true -> current_trend
-      end
-
-    put_in(project, [:monitoring, :trend], new_trend)
-  end
-
-  defp suggest_optimizations(_project, file_path, content, level) do
-    suggestions = []
-
-    # Basic optimizations
-    suggestions =
-      if String.contains?(content, "Enum.map") && String.contains?(content, "Enum.filter") do
-        [
-          %{
-            type: :combine_enum_operations,
-            file: file_path,
-            description:
-              "Combine Enum.map and Enum.filter into Enum.flat_map or for comprehension"
-          }
-          | suggestions
-        ]
-      else
-        suggestions
-      end
-
-    # Moderate optimizations
-    suggestions =
-      if level in [:moderate, :aggressive] do
-        if String.contains?(content, "length(") && String.contains?(content, ") == 0") do
-          [
-            %{
-              type: :use_enum_empty,
-              file: file_path,
-              description: "Replace length(list) == 0 with Enum.empty?(list)"
-            }
-            | suggestions
-          ]
-        else
-          suggestions
-        end
-      else
-        suggestions
-      end
-
-    # Aggressive optimizations
-    suggestions =
-      if level == :aggressive do
-        if String.contains?(content, "Enum.") && lines_count(content) > 10 do
-          [
-            %{
-              type: :consider_stream,
-              file: file_path,
-              description: "Consider using Stream for large data processing"
-            }
-            | suggestions
-          ]
-        else
-          suggestions
-        end
-      else
-        suggestions
-      end
-
-    suggestions
-  end
-
-  defp check_project_dependencies(_project_id) do
-    # In a real implementation, would check mix.exs and mix.lock
-    %{
-      direct: [],
-      transitive: [],
-      outdated: [],
-      vulnerable: []
-    }
-  end
-
-  defp analyze_project_quality(_project_id, _opts) do
-    # Comprehensive quality analysis
-    %{
-      metrics: %{
-        score: 0.85,
-        complexity: 8,
-        test_coverage: 0.75,
-        documentation_coverage: 0.60,
-        technical_debt: 42
-      },
-      refactoring_candidates: []
-    }
-  end
-
-  defp determine_quality_trend(old_project, new_metrics) do
-    old_score = old_project.quality_metrics.score
-    new_score = new_metrics.score
-
-    cond do
-      new_score > old_score + 0.05 -> :improving
-      new_score < old_score - 0.05 -> :degrading
-      true -> :stable
-    end
-  end
-
-  defp check_quality_violations(metrics, opts) do
-    violations = []
-
-    violations =
-      if metrics.score < opts.quality_threshold do
-        [%{metric: :score, value: metrics.score, threshold: opts.quality_threshold} | violations]
-      else
-        violations
-      end
-
-    violations =
-      if metrics.complexity > opts.max_complexity do
-        [
-          %{metric: :complexity, value: metrics.complexity, threshold: opts.max_complexity}
-          | violations
-        ]
-      else
-        violations
-      end
-
-    violations
-  end
-
-  defp suggest_project_refactoring(_project, _opts) do
-    # Generate project-wide refactoring suggestions
-    []
-  end
-
-  defp suggest_module_refactoring(_project, _module_name, _opts) do
-    # Generate module-specific refactoring suggestions
-    []
-  end
-
-  defp suggest_file_refactoring(_project, _file_path, _opts) do
-    # Generate file-specific refactoring suggestions
-    []
-  end
-
-  defp rank_refactoring_suggestions(suggestions) do
-    # Rank by priority, then by impact/effort ratio
-    Enum.sort_by(suggestions, fn s ->
-      priority_score =
-        case s.priority do
-          :high -> 3
-          :medium -> 2
-          :low -> 1
-        end
-
-      impact_score =
-        case s.impact do
-          :high -> 3
-          :medium -> 2
-          :low -> 1
-        end
-
-      effort_score =
-        case s.effort do
-          :low -> 3
-          :medium -> 2
-          :high -> 1
-        end
-
-      # Higher score = higher rank
-      -(priority_score * 10 + impact_score * 5 + effort_score)
-    end)
-  end
-
-  defp assess_quality_impact(project) do
-    score = project.quality_metrics.score
-
-    cond do
-      score >= 0.9 -> :positive
-      score >= 0.7 -> :neutral
-      score >= 0.5 -> :minor_negative
-      true -> :major_negative
-    end
-  end
-
-  defp estimate_file_complexity(content) do
-    # Simple complexity estimation based on conditionals and nesting
-    lines = String.split(content || "", "\n")
-
-    conditionals =
-      Enum.count(lines, fn line ->
-        String.contains?(line, ["if ", "unless ", "case ", "cond "])
-      end)
-
-    nesting =
-      lines
-      |> Enum.map(fn line ->
-        String.length(line) - String.length(String.trim_leading(line))
-      end)
-      |> Enum.max(fn -> 0 end)
-      |> div(2)
-
-    conditionals + nesting
-  end
-
-  defp lines_count(content) do
-    (content || "")
-    |> String.split("\n")
-    |> length()
-  end
+  # Removed unused functions:
+  # - suggest_optimizations/4
+  # - check_project_dependencies/1
+  # - analyze_project_quality/2
+  # - determine_quality_trend/2
+  # - check_quality_violations/2
+  # - suggest_project_refactoring/2
+  # - suggest_module_refactoring/3
+  # - suggest_file_refactoring/3
+  # - rank_refactoring_suggestions/1
+  # - assess_quality_impact/1
+  # - estimate_file_complexity/1
+  # - lines_count/1
 
   # Additional helper functions for typed messages
 

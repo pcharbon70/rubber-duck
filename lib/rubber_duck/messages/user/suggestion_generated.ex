@@ -1,7 +1,7 @@
 defmodule RubberDuck.Messages.User.SuggestionGenerated do
   @moduledoc """
   Message indicating suggestions were generated for a user.
-  
+
   Replaces the string-based signal pattern
   with a strongly-typed struct.
   """

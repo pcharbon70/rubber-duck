@@ -39,7 +39,10 @@ defmodule RubberDuck.Skills.Base do
       @impl true
       def handle_signal(signal, state) do
         # Log warning that signals are deprecated
-        Logger.warning("[#{@skill_name}] Received legacy signal: #{inspect(signal[:type])}. Skills should use typed messages.")
+        Logger.warning(
+          "[#{@skill_name}] Received legacy signal: #{inspect(signal[:type])}. Skills should use typed messages."
+        )
+
         {:ok, state}
       end
 
@@ -147,7 +150,10 @@ defmodule RubberDuck.Skills.Base do
       """
       @deprecated "Use MessageRouter.route/1 instead"
       def emit_message(message) when is_struct(message) do
-        Logger.warning("[#{@skill_name}] emit_message is deprecated. Use MessageRouter.route/1 directly.")
+        Logger.warning(
+          "[#{@skill_name}] emit_message is deprecated. Use MessageRouter.route/1 directly."
+        )
+
         RubberDuck.Routing.MessageRouter.route(message)
       end
 
@@ -157,7 +163,6 @@ defmodule RubberDuck.Skills.Base do
       def skill_info do
         %{
           name: @skill_name,
-          signal_patterns: @signal_patterns,
           supports_typed_messages: true,
           handlers: get_message_handlers()
         }

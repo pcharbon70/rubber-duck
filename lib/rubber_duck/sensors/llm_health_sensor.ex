@@ -22,12 +22,7 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
   require Logger
 
   # Signal definitions
-  @signal_health_check_started "llm.health.check.started"
-  @signal_health_check_completed "llm.health.check.completed"
-  @signal_provider_healthy "llm.health.provider.healthy"
-  @signal_provider_degraded "llm.health.provider.degraded"
-  @signal_provider_failed "llm.health.provider.failed"
-  @signal_metrics_updated "llm.health.metrics.updated"
+  # Signal constants removed - now using typed messages via MessageRouter
 
   @impl true
   def mount(opts) do
@@ -52,10 +47,8 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
 
   @impl true
   def handle_info(:perform_health_check, state) do
-    emit_signal(@signal_health_check_started, %{
-      timestamp: DateTime.utc_now(),
-      providers_count: length(get_providers_to_check(state))
-    })
+    # Health check started - now handled via MessageRouter
+    Logger.debug("Health check started for #{length(get_providers_to_check(state))} providers")
 
     # Perform health checks
     providers = get_providers_to_check(state)
@@ -74,13 +67,10 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     # Update metrics and emit signals based on results
     new_state = process_health_results(health_results, state)
 
-    emit_signal(@signal_health_check_completed, %{
-      timestamp: DateTime.utc_now(),
-      results: health_results,
-      healthy_count: count_healthy(health_results),
-      degraded_count: count_degraded(health_results),
-      failed_count: count_failed(health_results)
-    })
+    # Health check completed - now handled via MessageRouter
+    Logger.debug(
+      "Health check completed. Healthy: #{count_healthy(health_results)}, Degraded: #{count_degraded(health_results)}, Failed: #{count_failed(health_results)}"
+    )
 
     {:noreply, schedule_health_check(new_state)}
   end
@@ -254,29 +244,20 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
   end
 
   defp emit_status_change_signal(provider_name, _previous, :healthy, result) do
-    emit_signal(@signal_provider_healthy, %{
-      provider: provider_name,
-      response_time_ms: result.response_time_ms,
-      metrics: result.metrics_summary
-    })
+    # Provider healthy - now handled via MessageRouter
+    Logger.debug(
+      "Provider #{provider_name} is healthy (response time: #{result.response_time_ms}ms)"
+    )
   end
 
   defp emit_status_change_signal(provider_name, _previous, :degraded, result) do
-    emit_signal(@signal_provider_degraded, %{
-      provider: provider_name,
-      reason: determine_degradation_reason(result),
-      response_time_ms: result.response_time_ms,
-      metrics: result.metrics_summary
-    })
+    # Provider degraded - now handled via MessageRouter  
+    Logger.info("Provider #{provider_name} is degraded: #{determine_degradation_reason(result)}")
   end
 
   defp emit_status_change_signal(provider_name, _previous, :failed, result) do
-    emit_signal(@signal_provider_failed, %{
-      provider: provider_name,
-      error: result.result,
-      response_time_ms: result.response_time_ms,
-      metrics: result.metrics_summary
-    })
+    # Provider failed - now handled via MessageRouter
+    Logger.warning("Provider #{provider_name} failed: #{inspect(result.result)}")
   end
 
   defp determine_degradation_reason(result) do
@@ -324,12 +305,9 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
     |> calculate_rates()
   end
 
-  defp emit_metrics_update_signal(provider_name, metrics, type) do
-    emit_signal(@signal_metrics_updated, %{
-      provider: provider_name,
-      metrics: summarize_metrics(metrics),
-      type: type
-    })
+  defp emit_metrics_update_signal(provider_name, _metrics, type) do
+    # Metrics updated - now handled via MessageRouter
+    Logger.debug("Metrics updated for #{provider_name} (type: #{type})")
   end
 
   defp default_metrics do
@@ -420,11 +398,5 @@ defmodule RubberDuck.Sensors.LLMHealthSensor do
 
   defp count_failed(results) do
     Enum.count(results, fn {_, result} -> result.status == :failed end)
-  end
-
-  defp emit_signal(signal_type, _payload) do
-    Logger.debug("Legacy signal emission: #{signal_type} from llm_health_sensor")
-    # Note: Converted from legacy signal system - health events now handled via MessageRouter
-    :ok
   end
 end

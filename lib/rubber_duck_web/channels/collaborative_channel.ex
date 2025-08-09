@@ -3,7 +3,7 @@ defmodule RubberDuckWeb.CollaborativeChannel do
   Channel for real-time collaborative features and agent communication.
   """
   use RubberDuckWeb, :channel
-  
+
   require Logger
 
   @impl true
@@ -22,7 +22,7 @@ defmodule RubberDuckWeb.CollaborativeChannel do
   def handle_in("chat_message", payload, socket) do
     # Forward to agents if needed
     forward_to_agents(socket.assigns.session_id, payload)
-    
+
     # Broadcast to other users
     broadcast_from(socket, "new_message", payload)
     {:noreply, socket}
@@ -40,7 +40,7 @@ defmodule RubberDuckWeb.CollaborativeChannel do
     {:noreply, socket}
   end
 
-  defp forward_to_agents(session_id, message) do
+  defp forward_to_agents(session_id, _message) do
     # TODO: Integration with backend agents
     Logger.info("Forwarding message to agents for session: #{session_id}")
   end

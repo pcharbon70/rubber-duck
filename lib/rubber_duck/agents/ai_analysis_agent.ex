@@ -252,7 +252,10 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     end
   end
 
-  def handle_instruction({:file_modified, %{file_id: file_id, project_id: project_id} = msg}, agent) do
+  def handle_instruction(
+        {:file_modified, %{file_id: file_id, project_id: project_id} = msg},
+        agent
+      ) do
     Logger.debug("File modified: #{file_id}")
 
     # Track file changes
@@ -276,7 +279,10 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
     process_next_analysis(updated_agent)
   end
 
-  def handle_instruction({:feedback_received, %{analysis_id: analysis_id, feedback: feedback}}, agent) do
+  def handle_instruction(
+        {:feedback_received, %{analysis_id: analysis_id, feedback: feedback}},
+        agent
+      ) do
     Logger.info("Feedback received for analysis #{analysis_id}")
 
     # Process feedback and learn

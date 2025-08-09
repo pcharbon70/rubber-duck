@@ -99,30 +99,16 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     ]
 
   alias RubberDuck.Routing.MessageRouter
-  
-  alias RubberDuck.Messages.Code.{
-    Analyze,
-    QualityCheck,
-    ImpactAssess,
-    SecurityScan,
-    PerformanceAnalyze
-  }
-  
+
   alias RubberDuck.Messages.CodeFile.{
     FileCreated,
     FileModified,
-    FileDeleted,
     FileInitialized,
     DependenciesAffected,
     AnalysisComplete,
-    AnalyzeFile,
-    QualityAssessed,
-    OptimizationsDetected,
-    DocumentationUpdated,
-    SecurityIssueFound,
-    RefactoringRequired
+    AnalyzeFile
   }
-  
+
   require Logger
 
   @impl true
@@ -137,35 +123,35 @@ defmodule RubberDuck.Agents.CodeFileAgent do
         file_id: nil,
         file_path: nil,
         project_id: nil,
-        
+
         # Content tracking
         current_content: nil,
         previous_content: nil,
-        
+
         # Quality metrics
         quality_score: 0.0,
         documentation_coverage: 0.0,
-        
+
         # Monitoring settings
         monitoring_enabled: true,
         analysis_frequency: :hourly,
         optimization_level: :moderate,
-        
+
         # Analysis state
         issues: [],
         suggestions: [],
         last_analysis_at: nil,
         change_frequency: 0,
-        
+
         # Dependencies
         imports: [],
         exports: [],
         dependents: [],
-        
+
         # Documentation flags
         has_readme: false,
         has_inline_docs: false,
-        
+
         # Auto-fix settings
         auto_fix_enabled: false
       }
@@ -176,7 +162,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     end
   end
 
-  @impl true
   def handle_instruction({:file_created, %FileCreated{} = msg}, state) do
     # Handle new code file creation
     with {:ok, file_data} <- extract_file_data(msg),
@@ -194,6 +179,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
         complexity_score: new_state.complexity_score,
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
 
       {:ok, new_state}
@@ -203,7 +189,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     end
   end
 
-  @impl true
   def handle_instruction({:file_modified, %FileModified{} = msg}, state) do
     # Handle code file modifications
     with {:ok, changes} <- extract_changes(msg),
@@ -218,6 +203,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
           impact_level: impact.level || :medium,
           timestamp: DateTime.utc_now()
         }
+
         MessageRouter.route(message)
       end
 
@@ -228,7 +214,6 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     end
   end
 
-  @impl true
   def handle_instruction({:analyze_file, %AnalyzeFile{} = msg}, state) do
     # Trigger comprehensive analysis
     with {:ok, analysis} <- perform_comprehensive_analysis(state, msg),
@@ -246,6 +231,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
         suggestions: updated_state.suggestions,
         timestamp: DateTime.utc_now()
       }
+
       MessageRouter.route(message)
 
       {:ok, updated_state}
@@ -337,23 +323,25 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   defp extract_file_data(%FileCreated{} = msg) do
-    {:ok, %{
-      file_id: msg.file_id,
-      file_path: msg.file_path,
-      project_id: msg.project_id,
-      content: msg.content,
-      current_content: msg.content,
-      previous_content: nil,  # New file has no previous content
-      language: msg.language
-    }}
+    {:ok,
+     %{
+       file_id: msg.file_id,
+       file_path: msg.file_path,
+       project_id: msg.project_id,
+       content: msg.content,
+       current_content: msg.content,
+       # New file has no previous content
+       previous_content: nil,
+       language: msg.language
+     }}
   end
 
   defp initialize_file_tracking(state, file_data) do
     # Ensure we preserve critical fields like dependents
     updated_state = Map.merge(state, file_data)
-    
+
     # Preserve fields that should not be overwritten
-    updated_state = 
+    updated_state =
       updated_state
       |> Map.put_new(:dependents, [])
       |> Map.put_new(:imports, [])
@@ -361,7 +349,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       |> Map.put_new(:issues, [])
       |> Map.put_new(:suggestions, [])
       |> Map.put_new(:change_frequency, 0)
-      
+
     {:ok, updated_state}
   end
 
@@ -383,10 +371,12 @@ defmodule RubberDuck.Agents.CodeFileAgent do
 
   defp extract_changes(%FileModified{} = msg) do
     changes = msg.changes || %{}
-    {:ok, Map.merge(changes, %{
-      new_content: msg.new_content || changes[:new_content],
-      old_content: msg.previous_content || changes[:old_content]
-    })}
+
+    {:ok,
+     Map.merge(changes, %{
+       new_content: msg.new_content || changes[:new_content],
+       old_content: msg.previous_content || changes[:old_content]
+     })}
   end
 
   defp analyze_change_impact(_changes, state) do
@@ -395,7 +385,8 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       affects_dependents: length(state.dependents) > 0,
       affected_files: state.dependents,
       severity: :medium,
-      level: :medium  # Add level field for compatibility
+      # Add level field for compatibility
+      level: :medium
     }
 
     {:ok, impact}
@@ -457,7 +448,8 @@ defmodule RubberDuck.Agents.CodeFileAgent do
            %{
              file_id: state.file_id,
              content: state[:content] || state[:current_content],
-             optimization_level: params[:optimization_level] || state[:optimization_level] || :moderate
+             optimization_level:
+               params[:optimization_level] || state[:optimization_level] || :moderate
            },
            %{}
          ) do
