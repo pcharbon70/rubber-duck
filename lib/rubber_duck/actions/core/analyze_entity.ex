@@ -33,35 +33,60 @@ defmodule RubberDuck.Actions.Core.AnalyzeEntity do
   }
 
   alias RubberDuck.EntityRepository
+  alias RubberDuck.Telemetry.ActionTelemetry
 
   require Logger
 
   @impl true
   def run(params, context) do
-    with {:ok, entity} <- fetch_entity(params.entity_id, params.entity_type),
-         {:ok, enriched_entity} <- enrich_with_history(entity, params.historical_data),
-         {:ok, analysis_plan} <- create_adaptive_analysis_plan(enriched_entity, params, context),
-         {:ok, analysis_results} <- execute_analysis(enriched_entity, analysis_plan, context),
-         {:ok, insights} <-
-           generate_goal_driven_insights(analysis_results, params.analysis_goals),
-         {:ok, patterns} <- detect_patterns(analysis_results, params.historical_data),
-         {:ok, predictions} <- generate_predictions(patterns, analysis_results),
-         {:ok, recommendations} <- generate_recommendations(insights, patterns, predictions),
-         {:ok, learning_data} <- track_analysis_outcome(analysis_results, insights, context) do
-      {:ok,
-       %{
-         entity: entity,
-         analysis_results: analysis_results,
-         insights: insights,
-         patterns: patterns,
-         predictions: predictions,
-         recommendations: recommendations,
-         learning_data: learning_data,
-         analysis_plan: analysis_plan,
-         confidence_score: calculate_analysis_confidence(analysis_results, learning_data),
-         metadata: build_metadata(params, context)
-       }}
-    end
+    # Wrap entire action execution in telemetry span
+    ActionTelemetry.span(
+      [:rubber_duck, :action],
+      %{
+        action_type: "analyze_entity",
+        resource: to_string(params.entity_type),
+        entity_id: params.entity_id,
+        analysis_depth: to_string(params.analysis_depth)
+      },
+      fn ->
+        with {:ok, entity} <- fetch_entity(params.entity_id, params.entity_type),
+             {:ok, enriched_entity} <- enrich_with_history(entity, params.historical_data),
+             {:ok, analysis_plan} <- create_adaptive_analysis_plan(enriched_entity, params, context),
+             {:ok, analysis_results} <- execute_analysis(enriched_entity, analysis_plan, context),
+             {:ok, insights} <-
+               generate_goal_driven_insights(analysis_results, params.analysis_goals),
+             {:ok, patterns} <- detect_patterns(analysis_results, params.historical_data),
+             {:ok, predictions} <- generate_predictions(patterns, analysis_results),
+             {:ok, recommendations} <- generate_recommendations(insights, patterns, predictions),
+             {:ok, learning_data} <- track_analysis_outcome(analysis_results, insights, context) do
+          
+          # Emit confidence score metric
+          confidence = calculate_analysis_confidence(analysis_results, learning_data)
+          ActionTelemetry.event(
+            [:rubber_duck, :analysis, :confidence],
+            %{value: confidence},
+            %{
+              entity_type: to_string(params.entity_type),
+              analysis_depth: to_string(params.analysis_depth)
+            }
+          )
+          
+          {:ok,
+           %{
+             entity: entity,
+             analysis_results: analysis_results,
+             insights: insights,
+             patterns: patterns,
+             predictions: predictions,
+             recommendations: recommendations,
+             learning_data: learning_data,
+             analysis_plan: analysis_plan,
+             confidence_score: confidence,
+             metadata: build_metadata(params, context)
+           }}
+        end
+      end
+    )
   end
 
   # Entity fetching using EntityRepository

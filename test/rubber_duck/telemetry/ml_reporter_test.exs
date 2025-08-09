@@ -7,17 +7,18 @@ defmodule RubberDuck.Telemetry.MLReporterTest do
 
   describe "MLReporter" do
     setup do
-      # Start the ML Reporter
-      {:ok, reporter_pid} = MLReporter.start_link([])
+      # Check if ML Reporter is already running
+      reporter_pid = case GenServer.whereis(MLReporter) do
+        nil ->
+          # Start the ML Reporter if not running
+          {:ok, pid} = MLReporter.start_link([])
+          pid
+        existing_pid ->
+          existing_pid
+      end
       
       # Ensure it's running
       assert Process.alive?(reporter_pid)
-      
-      on_exit(fn ->
-        if Process.alive?(reporter_pid) do
-          GenServer.stop(reporter_pid)
-        end
-      end)
       
       %{reporter_pid: reporter_pid}
     end
@@ -59,8 +60,14 @@ defmodule RubberDuck.Telemetry.MLReporterTest do
         [:rubber_duck, :impact, :business]
       ])
       
-      # Start reporter
-      {:ok, reporter_pid} = MLReporter.start_link([])
+      # Use existing reporter or start one
+      _reporter_pid = case GenServer.whereis(MLReporter) do
+        nil ->
+          {:ok, pid} = MLReporter.start_link([])
+          pid
+        existing_pid ->
+          existing_pid
+      end
       
       # Generate events
       MLReporter.record_prediction("test_model", 0.9, 100)
@@ -69,7 +76,6 @@ defmodule RubberDuck.Telemetry.MLReporterTest do
       
       # Clean up
       :telemetry.detach(ref)
-      GenServer.stop(reporter_pid)
     end
   end
 end

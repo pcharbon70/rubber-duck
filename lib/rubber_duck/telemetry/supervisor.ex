@@ -15,6 +15,9 @@ defmodule RubberDuck.Telemetry.Supervisor do
 
   @impl true
   def init(_init_arg) do
+    # Attach action telemetry handlers
+    RubberDuck.Telemetry.ActionTelemetry.attach_handlers()
+    
     # Get telemetry configuration
     config = Application.get_env(:rubber_duck, :telemetry, [])
     prometheus_enabled = Keyword.get(config, :prometheus_enabled, true)
