@@ -13,7 +13,7 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
       optimization_level: [
         type: :atom,
         default: :balanced,
-        values: [:conservative, :balanced, :aggressive]
+        values: [:conservative, :balanced, :moderate, :aggressive]
       ]
     ]
 
@@ -366,6 +366,9 @@ defmodule RubberDuck.Actions.CodeFile.DetectOptimizations do
         optimizations
 
       :balanced ->
+        Enum.filter(optimizations, fn opt -> opt.risk in [:low, :medium] end)
+        
+      :moderate ->
         Enum.filter(optimizations, fn opt -> opt.risk in [:low, :medium] end)
     end
   end

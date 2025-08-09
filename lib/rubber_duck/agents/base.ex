@@ -6,7 +6,7 @@ defmodule RubberDuck.Agents.Base do
   - Goal management
   - Learning capabilities
   - Experience tracking
-  - Common signal handling
+  - Typed message handling
   """
 
   defmacro __using__(opts) do
@@ -19,7 +19,6 @@ defmodule RubberDuck.Agents.Base do
 
       # Import message routing support
       alias RubberDuck.Routing.MessageRouter
-      alias RubberDuck.Adapters.SignalAdapter
       alias RubberDuck.Messages
 
       # Define child_spec for supervision

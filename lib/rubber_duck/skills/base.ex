@@ -1,91 +1,65 @@
 defmodule RubberDuck.Skills.Base do
   @moduledoc """
-  Base behavior for skills supporting both Jido signals and typed messages.
+  Base behavior for skills using typed messages.
 
-  This module provides a migration path from string-based signal patterns
-  to strongly-typed messages while maintaining backward compatibility with
-  the Jido framework.
+  This module provides the foundation for all RubberDuck skills,
+  supporting strongly-typed messages with compile-time validation.
 
   ## Usage
 
       defmodule MySkill do
         use RubberDuck.Skills.Base,
-          name: "my_skill",
-          signal_patterns: ["my.*"]  # For backward compatibility
+          name: "my_skill"
         
         # Handle typed messages
         def handle_analyze(%Code.Analyze{} = msg, state) do
           # Type-safe message handling
           {:ok, result, state}
         end
-        
-        # Optional: Handle legacy signals during migration
-        def handle_signal_legacy(signal, state) do
-          # Old string-based handling
-          {:ok, state}
-        end
       end
 
-  ## Migration Strategy
+  ## Message Handling
 
-  1. Skills continue to work with existing Jido signals
-  2. New typed message handlers are preferred when available
-  3. Legacy handlers provide fallback during migration
-  4. Once migration is complete, legacy handlers can be removed
+  Skills handle typed messages through specific handler functions
+  that match the message type name. The framework automatically
+  routes messages to the appropriate handler.
   """
 
   defmacro __using__(opts) do
     quote location: :keep do
       use Jido.Skill, unquote(opts)
 
-      alias RubberDuck.Adapters.SignalAdapter
       alias RubberDuck.Protocol.Message
       require Logger
 
       # Store the skill metadata
       @skill_name Keyword.get(unquote(opts), :name, "unnamed")
-      @signal_patterns Keyword.get(unquote(opts), :signal_patterns, [])
 
-      # Override Jido's handle_signal to support both patterns
+      # Override Jido's handle_signal to handle typed messages
       @impl true
       def handle_signal(signal, state) do
+        # Log warning that signals are deprecated
+        Logger.warning("[#{@skill_name}] Received legacy signal: #{inspect(signal[:type])}. Skills should use typed messages.")
+        {:ok, state}
+      end
+
+      @doc """
+      Handle typed messages by routing to specific handlers.
+      """
+      def handle_typed_message(message, state) when is_struct(message) do
         start_time = System.monotonic_time(:microsecond)
 
-        # Try to convert to typed message first
-        result =
-          case SignalAdapter.from_signal(signal) do
-            {:ok, message} ->
-              # Successfully converted to typed message
-              handle_typed_message(message, state)
-
-            {:error, {:unknown_signal_type, type}} ->
-              # Signal type not registered, try legacy handler
-              if function_exported?(__MODULE__, :handle_signal_legacy, 2) do
-                Logger.debug("[#{@skill_name}] Using legacy handler for signal type: #{type}")
-                handle_signal_legacy(signal, state)
-              else
-                Logger.warning(
-                  "[#{@skill_name}] Unknown signal type with no legacy handler: #{type}"
-                )
-
-                {:ok, state}
-              end
-
-            {:error, reason} ->
-              # Conversion failed for other reasons
-              Logger.error("[#{@skill_name}] Failed to convert signal: #{inspect(reason)}")
-              {:ok, state}
-          end
+        result = route_typed_message(message, state)
 
         # Emit telemetry
         duration = System.monotonic_time(:microsecond) - start_time
-        emit_signal_telemetry(signal, duration, result)
+        emit_message_telemetry(message, duration, result)
 
         result
       end
 
       # Route typed messages to specific handlers
-      defp handle_typed_message(message, state) do
+      defp route_typed_message(message, state) do
         # Get the handler function name for this message type
         handler_function =
           message.__struct__
@@ -121,7 +95,7 @@ defmodule RubberDuck.Skills.Base do
       end
 
       # Emit telemetry for monitoring
-      defp emit_signal_telemetry(signal, duration, result) do
+      defp emit_message_telemetry(message, duration, result) do
         success =
           case result do
             {:ok, _, _} -> true
@@ -130,11 +104,11 @@ defmodule RubberDuck.Skills.Base do
           end
 
         :telemetry.execute(
-          [:rubber_duck, :skill, :signal],
+          [:rubber_duck, :skill, :message],
           %{duration: duration},
           %{
             skill: @skill_name,
-            signal_type: signal[:type] || "unknown",
+            message_type: message.__struct__,
             success: success
           }
         )
@@ -168,28 +142,13 @@ defmodule RubberDuck.Skills.Base do
       # Helper functions for common patterns
 
       @doc """
-      Emits a signal from within the skill.
-      Automatically converts typed messages to signals.
+      Emit a typed message for routing.
+      Skills should use MessageRouter.route() directly instead.
       """
-      def emit_signal(message) when is_struct(message) do
-        case SignalAdapter.to_signal(message) do
-          {:ok, signal} ->
-            # Use Jido's signal emission
-            # This would call the actual Jido emit function
-            Logger.info("[#{@skill_name}] Emitting signal: #{signal.type}")
-            :ok
-
-          {:error, reason} ->
-            Logger.error("[#{@skill_name}] Failed to emit signal: #{inspect(reason)}")
-            {:error, reason}
-        end
-      end
-
-      def emit_signal(type, data) when is_binary(type) do
-        # Legacy signal emission
-        signal = %{type: type, data: data, metadata: %{source: @skill_name}}
-        Logger.info("[#{@skill_name}] Emitting legacy signal: #{type}")
-        :ok
+      @deprecated "Use MessageRouter.route/1 instead"
+      def emit_message(message) when is_struct(message) do
+        Logger.warning("[#{@skill_name}] emit_message is deprecated. Use MessageRouter.route/1 directly.")
+        RubberDuck.Routing.MessageRouter.route(message)
       end
 
       @doc """

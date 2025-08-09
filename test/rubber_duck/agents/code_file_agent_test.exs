@@ -2,7 +2,7 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
   use RubberDuck.DataCase, async: true
 
   alias RubberDuck.Agents.CodeFileAgent
-  alias Jido.Signal
+  alias RubberDuck.Messages.CodeFile.{FileCreated, FileModified, AnalyzeFile}
 
   setup do
     # Create a test project
@@ -20,8 +20,22 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
         end
       end
       """,
+      previous_content: nil,
       quality_score: 0.8,
-      monitoring_enabled: true
+      monitoring_enabled: true,
+      dependents: [],
+      imports: [],
+      exports: [],
+      change_frequency: 0,
+      issues: [],
+      suggestions: [],
+      last_analysis_at: nil,
+      has_readme: false,
+      has_inline_docs: false,
+      documentation_coverage: 0.5,
+      optimization_level: :moderate,
+      auto_fix_enabled: false,
+      analysis_frequency: :hourly
     }
 
     {:ok, project: project, initial_state: initial_state}
@@ -43,22 +57,16 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
     end
   end
 
-  describe "handle_signal/2 - code_file.created" do
+  describe "handle_instruction/2 - FileCreated" do
     test "handles new code file creation", %{initial_state: state} do
-      signal = %Signal{
-        source: "test",
-        id: "test_signal_#{System.unique_integer()}",
-        type: "code_file.created",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          file_id: "new_file_456",
-          file_path: "lib/new_module.ex",
-          content: "defmodule NewModule do\nend"
-        }
+      message = %FileCreated{
+        file_id: "new_file_456",
+        file_path: "lib/new_module.ex",
+        content: "defmodule NewModule do\nend",
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, new_state} = CodeFileAgent.handle_signal(signal, state)
+      {:ok, new_state} = CodeFileAgent.handle_instruction({:file_created, message}, state)
 
       assert new_state.file_id == "new_file_456"
       assert new_state.file_path == "lib/new_module.ex"
@@ -66,100 +74,103 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
     end
 
     test "performs initial analysis on creation" do
-      signal = %Signal{
-        type: "code_file.created",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          file_id: "analyze_file",
-          content: """
-          defmodule ComplexModule do
-            def complex_function(a, b, c) do
-              if a > b do
-                if b > c do
-                  a + b + c
-                else
-                  a - c
-                end
+      message = %FileCreated{
+        file_id: "analyze_file",
+        file_path: "lib/complex_module.ex",
+        content: """
+        defmodule ComplexModule do
+          def complex_function(a, b, c) do
+            if a > b do
+              if b > c do
+                a + b + c
               else
-                b * c
+                a - c
               end
+            else
+              b * c
             end
           end
-          """
-        }
+        end
+        """,
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, new_state} = CodeFileAgent.handle_signal(signal, %{})
+      # Initialize with minimal state for the test
+      initial_state = %{
+        file_id: nil,
+        file_path: nil,
+        quality_score: nil,
+        issues: [],
+        suggestions: [],
+        last_analysis_at: nil
+      }
+
+      {:ok, new_state} = CodeFileAgent.handle_instruction({:file_created, message}, initial_state)
 
       assert new_state.quality_score != nil
       assert new_state.last_analysis_at != nil
     end
   end
 
-  describe "handle_signal/2 - code_file.modified" do
+  describe "handle_instruction/2 - FileModified" do
     test "handles file modifications", %{initial_state: state} do
-      signal = %Signal{
-        type: "code_file.modified",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          changes: %{
-            new_content: """
-            defmodule TestModule do
-              def hello do
-                "modified world"
-              end
-
-              def new_function do
-                "added"
-              end
+      message = %FileModified{
+        file_id: state.file_id,
+        file_path: state.file_path,
+        changes: %{
+          new_content: """
+          defmodule TestModule do
+            def hello do
+              "modified world"
             end
-            """
-          }
-        }
+
+            def new_function do
+              "added"
+            end
+          end
+          """,
+          old_content: state.current_content
+        },
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, new_state} = CodeFileAgent.handle_signal(signal, state)
+      {:ok, new_state} = CodeFileAgent.handle_instruction({:file_modified, message}, state)
 
       assert new_state.previous_content == state.current_content
-      assert new_state.current_content == signal.data.changes.new_content
+      assert new_state.current_content == message.changes.new_content
       assert new_state.change_frequency == 1
     end
 
-    test "emits dependency signals when dependents affected", %{initial_state: state} do
+    test "routes dependency messages when dependents affected", %{initial_state: state} do
       state = Map.put(state, :dependents, ["dep1.ex", "dep2.ex"])
 
-      signal = %Signal{
-        type: "code_file.modified",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          changes: %{
-            new_content: "modified content"
-          }
-        }
+      message = %FileModified{
+        file_id: state.file_id,
+        file_path: state.file_path,
+        changes: %{
+          new_content: "modified content",
+          old_content: state.current_content
+        },
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, _new_state} = CodeFileAgent.handle_signal(signal, state)
+      {:ok, _new_state} = CodeFileAgent.handle_instruction({:file_modified, message}, state)
 
-      # Would verify signal emission in real implementation
+      # Would verify message routing in real implementation
       assert true
     end
   end
 
-  describe "handle_signal/2 - code_file.analyze" do
+  describe "handle_instruction/2 - AnalyzeFile" do
     test "triggers comprehensive analysis", %{initial_state: state} do
-      signal = %Signal{
-        type: "code_file.analyze",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          depth: :deep
-        }
+      message = %AnalyzeFile{
+        file_id: state.file_id,
+        file_path: state.file_path,
+        analysis_types: [:quality, :security, :performance],
+        deep_scan: true
       }
 
-      {:ok, new_state} = CodeFileAgent.handle_signal(signal, state)
+      {:ok, new_state} = CodeFileAgent.handle_instruction({:analyze_file, message}, state)
 
       assert new_state.last_analysis_at != nil
       assert is_list(new_state.issues)
@@ -283,51 +294,58 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
   describe "integration scenarios" do
     test "full lifecycle: create, modify, analyze", %{project: project} do
       # Create
-      create_signal = %Signal{
-        type: "code_file.created",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          file_id: "lifecycle_file",
-          file_path: "lib/lifecycle.ex",
-          project_id: project.id,
-          content: "defmodule Lifecycle do\nend"
-        }
+      create_message = %FileCreated{
+        file_id: "lifecycle_file",
+        file_path: "lib/lifecycle.ex",
+        project_id: project.id,
+        content: "defmodule Lifecycle do\nend",
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, state1} = CodeFileAgent.handle_signal(create_signal, %{})
+      initial_state = %{
+        file_id: nil,
+        file_path: nil,
+        project_id: nil,
+        current_content: nil,
+        quality_score: nil,
+        issues: [],
+        suggestions: [],
+        change_frequency: 0,
+        last_analysis_at: nil
+      }
+
+      {:ok, state1} = CodeFileAgent.handle_instruction({:file_created, create_message}, initial_state)
       assert state1.file_id == "lifecycle_file"
 
       # Modify
-      modify_signal = %Signal{
-        type: "code_file.modified",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          changes: %{
-            new_content: """
-            defmodule Lifecycle do
-              def new_function do
-                :ok
-              end
+      modify_message = %FileModified{
+        file_id: state1.file_id,
+        file_path: state1.file_path,
+        changes: %{
+          new_content: """
+          defmodule Lifecycle do
+            def new_function do
+              :ok
             end
-            """
-          }
-        }
+          end
+          """,
+          old_content: state1.current_content
+        },
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, state2} = CodeFileAgent.handle_signal(modify_signal, state1)
+      {:ok, state2} = CodeFileAgent.handle_instruction({:file_modified, modify_message}, state1)
       assert state2.change_frequency == 1
 
       # Analyze
-      analyze_signal = %Signal{
-        type: "code_file.analyze",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{}
+      analyze_message = %AnalyzeFile{
+        file_id: state2.file_id,
+        file_path: state2.file_path,
+        analysis_types: [:quality],
+        deep_scan: false
       }
 
-      {:ok, state3} = CodeFileAgent.handle_signal(analyze_signal, state2)
+      {:ok, state3} = CodeFileAgent.handle_instruction({:analyze_file, analyze_message}, state2)
       assert state3.last_analysis_at != nil
     end
 
@@ -357,53 +375,59 @@ defmodule RubberDuck.Agents.CodeFileAgentTest do
 
   describe "edge cases" do
     test "handles missing file content gracefully" do
-      signal = %Signal{
-        type: "code_file.created",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{
-          file_id: "empty_file",
-          file_path: "lib/empty.ex"
-        }
+      message = %FileCreated{
+        file_id: "empty_file",
+        file_path: "lib/empty.ex",
+        content: nil,  # Missing content
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, state} = CodeFileAgent.handle_signal(signal, %{})
+      initial_state = %{
+        file_id: nil,
+        file_path: nil,
+        quality_score: nil,
+        issues: [],
+        suggestions: [],
+        last_analysis_at: nil
+      }
+
+      {:ok, state} = CodeFileAgent.handle_instruction({:file_created, message}, initial_state)
       assert state.file_id == "empty_file"
     end
 
     test "handles analysis failure gracefully", %{initial_state: state} do
       state = Map.put(state, :current_content, "invalid elixir code {{{")
 
-      signal = %Signal{
-        type: "code_file.analyze",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{}
+      message = %AnalyzeFile{
+        file_id: state.file_id,
+        file_path: state.file_path,
+        analysis_types: [:quality],
+        deep_scan: false
       }
 
-      result = CodeFileAgent.handle_signal(signal, state)
+      result = CodeFileAgent.handle_instruction({:analyze_file, message}, state)
 
       # Should handle gracefully even with invalid content
       assert match?({:ok, _}, result) or match?({:error, _, _}, result)
     end
 
     test "handles concurrent modifications", %{initial_state: state} do
-      signal1 = %Signal{
-        type: "code_file.modified",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{changes: %{new_content: "content1"}}
+      message1 = %FileModified{
+        file_id: state.file_id,
+        file_path: state.file_path,
+        changes: %{new_content: "content1", old_content: state.current_content},
+        timestamp: DateTime.utc_now()
       }
 
-      signal2 = %Signal{
-        type: "code_file.modified",
-        source: self(),
-        id: "test_signal_#{:rand.uniform(1000)}",
-        data: %{changes: %{new_content: "content2"}}
+      message2 = %FileModified{
+        file_id: state.file_id,
+        file_path: state.file_path,
+        changes: %{new_content: "content2", old_content: "content1"},
+        timestamp: DateTime.utc_now()
       }
 
-      {:ok, state1} = CodeFileAgent.handle_signal(signal1, state)
-      {:ok, state2} = CodeFileAgent.handle_signal(signal2, state1)
+      {:ok, state1} = CodeFileAgent.handle_instruction({:file_modified, message1}, state)
+      {:ok, state2} = CodeFileAgent.handle_instruction({:file_modified, message2}, state1)
 
       assert state2.change_frequency == 2
       assert state2.current_content == "content2"

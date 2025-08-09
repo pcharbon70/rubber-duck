@@ -87,17 +87,27 @@ defmodule RubberDuck.Agents.ProjectAgent do
 
   alias RubberDuck.Projects
   alias RubberDuck.Routing.MessageRouter
-  alias RubberDuck.Messages.Project.{AnalyzeStructure, MonitorHealth, OptimizeResources}
+  
+  alias RubberDuck.Messages.Project.{
+    AnalyzeStructure,
+    MonitorHealth,
+    OptimizeResources,
+    UpdateStatus,
+    ProjectCreated,
+    ProjectUpdated,
+    ProjectDeleted,
+    QualityDegraded,
+    DependencyOutdated,
+    RefactoringSuggested,
+    OptimizationCompleted,
+    DependencyUpdate,
+    ImpactAnalysis,
+    StructureOptimization
+  }
+  
   require Logger
 
-  # Signal definitions
-  # Unused signal definitions - kept for future reference
-  # @signal_project_created "project.created"
-  # @signal_project_updated "project.updated"
-  @signal_quality_degraded "project.quality.degraded"
-  @signal_dependency_outdated "project.dependency.outdated"
-  @signal_refactoring_suggested "project.refactoring.suggested"
-  @signal_optimization_completed "project.optimization.completed"
+  # All signal constants removed - using typed messages exclusively
 
   def init(opts) do
     # No longer need to subscribe to signals - messages are routed directly
@@ -136,10 +146,15 @@ defmodule RubberDuck.Agents.ProjectAgent do
         |> record_optimization_results(project_id, results)
         |> learn_from_optimization(results)
 
-      emit_signal(@signal_optimization_completed, %{
+      # Send typed message instead of signal
+      message = %OptimizationCompleted{
         project_id: project_id,
-        optimizations_applied: length(results)
-      })
+        optimization_type: :auto_optimization,
+        results: results,
+        improvements: %{count: length(results)},
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
 
       {:ok, results, updated_agent}
     else
@@ -157,10 +172,15 @@ defmodule RubberDuck.Agents.ProjectAgent do
       |> Enum.take(agent.state.max_refactoring_suggestions)
 
     if length(suggestions) > 0 do
-      emit_signal(@signal_refactoring_suggested, %{
+      # Send typed message instead of signal
+      message = %RefactoringSuggested{
         project_id: project_id,
-        suggestion_count: length(suggestions)
-      })
+        suggestions: suggestions,
+        priority: :medium,
+        impact: %{count: length(suggestions)},
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
     end
 
     {:ok, suggestions, agent}
@@ -175,10 +195,14 @@ defmodule RubberDuck.Agents.ProjectAgent do
     alerts = outdated ++ vulnerabilities
 
     if length(alerts) > 0 do
-      emit_signal(@signal_dependency_outdated, %{
+      # Send typed message instead of signal
+      message = %DependencyOutdated{
         project_id: project_id,
-        alert_count: length(alerts)
-      })
+        dependencies: outdated,
+        vulnerabilities: vulnerabilities,
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
 
       updated_agent = %{
         agent
@@ -191,16 +215,16 @@ defmodule RubberDuck.Agents.ProjectAgent do
     end
   end
 
-  def handle_signal("project.created", %{project_id: project_id}, agent) do
+  def handle_instruction({:project_created, %ProjectCreated{project_id: project_id}}, agent) do
     # Automatically start monitoring new projects
     handle_instruction({:monitor_project, project_id}, agent)
   end
 
-  def handle_signal(
-        "project.file.changed",
-        %{project_id: project_id, file_path: file_path},
+  def handle_instruction(
+        {:project_updated, %ProjectUpdated{project_id: project_id} = msg},
         agent
       ) do
+    file_path = msg.changes[:file_path]
     if Map.has_key?(agent.state.monitored_projects, project_id) do
       # Trigger quality check for the changed file
       updated_agent =
@@ -215,7 +239,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
     end
   end
 
-  def handle_signal("project.deleted", %{project_id: project_id}, agent) do
+  def handle_instruction({:project_deleted, %ProjectDeleted{project_id: project_id}}, agent) do
     # Clean up monitoring for deleted project
     updated_agent = stop_monitoring_project(agent, project_id)
     {:ok, updated_agent}
@@ -314,10 +338,15 @@ defmodule RubberDuck.Agents.ProjectAgent do
         else: violations
 
     if length(violations) > 0 do
-      emit_signal(@signal_quality_degraded, %{
+      # Send typed message instead of signal
+      message = %QualityDegraded{
         project_id: project_id,
-        violations: violations
-      })
+        metrics: quality_data,
+        violations: violations,
+        severity: determine_severity(violations),
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
     end
 
     agent
@@ -397,51 +426,18 @@ defmodule RubberDuck.Agents.ProjectAgent do
     Process.send_after(self(), :scan_projects, 300_000)
   end
 
-  # Use typed messages instead of string-based signals
-  defp emit_signal(@signal_optimization_completed, payload) do
-    message = %OptimizeResources{
-      project_id: payload.project_id,
-      optimization_goal: :balanced,
-      include_recommendations: true
-    }
-
-    MessageRouter.route(message)
+  # All signal emission functions removed - using direct typed message routing
+  
+  defp determine_severity(violations) do
+    cond do
+      length(violations) >= 3 -> :high
+      length(violations) >= 2 -> :medium
+      true -> :low
+    end
   end
-
-  defp emit_signal(@signal_refactoring_suggested, payload) do
-    message = %AnalyzeStructure{
-      project_id: payload.project_id,
-      include_dependencies: true,
-      analyze_complexity: true,
-      depth: :deep
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal(@signal_dependency_outdated, payload) do
-    message = %MonitorHealth{
-      project_id: payload.project_id,
-      metrics: [:dependencies],
-      threshold_alerts: true
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal(@signal_quality_degraded, payload) do
-    message = %MonitorHealth{
-      project_id: payload.project_id,
-      metrics: [:quality, :complexity, :coverage],
-      threshold_alerts: true
-    }
-
-    MessageRouter.route(message)
-  end
-
-  # Fallback for unmapped signals
-  defp emit_signal(signal_type, payload) do
-    Logger.warning("Unmapped signal type: #{signal_type}, payload: #{inspect(payload)}")
-    :ok
+  
+  defp calculate_impact(_suggestions) do
+    # Placeholder for impact calculation
+    %{estimated_improvement: :moderate}
   end
 end

@@ -15,10 +15,13 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
   @impl true
   def run(params, _context) do
+    content = params[:content]
+    analyze_depth = params[:analyze_depth] || :normal
+    
     with {:ok, changes} <- detect_changes(params),
-         {:ok, metrics} <- calculate_quality_metrics(params.content),
-         {:ok, issues} <- detect_issues(params.content, params.analyze_depth),
-         {:ok, impact} <- assess_change_impact(changes, params.content) do
+         {:ok, metrics} <- calculate_quality_metrics(content),
+         {:ok, issues} <- detect_issues(content, analyze_depth),
+         {:ok, impact} <- assess_change_impact(changes, content) do
       {:ok,
        %{
          changes: changes,
@@ -27,27 +30,34 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
          maintainability_index: metrics.maintainability,
          issues: issues,
          impact: impact,
-         lines_of_code: count_lines(params.content),
+         lines_of_code: count_lines(content),
          analysis_timestamp: DateTime.utc_now()
        }}
     end
   end
 
   defp detect_changes(params) do
-    if params.previous_content do
-      changes = %{
-        additions: count_additions(params.previous_content, params.content),
-        deletions: count_deletions(params.previous_content, params.content),
-        modifications: count_modifications(params.previous_content, params.content)
-      }
-
-      {:ok, changes}
-    else
-      {:ok, %{additions: count_lines(params.content), deletions: 0, modifications: 0}}
+    content = params[:content]
+    previous = params[:previous_content]
+    
+    cond do
+      is_binary(previous) and is_binary(content) ->
+        changes = %{
+          additions: count_additions(previous, content),
+          deletions: count_deletions(previous, content),
+          modifications: count_modifications(previous, content)
+        }
+        {:ok, changes}
+        
+      is_binary(content) ->
+        {:ok, %{additions: count_lines(content), deletions: 0, modifications: 0}}
+        
+      true ->
+        {:ok, %{additions: 0, deletions: 0, modifications: 0}}
     end
   end
 
-  defp calculate_quality_metrics(content) do
+  defp calculate_quality_metrics(content) when is_binary(content) do
     metrics = %{
       complexity: calculate_cyclomatic_complexity(content),
       maintainability: calculate_maintainability_index(content),
@@ -57,8 +67,17 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     {:ok, metrics}
   end
+  
+  defp calculate_quality_metrics(_) do
+    {:ok, %{
+      complexity: 1,
+      maintainability: 100.0,
+      duplication: 0.0,
+      nesting_depth: 0
+    }}
+  end
 
-  defp detect_issues(content, depth) do
+  defp detect_issues(content, depth) when is_binary(content) do
     issues = []
 
     # Basic issues (always checked)
@@ -83,8 +102,10 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
 
     {:ok, issues}
   end
+  
+  defp detect_issues(_, _), do: {:ok, []}
 
-  defp assess_change_impact(changes, content) do
+  defp assess_change_impact(changes, content) when is_binary(content) do
     impact = %{
       risk_level: calculate_risk_level(changes),
       affected_functions: extract_modified_functions(content),
@@ -93,6 +114,15 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
     }
 
     {:ok, impact}
+  end
+  
+  defp assess_change_impact(changes, _) do
+    {:ok, %{
+      risk_level: calculate_risk_level(changes),
+      affected_functions: [],
+      breaking_changes: [],
+      performance_impact: :neutral
+    }}
   end
 
   defp calculate_quality_score(metrics, issues) do
@@ -111,12 +141,14 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeChanges do
     max(0.0, min(100.0, score)) / 100.0
   end
 
-  defp count_lines(content) do
+  defp count_lines(content) when is_binary(content) do
     content
     |> String.split("\n")
     |> Enum.reject(&(String.trim(&1) == ""))
     |> length()
   end
+  
+  defp count_lines(_), do: 0
 
   defp count_additions(old_content, new_content) do
     old_lines = String.split(old_content, "\n")
