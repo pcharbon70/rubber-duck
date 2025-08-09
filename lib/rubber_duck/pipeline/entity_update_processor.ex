@@ -72,7 +72,14 @@ defmodule RubberDuck.Pipeline.EntityUpdateProcessor do
       }
     }
 
-    Logger.info("EntityUpdateProcessor started with concurrency: #{concurrency}")
+    # Emit telemetry for processor startup
+    :telemetry.execute(
+      [:rubber_duck, :pipeline, :processor, :started],
+      %{concurrency: concurrency},
+      %{processor_type: :entity_update}
+    )
+    
+    Logger.debug("EntityUpdateProcessor started with concurrency: #{concurrency}")
 
     # Subscribe to producer with max_demand
     subscription_opts = [
