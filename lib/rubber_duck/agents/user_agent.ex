@@ -266,8 +266,9 @@ defmodule RubberDuck.Agents.UserAgent do
       # Send typed message instead of signal
       message = %PatternDetected{
         user_id: user_id,
-        patterns: patterns,
+        pattern_type: :behavior_patterns,
         confidence: agent.state.pattern_confidence_threshold,
+        details: patterns,
         timestamp: DateTime.utc_now()
       }
       MessageRouter.route(message)
@@ -314,13 +315,17 @@ defmodule RubberDuck.Agents.UserAgent do
 
     if prefs_changed?(current_prefs, updated_prefs) do
       # Send typed message instead of signal
-      message = %PreferenceLearned{
-        user_id: user_id,
-        preferences: updated_prefs,
-        confidence: agent.state.pattern_confidence_threshold,
-        timestamp: DateTime.utc_now()
-      }
-      MessageRouter.route(message)
+      # Convert preferences map to individual preference messages
+      for {key, value} <- updated_prefs do
+        message = %PreferenceLearned{
+          user_id: user_id,
+          preference_key: to_string(key),
+          preference_value: value,
+          confidence: agent.state.pattern_confidence_threshold,
+          timestamp: DateTime.utc_now()
+        }
+        MessageRouter.route(message)
+      end
       
       put_in(agent.state.user_preferences[user_id], updated_prefs)
     else
@@ -363,7 +368,7 @@ defmodule RubberDuck.Agents.UserAgent do
       message = %SuggestionGenerated{
         user_id: user_id,
         suggestions: suggestions,
-        count: length(suggestions),
+        context: %{count: length(suggestions)},
         timestamp: DateTime.utc_now()
       }
       MessageRouter.route(message)
@@ -468,7 +473,7 @@ defmodule RubberDuck.Agents.UserAgent do
           message = %SessionExpired{
             user_id: user_id,
             session_id: nil,
-            count: expired_count,
+            reason: :auto_cleanup,
             timestamp: DateTime.utc_now()
           }
           MessageRouter.route(message)

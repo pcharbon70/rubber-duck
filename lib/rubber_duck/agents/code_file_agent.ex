@@ -99,7 +99,31 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     ]
 
   alias RubberDuck.Routing.MessageRouter
-  alias RubberDuck.Messages.Code.{Analyze, QualityCheck, ImpactAssess}
+  
+  alias RubberDuck.Messages.Code.{
+    Analyze,
+    QualityCheck,
+    ImpactAssess,
+    SecurityScan,
+    PerformanceAnalyze
+  }
+  
+  alias RubberDuck.Messages.CodeFile.{
+    FileCreated,
+    FileModified,
+    FileDeleted,
+    FileInitialized,
+    DependenciesAffected,
+    AnalysisComplete,
+    AnalyzeFile,
+    QualityAssessed,
+    OptimizationsDetected,
+    DocumentationUpdated,
+    SecurityIssueFound,
+    RefactoringRequired
+  }
+  
+  require Logger
 
   @impl true
   def init(state) do
@@ -115,9 +139,9 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   @impl true
-  def handle_signal(%{type: "code_file.created"} = signal, state) do
+  def handle_instruction({:file_created, %FileCreated{} = msg}, state) do
     # Handle new code file creation
-    with {:ok, file_data} <- extract_file_data(signal),
+    with {:ok, file_data} <- extract_file_data(msg),
          {:ok, updated_state} <- initialize_file_tracking(state, file_data),
          {:ok, analysis_result} <- perform_initial_analysis(updated_state) do
       new_state =
@@ -125,10 +149,14 @@ defmodule RubberDuck.Agents.CodeFileAgent do
         |> Map.merge(analysis_result)
         |> Map.put(:last_analysis_at, DateTime.utc_now())
 
-      emit_signal("code_file.initialized", %{
+      # Send typed message instead of signal
+      message = %FileInitialized{
         file_id: new_state.file_id,
-        quality_score: new_state.quality_score
-      })
+        quality_score: new_state.quality_score,
+        complexity_score: new_state.complexity_score,
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
 
       {:ok, new_state}
     else
@@ -138,17 +166,21 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   @impl true
-  def handle_signal(%{type: "code_file.modified"} = signal, state) do
+  def handle_instruction({:file_modified, %FileModified{} = msg}, state) do
     # Handle code file modifications
-    with {:ok, changes} <- extract_changes(signal),
+    with {:ok, changes} <- extract_changes(msg),
          {:ok, impact} <- analyze_change_impact(changes, state),
          {:ok, updated_state} <- apply_changes(state, changes, impact) do
       # Emit signals for dependent files if needed
       if impact.affects_dependents do
-        emit_signal("code_file.dependencies_affected", %{
+        # Send typed message instead of signal
+        message = %DependenciesAffected{
           file_id: state.file_id,
-          affected_files: impact.affected_files
-        })
+          affected_files: impact.affected_files,
+          impact_level: impact.level || :medium,
+          timestamp: DateTime.utc_now()
+        }
+        MessageRouter.route(message)
       end
 
       {:ok, updated_state}
@@ -159,17 +191,24 @@ defmodule RubberDuck.Agents.CodeFileAgent do
   end
 
   @impl true
-  def handle_signal(%{type: "code_file.analyze"} = signal, state) do
+  def handle_instruction({:analyze_file, %AnalyzeFile{} = msg}, state) do
     # Trigger comprehensive analysis
-    with {:ok, analysis} <- perform_comprehensive_analysis(state, signal),
+    with {:ok, analysis} <- perform_comprehensive_analysis(state, msg),
          {:ok, insights} <- generate_insights(analysis, state),
          {:ok, updated_state} <- update_analysis_state(state, analysis, insights) do
-      emit_signal("code_file.analysis_complete", %{
+      # Send typed message instead of signal
+      message = %AnalysisComplete{
         file_id: state.file_id,
-        quality_score: updated_state.quality_score,
-        issues_count: length(updated_state.issues),
-        suggestions_count: length(updated_state.suggestions)
-      })
+        results: %{
+          quality_score: updated_state.quality_score,
+          issues_count: length(updated_state.issues),
+          suggestions_count: length(updated_state.suggestions)
+        },
+        issues: updated_state.issues,
+        suggestions: updated_state.suggestions,
+        timestamp: DateTime.utc_now()
+      }
+      MessageRouter.route(message)
 
       {:ok, updated_state}
     else
@@ -437,40 +476,5 @@ defmodule RubberDuck.Agents.CodeFileAgent do
     {:ok, updated_state}
   end
 
-  # Use typed messages instead of string-based signals
-  defp emit_signal("code_file.initialized", data) do
-    # Convert to typed message
-    message = %Analyze{
-      file_path: data.file_id,
-      analysis_type: :comprehensive,
-      depth: :moderate,
-      context: data
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal("code_file.dependencies_affected", data) do
-    message = %ImpactAssess{
-      file_path: data.file_id,
-      changes: %{affected_files: data.affected_files}
-    }
-
-    MessageRouter.route(message)
-  end
-
-  defp emit_signal("code_file.analysis_complete", data) do
-    message = %QualityCheck{
-      target: data.file_id,
-      metrics: [:quality, :complexity, :coverage]
-    }
-
-    MessageRouter.route(message)
-  end
-
-  # Fallback for unmapped signals - log warning
-  defp emit_signal(type, data) do
-    Logger.warning("Unmapped signal type: #{type}, data: #{inspect(data)}")
-    :ok
-  end
+  # All signal emission functions removed - using direct typed message routing
 end
