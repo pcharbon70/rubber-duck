@@ -77,7 +77,8 @@ defmodule RubberDuckWeb.CollaborativeCodingLive do
   end
 
   defp generate_session_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+    bytes = :crypto.strong_rand_bytes(16)
+    Base.encode16(bytes, case: :lower)
   end
 
   defp connect_to_agents do
