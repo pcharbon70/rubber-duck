@@ -200,17 +200,11 @@ defmodule RubberDuck.Analyzers.Orchestrator do
           phase1 = Enum.filter(analyzed, fn a -> a in [:quality, :security] end)
           phase2 = Enum.filter(analyzed, fn a -> a in [:performance, :impact] end)
 
-          phases = []
-
-          phases =
-            if length(phase1) > 0,
-              do: phases ++ [%{analyzers: phase1, parallel: true, depth: :moderate}],
-              else: phases
-
-          phases =
-            if length(phase2) > 0,
-              do: phases ++ [%{analyzers: phase2, parallel: true, depth: :moderate}],
-              else: phases
+          phases = 
+            []
+            |> maybe_add_phase(phase1, :moderate)
+            |> maybe_add_phase(phase2, :moderate)
+            |> Enum.reverse()
 
           %{phases: phases}
 
@@ -296,80 +290,56 @@ defmodule RubberDuck.Analyzers.Orchestrator do
   end
 
   defp generate_cross_analyzer_insights(results) do
-    insights = []
-
-    # Security + Performance correlation
     insights =
-      insights ++
-        correlate_security_performance(
-          results[:security],
-          results[:performance]
-        )
-
-    # Quality + Impact correlation
-    insights =
-      insights ++
-        correlate_quality_impact(
-          results[:quality],
-          results[:impact]
-        )
-
-    # Performance + Impact correlation
-    insights =
-      insights ++
-        correlate_performance_impact(
-          results[:performance],
-          results[:impact]
-        )
-
-    # Overall code health insights
-    insights = insights ++ generate_health_insights(results)
+      []
+      |> Enum.concat(correlate_security_performance(results[:security], results[:performance]))
+      |> Enum.concat(correlate_quality_impact(results[:quality], results[:impact]))
+      |> Enum.concat(correlate_performance_impact(results[:performance], results[:impact]))
+      |> Enum.concat(generate_health_insights(results))
 
     {:ok, insights}
   end
 
   defp correlate_security_performance(security, performance)
        when is_map(security) and is_map(performance) do
-    insights = []
-
     # Check if security measures impact performance
-    if length(security[:vulnerabilities] || []) > 0 and performance[:optimization_potential] > 0.3 do
-      insights ++
-        [
-          %{
-            type: :security_performance_tradeoff,
-            severity: :medium,
-            message:
-              "Security vulnerabilities detected alongside performance issues. Fix security first.",
-            source_analyzers: [:security, :performance],
-            confidence: 0.8
-          }
-        ]
+    vulnerabilities = security[:vulnerabilities] || []
+    
+    if not Enum.empty?(vulnerabilities) and performance[:optimization_potential] > 0.3 do
+      [
+        %{
+          type: :security_performance_tradeoff,
+          severity: :medium,
+          message:
+            "Security vulnerabilities detected alongside performance issues. Fix security first.",
+          source_analyzers: [:security, :performance],
+          confidence: 0.8
+        }
+      ]
     else
-      insights
+      []
     end
   end
 
   defp correlate_security_performance(_, _), do: []
 
   defp correlate_quality_impact(quality, impact) when is_map(quality) and is_map(impact) do
-    insights = []
-
     # High complexity changes with high impact
-    if quality[:metrics][:complexity] > 10 and impact[:severity] in [:high, :critical] do
-      insights ++
-        [
-          %{
-            type: :complex_high_impact_change,
-            severity: :high,
-            message:
-              "High complexity code with significant impact. Consider breaking into smaller changes.",
-            source_analyzers: [:quality, :impact],
-            confidence: 0.9
-          }
-        ]
+    complexity = get_in(quality, [:metrics, :complexity]) || 0
+    
+    if complexity > 10 and impact[:severity] in [:high, :critical] do
+      [
+        %{
+          type: :complex_high_impact_change,
+          severity: :high,
+          message:
+            "High complexity code with significant impact. Consider breaking into smaller changes.",
+          source_analyzers: [:quality, :impact],
+          confidence: 0.9
+        }
+      ]
     else
-      insights
+      []
     end
   end
 
@@ -377,98 +347,108 @@ defmodule RubberDuck.Analyzers.Orchestrator do
 
   defp correlate_performance_impact(performance, impact)
        when is_map(performance) and is_map(impact) do
-    insights = []
-
     # Performance bottlenecks in high-impact areas
-    if length(performance[:bottlenecks] || []) > 0 and
-         impact[:scope] in [:system_wide, :module_wide] do
-      insights ++
-        [
-          %{
-            type: :critical_performance_bottleneck,
-            severity: :critical,
-            message:
-              "Performance bottlenecks in high-impact code paths require immediate attention.",
-            source_analyzers: [:performance, :impact],
-            confidence: 0.95
-          }
-        ]
+    bottlenecks = performance[:bottlenecks] || []
+    
+    if not Enum.empty?(bottlenecks) and impact[:scope] in [:system_wide, :module_wide] do
+      [
+        %{
+          type: :critical_performance_bottleneck,
+          severity: :critical,
+          message:
+            "Performance bottlenecks in high-impact code paths require immediate attention.",
+          source_analyzers: [:performance, :impact],
+          confidence: 0.95
+        }
+      ]
     else
-      insights
+      []
     end
   end
 
   defp correlate_performance_impact(_, _), do: []
 
   defp generate_health_insights(results) do
-    insights = []
-
-    # Calculate combined metrics
-    security_issues = length(results[:security][:vulnerabilities] || [])
-    quality_score = results[:quality][:quality_score] || 0.5
-    performance_score = 1.0 - (results[:performance][:optimization_potential] || 0)
-
+    health_metrics = calculate_health_metrics(results)
+    
     cond do
-      security_issues > 5 and quality_score < 0.3 ->
-        insights ++
-          [
-            %{
-              type: :critical_code_health,
-              severity: :critical,
-              message:
-                "Code health is critical: multiple security issues and poor quality metrics.",
-              source_analyzers: [:security, :quality],
-              confidence: 1.0
-            }
-          ]
-
-      quality_score < 0.4 and performance_score < 0.5 ->
-        insights ++
-          [
-            %{
-              type: :poor_code_health,
-              severity: :high,
-              message:
-                "Poor code health: low quality and performance scores indicate need for refactoring.",
-              source_analyzers: [:quality, :performance],
-              confidence: 0.85
-            }
-          ]
-
-      quality_score > 0.8 and security_issues == 0 and performance_score > 0.8 ->
-        insights ++
-          [
-            %{
-              type: :excellent_code_health,
-              severity: :low,
-              message: "Excellent code health: high quality, secure, and performant.",
-              source_analyzers: [:quality, :security, :performance],
-              confidence: 0.9
-            }
-          ]
-
-      true ->
-        insights
+      critical_health?(health_metrics) -> create_critical_health_insight()
+      poor_health?(health_metrics) -> create_poor_health_insight()
+      excellent_health?(health_metrics) -> create_excellent_health_insight()
+      true -> []
     end
   end
 
+  defp calculate_health_metrics(results) do
+    vulnerabilities = results[:security][:vulnerabilities] || []
+    security_issues = length(vulnerabilities)
+    quality_score = results[:quality][:quality_score] || 0.5
+    performance_score = 1.0 - (results[:performance][:optimization_potential] || 0)
+
+    %{
+      security_issues: security_issues,
+      quality_score: quality_score,
+      performance_score: performance_score
+    }
+  end
+
+  defp critical_health?(%{security_issues: security_issues, quality_score: quality_score}) do
+    security_issues > 5 and quality_score < 0.3
+  end
+
+  defp poor_health?(%{quality_score: quality_score, performance_score: performance_score}) do
+    quality_score < 0.4 and performance_score < 0.5
+  end
+
+  defp excellent_health?(%{security_issues: security_issues, quality_score: quality_score, performance_score: performance_score}) do
+    quality_score > 0.8 and security_issues == 0 and performance_score > 0.8
+  end
+
+  defp create_critical_health_insight do
+    [
+      %{
+        type: :critical_code_health,
+        severity: :critical,
+        message: "Code health is critical: multiple security issues and poor quality metrics.",
+        source_analyzers: [:security, :quality],
+        confidence: 1.0
+      }
+    ]
+  end
+
+  defp create_poor_health_insight do
+    [
+      %{
+        type: :poor_code_health,
+        severity: :high,
+        message: "Poor code health: low quality and performance scores indicate need for refactoring.",
+        source_analyzers: [:quality, :performance],
+        confidence: 0.85
+      }
+    ]
+  end
+
+  defp create_excellent_health_insight do
+    [
+      %{
+        type: :excellent_code_health,
+        severity: :low,
+        message: "Excellent code health: high quality, secure, and performant.",
+        source_analyzers: [:quality, :security, :performance],
+        confidence: 0.9
+      }
+    ]
+  end
+
   defp generate_recommendations(results, insights) do
-    recommendations = []
-
-    # Generate recommendations from individual analyzer results
-    recommendations = recommendations ++ generate_security_recommendations(results[:security])
-
     recommendations =
-      recommendations ++ generate_performance_recommendations(results[:performance])
-
-    recommendations = recommendations ++ generate_quality_recommendations(results[:quality])
-    recommendations = recommendations ++ generate_impact_recommendations(results[:impact])
-
-    # Generate recommendations from insights
-    recommendations = recommendations ++ generate_insight_recommendations(insights)
-
-    # Deduplicate and merge similar recommendations
-    recommendations = deduplicate_recommendations(recommendations)
+      []
+      |> Enum.concat(generate_security_recommendations(results[:security]))
+      |> Enum.concat(generate_performance_recommendations(results[:performance]))
+      |> Enum.concat(generate_quality_recommendations(results[:quality]))
+      |> Enum.concat(generate_impact_recommendations(results[:impact]))
+      |> Enum.concat(generate_insight_recommendations(insights))
+      |> deduplicate_recommendations()
 
     {:ok, recommendations}
   end
@@ -494,65 +474,56 @@ defmodule RubberDuck.Analyzers.Orchestrator do
   defp generate_performance_recommendations(nil), do: []
 
   defp generate_performance_recommendations(performance) do
-    recommendations = []
-
     if performance[:optimization_potential] > 0.5 do
-      recommendations ++
-        [
-          %{
-            action:
-              "Optimize performance bottlenecks for #{round(performance.optimization_potential * 100)}% improvement",
-            priority: :high,
-            effort: :moderate,
-            impact: :high,
-            analyzers: [:performance]
-          }
-        ]
+      [
+        %{
+          action:
+            "Optimize performance bottlenecks for #{round(performance.optimization_potential * 100)}% improvement",
+          priority: :high,
+          effort: :moderate,
+          impact: :high,
+          analyzers: [:performance]
+        }
+      ]
     else
-      recommendations
+      []
     end
   end
 
   defp generate_quality_recommendations(nil), do: []
 
   defp generate_quality_recommendations(quality) do
-    recommendations = []
-
     if quality[:quality_score] < 0.5 do
-      recommendations ++
-        [
-          %{
-            action:
-              "Improve code quality (current score: #{round(quality.quality_score * 100)}%)",
-            priority: :medium,
-            effort: :high,
-            impact: :medium,
-            analyzers: [:quality]
-          }
-        ]
+      [
+        %{
+          action:
+            "Improve code quality (current score: #{round(quality.quality_score * 100)}%)",
+          priority: :medium,
+          effort: :high,
+          impact: :medium,
+          analyzers: [:quality]
+        }
+      ]
     else
-      recommendations
+      []
     end
   end
 
   defp generate_impact_recommendations(nil), do: []
 
   defp generate_impact_recommendations(impact) do
-    recommendations = []
-
     if impact[:risk_assessment][:level] in [:high, :critical] do
-      recommendations ++
-        [
-          %{
-            action: "Review high-risk changes and add tests before deployment",
-            priority: :critical,
-            effort: :low,
-            impact: :high,
-            analyzers: [:impact]
-          }
-        ]
+      [
+        %{
+          action: "Review high-risk changes and add tests before deployment",
+          priority: :critical,
+          effort: :low,
+          impact: :high,
+          analyzers: [:impact]
+        }
+      ]
     else
-      recommendations
+      []
     end
   end
 
@@ -704,13 +675,13 @@ defmodule RubberDuck.Analyzers.Orchestrator do
   end
 
   defp determine_additional_analyzers(initial_results) do
-    additional = []
-
     # If security issues found, run performance analysis
-    if length(initial_results.results[:security][:vulnerabilities] || []) > 0 do
-      additional ++ [:performance, :impact]
+    vulnerabilities = initial_results.results[:security][:vulnerabilities] || []
+    
+    if Enum.empty?(vulnerabilities) do
+      []
     else
-      additional
+      [:performance, :impact]
     end
   end
 
@@ -718,9 +689,9 @@ defmodule RubberDuck.Analyzers.Orchestrator do
     %{
       initial
       | results: Map.merge(initial.results, deep.results),
-        insights: initial.insights ++ deep.insights,
+        insights: Enum.concat(initial.insights, deep.insights),
         recommendations:
-          deduplicate_recommendations(initial.recommendations ++ deep.recommendations),
+          deduplicate_recommendations(Enum.concat(initial.recommendations, deep.recommendations)),
         overall_health: calculate_overall_health(Map.merge(initial.results, deep.results))
     }
   end
@@ -773,7 +744,7 @@ defmodule RubberDuck.Analyzers.Orchestrator do
         %{
           acc
           | priority: highest_priority(acc.priority, rec.priority),
-            analyzers: Enum.uniq(acc.analyzers ++ rec.analyzers)
+            analyzers: Enum.uniq(Enum.concat(acc.analyzers, rec.analyzers))
         }
       end)
     end)
@@ -785,5 +756,10 @@ defmodule RubberDuck.Analyzers.Orchestrator do
     p2_index = Enum.find_index(priorities, &(&1 == p2))
 
     if p1_index <= p2_index, do: p1, else: p2
+  end
+
+  defp maybe_add_phase(phases, [], _depth), do: phases
+  defp maybe_add_phase(phases, analyzers, depth) do
+    [%{analyzers: analyzers, parallel: true, depth: depth} | phases]
   end
 end

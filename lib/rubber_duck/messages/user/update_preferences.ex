@@ -6,6 +6,8 @@ defmodule RubberDuck.Messages.User.UpdatePreferences do
   with a strongly-typed struct.
   """
 
+  alias RubberDuck.Skills.UserManagementSkill
+
   @enforce_keys [:user_id, :preferences]
   defstruct [
     :user_id,
@@ -35,8 +37,8 @@ defmodule RubberDuck.Messages.User.UpdatePreferences do
     end
 
     def route(%UpdatePreferences{} = msg, context) do
-      if Code.ensure_loaded?(RubberDuck.Skills.UserManagementSkill) do
-        RubberDuck.Skills.UserManagementSkill.handle_update_preferences(msg, context)
+      if Code.ensure_loaded?(UserManagementSkill) do
+        UserManagementSkill.handle_update_preferences(msg, context)
       else
         {:error, :handler_not_loaded}
       end
