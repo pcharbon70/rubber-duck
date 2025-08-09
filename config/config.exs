@@ -75,6 +75,15 @@ config :tower,
   ],
   metadata_keys: [:user_id, :request_id, :resource, :action]
 
+# Configure Telemetry for ML/AI monitoring
+config :rubber_duck, :telemetry,
+  prometheus_enabled: true,
+  prometheus_port: 9568,
+  ml_metrics_enabled: true,
+  action_tracking_enabled: true,
+  learning_metrics_enabled: true,
+  impact_scoring_enabled: true
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

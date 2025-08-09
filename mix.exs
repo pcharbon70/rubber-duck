@@ -63,6 +63,7 @@ defmodule RubberDuck.MixProject do
       # Telemetry and monitoring
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
+      {:telemetry_metrics_prometheus, "~> 1.1"},
 
       # Error reporting
       {:tower, "~> 0.6"},

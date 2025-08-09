@@ -30,6 +30,9 @@ defmodule RubberDuck.Application do
       # Telemetry and monitoring
       RubberDuck.Telemetry,
 
+      # Advanced ML/AI telemetry supervision
+      RubberDuck.Telemetry.Supervisor,
+
       # Health check monitoring
       RubberDuck.HealthCheck,
 
