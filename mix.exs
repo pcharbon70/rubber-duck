@@ -64,6 +64,9 @@ defmodule RubberDuck.MixProject do
       # Error reporting
       {:tower, "~> 0.6"},
 
+      # HTTP client for Swoosh
+      {:hackney, "~> 1.9"},
+
       # PubSub for signal system
       {:phoenix_pubsub, "~> 2.1"},
       
