@@ -21,18 +21,114 @@ defmodule RubberDuck.Actions.Agent.Learn do
       max_patterns: [type: :pos_integer, default: 10]
     ]
 
+  alias RubberDuck.Telemetry.ActionTelemetry
   require Logger
 
   @impl true
-  def run(params, _context) do
-    case validate_learning_params(params) do
-      :ok ->
-        perform_learning(params.experiences, params.learning_type, params)
+  def run(params, context) do
+    # Wrap in telemetry span for learning action tracking
+    ActionTelemetry.span(
+      [:rubber_duck, :action],
+      %{
+        action_type: "agent_learn",
+        resource: "learning",
+        learning_type: to_string(params.learning_type),
+        experience_count: length(params.experiences)
+      },
+      fn ->
+        case validate_learning_params(params) do
+          :ok ->
+            result = perform_learning(params.experiences, params.learning_type, params)
+            
+            # Emit learning metrics based on result
+            emit_learning_metrics(result, params, context)
+            
+            result
 
-      {:error, reason} ->
-        {:error, reason}
+          {:error, reason} ->
+            {:error, reason}
+        end
+      end
+    )
+  end
+  
+  defp emit_learning_metrics({:ok, %{learned: true} = result}, params, _context) do
+    # Emit learning accuracy metric
+    if confidence = result[:confidence] do
+      ActionTelemetry.event(
+        [:rubber_duck, :learning, :accuracy],
+        %{value: confidence},
+        %{
+          agent_type: "agent_learn",
+          context: to_string(params.learning_type)
+        }
+      )
+    end
+    
+    # Emit feedback processed metric
+    ActionTelemetry.event(
+      [:rubber_duck, :learning, :feedback_processed],
+      %{value: length(params.experiences)},
+      %{
+        feedback_type: to_string(params.learning_type),
+        agent_id: "learning_action"
+      }
+    )
+    
+    # Emit pattern discovery metrics
+    if insights = result[:insights] do
+      emit_insight_metrics(insights, params)
     end
   end
+  
+  defp emit_learning_metrics(_, _, _), do: :ok
+  
+  defp emit_insight_metrics(%{success_patterns: patterns} = insights, _params) when is_list(patterns) do
+    # Track pattern discovery
+    ActionTelemetry.event(
+      [:rubber_duck, :learning, :patterns_discovered],
+      %{value: length(patterns)},
+      %{
+        pattern_type: "success",
+        confidence: insights[:pattern_confidence] || 0.0
+      }
+    )
+  end
+  
+  defp emit_insight_metrics(%{correlations: correlations}, _params) when is_map(correlations) do
+    # Track correlation discovery
+    ActionTelemetry.event(
+      [:rubber_duck, :learning, :correlations_found],
+      %{value: map_size(correlations)},
+      %{
+        analysis_type: "correlation"
+      }
+    )
+  end
+  
+  defp emit_insight_metrics(%{predictions: predictions}, _params) when is_list(predictions) do
+    # Track prediction generation
+    ActionTelemetry.event(
+      [:rubber_duck, :learning, :predictions_generated],
+      %{value: length(predictions)},
+      %{
+        prediction_accuracy: 0.75  # Default from the function
+      }
+    )
+  end
+  
+  defp emit_insight_metrics(%{optimization_opportunities: opportunities}, _params) when is_list(opportunities) do
+    # Track optimization discovery
+    ActionTelemetry.event(
+      [:rubber_duck, :learning, :optimizations_identified],
+      %{value: length(opportunities)},
+      %{
+        optimization_type: "performance"
+      }
+    )
+  end
+  
+  defp emit_insight_metrics(_, _), do: :ok
 
   defp perform_learning(experiences, _learning_type, _params) when length(experiences) < 3 do
     {:ok,
@@ -715,7 +811,18 @@ defmodule RubberDuck.Actions.Agent.Learn do
         _ -> 0.5
       end
 
-    base_confidence + insight_confidence * 0.5
+    confidence = base_confidence + insight_confidence * 0.5
+    
+    # Emit learning improvement rate metric
+    ActionTelemetry.event(
+      [:rubber_duck, :learning, :improvement_rate],
+      %{value: confidence},
+      %{
+        agent_type: "learning_analyzer"
+      }
+    )
+    
+    confidence
   rescue
     # Default medium confidence on error
     _ -> 0.5

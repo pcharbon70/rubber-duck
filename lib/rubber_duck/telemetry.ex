@@ -85,6 +85,63 @@ defmodule RubberDuck.Telemetry do
       ),
       last_value("rubber_duck.repo.pool_size",
         description: "Database connection pool size"
+      ),
+
+      # ML/AI Action Performance Metrics
+      counter("rubber_duck.action.count",
+        tags: [:action_type, :resource, :status],
+        description: "Count of action executions"
+      ),
+      summary("rubber_duck.action.duration",
+        unit: {:native, :millisecond},
+        tags: [:action_type, :resource],
+        description: "Duration of action execution"
+      ),
+      distribution("rubber_duck.action.execution_time",
+        unit: {:native, :millisecond},
+        description: "Distribution of action execution times",
+        reporter_options: [buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000]]
+      ),
+      
+      # Learning Accuracy Metrics
+      last_value("rubber_duck.learning.accuracy",
+        tags: [:agent_type, :context],
+        description: "Current learning accuracy for agents"
+      ),
+      counter("rubber_duck.learning.feedback_processed",
+        tags: [:feedback_type, :agent_id],
+        description: "Count of feedback events processed"
+      ),
+      summary("rubber_duck.learning.improvement_rate",
+        tags: [:agent_type],
+        description: "Rate of learning improvement"
+      ),
+      
+      # Impact Scoring Metrics
+      distribution("rubber_duck.impact.score",
+        tags: [:analysis_type, :domain],
+        description: "Distribution of business impact scores",
+        reporter_options: [buckets: [1.0, 2.0, 3.0, 5.0, 7.0, 8.0, 9.0, 10.0]]
+      ),
+      counter("rubber_duck.impact.high_impact_actions",
+        tags: [:threshold_level, :action_type],
+        description: "Count of high-impact actions identified"
+      ),
+      last_value("rubber_duck.impact.business_value",
+        tags: [:metric_type, :currency],
+        description: "Business value generated"
+      ),
+      
+      # ML System Health Metrics
+      last_value("rubber_duck.ml.system.agents",
+        description: "Number of active ML agents"
+      ),
+      last_value("rubber_duck.ml.system.resources",
+        tags: [:resource_type],
+        description: "ML system resource utilization"
+      ),
+      last_value("rubber_duck.ml.system.performance",
+        description: "Overall ML system performance score"
       )
     ]
   end

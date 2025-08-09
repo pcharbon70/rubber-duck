@@ -30,6 +30,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   alias RubberDuck.Actions.Core.Entity
   alias RubberDuck.Pipeline
+  alias RubberDuck.Telemetry.ActionTelemetry
 
   alias RubberDuck.Actions.Core.UpdateEntity.{
     Validator,
@@ -43,18 +44,29 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   @impl true
   def run(params, context) do
-    # Check if pipeline mode is enabled
-    pipeline_mode = Application.get_env(:rubber_duck, :pipeline_mode, :sequential)
+    # Wrap entire action execution in telemetry span
+    ActionTelemetry.span(
+      [:rubber_duck, :action],
+      %{
+        action_type: "update_entity",
+        resource: to_string(params.entity_type),
+        entity_id: params.entity_id
+      },
+      fn ->
+        # Check if pipeline mode is enabled
+        pipeline_mode = Application.get_env(:rubber_duck, :pipeline_mode, :sequential)
 
-    case pipeline_mode do
-      :genstage ->
-        # Use GenStage pipeline for processing
-        run_with_genstage(params, context)
+        case pipeline_mode do
+          :genstage ->
+            # Use GenStage pipeline for processing
+            run_with_genstage(params, context)
 
-      :sequential ->
-        # Use existing sequential processing
-        run_sequential(params, context)
-    end
+          :sequential ->
+            # Use existing sequential processing
+            run_sequential(params, context)
+        end
+      end
+    )
   end
 
   defp run_with_genstage(params, context) do
@@ -131,22 +143,43 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   # Validate changes and prepare for execution
   defp validate_and_prepare(%{entity: entity} = params) do
-    validation_params = %{
-      # Validator expects entity as map
-      current_entity: Entity.to_map(entity),
-      changes: params.changes,
-      validation_config: params.validation_config
-    }
+    ActionTelemetry.span(
+      [:rubber_duck, :action, :validation],
+      %{
+        entity_type: to_string(params.entity_type),
+        entity_id: params.entity_id
+      },
+      fn ->
+        validation_params = %{
+          # Validator expects entity as map
+          current_entity: Entity.to_map(entity),
+          changes: params.changes,
+          validation_config: params.validation_config
+        }
 
-    case Validator.validate(validation_params, %{}) do
-      {:ok, validation_result} ->
-        params
-        |> Map.put(:validated_changes, validation_result)
-        |> Map.put(:validation_result, validation_result)
+        case Validator.validate(validation_params, %{}) do
+          {:ok, validation_result} ->
+            ActionTelemetry.event(
+              [:rubber_duck, :action, :validation, :success],
+              %{fields_validated: map_size(params.changes)},
+              %{entity_type: to_string(params.entity_type)}
+            )
+            
+            params
+            |> Map.put(:validated_changes, validation_result)
+            |> Map.put(:validation_result, validation_result)
 
-      {:error, _reason} = error ->
-        {:error, %{step: :validation, error: error}}
-    end
+          {:error, _reason} = error ->
+            ActionTelemetry.event(
+              [:rubber_duck, :action, :validation, :failure],
+              %{fields_attempted: map_size(params.changes)},
+              %{entity_type: to_string(params.entity_type)}
+            )
+            
+            {:error, %{step: :validation, error: error}}
+        end
+      end
+    )
   end
 
   # Assess the impact of changes
@@ -160,17 +193,50 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   end
 
   defp assess_impact(%{entity: entity, validated_changes: validated_changes} = params) do
-    analyzer_params = %{
-      entity: Entity.to_map(entity),
-      validated_changes: validated_changes
-    }
+    ActionTelemetry.span(
+      [:rubber_duck, :action, :impact_analysis],
+      %{
+        entity_type: to_string(params.entity_type),
+        entity_id: params.entity_id
+      },
+      fn ->
+        analyzer_params = %{
+          entity: Entity.to_map(entity),
+          validated_changes: validated_changes
+        }
 
-    case ImpactAnalyzer.analyze(analyzer_params, %{}) do
-      {:ok, impact_result} ->
-        Map.put(params, :impact_assessment, impact_result)
-        # Note: ImpactAnalyzer.analyze/2 currently always returns {:ok, _}
-        # If error handling is needed in the future, add error clause here
-    end
+        case ImpactAnalyzer.analyze(analyzer_params, %{}) do
+          {:ok, impact_result} ->
+            # Emit impact score metric
+            if impact_score = impact_result[:impact_score] do
+              ActionTelemetry.event(
+                [:rubber_duck, :impact, :score],
+                %{value: impact_score},
+                %{
+                  analysis_type: "entity_update",
+                  domain: to_string(params.entity_type)
+                }
+              )
+              
+              # Track high-impact actions
+              if impact_score > 0.7 do
+                ActionTelemetry.event(
+                  [:rubber_duck, :impact, :high_impact_actions],
+                  %{value: 1},
+                  %{
+                    threshold_level: "high",
+                    action_type: "update_entity"
+                  }
+                )
+              end
+            end
+            
+            Map.put(params, :impact_assessment, impact_result)
+            # Note: ImpactAnalyzer.analyze/2 currently always returns {:ok, _}
+            # If error handling is needed in the future, add error clause here
+        end
+      end
+    )
   end
 
   # Check goal alignment
@@ -196,27 +262,37 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
 
   # Execute the changes
   defp execute_changes(params) do
-    executor_params = %{
-      entity: Entity.to_map(params.entity),
-      validated_changes: params.validated_changes,
-      impact_assessment: params.impact_assessment,
-      rollback_on_failure: params.options.rollback_on_failure
-    }
+    ActionTelemetry.span(
+      [:rubber_duck, :action, :execution],
+      %{
+        entity_type: to_string(params.entity_type),
+        entity_id: params.entity_id,
+        change_count: map_size(params.validated_changes)
+      },
+      fn ->
+        executor_params = %{
+          entity: Entity.to_map(params.entity),
+          validated_changes: params.validated_changes,
+          impact_assessment: params.impact_assessment,
+          rollback_on_failure: params.options.rollback_on_failure
+        }
 
-    case Executor.execute(executor_params, %{}) do
-      {:ok, execution_result} ->
-        # The executor returns the updated entity as a map
-        # We need to apply those changes to our Entity wrapper
-        changes_map = Map.drop(execution_result.entity, [:id, :type])
-        {:ok, updated_entity} = Entity.apply_changes(params.entity, changes_map)
+        case Executor.execute(executor_params, %{}) do
+          {:ok, execution_result} ->
+            # The executor returns the updated entity as a map
+            # We need to apply those changes to our Entity wrapper
+            changes_map = Map.drop(execution_result.entity, [:id, :type])
+            {:ok, updated_entity} = Entity.apply_changes(params.entity, changes_map)
 
-        params
-        |> Map.put(:execution_result, execution_result)
-        |> Map.put(:updated_entity, updated_entity)
+            params
+            |> Map.put(:execution_result, execution_result)
+            |> Map.put(:updated_entity, updated_entity)
 
-      {:error, _reason} = error ->
-        {:error, %{step: :execution, error: error}}
-    end
+          {:error, _reason} = error ->
+            {:error, %{step: :execution, error: error}}
+        end
+      end
+    )
   end
 
   # Propagate changes if enabled
@@ -258,18 +334,37 @@ defmodule RubberDuck.Actions.Core.UpdateEntity do
   end
 
   defp learn_if_enabled(params) do
-    learner_params = %{
-      entity: Entity.to_map(params.updated_entity),
-      impact_assessment: params.impact_assessment,
-      execution_result: params.execution_result
-    }
+    ActionTelemetry.span(
+      [:rubber_duck, :action, :learning],
+      %{
+        entity_type: to_string(params.entity_type),
+        agent_type: "update_entity"
+      },
+      fn ->
+        learner_params = %{
+          entity: Entity.to_map(params.updated_entity),
+          impact_assessment: params.impact_assessment,
+          execution_result: params.execution_result
+        }
 
-    case Learner.learn(learner_params, %{}) do
-      {:ok, learning_result} ->
-        Map.put(params, :learning_result, learning_result)
-        # Note: Learner.learn/2 currently always returns {:ok, _}
-        # Learning failures would be non-fatal if they occur in future
-    end
+        case Learner.learn(learner_params, %{}) do
+          {:ok, learning_result} ->
+            # Emit learning metrics
+            ActionTelemetry.event(
+              [:rubber_duck, :learning, :feedback_processed],
+              %{value: 1},
+              %{
+                feedback_type: "entity_update",
+                agent_id: "update_entity_learner"
+              }
+            )
+            
+            Map.put(params, :learning_result, learning_result)
+            # Note: Learner.learn/2 currently always returns {:ok, _}
+            # Learning failures would be non-fatal if they occur in future
+        end
+      end
+    )
   end
 
   # Handle errors from the pipeline
