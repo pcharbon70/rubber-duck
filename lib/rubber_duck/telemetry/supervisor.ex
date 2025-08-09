@@ -34,7 +34,13 @@ defmodule RubberDuck.Telemetry.Supervisor do
       RubberDuck.Telemetry.LearningTracker,
 
       # Impact scoring tracker
-      RubberDuck.Telemetry.ImpactTracker
+      RubberDuck.Telemetry.ImpactTracker,
+      
+      # Agent health and performance tracker
+      RubberDuck.Telemetry.AgentTelemetry,
+      
+      # Business impact and ROI tracker
+      RubberDuck.Telemetry.BusinessImpactTelemetry
     ]
 
     # Add Prometheus reporter if enabled

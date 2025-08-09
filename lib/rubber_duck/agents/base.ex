@@ -20,6 +20,9 @@ defmodule RubberDuck.Agents.Base do
       # Import message routing support
       alias RubberDuck.Routing.MessageRouter
       alias RubberDuck.Messages
+      
+      # Import telemetry support
+      alias RubberDuck.Telemetry.AgentTelemetry
 
       # Define child_spec for supervision
       def child_spec(opts) do
@@ -84,6 +87,14 @@ defmodule RubberDuck.Agents.Base do
       """
       def on_goal_assigned(agent, goal) do
         updated_goals = [goal | agent.state.goals]
+        
+        # Record goal assignment telemetry
+        AgentTelemetry.record_lifecycle(
+          agent.name || agent.id,
+          :goal_assigned,
+          %{goal_type: goal[:type] || :unknown}
+        )
+        
         {:ok, %{agent | state: Map.put(agent.state, :goals, updated_goals)}}
       end
 
@@ -91,6 +102,18 @@ defmodule RubberDuck.Agents.Base do
       Called when a goal is completed.
       """
       def on_goal_completed(agent, goal, result) do
+        # Calculate duration if timestamps available
+        duration_ms = calculate_goal_duration(goal)
+        success = determine_goal_success(result)
+        
+        # Record goal completion telemetry
+        AgentTelemetry.record_goal_completion(
+          agent.name || agent.id,
+          goal[:type] || :unknown,
+          duration_ms,
+          success
+        )
+        
         # Move goal to completed
         remaining_goals = Enum.reject(agent.state.goals, &(&1.id == goal.id))
         completed = [Map.put(goal, :result, result) | agent.state.completed_goals]
@@ -113,6 +136,25 @@ defmodule RubberDuck.Agents.Base do
           {:ok, agent_with_updated_state}
         end
       end
+      
+      defp calculate_goal_duration(goal) do
+        if goal[:started_at] && goal[:completed_at] do
+          DateTime.diff(goal[:completed_at], goal[:started_at], :millisecond)
+        else
+          # Default duration if timestamps not available
+          1000
+        end
+      end
+      
+      defp determine_goal_success(result) do
+        case result do
+          {:ok, _} -> true
+          %{success: success} -> success
+          %{status: :completed} -> true
+          %{status: :failed} -> false
+          _ -> false
+        end
+      end
 
       @doc """
       Called when the agent gains new experience.
@@ -121,6 +163,13 @@ defmodule RubberDuck.Agents.Base do
         unless is_map(experience) do
           throw({:error, :invalid_experience})
         end
+
+        # Record experience gained telemetry
+        experience_type = determine_experience_type(experience)
+        AgentTelemetry.record_experience_gained(
+          agent.name || agent.id,
+          experience_type
+        )
 
         updated_experience = [experience | agent.state.experience]
 
@@ -146,6 +195,15 @@ defmodule RubberDuck.Agents.Base do
           Logger.warning("Failed to record experience: #{inspect(reason)}")
           # Continue with unchanged agent
           {:ok, agent}
+      end
+      
+      defp determine_experience_type(experience) do
+        cond do
+          experience[:goal] -> :goal_based
+          experience[:action] -> :action_based
+          experience[:feedback] -> :feedback_based
+          true -> :general
+        end
       end
 
       @doc """
