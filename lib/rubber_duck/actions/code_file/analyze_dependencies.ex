@@ -14,6 +14,18 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
       depth: [type: :integer, default: 2]
     ]
 
+  defmodule DependencyNode do
+    @moduledoc "Represents a dependency node in the dependency graph"
+    @enforce_keys [:id, :type]
+    defstruct [:id, :type, :metadata]
+
+    @type t :: %__MODULE__{
+      id: String.t(),
+      type: :dependency | :dependent,
+      metadata: map() | nil
+    }
+  end
+
   @impl true
   def run(params, _context) do
     with {:ok, imports} <- extract_imports(params.content),
@@ -277,12 +289,20 @@ defmodule RubberDuck.Actions.CodeFile.AnalyzeDependencies do
   defp build_graph_nodes(dependencies, dependents) do
     dep_nodes =
       Enum.map(dependencies, fn dep ->
-        %{id: dep.module, type: :dependency}
+        %DependencyNode{
+          id: dep.module,
+          type: :dependency,
+          metadata: %{module: dep.module}
+        }
       end)
 
     dependent_nodes =
       Enum.map(dependents, fn dep ->
-        %{id: dep.file_path, type: :dependent}
+        %DependencyNode{
+          id: dep.file_path,
+          type: :dependent,
+          metadata: %{file_path: dep.file_path}
+        }
       end)
 
     dep_nodes ++ dependent_nodes

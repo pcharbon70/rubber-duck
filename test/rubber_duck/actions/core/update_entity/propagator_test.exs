@@ -2,6 +2,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.PropagatorTest do
   use ExUnit.Case, async: true
 
   alias RubberDuck.Actions.Core.UpdateEntity.Propagator
+  alias RubberDuck.Test.EntityFactory
 
   describe "propagate/2" do
     setup do
@@ -70,7 +71,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.PropagatorTest do
 
   describe "create_propagation_plan/3" do
     test "creates plan with affected entities" do
-      entity = %{id: "test", type: :project, version: 1}
+      entity = EntityFactory.build_entity(:project, %{id: "test", version: 1})
 
       impact_assessment = %{
         affected_entities: [
@@ -93,7 +94,7 @@ defmodule RubberDuck.Actions.Core.UpdateEntity.PropagatorTest do
     end
 
     test "determines sequential strategy for critical risk" do
-      entity = %{id: "test", type: :user}
+      entity = EntityFactory.build_entity(:user, %{id: "test"})
 
       impact_assessment = %{
         affected_entities: [%{type: :sessions, id: "s1"}],
