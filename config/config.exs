@@ -54,6 +54,18 @@ config :rubber_duck,
     RubberDuck.Agents
   ]
 
+# Configure EventStore for event sourcing
+config :rubber_duck, 
+  event_stores: [RubberDuck.EventStore]
+
+config :rubber_duck, RubberDuck.EventStore,
+  serializer: EventStore.JsonSerializer,
+  username: "postgres",
+  password: "postgres",
+  database: "rubberduck_eventstore",
+  hostname: "localhost",
+  pool_size: 10
+
 # Configure Tower error reporting
 config :tower,
   reporters: [Tower.LoggerReporter],

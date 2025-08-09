@@ -21,6 +21,9 @@ defmodule RubberDuck.Application do
       # Database connection pool
       RubberDuck.Repo,
 
+      # Event Store for event sourcing
+      RubberDuck.EventStore,
+
       # Authentication system
       {AshAuthentication.Supervisor, [otp_app: :rubber_duck]},
 

@@ -57,6 +57,9 @@ defmodule RubberDuck.MixProject do
       # JSON Schema validation
       {:ex_json_schema, "~> 0.10"},
 
+      # Event Sourcing
+      {:eventstore, "~> 1.4"},
+
       # Telemetry and monitoring
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
