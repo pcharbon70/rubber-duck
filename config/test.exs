@@ -1,4 +1,8 @@
 import Config
+config :rubber_duck, Oban, testing: :manual
+config :rubber_duck, token_signing_secret: "KbRyKTzagJjM7DICXQ1a6V9Vq/DaKgCs"
+config :bcrypt_elixir, log_rounds: 1
+config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 
 # Configure your database
 #

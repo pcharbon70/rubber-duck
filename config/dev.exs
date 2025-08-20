@@ -1,4 +1,5 @@
 import Config
+config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure your database
 config :rubber_duck, RubberDuck.Repo,
@@ -64,7 +65,7 @@ config :rubber_duck, RubberDuckWeb.Endpoint,
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :rubber_duck, dev_routes: true
+config :rubber_duck, dev_routes: true, token_signing_secret: "gJ38Qqd8R0MSpvdykIdGqUxJIhlwLsLZ"
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

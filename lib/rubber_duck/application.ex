@@ -11,11 +11,17 @@ defmodule RubberDuck.Application do
       RubberDuckWeb.Telemetry,
       RubberDuck.Repo,
       {DNSCluster, query: Application.get_env(:rubber_duck, :dns_cluster_query) || :ignore},
+      {Oban,
+       AshOban.config(
+         Application.fetch_env!(:rubber_duck, :ash_domains),
+         Application.fetch_env!(:rubber_duck, Oban)
+       )},
       {Phoenix.PubSub, name: RubberDuck.PubSub},
       # Start a worker by calling: RubberDuck.Worker.start_link(arg)
       # {RubberDuck.Worker, arg},
       # Start to serve requests, typically the last entry
-      RubberDuckWeb.Endpoint
+      RubberDuckWeb.Endpoint,
+      {AshAuthentication.Supervisor, [otp_app: :rubber_duck]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
