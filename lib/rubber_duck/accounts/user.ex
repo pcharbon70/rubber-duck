@@ -1,4 +1,10 @@
 defmodule RubberDuck.Accounts.User do
+  @moduledoc """
+  User resource with authentication capabilities.
+
+  Provides password authentication, API key authentication, email confirmation,
+  and password reset functionality using AshAuthentication.
+  """
   use Ash.Resource,
     otp_app: :rubber_duck,
     domain: RubberDuck.Accounts,

@@ -1,4 +1,9 @@
 defmodule RubberDuck.Secrets do
+  @moduledoc """
+  Handles secret resolution for AshAuthentication.
+
+  This module provides secrets for authentication tokens and signing keys.
+  """
   use AshAuthentication.Secret
 
   def secret_for(

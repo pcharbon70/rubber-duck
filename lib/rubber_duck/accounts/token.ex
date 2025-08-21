@@ -1,4 +1,10 @@
 defmodule RubberDuck.Accounts.Token do
+  @moduledoc """
+  Token resource for AshAuthentication.
+
+  Manages JWT tokens, revocation tokens, and token storage for authentication.
+  Handles token expiration, revocation, and cleanup operations.
+  """
   use Ash.Resource,
     otp_app: :rubber_duck,
     domain: RubberDuck.Accounts,

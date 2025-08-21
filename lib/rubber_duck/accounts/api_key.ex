@@ -1,4 +1,10 @@
 defmodule RubberDuck.Accounts.ApiKey do
+  @moduledoc """
+  API Key resource for authentication.
+
+  Manages API keys for users, including generation, hashing, and expiration.
+  Used by the AshAuthentication API key strategy.
+  """
   use Ash.Resource,
     otp_app: :rubber_duck,
     domain: RubberDuck.Accounts,

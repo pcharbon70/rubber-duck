@@ -1,4 +1,10 @@
 defmodule RubberDuckWeb.AuthOverrides do
+  @moduledoc """
+  UI overrides for AshAuthentication Phoenix components.
+
+  This module allows customization of authentication UI components
+  such as sign-in forms, banners, and other authentication-related views.
+  """
   use AshAuthentication.Phoenix.Overrides
 
   # configure your UI overrides here
