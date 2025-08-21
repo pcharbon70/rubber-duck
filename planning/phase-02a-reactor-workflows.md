@@ -1,51 +1,17 @@
-# Refactor: Replace Runic Library with Reactor for Optional Workflow Orchestration
-
-**[🧭 Phase Navigation](phase-navigation.md)** | **[📋 Complete Plan](implementation_plan_complete.md)**
-
----
-
-## Refactor Status: 🔄 **0% COMPLETE** - Planning Phase
-
-### Summary
-- ❌ **Stage 1**: Reactor Framework Integration & Workflow Engine Migration - **0% Complete**
-- ❌ **Stage 2**: Agent Workflow Integration & Optional Usage Patterns - **0% Complete**  
-- ❌ **Stage 3**: Advanced Workflow Features & Performance Optimization - **0% Complete**
-- ❌ **Stage 4**: Documentation, Testing & Migration Validation - **0% Complete**
-
-### Key Objectives
-- **Workflow Engine Replacement**: Replace Runic with Reactor as the optional workflow orchestration engine
-- **Agent Architecture Preservation**: Keep agents autonomous with workflows as optional composition tools
-- **Optional Workflow Usage**: Ensure agents can operate independently without requiring workflows
-- **Performance Enhancement**: Achieve 2-3x improvement in workflow execution speed when workflows are used
-- **Flexible Integration**: Provide workflow capabilities when agents need complex multi-step orchestration
-
-### Architecture Transition
-- **Agents**: Remain autonomous decision-makers (unchanged)
-- **From**: Runic-based optional workflow orchestration
-- **To**: Reactor-based optional workflow orchestration with superior performance
-- **Benefits**: Better orchestration tools available to agents when needed, not mandatory
-
----
-
-## Phase Links
-- **Previous**: [Phase 2A: Runic Workflow System](phase-02a-runic-workflow.md)
-- **Next**: Enhanced optional workflow orchestration for agents
-- **Related**: [Implementation Appendices](implementation-appendices.md)
-
----
-
 ## Overview
 
-This refactor replaces the Runic workflow orchestration engine with Reactor while preserving the agent-centric architecture. Workflows remain **optional tools** that agents can use for complex multi-step orchestration when needed. Agents continue to operate autonomously and can choose whether to use workflows based on their specific coordination needs.
+This integrate Reactor workflows while preserving the agent-centric architecture. Workflows remain **optional tools** that agents can use for complex multi-step orchestration when needed. Agents continue to operate autonomously and can choose whether to use workflows based on their specific coordination needs.
 
 ## Stage 1: Reactor Framework Integration & Workflow Engine Migration
 
 ### Overview
-Replace Runic with Reactor as an optional workflow orchestration engine, ensuring agents can continue operating with or without workflows while providing enhanced orchestration capabilities when needed.
+
+Integrate Reactor as an optional workflow orchestration engine, ensuring agents can continue operating with or without workflows while providing enhanced orchestration capabilities when needed.
 
 ### 1.1 Dependency Management & Configuration
 
-#### Tasks:
+#### Tasks
+
 - [ ] 1.1.1 Remove Runic dependency
   - [ ] 1.1.1.1 Remove Runic from mix.exs dependencies
   - [ ] 1.1.1.2 Remove libgraph override that was needed for Runic-Reactor conflict
@@ -62,14 +28,16 @@ Replace Runic with Reactor as an optional workflow orchestration engine, ensurin
   - [ ] 1.1.3.3 Establish naming conventions for Reactor workflows
   - [ ] 1.1.3.4 Document Reactor integration patterns
 
-#### Actions:
+#### Actions
+
 - [ ] 1.1.4 Configuration actions
   - [ ] 1.1.4.1 RemoveDependency action for clean removal
   - [ ] 1.1.4.2 ConfigureReactor action for setup
   - [ ] 1.1.4.3 ValidateConfiguration action for health checks
   - [ ] 1.1.4.4 MigrateSettings action for configuration transfer
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 1.1.5 Test dependency removal completeness
 - [ ] 1.1.6 Test Reactor configuration validity
 - [ ] 1.1.7 Test middleware stack functionality
@@ -77,7 +45,8 @@ Replace Runic with Reactor as an optional workflow orchestration engine, ensurin
 
 ### 1.2 Optional Workflow Component Migration
 
-#### Tasks:
+#### Tasks
+
 - [ ] 1.2.1 Create Reactor-based workflow utilities (optional for agents)
   - [ ] 1.2.1.1 Convert `wrap_action/3` to optional Reactor step factory pattern
   - [ ] 1.2.1.2 Create async workflow execution utilities (not required by agents)
@@ -99,14 +68,16 @@ Replace Runic with Reactor as an optional workflow orchestration engine, ensurin
   - [ ] 1.2.4.3 Build optional dynamic workflow creation with Reactor.Builder
   - [ ] 1.2.4.4 Create optional workflow validation utilities
 
-#### Actions:
+#### Actions
+
 - [ ] 1.2.5 Component migration actions
   - [ ] 1.2.5.1 ConvertStep action for automated step migration
   - [ ] 1.2.5.2 TranslateRule action for rule pattern conversion
   - [ ] 1.2.5.3 MigrateStateMachine action for state pattern translation
   - [ ] 1.2.5.4 UpdateBuilder action for workflow builder modernization
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 1.2.6 Test step conversion accuracy and functionality
 - [ ] 1.2.7 Test rule translation and conditional logic
 - [ ] 1.2.8 Test state machine migration and event handling
@@ -114,7 +85,8 @@ Replace Runic with Reactor as an optional workflow orchestration engine, ensurin
 
 ### 1.3 Agent-Workflow Optional Integration
 
-#### Tasks:
+#### Tasks
+
 - [ ] 1.3.1 Enable agents to optionally use Reactor workflows
   - [ ] 1.3.1.1 Create optional Reactor.Step adapters for existing agent actions
   - [ ] 1.3.1.2 Provide optional compensation utilities for complex multi-step operations
@@ -136,14 +108,16 @@ Replace Runic with Reactor as an optional workflow orchestration engine, ensurin
   - [ ] 1.3.4.3 Optional error handling and recovery workflow templates
   - [ ] 1.3.4.4 Optional performance monitoring workflow patterns
 
-#### Actions:
+#### Actions
+
 - [ ] 1.3.5 Agent integration actions
   - [ ] 1.3.5.1 ConvertAgentAction action for Reactor.Step implementation
   - [ ] 1.3.5.2 CreateWorkflowTemplate action for pattern generation
   - [ ] 1.3.5.3 MigrateAgentWorkflow action for existing workflow conversion
   - [ ] 1.3.5.4 ValidateIntegration action for functionality verification
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 1.3.6 Test agent action conversion to Reactor steps
 - [ ] 1.3.7 Test compensation and undo functionality
 - [ ] 1.3.8 Test multi-agent workflow orchestration
@@ -152,11 +126,13 @@ Replace Runic with Reactor as an optional workflow orchestration engine, ensurin
 ## Stage 2: Agent Workflow Integration & Optional Usage Patterns
 
 ### Overview
+
 Provide sophisticated optional workflow patterns that agents can choose to use for complex orchestration needs, while ensuring agents remain fully functional without workflows.
 
 ### 2.1 Optional Dynamic Workflow Composition System
 
-#### Tasks:
+#### Tasks
+
 - [ ] 2.1.1 Create optional workflow building utilities
   - [ ] 2.1.1.1 Optional dynamic workflow generation using Reactor.Builder (for complex agent operations)
   - [ ] 2.1.1.2 Optional component selection utilities based on agent capabilities
@@ -178,14 +154,16 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
   - [ ] 2.1.4.3 Optional template composition using Reactor inheritance
   - [ ] 2.1.4.4 Optional template learning from successful workflow executions
 
-#### Actions:
+#### Actions
+
 - [ ] 2.1.5 Composition actions
   - [ ] 2.1.5.1 ComposeReactorWorkflow action with goal decomposition
   - [ ] 2.1.5.2 MergeReactorWorkflows action with optimization
   - [ ] 2.1.5.3 AdaptReactorWorkflow action for runtime changes
   - [ ] 2.1.5.4 SaveReactorTemplate action for reusable patterns
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 2.1.6 Test dynamic workflow composition using Reactor.Builder
 - [ ] 2.1.7 Test workflow merging and dependency resolution
 - [ ] 2.1.8 Test runtime workflow adaptation and hot-swapping
@@ -193,7 +171,8 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
 
 ### 2.2 Parallel Execution & Concurrency Optimization
 
-#### Tasks:
+#### Tasks
+
 - [ ] 2.2.1 Implement ReactorConcurrencyAgent
   - [ ] 2.2.1.1 Optimize concurrent step execution using Reactor's async capabilities
   - [ ] 2.2.1.2 Resource-aware execution with max_concurrency controls
@@ -215,14 +194,16 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
   - [ ] 2.2.4.3 Bottleneck identification and resolution
   - [ ] 2.2.4.4 Adaptive performance tuning
 
-#### Actions:
+#### Actions
+
 - [ ] 2.2.5 Parallel execution actions
   - [ ] 2.2.5.1 OptimizeConcurrency action for resource management
   - [ ] 2.2.5.2 ExecuteParallel action for map operations
   - [ ] 2.2.5.3 StreamWorkflow action for real-time processing
   - [ ] 2.2.5.4 MonitorPerformance action for optimization
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 2.2.6 Test concurrent execution optimization
 - [ ] 2.2.7 Test map-reduce patterns with Reactor
 - [ ] 2.2.8 Test streaming workflow execution
@@ -230,7 +211,8 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
 
 ### 2.3 Error Handling & Recovery Systems
 
-#### Tasks:
+#### Tasks
+
 - [ ] 2.3.1 Implement ReactorErrorHandlerAgent
   - [ ] 2.3.1.1 Comprehensive error detection and classification
   - [ ] 2.3.1.2 Automatic retry strategies with Reactor compensation
@@ -252,14 +234,16 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
   - [ ] 2.3.4.3 Performance degradation alerts
   - [ ] 2.3.4.4 Automatic recovery triggering
 
-#### Actions:
+#### Actions
+
 - [ ] 2.3.5 Error handling actions
   - [ ] 2.3.5.1 HandleWorkflowError action with classification
   - [ ] 2.3.5.2 CompensateFailure action with rollback logic
   - [ ] 2.3.5.3 RecoverWorkflow action with replay capabilities
   - [ ] 2.3.5.4 MonitorHealth action with predictive analytics
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 2.3.6 Test error detection and classification accuracy
 - [ ] 2.3.7 Test compensation and rollback functionality
 - [ ] 2.3.8 Test workflow recovery and replay mechanisms
@@ -267,7 +251,8 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
 
 ### 2.4 Agent Workflow Integration
 
-#### Tasks:
+#### Tasks
+
 - [ ] 2.4.1 Convert existing agent workflows
   - [ ] 2.4.1.1 Migrate LLM orchestration workflows to Reactor
   - [ ] 2.4.1.2 Convert RAG pipeline to Reactor DAG patterns
@@ -289,14 +274,16 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
   - [ ] 2.4.4.3 Error handling templates for agent failures
   - [ ] 2.4.4.4 Performance optimization templates
 
-#### Actions:
+#### Actions
+
 - [ ] 2.4.5 Agent integration actions
   - [ ] 2.4.5.1 MigrateAgentWorkflow action for conversion
   - [ ] 2.4.5.2 OrchestateAgents action for multi-agent coordination
   - [ ] 2.4.5.3 ManageAgentLifecycle action for lifecycle workflows
   - [ ] 2.4.5.4 CreateAgentTemplate action for pattern generation
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 2.4.6 Test agent workflow migration completeness
 - [ ] 2.4.7 Test multi-agent orchestration patterns
 - [ ] 2.4.8 Test agent lifecycle management
@@ -305,11 +292,13 @@ Provide sophisticated optional workflow patterns that agents can choose to use f
 ## Stage 3: Advanced Workflow Features & Performance Optimization
 
 ### Overview
+
 Implement advanced optional workflow features that agents can leverage for complex orchestration scenarios while maintaining peak performance and operational excellence.
 
 ### 3.1 Performance Optimization & Monitoring
 
-#### Tasks:
+#### Tasks
+
 - [ ] 3.1.1 Create ReactorPerformanceOptimizerAgent
   - [ ] 3.1.1.1 Workflow execution optimization using dependency analysis
   - [ ] 3.1.1.2 Resource allocation optimization with concurrency tuning
@@ -331,14 +320,16 @@ Implement advanced optional workflow features that agents can leverage for compl
   - [ ] 3.1.4.3 Resource usage forecasting
   - [ ] 3.1.4.4 Optimization recommendation generation
 
-#### Actions:
+#### Actions
+
 - [ ] 3.1.5 Performance optimization actions
   - [ ] 3.1.5.1 OptimizeWorkflowPerformance action
   - [ ] 3.1.5.2 CollectTelemetryData action
   - [ ] 3.1.5.3 ManageResources action
   - [ ] 3.1.5.4 AnalyzePerformance action
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 3.1.6 Test performance optimization effectiveness
 - [ ] 3.1.7 Test telemetry collection and analysis
 - [ ] 3.1.8 Test resource management and allocation
@@ -346,7 +337,8 @@ Implement advanced optional workflow features that agents can leverage for compl
 
 ### 3.2 Advanced Workflow Features
 
-#### Tasks:
+#### Tasks
+
 - [ ] 3.2.1 Implement ReactorPipelineAgent
   - [ ] 3.2.1.1 Complex data processing pipelines using Reactor DAGs
   - [ ] 3.2.1.2 Stream processing integration with GenStage
@@ -368,14 +360,16 @@ Implement advanced optional workflow features that agents can leverage for compl
   - [ ] 3.2.4.3 Cache optimization and memory management
   - [ ] 3.2.4.4 Distributed caching for multi-node deployments
 
-#### Actions:
+#### Actions
+
 - [ ] 3.2.5 Advanced workflow actions
   - [ ] 3.2.5.1 ExecutePipeline action for data processing
   - [ ] 3.2.5.2 EvaluateConditional action for branching logic
   - [ ] 3.2.5.3 ScheduleWorkflow action for timing control
   - [ ] 3.2.5.4 CacheWorkflowResult action for performance
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 3.2.6 Test pipeline execution and optimization
 - [ ] 3.2.7 Test conditional logic and branching
 - [ ] 3.2.8 Test workflow scheduling and priority handling
@@ -383,7 +377,8 @@ Implement advanced optional workflow features that agents can leverage for compl
 
 ### 3.3 Integration with Existing Systems
 
-#### Tasks:
+#### Tasks
+
 - [ ] 3.3.1 Update LLM orchestration system
   - [ ] 3.3.1.1 Convert provider selection workflows to Reactor
   - [ ] 3.3.1.2 Migrate request optimization workflows
@@ -405,14 +400,16 @@ Implement advanced optional workflow features that agents can leverage for compl
   - [ ] 3.3.4.3 Migrate caching workflows to Reactor patterns
   - [ ] 3.3.4.4 Convert migration workflows to Reactor steps
 
-#### Actions:
+#### Actions
+
 - [ ] 3.3.5 System integration actions
   - [ ] 3.3.5.1 MigrateLLMWorkflows action
   - [ ] 3.3.5.2 MigrateRAGWorkflows action
   - [ ] 3.3.5.3 MigrateAuthWorkflows action
   - [ ] 3.3.5.4 MigrateDataWorkflows action
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 3.3.6 Test LLM orchestration workflow migration
 - [ ] 3.3.7 Test RAG system workflow conversion
 - [ ] 3.3.8 Test authentication workflow updates
@@ -420,7 +417,8 @@ Implement advanced optional workflow features that agents can leverage for compl
 
 ### 3.4 Operational Excellence
 
-#### Tasks:
+#### Tasks
+
 - [ ] 3.4.1 Create ReactorOperationsAgent
   - [ ] 3.4.1.1 Workflow deployment and version management
   - [ ] 3.4.1.2 Production monitoring and alerting
@@ -442,14 +440,16 @@ Implement advanced optional workflow features that agents can leverage for compl
   - [ ] 3.4.4.3 Audit trail generation and management
   - [ ] 3.4.4.4 Compliance reporting and documentation
 
-#### Actions:
+#### Actions
+
 - [ ] 3.4.5 Operational actions
   - [ ] 3.4.5.1 DeployWorkflow action for production deployment
   - [ ] 3.4.5.2 MonitorOperations action for health tracking
   - [ ] 3.4.5.3 ValidateSecurity action for security compliance
   - [ ] 3.4.5.4 EnsureCompliance action for regulatory adherence
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 3.4.6 Test deployment and version management
 - [ ] 3.4.7 Test operational monitoring and alerting
 - [ ] 3.4.8 Test security validation and enforcement
@@ -458,11 +458,13 @@ Implement advanced optional workflow features that agents can leverage for compl
 ## Stage 4: Documentation, Testing & Migration Validation
 
 ### Overview
+
 Establish comprehensive documentation, testing, and validation procedures to ensure successful migration and long-term maintainability.
 
 ### 4.1 Documentation & Knowledge Transfer
 
-#### Tasks:
+#### Tasks
+
 - [ ] 4.1.1 Create comprehensive Reactor documentation
   - [ ] 4.1.1.1 RubberDuck-specific Reactor usage patterns
   - [ ] 4.1.1.2 Migration guide from Runic to Reactor
@@ -484,14 +486,16 @@ Establish comprehensive documentation, testing, and validation procedures to ens
   - [ ] 4.1.4.3 Incident response procedures
   - [ ] 4.1.4.4 Performance tuning guidelines
 
-#### Actions:
+#### Actions
+
 - [ ] 4.1.5 Documentation actions
   - [ ] 4.1.5.1 GenerateDocumentation action
   - [ ] 4.1.5.2 CreateTrainingMaterial action
   - [ ] 4.1.5.3 DocumentArchitecture action
   - [ ] 4.1.5.4 EstablishProcedures action
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 4.1.6 Test documentation completeness and accuracy
 - [ ] 4.1.7 Test training material effectiveness
 - [ ] 4.1.8 Test procedure clarity and usability
@@ -499,7 +503,8 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 
 ### 4.2 Performance Validation & Benchmarking
 
-#### Tasks:
+#### Tasks
+
 - [ ] 4.2.1 Create comprehensive benchmarking suite
   - [ ] 4.2.1.1 Workflow execution performance benchmarks
   - [ ] 4.2.1.2 Memory usage and resource efficiency tests
@@ -521,14 +526,16 @@ Establish comprehensive documentation, testing, and validation procedures to ens
   - [ ] 4.2.4.3 Capacity planning and forecasting
   - [ ] 4.2.4.4 Performance optimization recommendations
 
-#### Actions:
+#### Actions
+
 - [ ] 4.2.5 Validation actions
   - [ ] 4.2.5.1 RunBenchmarks action for performance testing
   - [ ] 4.2.5.2 ValidatePerformance action for regression testing
   - [ ] 4.2.5.3 ExecuteLoadTest action for scalability testing
   - [ ] 4.2.5.4 MonitorPerformance action for ongoing tracking
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 4.2.6 Test benchmark accuracy and consistency
 - [ ] 4.2.7 Test regression detection capabilities
 - [ ] 4.2.8 Test load testing scenarios
@@ -536,7 +543,8 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 
 ### 4.3 Integration & End-to-End Testing
 
-#### Tasks:
+#### Tasks
+
 - [ ] 4.3.1 Create comprehensive integration test suite
   - [ ] 4.3.1.1 End-to-end workflow execution tests
   - [ ] 4.3.1.2 Multi-agent coordination integration tests
@@ -558,14 +566,16 @@ Establish comprehensive documentation, testing, and validation procedures to ens
   - [ ] 4.3.4.3 Monitoring and alerting validation tests
   - [ ] 4.3.4.4 Security and compliance validation tests
 
-#### Actions:
+#### Actions
+
 - [ ] 4.3.5 Testing actions
   - [ ] 4.3.5.1 ExecuteIntegrationTests action
   - [ ] 4.3.5.2 RunChaosTests action
   - [ ] 4.3.5.3 ValidateMigration action
   - [ ] 4.3.5.4 AssessProductionReadiness action
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 4.3.6 Test integration test coverage and effectiveness
 - [ ] 4.3.7 Test chaos engineering scenarios
 - [ ] 4.3.8 Test migration validation completeness
@@ -573,7 +583,8 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 
 ### 4.4 Migration Cleanup & Finalization
 
-#### Tasks:
+#### Tasks
+
 - [ ] 4.4.1 Complete code cleanup
   - [ ] 4.4.1.1 Remove all Runic-related code and imports
   - [ ] 4.4.1.2 Clean up obsolete test files and fixtures
@@ -595,14 +606,16 @@ Establish comprehensive documentation, testing, and validation procedures to ens
   - [ ] 4.4.4.3 Establish performance tracking baselines
   - [ ] 4.4.4.4 Document lessons learned and improvement opportunities
 
-#### Actions:
+#### Actions
+
 - [ ] 4.4.5 Cleanup actions
   - [ ] 4.4.5.1 CleanupRunicCode action
   - [ ] 4.4.5.2 FinalizeConfiguration action
   - [ ] 4.4.5.3 ValidateCompleteMigration action
   - [ ] 4.4.5.4 EstablishPostMigrationMonitoring action
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 4.4.6 Test code cleanup completeness
 - [ ] 4.4.7 Test configuration finalization
 - [ ] 4.4.8 Test migration validation procedures
@@ -613,18 +626,21 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 ## Migration Strategy
 
 ### Execution Approach
+
 1. **Stage-by-Stage Migration**: Complete each stage fully before proceeding
 2. **Feature Flag Control**: Use feature flags for gradual rollout
 3. **Parallel Development**: Maintain Runic system during Reactor development
 4. **Validation Gates**: Comprehensive testing at each stage boundary
 
 ### Risk Mitigation
+
 - **Rollback Capability**: Maintain ability to revert at each stage
 - **Performance Monitoring**: Continuous monitoring during migration
 - **Feature Parity**: Ensure complete feature equivalency before removal
 - **Documentation**: Comprehensive migration documentation for troubleshooting
 
 ### Success Criteria
+
 - **Performance**: 2-3x improvement in workflow execution speed
 - **Reliability**: Enhanced error handling and recovery capabilities
 - **Maintainability**: Simplified codebase with better separation of concerns
@@ -633,6 +649,7 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 ## Technical Benefits
 
 ### Reactor Advantages Over Runic for Optional Workflow Orchestration
+
 1. **Optional Native Concurrency**: Agents can leverage built-in async execution when using workflows
 2. **Optional Compensation Patterns**: Agents can use robust error handling with compensation and undo for complex operations
 3. **Optional DAG Execution**: Agents can benefit from optimal execution order through dependency analysis when orchestrating workflows
@@ -642,12 +659,14 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 7. **Better Testing**: Improved testing patterns for agents that choose to use workflows
 
 ### Performance Improvements (When Agents Use Workflows)
+
 - **Workflow Execution Speed**: 2-3x faster workflow execution through optimized dependency resolution
 - **Memory Usage**: 40-50% reduction in memory usage for workflow-based operations
 - **Scalability**: Improved concurrent processing when agents orchestrate complex workflows
 - **Reliability**: Enhanced error recovery for agents using compensation patterns in workflows
 
 ### Agent Architecture Benefits
+
 - **Preserved Autonomy**: Agents remain fully autonomous and can operate without workflows
 - **Optional Enhancement**: Agents can choose to use workflows for complex multi-step operations
 - **Flexible Integration**: No changes required to existing agent decision-making logic
@@ -658,18 +677,21 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 ## Phase Dependencies
 
 **Prerequisites:**
+
 - Phase 1: Agentic Foundation & Core Infrastructure completed
 - Phase 2: Autonomous LLM Orchestration System completed  
 - Understanding of Reactor patterns and DSL
 - Reactor dependency via Ash framework
 
 **Provides Foundation For:**
+
 - Enhanced agent workflow orchestration
 - Improved performance and scalability
 - Better error handling and recovery
 - Simplified maintenance and debugging
 
 **Key Outputs:**
+
 - Optional Reactor-based workflow orchestration system
 - Optional workflow utilities that agents can choose to use
 - Enhanced performance and reliability for workflow-based operations
@@ -677,3 +699,4 @@ Establish comprehensive documentation, testing, and validation procedures to ens
 - Comprehensive documentation and testing
 
 **Impact**: This refactor will provide agents with superior optional workflow orchestration capabilities while preserving the agent-centric architecture. Agents remain fully autonomous and can choose to leverage enhanced workflow tools when orchestrating complex multi-step operations.
+

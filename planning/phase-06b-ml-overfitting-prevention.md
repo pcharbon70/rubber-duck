@@ -5,11 +5,13 @@
 ---
 
 ## Phase Links
+
 - **Previous**: [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
 - **Next**: [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
 - **Related**: [Phase 1A: User Preferences & Runtime Configuration](phase-1a-user-preferences-config.md)
 
 ## All Phases
+
 1. [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
 2. [Phase 1A: User Preferences & Runtime Configuration Management](phase-1a-user-preferences-config.md)
 3. [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
@@ -37,6 +39,7 @@
 Implement comprehensive overfitting prevention strategies for the existing ML system in RubberDuck. This phase focuses on ensuring model robustness, generalization capabilities, and reliable performance across diverse agent contexts. By integrating multiple prevention techniques including regularization, data augmentation, validation strategies, and ensemble methods, we ensure that our ML models remain effective and reliable in production while avoiding the common pitfalls of overfitting to training data.
 
 ### Overfitting Prevention Philosophy
+
 - **Early Detection**: Identify overfitting signals before production deployment
 - **Multi-Strategy Approach**: Combine multiple techniques for robust prevention
 - **Context-Aware**: Adapt strategies based on agent domain and data characteristics
@@ -48,7 +51,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.1.1 Agent-Specific Data Augmentation
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.1.1.1 Create CodeAnalysisAugmenter for code-related ML models
   - [ ] Implement syntax-preserving code transformations
   - [ ] Variable renaming while maintaining semantics
@@ -80,7 +84,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.1.2 Stratified & Balanced Sampling
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.1.2.1 Implement StratifiedSampler module
   - [ ] Automatic class distribution analysis
   - [ ] Maintain class balance across splits
@@ -110,7 +115,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Information contamination checks
   - [ ] Automated leakage reports
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.1.3 Test augmentation transformations preserve semantics
 - [ ] 6B.1.4 Test stratification maintains distributions
 - [ ] 6B.1.5 Test imbalance handling effectiveness
@@ -120,7 +126,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.2.1 Classical Regularization
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.2.1.1 Implement L1/L2 regularization system
   - [ ] Automatic regularization strength tuning
   - [ ] Layer-specific regularization rates
@@ -152,7 +159,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.2.2 Advanced Regularization
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.2.2.1 Create BatchNormalizationOptimizer
   - [ ] Automatic batch size adjustment
   - [ ] Moving average momentum tuning
@@ -182,7 +190,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Depth-wise regularization
   - [ ] Skip connection dropout
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.2.3 Test regularization impact on training
 - [ ] 6B.2.4 Test dropout implementations
 - [ ] 6B.2.5 Test normalization techniques
@@ -192,7 +201,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.3.1 Validation Strategies
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.3.1.1 Implement ValidationSetManager
   - [ ] Automatic validation split sizing
   - [ ] Temporal validation for time series
@@ -224,7 +234,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.3.2 Early Stopping Mechanisms
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.3.2.1 Create EarlyStoppingController
   - [ ] Patience-based stopping
   - [ ] Improvement threshold detection
@@ -254,7 +265,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Optimizer state recovery
   - [ ] Training continuation support
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.3.3 Test validation split strategies
 - [ ] 6B.3.4 Test early stopping triggers
 - [ ] 6B.3.5 Test checkpoint/restore cycles
@@ -264,7 +276,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.4.1 Model Ensemble Strategies
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.4.1.1 Implement BaggingEnsemble
   - [ ] Bootstrap aggregation
   - [ ] Out-of-bag error estimation
@@ -296,7 +309,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.4.2 Diversity & Selection
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.4.2.1 Create DiversityMeasurer
   - [ ] Prediction diversity metrics
   - [ ] Error correlation analysis
@@ -326,7 +340,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Out-of-distribution detection
   - [ ] Epistemic vs aleatoric uncertainty
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.4.3 Test ensemble accuracy improvements
 - [ ] 6B.4.4 Test diversity measurements
 - [ ] 6B.4.5 Test selection algorithms
@@ -336,7 +351,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.5.1 Overfitting Detection
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.5.1.1 Implement OverfittingMonitor
   - [ ] Real-time performance tracking
   - [ ] Training-production metric comparison
@@ -368,7 +384,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.5.2 Adaptive Retraining
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.5.2.1 Create RetrainingScheduler
   - [ ] Performance-triggered retraining
   - [ ] Periodic retraining schedules
@@ -398,7 +415,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Model lineage tracking
   - [ ] Performance comparison
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.5.3 Test drift detection accuracy
 - [ ] 6B.5.4 Test retraining triggers
 - [ ] 6B.5.5 Test online learning updates
@@ -408,7 +426,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.6.1 Code Analysis Agent Prevention
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.6.1.1 Implement CodePatternRegularizer
   - [ ] AST-based augmentation
   - [ ] Semantic-preserving transformations
@@ -440,7 +459,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.6.2 Conversation Agent Prevention
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.6.2.1 Create DialogueRegularizer
   - [ ] Multi-turn consistency checks
   - [ ] Context window validation
@@ -472,7 +492,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.6.3 Planning Agent Prevention
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.6.3.1 Implement PlanRobustnessChecker
   - [ ] Goal variation testing
   - [ ] Resource constraint validation
@@ -502,7 +523,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Quality score validation
   - [ ] User satisfaction validation
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.6.4 Test agent-specific regularizers
 - [ ] 6B.6.5 Test augmentation strategies
 - [ ] 6B.6.6 Test validation approaches
@@ -512,7 +534,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.7.1 Automated Hyperparameter Tuning
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.7.1.1 Implement BayesianOptimizer
   - [ ] Gaussian process surrogate models
   - [ ] Acquisition function optimization
@@ -544,7 +567,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.7.2 Regularization-Specific Tuning
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.7.2.1 Create RegularizationTuner
   - [ ] L1/L2 strength optimization
   - [ ] Dropout rate tuning
@@ -574,7 +598,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Transfer learning from similar tasks
   - [ ] Meta-learning approaches
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.7.3 Test optimization algorithms
 - [ ] 6B.7.4 Test tuning effectiveness
 - [ ] 6B.7.5 Test adaptive strategies
@@ -584,7 +609,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.8.1 User-Configurable Prevention
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.8.1.1 Connect to Phase 1A preferences
   - [ ] Regularization strength preferences
   - [ ] Validation strategy selection
@@ -616,7 +642,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.8.2 Project-Level Overrides
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.8.2.1 Implement ProjectOverfittingConfig
   - [ ] Project-specific prevention strategies
   - [ ] Data characteristics adaptation
@@ -646,7 +673,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Comparative analytics
   - [ ] Executive summaries
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.8.3 Test preference integration
 - [ ] 6B.8.4 Test project overrides
 - [ ] 6B.8.5 Test configuration validation
@@ -656,7 +684,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.9.1 Core Prevention Agents
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.9.1.1 Create OverfittingDetectorAgent
   - [ ] Implement Jido.Agent behavior
   - [ ] Monitor training/validation divergence
@@ -688,7 +717,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.9.2 Specialized Prevention Agents
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.9.2.1 Implement DataQualityAgent
   - [ ] Assess data quality impact
   - [ ] Identify problematic samples
@@ -718,7 +748,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Generate optimization reports
   - [ ] Share successful strategies
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.9.3 Test agent coordination
 - [ ] 6B.9.4 Test detection accuracy
 - [ ] 6B.9.5 Test intervention effectiveness
@@ -728,7 +759,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.10.1 Computational Efficiency
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.10.1.1 Create ResourceOptimizer
   - [ ] Memory-efficient regularization
   - [ ] Distributed ensemble training
@@ -760,7 +792,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.10.2 Scalability Solutions
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.10.2.1 Implement StreamingPrevention
   - [ ] Online regularization
   - [ ] Streaming validation
@@ -790,7 +823,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Spot pricing strategies
   - [ ] Reserved instance planning
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.10.3 Test efficiency improvements
 - [ ] 6B.10.4 Test scalability limits
 - [ ] 6B.10.5 Test resource management
@@ -800,7 +834,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.11.1 Prevention Analytics
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.11.1.1 Create OverfittingDashboard
   - [ ] Real-time metric visualization
   - [ ] Training/validation curves
@@ -832,7 +867,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ### 6B.11.2 Knowledge Management
 
-#### Tasks:
+#### Tasks
+
 - [ ] 6B.11.2.1 Implement BestPracticesLibrary
   - [ ] Prevention strategy catalog
   - [ ] Success case studies
@@ -862,7 +898,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
   - [ ] Continuous improvement
   - [ ] Knowledge sharing platform
 
-#### Unit Tests:
+#### Unit Tests
+
 - [ ] 6B.11.3 Test visualization accuracy
 - [ ] 6B.11.4 Test report generation
 - [ ] 6B.11.5 Test interactive tools
@@ -870,7 +907,8 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 
 ## 6B.12 Phase 6B Integration Tests
 
-#### Integration Tests:
+#### Integration Tests
+
 - [ ] 6B.12.1 Test end-to-end overfitting prevention pipeline
 - [ ] 6B.12.2 Test integration with existing ML system
 - [ ] 6B.12.3 Test preference system integration
@@ -885,12 +923,14 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 ## Phase Dependencies
 
 **Prerequisites:**
+
 - Existing ML system in lib/rubber_duck/ml (60+ files)
 - Phase 1A: User preferences for configuration
 - Phase 6: Communication agents for coordination
 - Core Nx/Scholar/Axon ML libraries
 
 **Integration Points:**
+
 - ML Pipeline: All prevention strategies integrate with existing training
 - Preference System: User-configurable prevention parameters
 - Agent System: Prevention agents coordinate with other agents
@@ -899,6 +939,7 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 - Cost Management: Resource-aware prevention strategies
 
 **Key Outputs:**
+
 - Comprehensive overfitting prevention framework
 - Multiple prevention strategies (regularization, validation, ensembles)
 - Production monitoring with drift detection
@@ -907,3 +948,4 @@ Implement comprehensive overfitting prevention strategies for the existing ML sy
 - User-configurable prevention preferences
 
 **System Enhancement**: Phase 6B ensures the reliability and generalization capabilities of RubberDuck's ML models by implementing comprehensive overfitting prevention strategies. By combining classical techniques with modern approaches and continuous monitoring, the system maintains high performance while avoiding the pitfalls of overfitting, ensuring robust and reliable AI assistance across all agent domains.
+
