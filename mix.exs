@@ -49,6 +49,7 @@ defmodule RubberDuck.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:tidewave, "~> 0.2", only: [:dev]},
       {:ex_money_sql, "~> 1.0"},
       {:ex_cldr, "~> 2.0"},
       {:bcrypt_elixir, "~> 3.0"},
@@ -95,7 +96,7 @@ defmodule RubberDuck.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
-      {:claude, "~> 0.5.0"},
+      {:claude, "~> 0.5", only: [:dev], runtime: false},
       {:usage_rules, "~> 0.1.23"},
       {:jido, "~> 1.2"}
     ]
