@@ -103,159 +103,27 @@ usage rules to understand the correct patterns, conventions, and best practices.
 
 <!-- ash-start -->
 ## ash usage
-
-_A declarative, extensible framework for building Elixir applications.
-_
+_A declarative, extensible framework for building Elixir applications._
 
 [ash usage rules](deps/ash/usage-rules.md)
 <!-- ash-end -->
 <!-- usage_rules:elixir-start -->
 ## usage_rules:elixir usage
-
-# Elixir Core Usage Rules
-
-## Pattern Matching
-
-- Use pattern matching over conditional logic when possible
-- Prefer to match on function heads instead of using `if`/`else` or `case` in function bodies
-
-## Error Handling
-
-- Use `{:ok, result}` and `{:error, reason}` tuples for operations that can fail
-- Avoid raising exceptions for control flow
-- Use `with` for chaining operations that return `{:ok, _}` or `{:error, _}`
-
-## Common Mistakes to Avoid
-
-- Don't use `Enum` functions on large collections when `Stream` is more appropriate
-- Avoid nested `case` statements - refactor to a single `case`, `with` or separate functions
-- Don't use `String.to_atom/1` on user input (memory leak risk)
-- Lists and enumerables cannot be indexed with brackets. Use pattern matching or `Enum` functions
-- Prefer `Enum` functions like `Enum.reduce` over recursion
-- When recursion is necessary, prefer to use pattern matching in function heads for base case detection
-- Using the process dictionary is typically a sign of unidiomatic code
-- Only use macros if explicitly requested
-- There are many useful standard library functions, prefer to use them where possible
-
-## Function Design
-
-- Use guard clauses: `when is_binary(name) and byte_size(name) > 0`
-- Prefer multiple function clauses over complex conditional logic
-- Name functions descriptively: `calculate_total_price/2` not `calc/2`
-- Predicate function names should not start with `is` and should end in a question mark.
-- Names like `is_thing` should be reserved for guards
-
-## Pipe Chains
-
-- ALWAYS start pipe chains with a raw value, not a function call
-- The first element in a pipe chain should be a variable, literal, or data structure
-- Extract the initial function call to a variable if needed
-
-### Good Examples
-```elixir
-# Good: starts with a raw value
-data
-|> Map.get(:users)
-|> Enum.filter(&active?/1)
-|> Enum.map(&transform/1)
-
-# Good: starts with a variable
-users = fetch_users()
-users
-|> Enum.filter(&active?/1)
-|> Enum.map(&transform/1)
-
-# Good: starts with a literal
-"hello world"
-|> String.upcase()
-|> String.split(" ")
-```
-
-### Bad Examples
-```elixir
-# Bad: starts with a function call
-fetch_users()
-|> Enum.filter(&active?/1)
-|> Enum.map(&transform/1)
-
-# Bad: starts with a function call
-Map.get(data, :users)
-|> Enum.filter(&active?/1)
-
-# Fix: extract to variable first
-users = fetch_users()
-users
-|> Enum.filter(&active?/1)
-|> Enum.map(&transform/1)
-```
-
-## Data Structures
-
-- Use structs over maps when the shape is known: `defstruct [:name, :age]`
-- Prefer keyword lists for options: `[timeout: 5000, retries: 3]`
-- Use maps for dynamic key-value data
-- Prefer to prepend to lists `[new | list]` not `list ++ [new]`
-
-## Mix Tasks
-
-- Use `mix help` to list available mix tasks
-- Use `mix help task_name` to get docs for an individual task
-- Read the docs and options fully before using tasks
-
-## Testing
-
-- Run tests in a specific file with `mix test test/my_test.exs` and a specific test
-  with the line number `mix test path/to/test.exs:123`
-- Limit the number of failed tests with `mix test --max-failures n`
-- Use `@tag` to tag specific tests, and `mix test --only tag` to run only those tests
-- Use `assert_raise` for testing expected exceptions: `assert_raise ArgumentError, fn -> invalid_function() end`
-
+[usage_rules:elixir usage rules](deps/usage_rules/usage-rules/elixir.md)
 <!-- usage_rules:elixir-end -->
 <!-- usage_rules:otp-start -->
 ## usage_rules:otp usage
-
-# OTP Usage Rules
-
-## GenServer Best Practices
-
-- Keep state simple and serializable
-- Handle all expected messages explicitly
-- Use `handle_continue/2` for post-init work
-- Implement proper cleanup in `terminate/2` when necessary
-
-## Process Communication
-
-- Use `GenServer.call/3` for synchronous requests expecting replies
-- Use `GenServer.cast/2` for fire-and-forget messages.
-- When in doubt, us `call` over `cast`, to ensure back-pressure
-- Set appropriate timeouts for `call/3` operations
-
-## Fault Tolerance
-
-- Set up processes such that they can handle crashing and being restarted by supervisors
-- Use `:max_restarts` and `:max_seconds` to prevent restart loops
-
-## Task and Async
-
-- Use `Task.Supervisor` for better fault tolerance
-- Handle task failures with `Task.yield/2` or `Task.shutdown/2`
-- Set appropriate task timeouts
-- Use `Task.async_stream/3` for concurrent enumeration with back-pressure
-
+[usage_rules:otp usage rules](deps/usage_rules/usage-rules/otp.md)
 <!-- usage_rules:otp-end -->
 <!-- igniter-start -->
 ## igniter usage
-
-_A code generation and project patching framework
-_
+_A code generation and project patching framework_
 
 [igniter usage rules](deps/igniter/usage-rules.md)
 <!-- igniter-end -->
 <!-- ash_phoenix-start -->
 ## ash_phoenix usage
-
-_Utilities for integrating Ash and Phoenix
-_
+_Utilities for integrating Ash and Phoenix_
 
 [ash_phoenix usage rules](deps/ash_phoenix/usage-rules.md)
 <!-- ash_phoenix-end -->
@@ -268,17 +136,13 @@ _An asynchronous, graph-based execution engine_
 <!-- reactor-end -->
 <!-- ash_postgres-start -->
 ## ash_postgres usage
-
-_The PostgreSQL data layer for Ash Framework
-_
+_The PostgreSQL data layer for Ash Framework_
 
 [ash_postgres usage rules](deps/ash_postgres/usage-rules.md)
 <!-- ash_postgres-end -->
 <!-- ash_authentication-start -->
 ## ash_authentication usage
-
-_Authentication extension for the Ash Framework.
-_
+_Authentication extension for the Ash Framework._
 
 [ash_authentication usage rules](deps/ash_authentication/usage-rules.md)
 <!-- ash_authentication-end -->
@@ -290,6 +154,48 @@ _
 
 [jido usage rules](.rules/jido.md)
 <!-- jido-end -->
+<!-- ash_oban-start -->
+## ash_oban usage
+_The extension for integrating Ash resources with Oban._
+
+[ash_oban usage rules](deps/ash_oban/usage-rules.md)
+<!-- ash_oban-end -->
+<!-- claude-start -->
+## claude usage
+_Batteries-included Claude Code integration for Elixir projects_
+
+[claude usage rules](deps/claude/usage-rules.md)
+<!-- claude-end -->
+<!-- claude:subagents-start -->
+## claude:subagents usage
+[claude:subagents usage rules](deps/claude/usage-rules/subagents.md)
+<!-- claude:subagents-end -->
+<!-- usage_rules-start -->
+## usage_rules usage
+_A dev tool for Elixir projects to gather LLM usage rules from dependencies_
+
+[usage_rules usage rules](deps/usage_rules/usage-rules.md)
+<!-- usage_rules-end -->
+<!-- phoenix:ecto-start -->
+## phoenix:ecto usage
+[phoenix:ecto usage rules](deps/phoenix/usage-rules/ecto.md)
+<!-- phoenix:ecto-end -->
+<!-- phoenix:elixir-start -->
+## phoenix:elixir usage
+[phoenix:elixir usage rules](deps/phoenix/usage-rules/elixir.md)
+<!-- phoenix:elixir-end -->
+<!-- phoenix:html-start -->
+## phoenix:html usage
+[phoenix:html usage rules](deps/phoenix/usage-rules/html.md)
+<!-- phoenix:html-end -->
+<!-- phoenix:liveview-start -->
+## phoenix:liveview usage
+[phoenix:liveview usage rules](deps/phoenix/usage-rules/liveview.md)
+<!-- phoenix:liveview-end -->
+<!-- phoenix:phoenix-start -->
+## phoenix:phoenix usage
+[phoenix:phoenix usage rules](deps/phoenix/usage-rules/phoenix.md)
+<!-- phoenix:phoenix-end -->
 <!-- usage-rules-end -->
 
 # Memories
