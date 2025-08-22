@@ -63,7 +63,7 @@ config :spark,
 config :rubber_duck,
   ecto_repos: [RubberDuck.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [RubberDuck.Accounts]
+  ash_domains: [RubberDuck.Accounts, RubberDuck.Preferences]
 
 # Configures the endpoint
 config :rubber_duck, RubberDuckWeb.Endpoint,

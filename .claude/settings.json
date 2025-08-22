@@ -1,9 +1,55 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "feedbackSurveyState": {
+    "lastShownTime": 1754078347577
+  },
   "gitCommitMessages": {
     "excludeClaudeReference": true
   },
-  "feedbackSurveyState": {
-    "lastShownTime": 1754078347577
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs post_tool_use",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs pre_tool_use",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "cd $CLAUDE_PROJECT_DIR && elixir .claude/hooks/wrapper.exs subagent_stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ]
   }
 }
