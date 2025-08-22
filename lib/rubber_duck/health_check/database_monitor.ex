@@ -192,9 +192,7 @@ defmodule RubberDuck.HealthCheck.DatabaseMonitor do
     start_time = System.monotonic_time(:millisecond)
 
     # Test query - adjust based on your schema
-    SQL.query(RubberDuck.Repo, "SELECT 1 as health_check", [],
-      timeout: @query_timeout
-    )
+    SQL.query(RubberDuck.Repo, "SELECT 1 as health_check", [], timeout: @query_timeout)
 
     end_time = System.monotonic_time(:millisecond)
     query_time = end_time - start_time
