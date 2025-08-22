@@ -19,6 +19,7 @@ defmodule RubberDuck.Integration.ResourceCreationTest do
   }
 
   alias RubberDuck.DirectivesEngine
+  alias RubberDuck.ErrorReporting.Aggregator
   alias RubberDuck.InstructionsProcessor
 
   alias RubberDuck.Skills.{
@@ -987,14 +988,14 @@ defmodule RubberDuck.Integration.ResourceCreationTest do
       }
 
       # Report security violation
-      RubberDuck.ErrorReporting.Aggregator.report_error(
+      Aggregator.report_error(
         creation_failure_error,
         %{security_violation: true, integration_test: true}
       )
 
       # Verify error was captured
       Process.sleep(500)
-      error_stats = RubberDuck.ErrorReporting.Aggregator.get_error_stats()
+      error_stats = Aggregator.get_error_stats()
       assert error_stats.total_error_count > 0
     end
   end

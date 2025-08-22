@@ -8,6 +8,7 @@ defmodule RubberDuck.Integration.ApplicationStartupTest do
 
   use ExUnit.Case, async: false
 
+  alias Ecto.Adapters.SQL
   alias RubberDuck.DirectivesEngine
   alias RubberDuck.ErrorReporting.Aggregator
   alias RubberDuck.HealthCheck.StatusAggregator
@@ -431,7 +432,7 @@ defmodule RubberDuck.Integration.ApplicationStartupTest do
 
       # Test database connectivity from agentic layer
       # (Implicitly tests that Repo started before agentic components)
-      case Ecto.Adapters.SQL.query(RubberDuck.Repo, "SELECT 1", []) do
+      case SQL.query(RubberDuck.Repo, "SELECT 1", []) do
         {:ok, _result} -> :ok
         # May fail in test environment, that's fine
         {:error, _reason} -> :ok

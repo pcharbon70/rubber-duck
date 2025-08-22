@@ -16,6 +16,8 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
   }
 
   alias RubberDuck.DirectivesEngine
+  alias RubberDuck.ErrorReporting.Aggregator
+  alias RubberDuck.HealthCheck.{AgentMonitor, DatabaseMonitor, StatusAggregator}
   alias RubberDuck.InstructionsProcessor
   alias RubberDuck.Skills.{LearningSkill, QueryOptimizationSkill}
   alias RubberDuck.SkillsRegistry
@@ -352,11 +354,11 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
       # Test that database health monitoring captures agent activity
 
       # Force database health checks
-      RubberDuck.HealthCheck.DatabaseMonitor.force_check()
+      DatabaseMonitor.force_check()
       Process.sleep(100)
 
       # Get database health status
-      db_health = RubberDuck.HealthCheck.DatabaseMonitor.get_health_status()
+      db_health = DatabaseMonitor.get_health_status()
 
       # Verify health monitoring provides meaningful data
       assert Map.has_key?(db_health, :status)
@@ -373,11 +375,11 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
       # Test agent health monitoring for database agents
 
       # Force agent health check
-      RubberDuck.HealthCheck.AgentMonitor.force_check()
+      AgentMonitor.force_check()
       Process.sleep(100)
 
       # Get agent health status
-      agent_health = RubberDuck.HealthCheck.AgentMonitor.get_health_status()
+      agent_health = AgentMonitor.get_health_status()
 
       # Verify agent ecosystem monitoring
       assert Map.has_key?(agent_health, :status)
@@ -395,8 +397,8 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
       # Test that overall health aggregation includes database components
 
       # Get overall system health
-      overall_status = RubberDuck.HealthCheck.StatusAggregator.get_overall_status()
-      detailed_status = RubberDuck.HealthCheck.StatusAggregator.get_detailed_status()
+      overall_status = StatusAggregator.get_overall_status()
+      detailed_status = StatusAggregator.get_detailed_status()
 
       # Verify database components are included in health assessment
       components = detailed_status.components
@@ -620,7 +622,7 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
       Process.sleep(2000)
 
       # Verify database health reflects the activity
-      db_health = RubberDuck.HealthCheck.DatabaseMonitor.get_health_status()
+      db_health = DatabaseMonitor.get_health_status()
 
       # Should have recent performance data
       if Map.has_key?(db_health, :performance_metrics) do
@@ -628,7 +630,7 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
       end
 
       # Verify overall system health includes database health
-      overall_status = RubberDuck.HealthCheck.StatusAggregator.get_detailed_status()
+      overall_status = StatusAggregator.get_detailed_status()
       assert Map.has_key?(overall_status.components, :database)
     end
   end
@@ -665,7 +667,7 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
           # Other error - verify it was reported
           # Allow error reporting
           Process.sleep(500)
-          error_stats = RubberDuck.ErrorReporting.Aggregator.get_error_stats()
+          error_stats = Aggregator.get_error_stats()
           assert error_stats.total_error_count > 0
       end
     end
@@ -735,7 +737,7 @@ defmodule RubberDuck.Integration.DatabaseOperationsTest do
       assert length(final_history) >= 20
 
       # Verify system health remains stable under load
-      final_health = RubberDuck.HealthCheck.StatusAggregator.get_overall_status()
+      final_health = StatusAggregator.get_overall_status()
       # Should not degrade to critical
       assert final_health in [:healthy, :warning]
     end

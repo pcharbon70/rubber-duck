@@ -33,6 +33,8 @@ defmodule RubberDuck.Integration.AuthenticationWorkflowTest do
     TokenManagementSkill
   }
 
+  alias RubberDuck.ErrorReporting.Aggregator
+  alias RubberDuck.HealthCheck.ServiceMonitor
   alias RubberDuck.SkillsRegistry
 
   @moduletag :integration
@@ -792,11 +794,11 @@ defmodule RubberDuck.Integration.AuthenticationWorkflowTest do
       # (In real system, this would be captured automatically)
 
       # Force health monitoring to capture authentication performance
-      RubberDuck.HealthCheck.ServiceMonitor.force_check()
+      ServiceMonitor.force_check()
       Process.sleep(1000)
 
       # Verify authentication services are being monitored
-      service_health = RubberDuck.HealthCheck.ServiceMonitor.get_health_status()
+      service_health = ServiceMonitor.get_health_status()
       services = service_health.services
 
       # Should monitor authentication-related services
@@ -856,22 +858,22 @@ defmodule RubberDuck.Integration.AuthenticationWorkflowTest do
 
       # Report errors to aggregation system
       Enum.each(auth_errors, fn error ->
-        RubberDuck.ErrorReporting.Aggregator.report_error(
+        Aggregator.report_error(
           error,
           %{component: :authentication, test: :integration}
         )
       end)
 
       # Allow error processing
-      RubberDuck.ErrorReporting.Aggregator.flush_errors()
+      Aggregator.flush_errors()
       Process.sleep(1000)
 
       # Verify error aggregation
-      error_stats = RubberDuck.ErrorReporting.Aggregator.get_error_stats()
+      error_stats = Aggregator.get_error_stats()
       assert error_stats.total_error_count >= 3
 
       # Verify error categorization
-      recent_errors = RubberDuck.ErrorReporting.Aggregator.get_recent_errors(10)
+      recent_errors = Aggregator.get_recent_errors(10)
 
       auth_errors_reported =
         Enum.filter(recent_errors, fn error ->
