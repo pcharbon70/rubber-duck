@@ -16,8 +16,6 @@ defmodule RubberDuck.Skills.TokenManagementSkill do
       "token.detect_anomalies"
     ]
 
-  alias RubberDuck.Accounts.Token
-
   @doc """
   Manage token lifecycle with intelligent decisions.
   """
@@ -153,7 +151,7 @@ defmodule RubberDuck.Skills.TokenManagementSkill do
   end
 
   defp assess_token_security_risk(token_id, user_context, state) do
-    usage_patterns = Map.get(state, :usage_patterns, %{})
+    _usage_patterns = Map.get(state, :usage_patterns, %{})
     anomaly_history = Map.get(state, :anomaly_history, [])
 
     # Check for recent anomalies
@@ -209,7 +207,7 @@ defmodule RubberDuck.Skills.TokenManagementSkill do
 
   defp calculate_optimal_renewal_time(_token_id, usage_patterns, _state) do
     # Analyze usage patterns to predict optimal renewal timing
-    peak_usage_hours = extract_peak_usage_hours(usage_patterns)
+    _peak_usage_hours = extract_peak_usage_hours(usage_patterns)
     low_usage_periods = extract_low_usage_periods(usage_patterns)
 
     optimal_time =
@@ -420,13 +418,13 @@ defmodule RubberDuck.Skills.TokenManagementSkill do
     end
   end
 
-  defp extract_peak_usage_hours(usage_patterns) do
+  defp extract_peak_usage_hours(_usage_patterns) do
     # TODO: Implement sophisticated peak hour analysis
     # Typical business hours
     [9, 10, 11, 14, 15, 16]
   end
 
-  defp extract_low_usage_periods(usage_patterns) do
+  defp extract_low_usage_periods(_usage_patterns) do
     # TODO: Implement low usage period detection
     [
       %{hour: 2, minute: 0, timezone: "UTC"},
@@ -446,7 +444,7 @@ defmodule RubberDuck.Skills.TokenManagementSkill do
     end
   end
 
-  defp extract_hourly_usage_distribution(usage_patterns) do
+  defp extract_hourly_usage_distribution(_usage_patterns) do
     # TODO: Implement actual hourly distribution analysis
     %{
       "morning" => 0.3,

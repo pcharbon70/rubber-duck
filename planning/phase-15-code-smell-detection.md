@@ -947,6 +947,7 @@ Implement a comprehensive multi-agent system that autonomously detects 35+ docum
 
 **Integration Points:**
 - Direct integration with Phase 14 refactoring agents for remediation
+- Phase 1B Verdict system for intelligent smell severity evaluation
 - AST analysis building on Phase 12 capabilities
 - Jido agent framework from Phase 1
 - Ash persistence layer for smell tracking

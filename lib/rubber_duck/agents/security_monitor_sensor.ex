@@ -14,7 +14,7 @@ defmodule RubberDuck.Agents.SecurityMonitorSensor do
     vsn: "1.0.0",
     actions: []
 
-  alias RubberDuck.Skills.{LearningSkill, ThreatDetectionSkill}
+  alias RubberDuck.Skills.ThreatDetectionSkill
 
   @doc """
   Create a new SecurityMonitorSensor instance.

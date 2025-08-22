@@ -48,22 +48,24 @@
 ---
 
 ## Phase Links
-- **Previous**: [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
+- **Previous**: [Phase 1B: Verdict-Based LLM Judge System](phase-1b-verdict-llm-judge.md)
 - **Next**: [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
 - **Related**: [Implementation Appendices](implementation-appendices.md)
 
 ## All Phases
 1. [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
-2. **Phase 2: Autonomous LLM Orchestration System** *(Current)*
-3. [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
-4. [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
-5. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
-6. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
-7. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
-8. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
-9. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
-10. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
-11. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
+2. [Phase 1A: User Preferences & Runtime Configuration Management](phase-01a-user-preferences-config.md)
+3. [Phase 1B: Verdict-Based LLM Judge System](phase-1b-verdict-llm-judge.md)
+4. **Phase 2: Autonomous LLM Orchestration System** *(Current)*
+5. [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
+6. [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
+7. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
+8. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
+9. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
+10. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
+11. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
+12. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
+13. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
 
 ---
 

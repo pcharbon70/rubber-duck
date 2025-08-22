@@ -129,7 +129,7 @@ defmodule RubberDuck.Actions.EnhanceAshSignIn do
       {:ok, threat_analysis, _updated_context} ->
         {:ok, threat_analysis}
 
-      error ->
+      _error ->
         # If threat analysis fails, assume moderate threat
         {:ok,
          %{
@@ -168,7 +168,7 @@ defmodule RubberDuck.Actions.EnhanceAshSignIn do
       {:ok, session_analysis, _updated_context} ->
         {:ok, session_analysis}
 
-      error ->
+      _error ->
         # If behavioral analysis fails, assume neutral behavior
         {:ok,
          %{
@@ -212,9 +212,12 @@ defmodule RubberDuck.Actions.EnhanceAshSignIn do
       end
 
     # Apply option-based enhancements
-    if Map.get(options, :force_mfa, false) do
-      enhancements = [:force_mfa | enhancements]
-    end
+    enhancements =
+      if Map.get(options, :force_mfa, false) do
+        [:force_mfa | enhancements]
+      else
+        enhancements
+      end
 
     enhanced_sign_in = apply_enhancements_to_session(sign_in_result, enhancements)
 

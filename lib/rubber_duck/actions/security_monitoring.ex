@@ -14,7 +14,7 @@ defmodule RubberDuck.Actions.SecurityMonitoring do
       coordination_options: [type: :map, default: %{}]
     ]
 
-  alias RubberDuck.Skills.{LearningSkill, ThreatDetectionSkill}
+  alias RubberDuck.Skills.LearningSkill
 
   @doc """
   Coordinate comprehensive security monitoring with adaptive strategies.
@@ -103,7 +103,7 @@ defmodule RubberDuck.Actions.SecurityMonitoring do
     {:ok, monitoring_setup}
   end
 
-  defp setup_threat_monitoring(monitoring_setup, context) do
+  defp setup_threat_monitoring(monitoring_setup, _context) do
     threat_monitoring_config = %{
       threat_detection_enabled: true,
       pattern_analysis_enabled: true,
@@ -433,7 +433,7 @@ defmodule RubberDuck.Actions.SecurityMonitoring do
     protocols
   end
 
-  defp establish_data_sharing_rules(participating_agents, monitoring_setup) do
+  defp establish_data_sharing_rules(_participating_agents, monitoring_setup) do
     sharing_rules = %{
       threat_data: %{
         sharing_level: monitoring_setup.monitoring_level,

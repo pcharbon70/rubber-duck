@@ -14,7 +14,7 @@ defmodule RubberDuck.Agents.PermissionAgent do
     vsn: "1.0.0",
     actions: []
 
-  alias RubberDuck.Skills.{LearningSkill, PolicyEnforcementSkill}
+  alias RubberDuck.Skills.PolicyEnforcementSkill
 
   @doc """
   Create a new PermissionAgent instance.
@@ -90,7 +90,7 @@ defmodule RubberDuck.Agents.PermissionAgent do
   @doc """
   Dynamically adjust user permissions based on risk context.
   """
-  def adjust_user_permissions(agent, user_id, risk_context, options \\ []) do
+  def adjust_user_permissions(agent, user_id, risk_context, _options \\ []) do
     current_permissions = get_user_permissions(agent, user_id)
 
     case PolicyEnforcementSkill.adjust_permissions(
@@ -228,7 +228,7 @@ defmodule RubberDuck.Agents.PermissionAgent do
     [:read_access, :basic_modify]
   end
 
-  defp execute_escalation_response(escalation_analysis, escalation_data) do
+  defp execute_escalation_response(escalation_analysis, _escalation_data) do
     case escalation_analysis.response_recommendation do
       :immediate_denial_and_alert ->
         %{

@@ -15,8 +15,6 @@ defmodule RubberDuck.Skills.LearningSkill do
       "learning.assess_learning"
     ]
 
-  alias RubberDuck.Repo
-
   @doc """
   Track an experience with outcome and context.
   """

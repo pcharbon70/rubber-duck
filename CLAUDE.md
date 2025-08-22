@@ -204,6 +204,42 @@ _A dev tool for Elixir projects to gather LLM usage rules from dependencies_
 
 - IMPORTANT: Follow the feature.md rules when asked to implement a feature
 
+## Code Quality Rules
+
+### Error Handling Patterns
+
+**RULE**: Avoid explicit `try` statements - use implicit try with pattern matching instead.
+
+**Bad:**
+```elixir
+def risky_function do
+  try do
+    some_operation()
+    {:ok, result}
+  rescue
+    error -> {:error, error}
+  end
+end
+```
+
+**Good:**
+```elixir
+def risky_function do
+  case safe_operation() do
+    {:ok, result} -> {:ok, result}
+    {:error, reason} -> {:error, reason}
+  end
+end
+
+defp safe_operation do
+  some_operation()
+rescue
+  error -> {:error, error}
+end
+```
+
+**Pattern**: Extract risky operations into separate functions with implicit `rescue` clauses, then use pattern matching in the calling function.
+
 ## Interaction Rules
 
 - You must always ask me to start or restart the server for you.
