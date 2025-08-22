@@ -198,7 +198,7 @@ defmodule RubberDuck.Skills.PolicyEnforcementSkill do
     violations
   end
 
-  defp suggest_access_restrictions(user_id, resource, context, state) do
+  defp suggest_access_restrictions(user_id, resource, _context, state) do
     risk_level = get_user_risk_level(user_id, state)
     resource_sensitivity = assess_resource_sensitivity(resource)
 
@@ -369,7 +369,7 @@ defmodule RubberDuck.Skills.PolicyEnforcementSkill do
     end
   end
 
-  defp calculate_permission_adjustments(user_id, current_perms, context, state) do
+  defp calculate_permission_adjustments(user_id, _current_perms, context, state) do
     risk_level = get_user_risk_level(user_id, state)
     context_risk = assess_context_risk(context)
 
@@ -655,7 +655,7 @@ defmodule RubberDuck.Skills.PolicyEnforcementSkill do
     end
   end
 
-  defp check_action_violations(action, context, policies, violations) do
+  defp check_action_violations(action, context, _policies, violations) do
     if action in [:delete, :modify] and Map.get(context, :bulk_operation, false) do
       [:bulk_operation_restriction | violations]
     else

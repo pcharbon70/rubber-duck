@@ -16,8 +16,6 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
       "db.cache_strategy"
     ]
 
-  alias RubberDuck.Repo
-
   @doc """
   Optimize query with performance analysis and learning.
   """
@@ -33,33 +31,38 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     }
 
     # Apply optimizations if confidence is high enough
-    optimized_query = if query_analysis.optimization_confidence > 0.7 do
-      apply_query_optimizations(query, query_analysis.optimization_opportunities)
-    else
-      query
-    end
+    optimized_query =
+      if query_analysis.optimization_confidence > 0.7 do
+        apply_query_optimizations(query, query_analysis.optimization_opportunities)
+      else
+        query
+      end
 
     # Track query optimization for learning
     optimization_history = Map.get(state, :optimization_history, [])
-    optimization_record = Map.merge(query_analysis, %{
-      original_query: query,
-      optimized_query: optimized_query,
-      context: context,
-      timestamp: DateTime.utc_now()
-    })
+
+    optimization_record =
+      Map.merge(query_analysis, %{
+        original_query: query,
+        optimized_query: optimized_query,
+        context: context,
+        timestamp: DateTime.utc_now()
+      })
 
     updated_history = [optimization_record | optimization_history] |> Enum.take(500)
 
-    new_state = state
-    |> Map.put(:optimization_history, updated_history)
-    |> Map.put(:last_optimization, DateTime.utc_now())
+    new_state =
+      state
+      |> Map.put(:optimization_history, updated_history)
+      |> Map.put(:last_optimization, DateTime.utc_now())
 
-    {:ok, %{
-      original_query: query,
-      optimized_query: optimized_query,
-      analysis: query_analysis,
-      optimization_applied: optimized_query != query
-    }, new_state}
+    {:ok,
+     %{
+       original_query: query,
+       optimized_query: optimized_query,
+       analysis: query_analysis,
+       optimization_applied: optimized_query != query
+     }, new_state}
   end
 
   @doc """
@@ -79,16 +82,18 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     pattern_database = Map.get(state, :pattern_database, %{})
     pattern_key = pattern_analysis.pattern_hash
 
-    updated_pattern = Map.merge(
-      Map.get(pattern_database, pattern_key, %{}),
-      pattern_analysis
-    )
+    updated_pattern =
+      Map.merge(
+        Map.get(pattern_database, pattern_key, %{}),
+        pattern_analysis
+      )
 
     updated_database = Map.put(pattern_database, pattern_key, updated_pattern)
 
-    new_state = state
-    |> Map.put(:pattern_database, updated_database)
-    |> Map.put(:last_pattern_analysis, DateTime.utc_now())
+    new_state =
+      state
+      |> Map.put(:pattern_database, updated_database)
+      |> Map.put(:last_pattern_analysis, DateTime.utc_now())
 
     {:ok, pattern_analysis, new_state}
   end
@@ -111,9 +116,10 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     index_suggestions = Map.get(state, :index_suggestions, [])
     updated_suggestions = [index_analysis | index_suggestions] |> Enum.take(200)
 
-    new_state = state
-    |> Map.put(:index_suggestions, updated_suggestions)
-    |> Map.put(:last_index_suggestion, DateTime.utc_now())
+    new_state =
+      state
+      |> Map.put(:index_suggestions, updated_suggestions)
+      |> Map.put(:last_index_suggestion, DateTime.utc_now())
 
     {:ok, index_analysis, new_state}
   end
@@ -135,9 +141,10 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     cache_strategies = Map.get(state, :cache_strategies, [])
     updated_strategies = [cache_optimization | cache_strategies] |> Enum.take(100)
 
-    new_state = state
-    |> Map.put(:cache_strategies, updated_strategies)
-    |> Map.put(:last_cache_optimization, DateTime.utc_now())
+    new_state =
+      state
+      |> Map.put(:cache_strategies, updated_strategies)
+      |> Map.put(:last_cache_optimization, DateTime.utc_now())
 
     {:ok, cache_optimization, new_state}
   end
@@ -154,16 +161,19 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp normalize_query_for_hashing(query_string) do
     # Normalize query by removing variable values to identify patterns
     query_string
-    |> String.replace(~r/\$\d+/, "?")  # Replace parameters
-    |> String.replace(~r/'\w+'/, "'?'")  # Replace string literals
-    |> String.replace(~r/\d+/, "?")  # Replace numbers
+    # Replace parameters
+    |> String.replace(~r/\$\d+/, "?")
+    # Replace string literals
+    |> String.replace(~r/'\w+'/, "'?'")
+    # Replace numbers
+    |> String.replace(~r/\d+/, "?")
     |> String.downcase()
     |> String.trim()
   end
 
   defp analyze_query_complexity(query) do
     query_string = to_string(query)
-    
+
     # Simple complexity scoring based on query characteristics
     complexity_factors = [
       count_joins(query_string),
@@ -174,7 +184,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     ]
 
     base_complexity = Enum.sum(complexity_factors)
-    
+
     # Normalize to 0-1 scale
     min(base_complexity / 20.0, 1.0)
   end
@@ -184,7 +194,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # For now, simulate execution plan insights
     %{
       estimated_cost: :rand.uniform(1000),
-      estimated_rows: :rand.uniform(10000),
+      estimated_rows: :rand.uniform(10_000),
       index_usage: Enum.random([:full, :partial, :none]),
       scan_type: Enum.random([:index_scan, :seq_scan, :bitmap_scan]),
       optimization_score: :rand.uniform()
@@ -196,32 +206,37 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     opportunities = []
 
     # Check for missing indexes
-    opportunities = if String.contains?(query_string, "WHERE") and not String.contains?(query_string, "INDEX") do
-      [:add_index | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if String.contains?(query_string, "WHERE") and not String.contains?(query_string, "INDEX") do
+        [:add_index | opportunities]
+      else
+        opportunities
+      end
 
     # Check for inefficient joins
-    opportunities = if count_joins(query_string) > 2 do
-      [:optimize_joins | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if count_joins(query_string) > 2 do
+        [:optimize_joins | opportunities]
+      else
+        opportunities
+      end
 
     # Check for missing query limits
-    opportunities = if not String.contains?(query_string, "LIMIT") and String.contains?(query_string, "ORDER BY") do
-      [:add_pagination | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if not String.contains?(query_string, "LIMIT") and
+           String.contains?(query_string, "ORDER BY") do
+        [:add_pagination | opportunities]
+      else
+        opportunities
+      end
 
     # Check for select optimization
-    opportunities = if String.contains?(query_string, "SELECT *") do
-      [:specify_columns | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if String.contains?(query_string, "SELECT *") do
+        [:specify_columns | opportunities]
+      else
+        opportunities
+      end
 
     opportunities
   end
@@ -229,22 +244,25 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp estimate_performance_improvement(query) do
     query_string = to_string(query)
     complexity = analyze_query_complexity(query)
-    
+
     # Estimate improvement based on complexity and optimization opportunities
-    base_improvement = case complexity do
-      score when score > 0.8 -> 0.6  # High complexity queries have more room for improvement
-      score when score > 0.5 -> 0.4
-      score when score > 0.2 -> 0.2
-      _ -> 0.1
-    end
+    base_improvement =
+      case complexity do
+        # High complexity queries have more room for improvement
+        score when score > 0.8 -> 0.6
+        score when score > 0.5 -> 0.4
+        score when score > 0.2 -> 0.2
+        _ -> 0.1
+      end
 
     # Adjust based on specific patterns
-    improvement_bonus = cond do
-      String.contains?(query_string, "SELECT *") -> 0.2
-      count_joins(query_string) > 3 -> 0.3
-      not String.contains?(query_string, "LIMIT") -> 0.1
-      true -> 0.0
-    end
+    improvement_bonus =
+      cond do
+        String.contains?(query_string, "SELECT *") -> 0.2
+        count_joins(query_string) > 3 -> 0.3
+        not String.contains?(query_string, "LIMIT") -> 0.1
+        true -> 0.0
+      end
 
     min(base_improvement + improvement_bonus, 1.0)
   end
@@ -252,28 +270,31 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp calculate_optimization_confidence(query, state) do
     query_hash = generate_query_hash(query)
     optimization_history = Map.get(state, :optimization_history, [])
-    
+
     # Find similar queries in history
-    similar_optimizations = Enum.filter(optimization_history, fn record ->
-      String.jaro_distance(record.query_hash, query_hash) > 0.7
-    end)
+    similar_optimizations =
+      Enum.filter(optimization_history, fn record ->
+        String.jaro_distance(record.query_hash, query_hash) > 0.7
+      end)
 
     # Base confidence on historical success
     if Enum.empty?(similar_optimizations) do
-      0.5  # No history, moderate confidence
+      # No history, moderate confidence
+      0.5
     else
       success_rate = calculate_optimization_success_rate(similar_optimizations)
       sample_confidence = min(length(similar_optimizations) / 10.0, 1.0)
-      
+
       (success_rate + sample_confidence) / 2
     end
   end
 
   defp apply_query_optimizations(query, opportunities) do
     # Apply identified optimizations to the query
-    optimized_query = Enum.reduce(opportunities, query, fn opportunity, current_query ->
-      apply_specific_optimization(current_query, opportunity)
-    end)
+    optimized_query =
+      Enum.reduce(opportunities, query, fn opportunity, current_query ->
+        apply_specific_optimization(current_query, opportunity)
+      end)
 
     optimized_query
   end
@@ -307,7 +328,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp calculate_pattern_frequency(pattern, state) do
     pattern_hash = generate_pattern_hash(pattern)
     pattern_database = Map.get(state, :pattern_database, %{})
-    
+
     case Map.get(pattern_database, pattern_hash) do
       nil -> 1
       existing_pattern -> Map.get(existing_pattern, :frequency, 1) + 1
@@ -328,21 +349,23 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp assess_optimization_effectiveness(pattern, stats, state) do
     pattern_hash = generate_pattern_hash(pattern)
     optimization_history = Map.get(state, :optimization_history, [])
-    
+
     # Find previous optimizations for this pattern
-    pattern_optimizations = Enum.filter(optimization_history, fn record ->
-      record.pattern_hash == pattern_hash
-    end)
+    pattern_optimizations =
+      Enum.filter(optimization_history, fn record ->
+        record.pattern_hash == pattern_hash
+      end)
 
     if Enum.empty?(pattern_optimizations) do
       %{effectiveness: :unknown, sample_size: 0}
     else
-      effectiveness_scores = Enum.map(pattern_optimizations, fn record ->
-        calculate_single_effectiveness(record, stats)
-      end)
+      effectiveness_scores =
+        Enum.map(pattern_optimizations, fn record ->
+          calculate_single_effectiveness(record, stats)
+        end)
 
       avg_effectiveness = Enum.sum(effectiveness_scores) / length(effectiveness_scores)
-      
+
       %{
         effectiveness: categorize_effectiveness(avg_effectiveness),
         sample_size: length(pattern_optimizations),
@@ -352,25 +375,36 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   end
 
   defp generate_learning_insights(pattern, stats, state) do
-    pattern_database = Map.get(state, :pattern_database, %{})
-    
+    _pattern_database = Map.get(state, :pattern_database, %{})
+
     insights = []
 
     # Performance insights
-    if Map.get(stats, :execution_time, 0) > 1000 do  # > 1 second
-      insights = ["Query execution time exceeds optimal threshold" | insights]
-    end
+    # > 1 second
+    insights =
+      if Map.get(stats, :execution_time, 0) > 1000 do
+        ["Query execution time exceeds optimal threshold" | insights]
+      else
+        insights
+      end
 
     # Pattern insights
     pattern_frequency = calculate_pattern_frequency(pattern, state)
-    if pattern_frequency > 10 do
-      insights = ["High-frequency pattern detected - consider caching" | insights]
-    end
+
+    insights =
+      if pattern_frequency > 10 do
+        ["High-frequency pattern detected - consider caching" | insights]
+      else
+        insights
+      end
 
     # Resource insights
-    if Map.get(stats, :rows_examined, 0) > Map.get(stats, :rows_returned, 1) * 10 do
-      insights = ["Query examines too many rows relative to results - indexing opportunity" | insights]
-    end
+    insights =
+      if Map.get(stats, :rows_examined, 0) > Map.get(stats, :rows_returned, 1) * 10 do
+        ["Query examines too many rows relative to results - indexing opportunity" | insights]
+      else
+        insights
+      end
 
     if Enum.empty?(insights) do
       ["Query performance is within acceptable parameters"]
@@ -379,28 +413,31 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     end
   end
 
-  defp recommend_pattern_actions(pattern, stats, state) do
+  defp recommend_pattern_actions(_pattern, stats, _state) do
     actions = []
     performance_metrics = extract_performance_metrics(stats)
 
     # Recommend based on performance characteristics
-    actions = if performance_metrics.execution_time_ms > 500 do
-      [:create_index, :optimize_query_structure | actions]
-    else
-      actions
-    end
+    actions =
+      if performance_metrics.execution_time_ms > 500 do
+        [:create_index, :optimize_query_structure | actions]
+      else
+        actions
+      end
 
-    actions = if performance_metrics.cache_hits < performance_metrics.rows_returned * 0.5 do
-      [:implement_caching | actions]
-    else
-      actions
-    end
+    actions =
+      if performance_metrics.cache_hits < performance_metrics.rows_returned * 0.5 do
+        [:implement_caching | actions]
+      else
+        actions
+      end
 
-    actions = if performance_metrics.io_operations > 100 do
-      [:optimize_io_operations | actions]
-    else
-      actions
-    end
+    actions =
+      if performance_metrics.io_operations > 100 do
+        [:optimize_io_operations | actions]
+      else
+        actions
+      end
 
     if Enum.empty?(actions) do
       [:monitor_performance]
@@ -413,40 +450,45 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # Analyze patterns to suggest optimal indexes
     column_usage = analyze_column_usage_patterns(patterns)
     query_frequency = analyze_query_frequency(patterns, state)
-    
+
     suggestions = []
 
     # Suggest indexes for frequently queried columns
-    frequent_columns = Enum.filter(column_usage, fn {_column, usage} ->
-      usage.frequency > 5 and usage.selectivity > 0.1
-    end)
+    frequent_columns =
+      Enum.filter(column_usage, fn {_column, usage} ->
+        usage.frequency > 5 and usage.selectivity > 0.1
+      end)
 
-    suggestions = Enum.reduce(frequent_columns, suggestions, fn {column, usage}, acc ->
-      index_suggestion = %{
-        table: table,
-        columns: [column],
-        type: determine_index_type(usage),
-        priority: calculate_index_priority(usage, query_frequency),
-        estimated_benefit: estimate_index_benefit(usage)
-      }
-      [index_suggestion | acc]
-    end)
+    suggestions =
+      Enum.reduce(frequent_columns, suggestions, fn {column, usage}, acc ->
+        index_suggestion = %{
+          table: table,
+          columns: [column],
+          type: determine_index_type(usage),
+          priority: calculate_index_priority(usage, query_frequency),
+          estimated_benefit: estimate_index_benefit(usage)
+        }
+
+        [index_suggestion | acc]
+      end)
 
     # Suggest composite indexes for common column combinations
     composite_suggestions = suggest_composite_indexes(table, patterns, column_usage)
-    
+
     suggestions ++ composite_suggestions
   end
 
   defp estimate_index_impact(table, patterns, state) do
     suggestions = generate_index_suggestions(table, patterns, state)
-    
-    total_impact = Enum.reduce(suggestions, 0.0, fn suggestion, acc ->
-      acc + suggestion.estimated_benefit
-    end)
+
+    total_impact =
+      Enum.reduce(suggestions, 0.0, fn suggestion, acc ->
+        acc + suggestion.estimated_benefit
+      end)
 
     %{
-      performance_improvement: min(total_impact, 0.8),  # Cap at 80% improvement
+      # Cap at 80% improvement
+      performance_improvement: min(total_impact, 0.8),
       storage_overhead: estimate_storage_overhead(suggestions),
       maintenance_cost: estimate_maintenance_cost(suggestions),
       implementation_complexity: assess_implementation_complexity(suggestions)
@@ -455,14 +497,20 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp prioritize_index_suggestions(table, patterns, state) do
     suggestions = generate_index_suggestions(table, patterns, state)
-    
+
     # Sort by priority score (benefit vs cost)
-    prioritized = Enum.sort_by(suggestions, fn suggestion ->
-      benefit_score = suggestion.estimated_benefit
-      cost_score = estimate_index_cost(suggestion)
-      
-      benefit_score - cost_score  # Higher score = better priority
-    end, :desc)
+    prioritized =
+      Enum.sort_by(
+        suggestions,
+        fn suggestion ->
+          benefit_score = suggestion.estimated_benefit
+          cost_score = estimate_index_cost(suggestion)
+
+          # Higher score = better priority
+          benefit_score - cost_score
+        end,
+        :desc
+      )
 
     %{
       high_priority: Enum.take(prioritized, 3),
@@ -475,7 +523,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # Base confidence on pattern analysis quality and historical success
     pattern_quality = assess_pattern_quality(patterns)
     historical_success = get_historical_index_success(table, state)
-    
+
     (pattern_quality + historical_success) / 2
   end
 
@@ -483,12 +531,13 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # Analyze access patterns to optimize caching
     access_analysis = analyze_access_patterns(patterns)
     cache_performance = analyze_current_cache_performance(current_config, state)
-    
-    optimized_config = current_config
-    |> optimize_cache_size(access_analysis)
-    |> optimize_cache_ttl(access_analysis)
-    |> optimize_cache_eviction(access_analysis, cache_performance)
-    |> optimize_cache_partitioning(access_analysis)
+
+    optimized_config =
+      current_config
+      |> optimize_cache_size(access_analysis)
+      |> optimize_cache_ttl(access_analysis)
+      |> optimize_cache_eviction(access_analysis, cache_performance)
+      |> optimize_cache_partitioning(access_analysis)
 
     optimized_config
   end
@@ -497,16 +546,17 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # Predict cache performance based on patterns and configuration
     access_frequency = calculate_access_frequency(patterns)
     cache_size_adequacy = assess_cache_size_adequacy(patterns, config)
-    
-    predicted_hit_ratio = case {access_frequency, cache_size_adequacy} do
-      {:high, :adequate} -> 0.85
-      {:high, :insufficient} -> 0.60
-      {:medium, :adequate} -> 0.75
-      {:medium, :insufficient} -> 0.50
-      {:low, :adequate} -> 0.90
-      {:low, :insufficient} -> 0.70
-      _ -> 0.65
-    end
+
+    predicted_hit_ratio =
+      case {access_frequency, cache_size_adequacy} do
+        {:high, :adequate} -> 0.85
+        {:high, :insufficient} -> 0.60
+        {:medium, :adequate} -> 0.75
+        {:medium, :insufficient} -> 0.50
+        {:low, :adequate} -> 0.90
+        {:low, :insufficient} -> 0.70
+        _ -> 0.65
+      end
 
     %{
       predicted_hit_ratio: predicted_hit_ratio,
@@ -518,9 +568,9 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp calculate_cache_resources(patterns, config) do
     estimated_cache_entries = estimate_cache_entries(patterns)
     average_entry_size = estimate_average_entry_size(patterns)
-    
+
     %{
-      memory_requirement_mb: (estimated_cache_entries * average_entry_size) / (1024 * 1024),
+      memory_requirement_mb: estimated_cache_entries * average_entry_size / (1024 * 1024),
       cpu_overhead_percentage: estimate_cpu_overhead(config),
       network_reduction_percentage: estimate_network_reduction(patterns, config)
     }
@@ -528,13 +578,17 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp recommend_eviction_strategy(patterns, _state) do
     access_patterns = analyze_temporal_patterns(patterns)
-    
+
     case access_patterns.pattern_type do
-      :recency_based -> :lru  # Least Recently Used
-      :frequency_based -> :lfu  # Least Frequently Used
-      :time_based -> :ttl  # Time To Live
+      # Least Recently Used
+      :recency_based -> :lru
+      # Least Frequently Used
+      :frequency_based -> :lfu
+      # Time To Live
+      :time_based -> :ttl
       :size_based -> :size_based_lru
-      _ -> :lru  # Default to LRU
+      # Default to LRU
+      _ -> :lru
     end
   end
 
@@ -546,17 +600,19 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     ]
 
     # Add pattern-specific monitoring
-    monitoring_recommendations = if high_frequency_access?(patterns) do
-      ["Monitor query response time distribution" | monitoring_recommendations]
-    else
-      monitoring_recommendations
-    end
+    monitoring_recommendations =
+      if high_frequency_access?(patterns) do
+        ["Monitor query response time distribution" | monitoring_recommendations]
+      else
+        monitoring_recommendations
+      end
 
-    monitoring_recommendations = if Map.get(config, :distributed, false) do
-      ["Monitor cache synchronization across nodes" | monitoring_recommendations]
-    else
-      monitoring_recommendations
-    end
+    monitoring_recommendations =
+      if Map.get(config, :distributed, false) do
+        ["Monitor cache synchronization across nodes" | monitoring_recommendations]
+      else
+        monitoring_recommendations
+      end
 
     monitoring_recommendations
   end
@@ -584,7 +640,8 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   end
 
   defp count_where_conditions(query_string) do
-    count_occurrences(query_string, "WHERE") + count_occurrences(query_string, "AND") + count_occurrences(query_string, "OR")
+    count_occurrences(query_string, "WHERE") + count_occurrences(query_string, "AND") +
+      count_occurrences(query_string, "OR")
   end
 
   defp count_occurrences(string, pattern) do
@@ -600,10 +657,11 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     if Enum.empty?(optimizations) do
       0.5
     else
-      successful = Enum.count(optimizations, fn record ->
-        Map.get(record, :improvement_achieved, 0) > 0.1
-      end)
-      
+      successful =
+        Enum.count(optimizations, fn record ->
+          Map.get(record, :improvement_achieved, 0) > 0.1
+        end)
+
       successful / length(optimizations)
     end
   end
@@ -611,7 +669,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp calculate_single_effectiveness(record, current_stats) do
     baseline_time = Map.get(record, :baseline_execution_time, 1000)
     current_time = Map.get(current_stats, :execution_time, 1000)
-    
+
     if baseline_time > 0 do
       improvement = (baseline_time - current_time) / baseline_time
       max(improvement, 0.0)
@@ -631,7 +689,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   # Pattern analysis helpers
 
-  defp analyze_column_usage_patterns(patterns) do
+  defp analyze_column_usage_patterns(_patterns) do
     # TODO: Implement sophisticated column usage analysis
     # For now, simulate column usage patterns
     %{
@@ -642,14 +700,14 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     }
   end
 
-  defp analyze_query_frequency(patterns, state) do
+  defp analyze_query_frequency(_patterns, state) do
     pattern_database = Map.get(state, :pattern_database, %{})
-    
+
     if map_size(pattern_database) == 0 do
       %{average_frequency: 1, peak_frequency: 1}
     else
       frequencies = Map.values(pattern_database) |> Enum.map(&Map.get(&1, :frequency, 1))
-      
+
       %{
         average_frequency: Enum.sum(frequencies) / length(frequencies),
         peak_frequency: Enum.max(frequencies),
@@ -663,7 +721,8 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
       sel when sel > 0.8 -> :unique
       sel when sel > 0.5 -> :btree
       sel when sel > 0.2 -> :hash
-      _ -> :gin  # For low selectivity
+      # For low selectivity
+      _ -> :gin
     end
   end
 
@@ -671,7 +730,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     frequency_score = min(usage.frequency / 10.0, 1.0)
     selectivity_score = usage.selectivity
     global_frequency_score = min(query_frequency.average_frequency / 5.0, 1.0)
-    
+
     (frequency_score + selectivity_score + global_frequency_score) / 3
   end
 
@@ -679,25 +738,28 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # Estimate performance benefit based on usage characteristics
     frequency_benefit = min(usage.frequency / 10.0, 0.5)
     selectivity_benefit = usage.selectivity * 0.3
-    
+
     frequency_benefit + selectivity_benefit
   end
 
   defp suggest_composite_indexes(_table, _patterns, column_usage) do
     # Find columns commonly used together
-    high_usage_columns = column_usage
-    |> Enum.filter(fn {_col, usage} -> usage.frequency > 3 end)
-    |> Enum.map(fn {col, _usage} -> col end)
+    high_usage_columns =
+      column_usage
+      |> Enum.filter(fn {_col, usage} -> usage.frequency > 3 end)
+      |> Enum.map(fn {col, _usage} -> col end)
 
     # Create composite index suggestions for top column pairs
     if length(high_usage_columns) >= 2 do
-      [%{
-        table: :composite,
-        columns: Enum.take(high_usage_columns, 2),
-        type: :btree,
-        priority: 0.7,
-        estimated_benefit: 0.4
-      }]
+      [
+        %{
+          table: :composite,
+          columns: Enum.take(high_usage_columns, 2),
+          type: :btree,
+          priority: 0.7,
+          estimated_benefit: 0.4
+        }
+      ]
     else
       []
     end
@@ -706,22 +768,24 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp estimate_storage_overhead(suggestions) do
     # Estimate storage overhead for suggested indexes
     total_indexes = length(suggestions)
-    avg_overhead_per_index = 15  # MB average
-    
+    # MB average
+    avg_overhead_per_index = 15
+
     total_indexes * avg_overhead_per_index
   end
 
   defp estimate_maintenance_cost(suggestions) do
     # Estimate maintenance cost based on index complexity
-    maintenance_scores = Enum.map(suggestions, fn suggestion ->
-      case suggestion.type do
-        :unique -> 0.1
-        :btree -> 0.2
-        :hash -> 0.15
-        :gin -> 0.4
-        _ -> 0.25
-      end
-    end)
+    maintenance_scores =
+      Enum.map(suggestions, fn suggestion ->
+        case suggestion.type do
+          :unique -> 0.1
+          :btree -> 0.2
+          :hash -> 0.15
+          :gin -> 0.4
+          _ -> 0.25
+        end
+      end)
 
     if Enum.empty?(maintenance_scores) do
       0.0
@@ -732,13 +796,16 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp assess_implementation_complexity(suggestions) do
     complexity_factors = [
-      length(suggestions) > 5,  # Many indexes
-      Enum.any?(suggestions, &(&1.type == :gin)),  # Complex index types
-      Enum.any?(suggestions, &(length(&1.columns) > 2))  # Multi-column indexes
+      # Many indexes
+      length(suggestions) > 5,
+      # Complex index types
+      Enum.any?(suggestions, &(&1.type == :gin)),
+      # Multi-column indexes
+      Enum.any?(suggestions, &(length(&1.columns) > 2))
     ]
 
     complexity_count = Enum.count(complexity_factors, & &1)
-    
+
     case complexity_count do
       0 -> :simple
       1 -> :moderate
@@ -751,7 +818,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # Assess maintenance requirements for suggested indexes
     pattern_count = length(patterns)
     table_size_estimate = estimate_table_size(table)
-    
+
     %{
       maintenance_frequency: determine_maintenance_frequency(pattern_count),
       rebuild_requirements: assess_rebuild_requirements(table_size_estimate),
@@ -793,24 +860,29 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp calculate_maintenance_overhead(table_size) do
     case table_size do
-      :very_large -> 0.15  # 15% overhead
-      :large -> 0.10       # 10% overhead
-      :medium -> 0.05      # 5% overhead
-      _ -> 0.02            # 2% overhead
+      # 15% overhead
+      :very_large -> 0.15
+      # 10% overhead
+      :large -> 0.10
+      # 5% overhead
+      :medium -> 0.05
+      # 2% overhead
+      _ -> 0.02
     end
   end
 
   defp estimate_index_cost(suggestion) do
-    base_cost = case suggestion.type do
-      :unique -> 0.1
-      :btree -> 0.2
-      :hash -> 0.15
-      :gin -> 0.4
-      _ -> 0.25
-    end
+    base_cost =
+      case suggestion.type do
+        :unique -> 0.1
+        :btree -> 0.2
+        :hash -> 0.15
+        :gin -> 0.4
+        _ -> 0.25
+      end
 
     column_cost = length(suggestion.columns) * 0.05
-    
+
     base_cost + column_cost
   end
 
@@ -820,8 +892,10 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
       0.0
     else
       quality_factors = [
-        length(patterns) > 10,  # Sufficient sample size
-        patterns |> Enum.map(&Map.keys/1) |> List.flatten() |> Enum.uniq() |> length() > 3  # Column diversity
+        # Sufficient sample size
+        length(patterns) > 10,
+        # Column diversity
+        patterns |> Enum.map(&Map.keys/1) |> List.flatten() |> Enum.uniq() |> length() > 3
       ]
 
       quality_count = Enum.count(quality_factors, & &1)
@@ -831,13 +905,15 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp get_historical_index_success(table, state) do
     index_suggestions = Map.get(state, :index_suggestions, [])
-    
-    table_suggestions = Enum.filter(index_suggestions, fn suggestion ->
-      suggestion.table == table
-    end)
+
+    table_suggestions =
+      Enum.filter(index_suggestions, fn suggestion ->
+        suggestion.table == table
+      end)
 
     if Enum.empty?(table_suggestions) do
-      0.5  # No history, moderate confidence
+      # No history, moderate confidence
+      0.5
     else
       # TODO: Track actual index implementation success
       # For now, simulate moderate success rate
@@ -857,15 +933,15 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     }
   end
 
-  defp analyze_current_cache_performance(config, state) do
+  defp analyze_current_cache_performance(_config, state) do
     cache_strategies = Map.get(state, :cache_strategies, [])
-    
+
     if Enum.empty?(cache_strategies) do
       %{current_hit_ratio: 0.5, performance_trend: :unknown}
     else
       recent_performance = Enum.take(cache_strategies, 10)
       hit_ratios = Enum.map(recent_performance, &Map.get(&1, :hit_ratio, 0.5))
-      
+
       %{
         current_hit_ratio: Enum.sum(hit_ratios) / length(hit_ratios),
         performance_trend: assess_cache_trend(hit_ratios)
@@ -875,49 +951,58 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp optimize_cache_size(config, access_analysis) do
     current_size = Map.get(config, :cache_size_mb, 100)
-    
-    recommended_size = case access_analysis.access_frequency do
-      :high -> current_size * 1.5
-      :medium -> current_size * 1.2
-      :low -> current_size * 0.8
-      _ -> current_size
-    end
+
+    recommended_size =
+      case access_analysis.access_frequency do
+        :high -> current_size * 1.5
+        :medium -> current_size * 1.2
+        :low -> current_size * 0.8
+        _ -> current_size
+      end
 
     Map.put(config, :cache_size_mb, round(recommended_size))
   end
 
   defp optimize_cache_ttl(config, access_analysis) do
     current_ttl = Map.get(config, :ttl_seconds, 3600)
-    
-    recommended_ttl = case access_analysis.temporal_locality do
-      :high -> current_ttl * 2  # Data accessed repeatedly, keep longer
-      :medium -> current_ttl
-      :low -> current_ttl * 0.5  # Data accessed infrequently, shorter TTL
-      _ -> current_ttl
-    end
+
+    recommended_ttl =
+      case access_analysis.temporal_locality do
+        # Data accessed repeatedly, keep longer
+        :high -> current_ttl * 2
+        :medium -> current_ttl
+        # Data accessed infrequently, shorter TTL
+        :low -> current_ttl * 0.5
+        _ -> current_ttl
+      end
 
     Map.put(config, :ttl_seconds, round(recommended_ttl))
   end
 
   defp optimize_cache_eviction(config, access_analysis, _cache_performance) do
-    optimal_strategy = case access_analysis.access_frequency do
-      :high -> :lru  # Recency matters for high frequency
-      :medium -> :lfu  # Frequency matters for medium usage
-      :low -> :ttl   # Time-based for low usage
-      _ -> :lru
-    end
+    optimal_strategy =
+      case access_analysis.access_frequency do
+        # Recency matters for high frequency
+        :high -> :lru
+        # Frequency matters for medium usage
+        :medium -> :lfu
+        # Time-based for low usage
+        :low -> :ttl
+        _ -> :lru
+      end
 
     Map.put(config, :eviction_strategy, optimal_strategy)
   end
 
   defp optimize_cache_partitioning(config, access_analysis) do
     # Optimize cache partitioning based on access patterns
-    partitioning_strategy = case access_analysis.spatial_locality do
-      :high -> :tenant_based
-      :medium -> :resource_based
-      :low -> :none
-      _ -> :none
-    end
+    partitioning_strategy =
+      case access_analysis.spatial_locality do
+        :high -> :tenant_based
+        :medium -> :resource_based
+        :low -> :none
+        _ -> :none
+      end
 
     Map.put(config, :partitioning, partitioning_strategy)
   end
@@ -926,7 +1011,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp calculate_access_frequency(patterns) do
     total_access = Enum.sum(Enum.map(patterns, &Map.get(&1, :access_count, 1)))
-    
+
     cond do
       total_access > 100 -> :high
       total_access > 20 -> :medium
@@ -937,8 +1022,9 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp assess_cache_size_adequacy(patterns, config) do
     estimated_working_set = estimate_working_set_size(patterns)
-    cache_size = Map.get(config, :cache_size_mb, 100) * 1024 * 1024  # Convert to bytes
-    
+    # Convert to bytes
+    cache_size = Map.get(config, :cache_size_mb, 100) * 1024 * 1024
+
     if estimated_working_set <= cache_size * 0.8 do
       :adequate
     else
@@ -948,13 +1034,15 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
 
   defp calculate_resource_efficiency(hit_ratio, _config) do
     # Simple efficiency calculation based on hit ratio
-    hit_ratio * 0.9  # 90% efficiency at 100% hit ratio
+    # 90% efficiency at 100% hit ratio
+    hit_ratio * 0.9
   end
 
   defp estimate_cache_entries(patterns) do
     # Estimate number of cache entries based on patterns
     unique_queries = Enum.uniq_by(patterns, &Map.get(&1, :query_hash, ""))
-    length(unique_queries) * 10  # Assume 10 entries per query pattern
+    # Assume 10 entries per query pattern
+    length(unique_queries) * 10
   end
 
   defp estimate_average_entry_size(_patterns) do
@@ -973,27 +1061,28 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     # Estimate network reduction from caching
     cache_eligible_queries = Enum.count(patterns, &cacheable_query?/1)
     total_queries = length(patterns)
-    
+
     if total_queries > 0 do
-      (cache_eligible_queries / total_queries) * 70  # Up to 70% reduction
+      # Up to 70% reduction
+      cache_eligible_queries / total_queries * 70
     else
       0
     end
   end
 
-  defp assess_temporal_locality(patterns) do
+  defp assess_temporal_locality(_patterns) do
     # TODO: Implement temporal locality analysis
     :medium
   end
 
-  defp assess_spatial_locality(patterns) do
-    # TODO: Implement spatial locality analysis  
+  defp assess_spatial_locality(_patterns) do
+    # TODO: Implement spatial locality analysis
     :medium
   end
 
-  defp analyze_data_size_distribution(patterns) do
+  defp analyze_data_size_distribution(_patterns) do
     # TODO: Implement data size distribution analysis
-    %{average_size: 1024, max_size: 10240, distribution: :normal}
+    %{average_size: 1024, max_size: 10_240, distribution: :normal}
   end
 
   defp assess_cache_trend(hit_ratios) do
@@ -1002,7 +1091,7 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
     else
       recent_avg = Enum.take(hit_ratios, 3) |> Enum.sum() |> Kernel./(3)
       older_avg = Enum.drop(hit_ratios, 3) |> Enum.take(3) |> Enum.sum() |> Kernel./(3)
-      
+
       cond do
         recent_avg > older_avg + 0.1 -> :improving
         recent_avg < older_avg - 0.1 -> :declining
@@ -1014,14 +1103,39 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp estimate_working_set_size(patterns) do
     # Estimate working set size based on access patterns
     total_data_points = Enum.sum(Enum.map(patterns, &Map.get(&1, :data_size, 1024)))
-    working_set_ratio = 0.6  # Assume 60% of data is in working set
-    
+    # Assume 60% of data is in working set
+    working_set_ratio = 0.6
+
     round(total_data_points * working_set_ratio)
   end
 
   defp analyze_temporal_patterns(patterns) do
-    # TODO: Implement sophisticated temporal pattern analysis
-    %{pattern_type: :recency_based}
+    # Analyze access patterns to determine the dominant pattern type
+    total_access = Enum.sum(Enum.map(patterns, &Map.get(&1, :access_count, 1)))
+    recent_access = Enum.sum(Enum.map(patterns, &Map.get(&1, :recent_access_count, 0)))
+    unique_patterns = length(Enum.uniq_by(patterns, &Map.get(&1, :query_hash)))
+
+    cond do
+      # High recent access suggests recency-based pattern
+      recent_access > total_access * 0.7 ->
+        %{pattern_type: :recency_based}
+
+      # High frequency suggests frequency-based pattern
+      total_access > unique_patterns * 20 ->
+        %{pattern_type: :frequency_based}
+
+      # Time-sensitive queries suggest time-based pattern
+      Enum.any?(patterns, &Map.get(&1, :time_sensitive, false)) ->
+        %{pattern_type: :time_based}
+
+      # Large data sets suggest size-based pattern
+      Enum.any?(patterns, fn p -> Map.get(p, :data_size, 0) > 1024 * 1024 end) ->
+        %{pattern_type: :size_based}
+
+      # Default to recency-based
+      true ->
+        %{pattern_type: :recency_based}
+    end
   end
 
   defp high_frequency_access?(patterns) do
@@ -1032,12 +1146,13 @@ defmodule RubberDuck.Skills.QueryOptimizationSkill do
   defp cacheable_query?(pattern) do
     # Determine if query pattern is suitable for caching
     query_type = Map.get(pattern, :query_type, :select)
-    
+
     case query_type do
       :select -> true
       :count -> true
       :exists -> true
-      _ -> false  # Don't cache mutations
+      # Don't cache mutations
+      _ -> false
     end
   end
 end

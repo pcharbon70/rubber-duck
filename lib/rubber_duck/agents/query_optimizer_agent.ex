@@ -53,12 +53,13 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     # Update query patterns database
     query_patterns = Map.get(agent, :query_patterns, %{})
     pattern_key = pattern_learning.query_hash
-    
-    updated_pattern = merge_pattern_data(
-      Map.get(query_patterns, pattern_key, %{}),
-      pattern_learning
-    )
-    
+
+    updated_pattern =
+      merge_pattern_data(
+        Map.get(query_patterns, pattern_key, %{}),
+        pattern_learning
+      )
+
     updated_patterns = Map.put(query_patterns, pattern_key, updated_pattern)
 
     # Update rewrite rules based on learning
@@ -79,11 +80,12 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   """
   def rewrite_query(agent, original_query, optimization_level \\ :balanced) do
     # Find applicable rewrite rules
-    applicable_rules = find_applicable_rewrite_rules(original_query, agent.rewrite_rules, optimization_level)
-    
+    applicable_rules =
+      find_applicable_rewrite_rules(original_query, agent.rewrite_rules, optimization_level)
+
     # Apply rewrite rules in order of effectiveness
     rewritten_query = apply_rewrite_rules(original_query, applicable_rules)
-    
+
     # Analyze rewrite effectiveness
     rewrite_analysis = %{
       original_query: original_query,
@@ -119,15 +121,18 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
       optimal_cache_size: calculate_optimal_cache_size(query_patterns),
       recommended_eviction_policy: recommend_cache_eviction_policy(query_patterns),
       cache_partitioning_strategy: recommend_cache_partitioning(query_patterns),
-      performance_prediction: predict_cache_performance_improvement(query_patterns, current_strategies)
+      performance_prediction:
+        predict_cache_performance_improvement(query_patterns, current_strategies)
     }
 
     # Update cache strategies
-    updated_strategies = Map.merge(current_strategies, %{
-      last_optimization: cache_optimization,
-      optimization_timestamp: DateTime.utc_now(),
-      effectiveness_tracking: track_cache_effectiveness(cache_optimization, cache_performance_data)
-    })
+    updated_strategies =
+      Map.merge(current_strategies, %{
+        last_optimization: cache_optimization,
+        optimization_timestamp: DateTime.utc_now(),
+        effectiveness_tracking:
+          track_cache_effectiveness(cache_optimization, cache_performance_data)
+      })
 
     {:ok, updated_agent} =
       __MODULE__.set(agent,
@@ -143,22 +148,25 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   """
   def optimize_load_balancing(agent, database_nodes, current_load_distribution) do
     query_patterns = agent.query_patterns
-    
+
     load_balancing_analysis = %{
       current_distribution: current_load_distribution,
       query_complexity_distribution: analyze_query_complexity_distribution(query_patterns),
-      recommended_distribution: calculate_optimal_load_distribution(query_patterns, database_nodes),
+      recommended_distribution:
+        calculate_optimal_load_distribution(query_patterns, database_nodes),
       performance_prediction: predict_load_balancing_performance(query_patterns, database_nodes),
       balancing_strategy: recommend_balancing_strategy(query_patterns, database_nodes),
-      implementation_plan: create_load_balancing_implementation_plan(query_patterns, database_nodes)
+      implementation_plan:
+        create_load_balancing_implementation_plan(query_patterns, database_nodes)
     }
 
     # Update load balancing configuration
-    load_balancing_config = Map.merge(agent.load_balancing_config, %{
-      last_optimization: load_balancing_analysis,
-      optimization_timestamp: DateTime.utc_now(),
-      nodes_managed: length(database_nodes)
-    })
+    load_balancing_config =
+      Map.merge(agent.load_balancing_config, %{
+        last_optimization: load_balancing_analysis,
+        optimization_timestamp: DateTime.utc_now(),
+        nodes_managed: length(database_nodes)
+      })
 
     {:ok, updated_agent} =
       __MODULE__.set(agent,
@@ -194,36 +202,41 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     opportunities = []
 
     # Check execution time
-    opportunities = if Map.get(execution_stats, :execution_time_ms, 0) > 1000 do
-      [:reduce_execution_time | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if Map.get(execution_stats, :execution_time_ms, 0) > 1000 do
+        [:reduce_execution_time | opportunities]
+      else
+        opportunities
+      end
 
     # Check row examination efficiency
     rows_examined = Map.get(execution_stats, :rows_examined, 0)
     rows_returned = Map.get(execution_stats, :rows_returned, 1)
-    
-    opportunities = if rows_examined > rows_returned * 10 do
-      [:improve_selectivity | opportunities]
-    else
-      opportunities
-    end
+
+    opportunities =
+      if rows_examined > rows_returned * 10 do
+        [:improve_selectivity | opportunities]
+      else
+        opportunities
+      end
 
     # Check index usage
-    opportunities = if Enum.empty?(Map.get(execution_stats, :index_usage, [])) do
-      [:add_indexes | opportunities]
-    else
-      opportunities
-    end
+    opportunities =
+      if Enum.empty?(Map.get(execution_stats, :index_usage, [])) do
+        [:add_indexes | opportunities]
+      else
+        opportunities
+      end
 
     # Check cache effectiveness
     cache_hits = Map.get(execution_stats, :cache_hits, 0)
-    opportunities = if cache_hits < rows_returned * 0.5 do
-      [:improve_caching | opportunities]
-    else
-      opportunities
-    end
+
+    opportunities =
+      if cache_hits < rows_returned * 0.5 do
+        [:improve_caching | opportunities]
+      else
+        opportunities
+      end
 
     opportunities
   end
@@ -232,7 +245,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     # Base confidence on data completeness and historical patterns
     data_completeness = assess_execution_stats_completeness(execution_stats)
     historical_depth = min(map_size(agent.query_patterns) / 20.0, 1.0)
-    
+
     (data_completeness + historical_depth) / 2
   end
 
@@ -240,7 +253,8 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     %{
       query_hash: new_learning.query_hash,
       execution_count: Map.get(existing_pattern, :execution_count, 0) + 1,
-      total_execution_time: Map.get(existing_pattern, :total_execution_time, 0) + new_learning.execution_time,
+      total_execution_time:
+        Map.get(existing_pattern, :total_execution_time, 0) + new_learning.execution_time,
       average_execution_time: calculate_average_execution_time(existing_pattern, new_learning),
       optimization_opportunities: merge_opportunities(existing_pattern, new_learning),
       learning_confidence: new_learning.learning_confidence,
@@ -253,21 +267,22 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     new_rules = []
 
     # Generate rules based on optimization opportunities
-    new_rules = Enum.reduce(pattern_learning.optimization_opportunities, new_rules, fn opportunity, rules ->
-      case opportunity do
-        :improve_selectivity ->
-          [create_selectivity_rule(pattern_learning) | rules]
-        
-        :add_indexes ->
-          [create_index_rule(pattern_learning) | rules]
-        
-        :improve_caching ->
-          [create_caching_rule(pattern_learning) | rules]
-        
-        _ ->
-          rules
-      end
-    end)
+    new_rules =
+      Enum.reduce(pattern_learning.optimization_opportunities, new_rules, fn opportunity, rules ->
+        case opportunity do
+          :improve_selectivity ->
+            [create_selectivity_rule(pattern_learning) | rules]
+
+          :add_indexes ->
+            [create_index_rule(pattern_learning) | rules]
+
+          :improve_caching ->
+            [create_caching_rule(pattern_learning) | rules]
+
+          _ ->
+            rules
+        end
+      end)
 
     # Merge with existing rules, avoiding duplicates
     merge_rewrite_rules(existing_rules, new_rules)
@@ -275,10 +290,11 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp find_applicable_rewrite_rules(query, rewrite_rules, optimization_level) do
     # Filter rules applicable to the query
-    applicable_rules = Enum.filter(rewrite_rules, fn rule ->
-      rule_applies_to_query?(rule, query) and
-      rule_matches_optimization_level?(rule, optimization_level)
-    end)
+    applicable_rules =
+      Enum.filter(rewrite_rules, fn rule ->
+        rule_applies_to_query?(rule, query) and
+          rule_matches_optimization_level?(rule, optimization_level)
+      end)
 
     # Sort by effectiveness score
     Enum.sort_by(applicable_rules, & &1.effectiveness_score, :desc)
@@ -294,16 +310,17 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp estimate_rewrite_improvement(original_query, rewritten_query, agent) do
     # Estimate improvement based on query complexity and historical patterns
     if original_query == rewritten_query do
-      0.0  # No rewrite applied
+      # No rewrite applied
+      0.0
     else
       original_complexity = estimate_query_complexity(original_query)
       rewritten_complexity = estimate_query_complexity(rewritten_query)
-      
+
       complexity_improvement = (original_complexity - rewritten_complexity) / original_complexity
-      
+
       # Adjust based on historical rewrite effectiveness
       historical_effectiveness = get_historical_rewrite_effectiveness(agent)
-      
+
       complexity_improvement * historical_effectiveness
     end
   end
@@ -314,9 +331,9 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     else
       rule_confidences = Enum.map(applicable_rules, & &1.confidence_score)
       avg_rule_confidence = Enum.sum(rule_confidences) / length(rule_confidences)
-      
+
       historical_confidence = get_historical_rewrite_confidence(agent)
-      
+
       (avg_rule_confidence + historical_confidence) / 2
     end
   end
@@ -325,8 +342,9 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     if map_size(query_patterns) == 0 do
       %{analysis: :no_data}
     else
-      patterns_with_hits = Map.values(query_patterns)
-      |> Enum.filter(&(Map.get(&1, :cache_hits, 0) > 0))
+      patterns_with_hits =
+        Map.values(query_patterns)
+        |> Enum.filter(&(Map.get(&1, :cache_hits, 0) > 0))
 
       %{
         cacheable_patterns: length(patterns_with_hits),
@@ -338,8 +356,9 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   end
 
   defp analyze_cache_miss_patterns(query_patterns) do
-    patterns_with_misses = Map.values(query_patterns)
-    |> Enum.filter(&(Map.get(&1, :cache_misses, 0) > 0))
+    patterns_with_misses =
+      Map.values(query_patterns)
+      |> Enum.filter(&(Map.get(&1, :cache_misses, 0) > 0))
 
     %{
       patterns_with_misses: length(patterns_with_misses),
@@ -350,11 +369,13 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp calculate_optimal_cache_size(query_patterns) do
     # Calculate optimal cache size based on query patterns
-    total_data_size = Map.values(query_patterns)
-    |> Enum.map(&estimate_pattern_data_size/1)
-    |> Enum.sum()
+    total_data_size =
+      Map.values(query_patterns)
+      |> Enum.map(&estimate_pattern_data_size/1)
+      |> Enum.sum()
 
-    working_set_ratio = 0.7  # 70% working set assumption
+    # 70% working set assumption
+    working_set_ratio = 0.7
     optimal_size_bytes = total_data_size * working_set_ratio
 
     %{
@@ -366,18 +387,19 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp recommend_cache_eviction_policy(query_patterns) do
     access_patterns = analyze_query_access_patterns(query_patterns)
-    
+
     case access_patterns.dominant_pattern do
       :frequent_recent -> :lru
       :frequent_overall -> :lfu
       :time_sensitive -> :ttl
-      _ -> :lru  # Default to LRU
+      # Default to LRU
+      _ -> :lru
     end
   end
 
   defp recommend_cache_partitioning(query_patterns) do
     pattern_diversity = assess_pattern_diversity(query_patterns)
-    
+
     case pattern_diversity do
       :high_diversity -> :query_type_based
       :medium_diversity -> :table_based
@@ -389,7 +411,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp predict_cache_performance_improvement(query_patterns, current_strategies) do
     current_hit_rate = Map.get(current_strategies, :current_hit_rate, 0.5)
     optimal_hit_rate = calculate_theoretical_max_hit_rate(query_patterns)
-    
+
     %{
       current_hit_rate: current_hit_rate,
       predicted_hit_rate: optimal_hit_rate,
@@ -412,8 +434,9 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     if map_size(query_patterns) == 0 do
       %{distribution: :no_data}
     else
-      complexities = Map.values(query_patterns)
-      |> Enum.map(&estimate_pattern_complexity/1)
+      complexities =
+        Map.values(query_patterns)
+        |> Enum.map(&estimate_pattern_complexity/1)
 
       %{
         low_complexity: Enum.count(complexities, &(&1 < 0.3)),
@@ -427,16 +450,20 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp calculate_optimal_load_distribution(query_patterns, database_nodes) do
     complexity_distribution = analyze_query_complexity_distribution(query_patterns)
     node_count = length(database_nodes)
-    
+
     if node_count == 0 do
       %{error: :no_nodes_available}
     else
       # Distribute based on query complexity
       %{
-        read_heavy_node_percentage: 0.6,  # 60% for read-heavy queries
-        write_heavy_node_percentage: 0.2,  # 20% for write-heavy queries
-        mixed_workload_percentage: 0.2,   # 20% for mixed workload
-        recommended_node_assignments: assign_nodes_by_workload(database_nodes, complexity_distribution)
+        # 60% for read-heavy queries
+        read_heavy_node_percentage: 0.6,
+        # 20% for write-heavy queries
+        write_heavy_node_percentage: 0.2,
+        # 20% for mixed workload
+        mixed_workload_percentage: 0.2,
+        recommended_node_assignments:
+          assign_nodes_by_workload(database_nodes, complexity_distribution)
       }
     end
   end
@@ -444,11 +471,12 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp predict_load_balancing_performance(query_patterns, database_nodes) do
     current_load = calculate_current_load_characteristics(query_patterns)
     optimal_distribution = calculate_optimal_load_distribution(query_patterns, database_nodes)
-    
+
     %{
       current_performance_score: assess_current_load_performance(current_load),
       predicted_performance_score: assess_predicted_load_performance(optimal_distribution),
-      improvement_potential: calculate_load_balancing_improvement(current_load, optimal_distribution),
+      improvement_potential:
+        calculate_load_balancing_improvement(current_load, optimal_distribution),
       confidence: calculate_load_balancing_confidence(query_patterns, database_nodes)
     }
   end
@@ -456,17 +484,17 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp recommend_balancing_strategy(query_patterns, database_nodes) do
     query_characteristics = analyze_query_characteristics(query_patterns)
     _node_capabilities = assess_node_capabilities(database_nodes)
-    
+
     case {query_characteristics.primary_workload, length(database_nodes)} do
       {:read_heavy, nodes} when nodes > 2 ->
         :read_replica_distribution
-      
+
       {:write_heavy, nodes} when nodes > 1 ->
         :write_master_distribution
-      
+
       {:mixed, nodes} when nodes > 2 ->
         :workload_based_distribution
-      
+
       _ ->
         :single_node_optimization
     end
@@ -474,7 +502,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp create_load_balancing_implementation_plan(query_patterns, database_nodes) do
     strategy = recommend_balancing_strategy(query_patterns, database_nodes)
-    
+
     %{
       strategy: strategy,
       implementation_steps: generate_implementation_steps(strategy),
@@ -489,7 +517,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp assess_execution_stats_completeness(execution_stats) do
     required_fields = [:query_hash, :execution_time_ms, :rows_examined, :rows_returned]
     available_fields = Map.keys(execution_stats)
-    
+
     matching_fields = Enum.count(required_fields, &(&1 in available_fields))
     matching_fields / length(required_fields)
   end
@@ -497,29 +525,30 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp calculate_average_execution_time(existing_pattern, new_learning) do
     existing_count = Map.get(existing_pattern, :execution_count, 0)
     existing_total = Map.get(existing_pattern, :total_execution_time, 0)
-    
+
     new_total = existing_total + new_learning.execution_time
     new_count = existing_count + 1
-    
+
     new_total / new_count
   end
 
   defp merge_opportunities(existing_pattern, new_learning) do
     existing_opportunities = Map.get(existing_pattern, :optimization_opportunities, [])
     new_opportunities = new_learning.optimization_opportunities
-    
+
     (existing_opportunities ++ new_opportunities) |> Enum.uniq()
   end
 
   defp assess_pattern_stability(existing_pattern, new_learning) do
     if Map.get(existing_pattern, :execution_count, 0) < 5 do
-      :establishing  # Still learning the pattern
+      # Still learning the pattern
+      :establishing
     else
       existing_avg = Map.get(existing_pattern, :average_execution_time, 0)
       new_time = new_learning.execution_time
-      
+
       variance = abs(existing_avg - new_time) / existing_avg
-      
+
       cond do
         variance < 0.1 -> :stable
         variance < 0.3 -> :variable
@@ -564,20 +593,21 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp merge_rewrite_rules(existing_rules, new_rules) do
     # Merge rules, avoiding duplicates and keeping most effective
     all_rules = existing_rules ++ new_rules
-    
+
     # Group by rule type and keep best from each type
     all_rules
     |> Enum.group_by(& &1.rule_type)
     |> Enum.map(fn {_type, rules} ->
       Enum.max_by(rules, & &1.effectiveness_score)
     end)
-    |> Enum.take(20)  # Limit total rules
+    # Limit total rules
+    |> Enum.take(20)
   end
 
   defp rule_applies_to_query?(rule, query) do
     # Simple rule applicability check
     query_characteristics = analyze_single_query_characteristics(query)
-    
+
     Enum.any?(rule.applicability, fn condition ->
       query_matches_condition?(query_characteristics, condition)
     end)
@@ -585,7 +615,8 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp rule_matches_optimization_level?(rule, optimization_level) do
     case optimization_level do
-      :aggressive -> true  # Apply all rules
+      # Apply all rules
+      :aggressive -> true
       :balanced -> rule.effectiveness_score > 0.5
       :conservative -> rule.effectiveness_score > 0.7 and rule.confidence_score > 0.8
       _ -> true
@@ -600,7 +631,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp estimate_query_complexity(query) do
     query_string = to_string(query) |> String.upcase()
-    
+
     complexity_factors = [
       String.contains?(query_string, "JOIN"),
       String.contains?(query_string, "SUBQUERY"),
@@ -615,26 +646,28 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp get_historical_rewrite_effectiveness(agent) do
     optimization_history = agent.optimization_history
-    
+
     if Enum.empty?(optimization_history) do
-      0.6  # Default moderate effectiveness
+      # Default moderate effectiveness
+      0.6
     else
       recent_optimizations = Enum.take(optimization_history, 20)
       improvements = Enum.map(recent_optimizations, & &1.estimated_improvement)
-      
+
       Enum.sum(improvements) / length(improvements)
     end
   end
 
   defp get_historical_rewrite_confidence(agent) do
     optimization_history = agent.optimization_history
-    
+
     if Enum.empty?(optimization_history) do
-      0.5  # Default moderate confidence
+      # Default moderate confidence
+      0.5
     else
       recent_optimizations = Enum.take(optimization_history, 10)
       confidences = Enum.map(recent_optimizations, & &1.rewrite_confidence)
-      
+
       Enum.sum(confidences) / length(confidences)
     end
   end
@@ -647,7 +680,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     else
       total_hits = Enum.sum(Enum.map(patterns_with_hits, &Map.get(&1, :cache_hits, 0)))
       total_requests = Enum.sum(Enum.map(patterns_with_hits, &Map.get(&1, :execution_count, 1)))
-      
+
       total_hits / total_requests
     end
   end
@@ -679,82 +712,86 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp calculate_cache_size_confidence(query_patterns) do
     pattern_count = map_size(query_patterns)
     data_quality = min(pattern_count / 50.0, 1.0)
-    
+
     # Higher confidence with more patterns
     data_quality
   end
 
   defp analyze_query_access_patterns(query_patterns) do
-    access_frequencies = Map.values(query_patterns)
-    |> Enum.map(&Map.get(&1, :execution_count, 1))
+    access_frequencies =
+      Map.values(query_patterns)
+      |> Enum.map(&Map.get(&1, :execution_count, 1))
 
-    recency_scores = Map.values(query_patterns)
-    |> Enum.map(&calculate_recency_score/1)
+    recency_scores =
+      Map.values(query_patterns)
+      |> Enum.map(&calculate_recency_score/1)
 
     dominant_pattern = determine_dominant_access_pattern(access_frequencies, recency_scores)
 
     %{
       dominant_pattern: dominant_pattern,
-      access_frequency_distribution: Enum.frequencies_by(access_frequencies, &categorize_frequency/1),
+      access_frequency_distribution:
+        Enum.frequencies_by(access_frequencies, &categorize_frequency/1),
       recency_distribution: Enum.frequencies_by(recency_scores, &categorize_recency/1)
     }
   end
 
   defp calculate_theoretical_max_hit_rate(query_patterns) do
     # Calculate theoretical maximum hit rate based on query characteristics
-    cacheable_patterns = Map.values(query_patterns)
-    |> Enum.filter(&cacheable_pattern?/1)
+    cacheable_patterns =
+      Map.values(query_patterns)
+      |> Enum.filter(&cacheable_pattern?/1)
 
     if map_size(query_patterns) == 0 do
       0.0
     else
       cacheable_ratio = length(cacheable_patterns) / map_size(query_patterns)
-      
+
       # Theoretical max considering cacheability and access patterns
-      cacheable_ratio * 0.9  # 90% of cacheable queries could hit
+      # 90% of cacheable queries could hit
+      cacheable_ratio * 0.9
     end
   end
 
   defp calculate_prediction_confidence(query_patterns, current_strategies) do
     pattern_quality = assess_query_pattern_quality(query_patterns)
     strategy_maturity = assess_strategy_maturity(current_strategies)
-    
+
     (pattern_quality + strategy_maturity) / 2
   end
 
   defp calculate_prediction_accuracy(cache_optimization, performance_data) do
     predicted = cache_optimization.performance_prediction.improvement_potential
     actual = Map.get(performance_data, :actual_improvement, 0.0)
-    
+
     if predicted == 0.0 do
-      1.0  # Perfect accuracy if no improvement predicted and none achieved
+      # Perfect accuracy if no improvement predicted and none achieved
+      1.0
     else
-      1.0 - (abs(predicted - actual) / predicted)
+      1.0 - abs(predicted - actual) / predicted
     end
   end
 
   # Load balancing helpers
 
+  defp assign_nodes_by_workload([], _complexity_distribution), do: %{}
+
   defp assign_nodes_by_workload(database_nodes, _complexity_distribution) do
-    node_count = length(database_nodes)
-    
-    if node_count == 0 do
-      %{}
-    else
-      # Simple node assignment strategy
-      Enum.with_index(database_nodes)
-      |> Enum.map(fn {node, index} ->
-        workload_type = case rem(index, 3) do
-          0 -> :read_heavy
-          1 -> :write_heavy
-          2 -> :mixed
-        end
-        
-        {node, workload_type}
-      end)
-      |> Enum.into(%{})
-    end
+    # Simple node assignment strategy
+    database_nodes
+    |> Enum.with_index()
+    |> Enum.map(&assign_workload_type/1)
+    |> Enum.into(%{})
   end
+
+  defp assign_workload_type({node, index}) do
+    workload_type = determine_workload_type(rem(index, 3))
+    {node, workload_type}
+  end
+
+  defp determine_workload_type(0), do: :read_heavy
+  defp determine_workload_type(1), do: :write_heavy
+  defp determine_workload_type(2), do: :mixed
 
   defp calculate_current_load_characteristics(query_patterns) do
     if map_size(query_patterns) == 0 do
@@ -799,14 +836,14 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp calculate_load_balancing_improvement(current_load, optimal_distribution) do
     current_score = assess_current_load_performance(current_load)
     predicted_score = assess_predicted_load_performance(optimal_distribution)
-    
+
     predicted_score - current_score
   end
 
   defp calculate_load_balancing_confidence(query_patterns, database_nodes) do
     pattern_quality = min(map_size(query_patterns) / 30.0, 1.0)
     node_availability = min(length(database_nodes) / 3.0, 1.0)
-    
+
     (pattern_quality + node_availability) / 2
   end
 
@@ -814,15 +851,15 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp calculate_optimization_effectiveness(agent) do
     optimization_history = agent.optimization_history
-    
+
     if Enum.empty?(optimization_history) do
       %{effectiveness: :no_data}
     else
       recent_optimizations = Enum.take(optimization_history, 20)
       improvements = Enum.map(recent_optimizations, & &1.estimated_improvement)
-      
+
       avg_improvement = Enum.sum(improvements) / length(improvements)
-      
+
       %{
         average_improvement: avg_improvement,
         total_optimizations: length(recent_optimizations),
@@ -833,35 +870,33 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp assess_cache_strategy_status(agent) do
     cache_strategies = agent.cache_strategies
-    
-    if map_size(cache_strategies) == 0 do
-      :not_optimized
-    else
-      last_optimization = Map.get(cache_strategies, :last_optimization)
-      
-      if last_optimization do
-        improvement_potential = last_optimization.performance_prediction.improvement_potential
-        
-        cond do
-          improvement_potential > 0.3 -> :significant_opportunity
-          improvement_potential > 0.1 -> :moderate_opportunity
-          improvement_potential > 0.0 -> :minor_opportunity
-          true -> :optimized
-        end
-      else
-        :unknown
-      end
+
+    cond do
+      map_size(cache_strategies) == 0 -> :not_optimized
+      is_nil(Map.get(cache_strategies, :last_optimization)) -> :unknown
+      true -> assess_improvement_potential(cache_strategies.last_optimization)
+    end
+  end
+
+  defp assess_improvement_potential(optimization) do
+    improvement_potential = optimization.performance_prediction.improvement_potential
+
+    cond do
+      improvement_potential > 0.3 -> :significant_opportunity
+      improvement_potential > 0.1 -> :moderate_opportunity
+      improvement_potential > 0.0 -> :minor_opportunity
+      true -> :optimized
     end
   end
 
   defp assess_load_balancing_status(agent) do
     load_config = agent.load_balancing_config
-    
+
     if map_size(load_config) == 0 do
       :not_configured
     else
       nodes_managed = Map.get(load_config, :nodes_managed, 0)
-      
+
       case nodes_managed do
         0 -> :no_nodes
         1 -> :single_node
@@ -874,12 +909,12 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp assess_learning_model_quality(agent) do
     query_patterns = agent.query_patterns
     rewrite_rules = agent.rewrite_rules
-    
+
     pattern_quality = min(map_size(query_patterns) / 100.0, 1.0)
     rule_quality = min(length(rewrite_rules) / 10.0, 1.0)
-    
+
     overall_quality = (pattern_quality + rule_quality) / 2
-    
+
     cond do
       overall_quality > 0.8 -> :excellent
       overall_quality > 0.6 -> :good
@@ -904,35 +939,44 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp generate_optimization_recommendations(agent) do
     recommendations = []
-    
+
     # Recommendations based on pattern learning
     pattern_count = map_size(agent.query_patterns)
-    recommendations = if pattern_count < 20 do
-      ["Continue gathering query patterns for better optimization" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if pattern_count < 20 do
+        ["Continue gathering query patterns for better optimization" | recommendations]
+      else
+        recommendations
+      end
 
     # Recommendations based on rewrite rules
     rule_count = length(agent.rewrite_rules)
-    recommendations = if rule_count < 5 do
-      ["Focus on developing more rewrite rules for common patterns" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if rule_count < 5 do
+        ["Focus on developing more rewrite rules for common patterns" | recommendations]
+      else
+        recommendations
+      end
 
     # Recommendations based on cache strategy
     cache_status = assess_cache_strategy_status(agent)
-    recommendations = case cache_status do
-      :significant_opportunity ->
-        ["Implement cache strategy optimizations for substantial performance gains" | recommendations]
-      
-      :moderate_opportunity ->
-        ["Consider cache strategy improvements" | recommendations]
-      
-      _ ->
-        recommendations
-    end
+
+    recommendations =
+      case cache_status do
+        :significant_opportunity ->
+          [
+            "Implement cache strategy optimizations for substantial performance gains"
+            | recommendations
+          ]
+
+        :moderate_opportunity ->
+          ["Consider cache strategy improvements" | recommendations]
+
+        _ ->
+          recommendations
+      end
 
     if Enum.empty?(recommendations) do
       ["Query optimization system operating effectively"]
@@ -947,7 +991,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     # Estimate data size based on pattern characteristics
     execution_count = Map.get(pattern, :execution_count, 1)
     avg_rows = Map.get(pattern, :average_rows_returned, 10)
-    
+
     # Assume 1KB per row average
     execution_count * avg_rows * 1024
   end
@@ -955,7 +999,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp estimate_pattern_complexity(pattern) do
     # Simple complexity estimation
     avg_execution_time = Map.get(pattern, :average_execution_time, 100)
-    
+
     # Normalize execution time to complexity score
     min(avg_execution_time / 1000.0, 1.0)
   end
@@ -963,22 +1007,28 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp calculate_pattern_hit_rate(pattern) do
     cache_hits = Map.get(pattern, :cache_hits, 0)
     execution_count = Map.get(pattern, :execution_count, 1)
-    
+
     cache_hits / execution_count
   end
 
   defp calculate_recency_score(pattern) do
     last_seen = Map.get(pattern, :last_seen, DateTime.utc_now())
     hours_since = DateTime.diff(DateTime.utc_now(), last_seen, :hour)
-    
+
     # Recent = higher score
-    max(1.0 - (hours_since / 168.0), 0.0)  # 0 after 1 week
+    # 0 after 1 week
+    max(1.0 - hours_since / 168.0, 0.0)
   end
 
   defp determine_dominant_access_pattern(frequencies, recency_scores) do
-    avg_frequency = if Enum.empty?(frequencies), do: 0, else: Enum.sum(frequencies) / length(frequencies)
-    avg_recency = if Enum.empty?(recency_scores), do: 0, else: Enum.sum(recency_scores) / length(recency_scores)
-    
+    avg_frequency =
+      if Enum.empty?(frequencies), do: 0, else: Enum.sum(frequencies) / length(frequencies)
+
+    avg_recency =
+      if Enum.empty?(recency_scores),
+        do: 0,
+        else: Enum.sum(recency_scores) / length(recency_scores)
+
     cond do
       avg_frequency > 10 and avg_recency > 0.8 -> :frequent_recent
       avg_frequency > 10 -> :frequent_overall
@@ -1011,9 +1061,10 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     if map_size(query_patterns) < 5 do
       :low_diversity
     else
-      pattern_types = Map.values(query_patterns)
-      |> Enum.map(&classify_pattern_type/1)
-      |> Enum.uniq()
+      pattern_types =
+        Map.values(query_patterns)
+        |> Enum.map(&classify_pattern_type/1)
+        |> Enum.uniq()
 
       case length(pattern_types) do
         types when types > 5 -> :high_diversity
@@ -1026,17 +1077,19 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp cacheable_pattern?(pattern) do
     # Determine if pattern represents cacheable queries
     execution_count = Map.get(pattern, :execution_count, 1)
-    execution_count > 2  # Must be executed multiple times to be worth caching
+    # Must be executed multiple times to be worth caching
+    execution_count > 2
   end
 
   defp assess_query_pattern_quality(query_patterns) do
     pattern_count = map_size(query_patterns)
-    
+
     if pattern_count == 0 do
       0.0
     else
-      stable_patterns = Map.values(query_patterns)
-      |> Enum.count(&(Map.get(&1, :pattern_stability) == :stable))
+      stable_patterns =
+        Map.values(query_patterns)
+        |> Enum.count(&(Map.get(&1, :pattern_stability) == :stable))
 
       stable_patterns / pattern_count
     end
@@ -1049,7 +1102,7 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
       # Assess maturity based on available data
       has_performance_data = Map.has_key?(current_strategies, :current_hit_rate)
       has_optimization_history = Map.has_key?(current_strategies, :last_optimization)
-      
+
       maturity_factors = [has_performance_data, has_optimization_history]
       Enum.count(maturity_factors, & &1) / length(maturity_factors)
     end
@@ -1073,12 +1126,13 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     # TODO: Implement actual node capability assessment
     # For now, assume all nodes have similar capabilities
     Enum.map(database_nodes, fn node ->
-      {node, %{
-        read_capacity: 1.0,
-        write_capacity: 1.0,
-        memory_capacity: 1.0,
-        connection_capacity: 100
-      }}
+      {node,
+       %{
+         read_capacity: 1.0,
+         write_capacity: 1.0,
+         memory_capacity: 1.0,
+         connection_capacity: 100
+       }}
     end)
     |> Enum.into(%{})
   end
@@ -1124,13 +1178,17 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
     case strategy do
       :read_replica_distribution ->
         ["Configure read replicas", "Update connection routing", "Monitor read distribution"]
-      
+
       :write_master_distribution ->
         ["Configure write masters", "Implement write routing", "Monitor write performance"]
-      
+
       :workload_based_distribution ->
-        ["Analyze workload patterns", "Configure node specialization", "Implement intelligent routing"]
-      
+        [
+          "Analyze workload patterns",
+          "Configure node specialization",
+          "Implement intelligent routing"
+        ]
+
       _ ->
         ["Optimize single node performance", "Monitor resource usage"]
     end
@@ -1147,40 +1205,51 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
 
   defp create_load_balancing_rollback_plan(strategy) do
     %{
-      rollback_strategy: case strategy do
-        :single_node_optimization -> :revert_configuration
-        _ -> :restore_previous_distribution
-      end,
+      rollback_strategy:
+        case strategy do
+          :single_node_optimization -> :revert_configuration
+          _ -> :restore_previous_distribution
+        end,
       estimated_rollback_time: "1-2 hours",
       data_safety: :preserved,
-      rollback_validation: ["Verify connection routing", "Check query performance", "Validate data consistency"]
+      rollback_validation: [
+        "Verify connection routing",
+        "Check query performance",
+        "Validate data consistency"
+      ]
     }
   end
 
   defp define_load_balancing_monitoring(strategy) do
-    base_monitoring = ["Monitor query distribution", "Track node performance", "Check connection health"]
-    
-    enhanced_monitoring = case strategy do
-      :read_replica_distribution ->
-        ["Monitor read replica lag", "Track read query routing" | base_monitoring]
-      
-      :write_master_distribution ->
-        ["Monitor write performance", "Track write conflict resolution" | base_monitoring]
-      
-      _ ->
-        base_monitoring
-    end
+    base_monitoring = [
+      "Monitor query distribution",
+      "Track node performance",
+      "Check connection health"
+    ]
+
+    enhanced_monitoring =
+      case strategy do
+        :read_replica_distribution ->
+          ["Monitor read replica lag", "Track read query routing" | base_monitoring]
+
+        :write_master_distribution ->
+          ["Monitor write performance", "Track write conflict resolution" | base_monitoring]
+
+        _ ->
+          base_monitoring
+      end
 
     enhanced_monitoring
   end
 
   defp analyze_single_query_characteristics(query) do
     query_string = to_string(query) |> String.upcase()
-    
+
     %{
       has_joins: String.contains?(query_string, "JOIN"),
       has_subqueries: String.contains?(query_string, "(SELECT"),
-      has_aggregations: String.contains?(query_string, "COUNT") or String.contains?(query_string, "SUM"),
+      has_aggregations:
+        String.contains?(query_string, "COUNT") or String.contains?(query_string, "SUM"),
       has_order_by: String.contains?(query_string, "ORDER BY"),
       is_select: String.starts_with?(query_string, "SELECT"),
       complexity_level: estimate_query_complexity(query)
@@ -1190,15 +1259,18 @@ defmodule RubberDuck.Agents.QueryOptimizerAgent do
   defp query_matches_condition?(characteristics, condition) do
     case condition do
       :high_row_examination -> characteristics.complexity_level > 0.7
-      :no_index_usage -> not characteristics.has_joins  # Simple heuristic
-      :low_cache_hits -> true  # Can't determine from query alone
+      # Simple heuristic
+      :no_index_usage -> not characteristics.has_joins
+      # Can't determine from query alone
+      :low_cache_hits -> true
       _ -> false
     end
   end
 
   defp classify_pattern_type(_pattern) do
     # TODO: Implement sophisticated pattern classification
-    :standard  # Default classification
+    # Default classification
+    :standard
   end
 
   defp calculate_average_pattern_complexity(query_patterns) do

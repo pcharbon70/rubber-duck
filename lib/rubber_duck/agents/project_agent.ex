@@ -16,7 +16,7 @@ defmodule RubberDuck.Agents.ProjectAgent do
       RubberDuck.Actions.CreateEntity
     ]
 
-  alias RubberDuck.Skills.{LearningSkill, ProjectManagementSkill}
+  alias RubberDuck.Skills.ProjectManagementSkill
 
   @doc """
   Create a new ProjectAgent instance for a project.

@@ -40,13 +40,13 @@ defmodule RubberDuck.Agents.DataHealthSensor do
   def monitor_performance(agent) do
     # Collect current performance metrics
     current_metrics = collect_performance_metrics(agent.monitoring_scope)
-    
+
     # Compare against baselines for anomaly detection
     anomaly_analysis = detect_performance_anomalies(current_metrics, agent.performance_baselines)
-    
+
     # Update health metrics
     health_assessment = assess_database_health(current_metrics, anomaly_analysis)
-    
+
     # Check scaling triggers
     scaling_assessment = assess_scaling_needs(current_metrics, agent.scaling_triggers)
 
@@ -59,17 +59,19 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     }
 
     # Update agent state
-    health_metrics = Map.merge(agent.health_metrics, %{
-      latest: health_monitoring_result,
-      last_updated: DateTime.utc_now()
-    })
+    health_metrics =
+      Map.merge(agent.health_metrics, %{
+        latest: health_monitoring_result,
+        last_updated: DateTime.utc_now()
+      })
 
     # Store anomaly if detected
-    anomaly_history = if anomaly_analysis.anomalies_detected do
-      [anomaly_analysis | agent.anomaly_history] |> Enum.take(200)
-    else
-      agent.anomaly_history
-    end
+    anomaly_history =
+      if anomaly_analysis.anomalies_detected do
+        [anomaly_analysis | agent.anomaly_history] |> Enum.take(200)
+      else
+        agent.anomaly_history
+      end
 
     {:ok, updated_agent} =
       __MODULE__.set(agent,
@@ -85,7 +87,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
   Predict capacity issues and scaling needs.
   """
   def predict_capacity_issues(agent, prediction_horizon_hours \\ 24) do
-    health_metrics = agent.health_metrics
+    _health_metrics = agent.health_metrics
     historical_data = extract_historical_metrics(agent, prediction_horizon_hours * 2)
 
     capacity_prediction = %{
@@ -100,7 +102,8 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     }
 
     # Store predictions for accuracy tracking
-    capacity_predictions = Map.put(agent.capacity_predictions, DateTime.utc_now(), capacity_prediction)
+    capacity_predictions =
+      Map.put(agent.capacity_predictions, DateTime.utc_now(), capacity_prediction)
 
     {:ok, updated_agent} =
       __MODULE__.set(agent,
@@ -116,7 +119,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
   """
   def trigger_scaling(agent, scaling_action, scaling_parameters \\ %{}) do
     current_metrics = Map.get(agent.health_metrics, :latest, %{})
-    
+
     scaling_analysis = %{
       scaling_action: scaling_action,
       scaling_parameters: scaling_parameters,
@@ -128,24 +131,27 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
     # Execute scaling action if auto-scaling is enabled
     auto_scaling = Map.get(scaling_parameters, :auto_execute, false)
-    
-    scaling_result = if auto_scaling do
-      execute_scaling_action(scaling_analysis)
-    else
-      %{
-        scaling_scheduled: true,
-        auto_executed: false,
-        manual_approval_required: true,
-        scheduled_for: DateTime.add(DateTime.utc_now(), 3600, :second)
-      }
-    end
+
+    scaling_result =
+      if auto_scaling do
+        execute_scaling_action(scaling_analysis)
+      else
+        %{
+          scaling_scheduled: true,
+          auto_executed: false,
+          manual_approval_required: true,
+          scheduled_for: DateTime.add(DateTime.utc_now(), 3600, :second)
+        }
+      end
 
     # Track scaling for learning
     scaling_history = Map.get(agent, :scaling_history, [])
-    scaling_record = Map.merge(scaling_analysis, %{
-      scaling_result: scaling_result,
-      scaling_timestamp: DateTime.utc_now()
-    })
+
+    scaling_record =
+      Map.merge(scaling_analysis, %{
+        scaling_result: scaling_result,
+        scaling_timestamp: DateTime.utc_now()
+      })
 
     updated_history = [scaling_record | scaling_history] |> Enum.take(100)
 
@@ -164,7 +170,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
   def establish_baselines(agent, baseline_period_hours \\ 168) do
     # Collect historical metrics for baseline calculation
     historical_metrics = extract_historical_metrics(agent, baseline_period_hours)
-    
+
     performance_baselines = %{
       cpu_baseline: calculate_cpu_baseline(historical_metrics),
       memory_baseline: calculate_memory_baseline(historical_metrics),
@@ -208,12 +214,18 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp default_scaling_triggers do
     %{
-      cpu_threshold: 0.8,      # 80% CPU utilization
-      memory_threshold: 0.85,  # 85% memory utilization
-      connection_threshold: 0.9,  # 90% connection pool utilization
-      query_latency_threshold: 1000,  # 1 second average query time
-      io_wait_threshold: 0.3,  # 30% IO wait time
-      alert_escalation_count: 3  # 3 consecutive alerts trigger scaling
+      # 80% CPU utilization
+      cpu_threshold: 0.8,
+      # 85% memory utilization
+      memory_threshold: 0.85,
+      # 90% connection pool utilization
+      connection_threshold: 0.9,
+      # 1 second average query time
+      query_latency_threshold: 1000,
+      # 30% IO wait time
+      io_wait_threshold: 0.3,
+      # 3 consecutive alerts trigger scaling
+      alert_escalation_count: 3
     }
   end
 
@@ -251,25 +263,28 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       anomalies = []
 
       # CPU anomaly detection
-      anomalies = if anomaly_detected?(:cpu, current_metrics.cpu_utilization, baselines) do
-        [{:cpu_anomaly, current_metrics.cpu_utilization} | anomalies]
-      else
-        anomalies
-      end
+      anomalies =
+        if anomaly_detected?(:cpu, current_metrics.cpu_utilization, baselines) do
+          [{:cpu_anomaly, current_metrics.cpu_utilization} | anomalies]
+        else
+          anomalies
+        end
 
       # Memory anomaly detection
-      anomalies = if anomaly_detected?(:memory, current_metrics.memory_utilization, baselines) do
-        [{:memory_anomaly, current_metrics.memory_utilization} | anomalies]
-      else
-        anomalies
-      end
+      anomalies =
+        if anomaly_detected?(:memory, current_metrics.memory_utilization, baselines) do
+          [{:memory_anomaly, current_metrics.memory_utilization} | anomalies]
+        else
+          anomalies
+        end
 
       # Query performance anomaly detection
-      anomalies = if anomaly_detected?(:query_time, current_metrics.average_query_time_ms, baselines) do
-        [{:query_performance_anomaly, current_metrics.average_query_time_ms} | anomalies]
-      else
-        anomalies
-      end
+      anomalies =
+        if anomaly_detected?(:query_time, current_metrics.average_query_time_ms, baselines) do
+          [{:query_performance_anomaly, current_metrics.average_query_time_ms} | anomalies]
+        else
+          anomalies
+        end
 
       %{
         anomalies_detected: not Enum.empty?(anomalies),
@@ -286,7 +301,11 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     health_factors = %{
       cpu_health: assess_cpu_health(current_metrics.cpu_utilization),
       memory_health: assess_memory_health(current_metrics.memory_utilization),
-      connection_health: assess_connection_health(current_metrics.active_connections, current_metrics.max_connections),
+      connection_health:
+        assess_connection_health(
+          current_metrics.active_connections,
+          current_metrics.max_connections
+        ),
       query_performance_health: assess_query_health(current_metrics.average_query_time_ms),
       cache_health: assess_cache_health(current_metrics.cache_hit_ratio),
       io_health: assess_io_health(current_metrics.io_operations_per_second)
@@ -297,16 +316,17 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     overall_score = Enum.sum(health_scores) / length(health_scores)
 
     # Adjust for anomalies
-    anomaly_penalty = if anomaly_analysis.anomalies_detected do
-      case anomaly_analysis.severity do
-        :critical -> 0.4
-        :high -> 0.2
-        :medium -> 0.1
-        _ -> 0.05
+    anomaly_penalty =
+      if anomaly_analysis.anomalies_detected do
+        case anomaly_analysis.severity do
+          :critical -> 0.4
+          :high -> 0.2
+          :medium -> 0.1
+          _ -> 0.05
+        end
+      else
+        0.0
       end
-    else
-      0.0
-    end
 
     final_score = max(overall_score - anomaly_penalty, 0.0)
 
@@ -323,33 +343,38 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     scaling_needs = []
 
     # Check CPU scaling needs
-    scaling_needs = if current_metrics.cpu_utilization > scaling_triggers.cpu_threshold do
-      [{:cpu_scaling, :scale_up} | scaling_needs]
-    else
-      scaling_needs
-    end
+    scaling_needs =
+      if current_metrics.cpu_utilization > scaling_triggers.cpu_threshold do
+        [{:cpu_scaling, :scale_up} | scaling_needs]
+      else
+        scaling_needs
+      end
 
     # Check memory scaling needs
-    scaling_needs = if current_metrics.memory_utilization > scaling_triggers.memory_threshold do
-      [{:memory_scaling, :scale_up} | scaling_needs]
-    else
-      scaling_needs
-    end
+    scaling_needs =
+      if current_metrics.memory_utilization > scaling_triggers.memory_threshold do
+        [{:memory_scaling, :scale_up} | scaling_needs]
+      else
+        scaling_needs
+      end
 
     # Check connection scaling needs
     connection_utilization = current_metrics.active_connections / current_metrics.max_connections
-    scaling_needs = if connection_utilization > scaling_triggers.connection_threshold do
-      [{:connection_scaling, :increase_pool} | scaling_needs]
-    else
-      scaling_needs
-    end
+
+    scaling_needs =
+      if connection_utilization > scaling_triggers.connection_threshold do
+        [{:connection_scaling, :increase_pool} | scaling_needs]
+      else
+        scaling_needs
+      end
 
     # Check query performance scaling needs
-    scaling_needs = if current_metrics.average_query_time_ms > scaling_triggers.query_latency_threshold do
-      [{:performance_scaling, :optimize_queries} | scaling_needs]
-    else
-      scaling_needs
-    end
+    scaling_needs =
+      if current_metrics.average_query_time_ms > scaling_triggers.query_latency_threshold do
+        [{:performance_scaling, :optimize_queries} | scaling_needs]
+      else
+        scaling_needs
+      end
 
     %{
       scaling_needed: not Enum.empty?(scaling_needs),
@@ -364,13 +389,13 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp predict_cpu_utilization(historical_data) do
     cpu_values = extract_metric_values(historical_data, :cpu_utilization)
-    
+
     if length(cpu_values) < 3 do
       %{prediction: :insufficient_data}
     else
       trend = calculate_trend(cpu_values)
       current_value = List.last(cpu_values)
-      
+
       %{
         current_value: current_value,
         trend: trend,
@@ -382,13 +407,13 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp predict_memory_utilization(historical_data) do
     memory_values = extract_metric_values(historical_data, :memory_utilization)
-    
+
     if length(memory_values) < 3 do
       %{prediction: :insufficient_data}
     else
       trend = calculate_trend(memory_values)
       current_value = List.last(memory_values)
-      
+
       %{
         current_value: current_value,
         trend: trend,
@@ -400,17 +425,17 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp predict_storage_growth(historical_data) do
     storage_values = extract_metric_values(historical_data, :disk_utilization)
-    
+
     if length(storage_values) < 5 do
       %{prediction: :insufficient_data}
     else
       growth_rate = calculate_growth_rate(storage_values)
       current_value = List.last(storage_values)
-      
+
       %{
         current_utilization: current_value,
         growth_rate_per_hour: growth_rate,
-        predicted_utilization_24h: min(current_value + (growth_rate * 24), 1.0),
+        predicted_utilization_24h: min(current_value + growth_rate * 24, 1.0),
         days_until_full: calculate_days_until_full(current_value, growth_rate),
         confidence: calculate_trend_confidence(storage_values)
       }
@@ -419,14 +444,15 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp predict_connection_demand(historical_data) do
     connection_values = extract_metric_values(historical_data, :active_connections)
-    
+
     if length(connection_values) < 3 do
       %{prediction: :insufficient_data}
     else
       trend = calculate_trend(connection_values)
       current_value = List.last(connection_values)
-      max_connections = 100  # TODO: Get from actual configuration
-      
+      # TODO: Get from actual configuration
+      max_connections = 100
+
       %{
         current_connections: current_value,
         trend: trend,
@@ -439,25 +465,27 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp assess_performance_degradation_risk(historical_data) do
     query_times = extract_metric_values(historical_data, :average_query_time_ms)
-    
+
     if length(query_times) < 5 do
       %{risk_level: :unknown, reason: "Insufficient data"}
     else
       performance_trend = calculate_trend(query_times)
       current_performance = List.last(query_times)
-      
-      degradation_rate = if current_performance > 0 do
-        performance_trend / current_performance
-      else
-        0.0
-      end
 
-      risk_level = cond do
-        degradation_rate > 0.3 -> :high
-        degradation_rate > 0.1 -> :medium
-        degradation_rate > 0.05 -> :low
-        true -> :minimal
-      end
+      degradation_rate =
+        if current_performance > 0 do
+          performance_trend / current_performance
+        else
+          0.0
+        end
+
+      risk_level =
+        cond do
+          degradation_rate > 0.3 -> :high
+          degradation_rate > 0.1 -> :medium
+          degradation_rate > 0.05 -> :low
+          true -> :minimal
+        end
 
       %{
         risk_level: risk_level,
@@ -474,28 +502,37 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
     # CPU recommendations
     cpu_forecast = predict_cpu_utilization(historical_data)
-    recommendations = if Map.get(cpu_forecast, :predicted_value, 0) > 0.8 do
-      ["Consider CPU scaling or optimization" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if Map.get(cpu_forecast, :predicted_value, 0) > 0.8 do
+        ["Consider CPU scaling or optimization" | recommendations]
+      else
+        recommendations
+      end
 
     # Memory recommendations
     memory_forecast = predict_memory_utilization(historical_data)
-    recommendations = if Map.get(memory_forecast, :predicted_value, 0) > 0.9 do
-      ["Plan memory scaling or optimization" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if Map.get(memory_forecast, :predicted_value, 0) > 0.9 do
+        ["Plan memory scaling or optimization" | recommendations]
+      else
+        recommendations
+      end
 
     # Storage recommendations
     storage_forecast = predict_storage_growth(historical_data)
     days_until_full = Map.get(storage_forecast, :days_until_full, 365)
-    recommendations = if days_until_full < 30 do
-      ["Urgent: Storage capacity will be exhausted in #{days_until_full} days" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if days_until_full < 30 do
+        [
+          "Urgent: Storage capacity will be exhausted in #{days_until_full} days"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
     if Enum.empty?(recommendations) do
       ["System capacity is adequate for predicted workload"]
@@ -508,40 +545,45 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp anomaly_detected?(metric_type, current_value, baselines) do
     baseline = Map.get(baselines, metric_type)
-    
+
     if baseline do
       baseline_value = Map.get(baseline, :value, current_value)
-      threshold = Map.get(baseline, :threshold, 0.2)  # 20% deviation
-      
+      # 20% deviation
+      threshold = Map.get(baseline, :threshold, 0.2)
+
       deviation = abs(current_value - baseline_value) / baseline_value
       deviation > threshold
     else
-      false  # No baseline, no anomaly
+      # No baseline, no anomaly
+      false
     end
   end
 
-  defp assess_anomaly_severity(anomalies) do
-    if Enum.empty?(anomalies) do
-      :none
-    else
-      severity_scores = Enum.map(anomalies, fn {anomaly_type, _value} ->
-        case anomaly_type do
-          :cpu_anomaly -> 0.8
-          :memory_anomaly -> 0.9
-          :query_performance_anomaly -> 0.7
-          :connection_anomaly -> 0.6
-          _ -> 0.5
-        end
-      end)
+  defp assess_anomaly_severity([]), do: :none
 
-      max_severity = Enum.max(severity_scores)
-      
-      cond do
-        max_severity > 0.8 -> :critical
-        max_severity > 0.6 -> :high
-        max_severity > 0.4 -> :medium
-        true -> :low
-      end
+  defp assess_anomaly_severity(anomalies) do
+    anomalies
+    |> Enum.map(&get_anomaly_severity_score/1)
+    |> Enum.max()
+    |> categorize_severity_score()
+  end
+
+  defp get_anomaly_severity_score({anomaly_type, _value}) do
+    case anomaly_type do
+      :cpu_anomaly -> 0.8
+      :memory_anomaly -> 0.9
+      :query_performance_anomaly -> 0.7
+      :connection_anomaly -> 0.6
+      _ -> 0.5
+    end
+  end
+
+  defp categorize_severity_score(max_severity) do
+    cond do
+      max_severity > 0.8 -> :critical
+      max_severity > 0.6 -> :high
+      max_severity > 0.4 -> :medium
+      true -> :low
     end
   end
 
@@ -567,7 +609,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp assess_connection_health(active_connections, max_connections) do
     utilization = active_connections / max_connections
-    
+
     cond do
       utilization > 0.95 -> :critical
       utilization > 0.85 -> :warning
@@ -578,9 +620,12 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp assess_query_health(average_query_time) do
     cond do
-      average_query_time > 2000 -> :critical  # > 2 seconds
-      average_query_time > 1000 -> :warning   # > 1 second
-      average_query_time > 500 -> :moderate   # > 500ms
+      # > 2 seconds
+      average_query_time > 2000 -> :critical
+      # > 1 second
+      average_query_time > 1000 -> :warning
+      # > 500ms
+      average_query_time > 500 -> :moderate
       true -> :healthy
     end
   end
@@ -623,28 +668,40 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     end
   end
 
-  defp assess_scaling_urgency(scaling_needs, current_metrics) do
-    if Enum.empty?(scaling_needs) do
-      :none
-    else
-      urgency_factors = Enum.map(scaling_needs, fn {need_type, _action} ->
-        case need_type do
-          :cpu_scaling -> current_metrics.cpu_utilization
-          :memory_scaling -> current_metrics.memory_utilization
-          :connection_scaling -> current_metrics.active_connections / current_metrics.max_connections
-          :performance_scaling -> min(current_metrics.average_query_time_ms / 1000.0, 1.0)
-          _ -> 0.5
-        end
-      end)
+  defp assess_scaling_urgency([], _current_metrics), do: :none
 
-      max_urgency = Enum.max(urgency_factors)
-      
-      cond do
-        max_urgency > 0.95 -> :immediate
-        max_urgency > 0.9 -> :urgent
-        max_urgency > 0.8 -> :moderate
-        true -> :low
-      end
+  defp assess_scaling_urgency(scaling_needs, current_metrics) do
+    scaling_needs
+    |> Enum.map(&calculate_urgency_factor(&1, current_metrics))
+    |> Enum.max()
+    |> categorize_urgency_level()
+  end
+
+  defp calculate_urgency_factor({need_type, _action}, current_metrics) do
+    case need_type do
+      :cpu_scaling ->
+        current_metrics.cpu_utilization
+
+      :memory_scaling ->
+        current_metrics.memory_utilization
+
+      :connection_scaling ->
+        current_metrics.active_connections / current_metrics.max_connections
+
+      :performance_scaling ->
+        min(current_metrics.average_query_time_ms / 1000.0, 1.0)
+
+      _ ->
+        0.5
+    end
+  end
+
+  defp categorize_urgency_level(max_urgency) do
+    cond do
+      max_urgency > 0.95 -> :immediate
+      max_urgency > 0.9 -> :urgent
+      max_urgency > 0.8 -> :moderate
+      true -> :low
     end
   end
 
@@ -653,16 +710,24 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       case {need_type, action} do
         {:cpu_scaling, :scale_up} ->
           %{action: :increase_cpu_resources, priority: :high, estimated_time: "15-30 minutes"}
-        
+
         {:memory_scaling, :scale_up} ->
           %{action: :increase_memory_allocation, priority: :high, estimated_time: "10-20 minutes"}
-        
+
         {:connection_scaling, :increase_pool} ->
-          %{action: :increase_connection_pool_size, priority: :medium, estimated_time: "5-10 minutes"}
-        
+          %{
+            action: :increase_connection_pool_size,
+            priority: :medium,
+            estimated_time: "5-10 minutes"
+          }
+
         {:performance_scaling, :optimize_queries} ->
-          %{action: :trigger_query_optimization, priority: :medium, estimated_time: "30-60 minutes"}
-        
+          %{
+            action: :trigger_query_optimization,
+            priority: :medium,
+            estimated_time: "30-60 minutes"
+          }
+
         _ ->
           %{action: :monitor_closely, priority: :low, estimated_time: "immediate"}
       end
@@ -675,7 +740,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     # TODO: Implement actual historical data extraction
     # For now, simulate historical metrics
     health_metrics = Map.get(agent.health_metrics, :history, [])
-    
+
     # Generate simulated historical data if none exists
     if Enum.empty?(health_metrics) do
       simulate_historical_metrics(hours)
@@ -708,12 +773,12 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       # Simple linear trend calculation
       n = length(values)
       indexed_values = Enum.with_index(values, 1)
-      
+
       sum_x = n * (n + 1) / 2
       sum_y = Enum.sum(values)
       sum_xy = Enum.sum(Enum.map(indexed_values, fn {value, index} -> value * index end))
       sum_x2 = n * (n + 1) * (2 * n + 1) / 6
-      
+
       # Linear regression slope
       if n * sum_x2 - sum_x * sum_x != 0 do
         (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x)
@@ -731,7 +796,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       first_value = List.first(values)
       last_value = List.last(values)
       hours_elapsed = length(values)
-      
+
       if first_value > 0 and hours_elapsed > 0 do
         total_growth = (last_value - first_value) / first_value
         total_growth / hours_elapsed
@@ -743,7 +808,8 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp calculate_days_until_full(current_utilization, growth_rate) do
     if growth_rate <= 0 do
-      9999  # No growth or negative growth
+      # No growth or negative growth
+      9999
     else
       remaining_capacity = 1.0 - current_utilization
       hours_until_full = remaining_capacity / growth_rate
@@ -755,9 +821,10 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     if Enum.empty?(historical_data) do
       0.0
     else
-      data_quality = min(length(historical_data) / 24.0, 1.0)  # Full confidence at 24+ hours
+      # Full confidence at 24+ hours
+      data_quality = min(length(historical_data) / 24.0, 1.0)
       temporal_consistency = assess_temporal_consistency(historical_data)
-      
+
       (data_quality + temporal_consistency) / 2
     end
   end
@@ -769,18 +836,21 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       # Calculate R-squared for trend line fit
       trend = calculate_trend(values)
       mean_value = Enum.sum(values) / length(values)
-      
+
       # Simple R-squared approximation
-      predicted_values = Enum.with_index(values, 1)
-      |> Enum.map(fn {_value, index} -> mean_value + trend * index end)
-      
+      predicted_values =
+        Enum.with_index(values, 1)
+        |> Enum.map(fn {_value, index} -> mean_value + trend * index end)
+
       total_variance = Enum.sum(Enum.map(values, &((&1 - mean_value) ** 2)))
-      explained_variance = Enum.zip(values, predicted_values)
-      |> Enum.map(fn {actual, predicted} -> (actual - predicted) ** 2 end)
-      |> Enum.sum()
-      
+
+      explained_variance =
+        Enum.zip(values, predicted_values)
+        |> Enum.map(fn {actual, predicted} -> (actual - predicted) ** 2 end)
+        |> Enum.sum()
+
       if total_variance > 0 do
-        1.0 - (explained_variance / total_variance)
+        1.0 - explained_variance / total_variance
       else
         1.0
       end
@@ -837,10 +907,11 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     else
       data_points = length(historical_metrics)
       temporal_span = assess_temporal_span(historical_metrics)
-      
-      data_confidence = min(data_points / 168.0, 1.0)  # Full confidence at 1 week of data
+
+      # Full confidence at 1 week of data
+      data_confidence = min(data_points / 168.0, 1.0)
       temporal_confidence = min(temporal_span / 168.0, 1.0)
-      
+
       (data_confidence + temporal_confidence) / 2
     end
   end
@@ -849,7 +920,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp assess_current_health_status(agent) do
     latest_health = Map.get(agent.health_metrics, :latest)
-    
+
     if latest_health do
       latest_health.health_assessment.overall_health
     else
@@ -871,18 +942,18 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp assess_capacity_status(agent) do
     capacity_predictions = agent.capacity_predictions
-    
+
     if map_size(capacity_predictions) == 0 do
       :unknown
     else
       latest_prediction = capacity_predictions |> Map.values() |> List.last()
-      
+
       # Assess capacity based on latest predictions
       cpu_risk = Map.get(latest_prediction.cpu_utilization_forecast, :predicted_value, 0.5)
       memory_risk = Map.get(latest_prediction.memory_utilization_forecast, :predicted_value, 0.5)
-      
+
       max_risk = max(cpu_risk, memory_risk)
-      
+
       cond do
         max_risk > 0.95 -> :critical
         max_risk > 0.85 -> :warning
@@ -894,18 +965,19 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp get_scaling_recommendations(agent) do
     scaling_history = Map.get(agent, :scaling_history, [])
-    
+
     if Enum.empty?(scaling_history) do
       ["No scaling history available"]
     else
       recent_scaling = Enum.take(scaling_history, 5)
-      
-      successful_scalings = Enum.count(recent_scaling, fn scaling ->
-        Map.get(scaling.scaling_result, :scaling_success, false)
-      end)
+
+      successful_scalings =
+        Enum.count(recent_scaling, fn scaling ->
+          Map.get(scaling.scaling_result, :scaling_success, false)
+        end)
 
       success_rate = successful_scalings / length(recent_scaling)
-      
+
       if success_rate > 0.8 do
         ["Scaling operations are performing well"]
       else
@@ -916,12 +988,12 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp assess_baseline_quality(agent) do
     baselines = agent.performance_baselines
-    
+
     if map_size(baselines) == 0 do
       :no_baselines
     else
       baseline_confidence = Map.get(baselines, :baseline_confidence, 0.0)
-      
+
       cond do
         baseline_confidence > 0.8 -> :excellent
         baseline_confidence > 0.6 -> :good
@@ -933,7 +1005,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp assess_prediction_accuracy(agent) do
     capacity_predictions = agent.capacity_predictions
-    
+
     if map_size(capacity_predictions) < 2 do
       :insufficient_data
     else
@@ -946,7 +1018,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
   defp summarize_recent_alerts(agent) do
     alert_history = Map.get(agent, :alert_history, [])
     recent_alerts = Enum.take(alert_history, 20)
-    
+
     %{
       total_alerts: length(recent_alerts),
       alert_types: summarize_alert_types(recent_alerts),
@@ -961,8 +1033,10 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     # For now, simulate scaling execution
     %{
       scaling_action: scaling_analysis.scaling_action,
-      scaling_success: :rand.uniform() > 0.1,  # 90% success rate
-      scaling_duration_ms: :rand.uniform(30_000),  # 0-30 seconds
+      # 90% success rate
+      scaling_success: :rand.uniform() > 0.1,
+      # 0-30 seconds
+      scaling_duration_ms: :rand.uniform(30_000),
       resources_allocated: simulate_resource_allocation(scaling_analysis.scaling_action),
       scaling_timestamp: DateTime.utc_now()
     }
@@ -972,13 +1046,13 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     case scaling_action do
       :scale_up_cpu ->
         "CPU utilization at #{round(current_metrics.cpu_utilization * 100)}% requires scaling"
-      
+
       :scale_up_memory ->
         "Memory utilization at #{round(current_metrics.memory_utilization * 100)}% requires scaling"
-      
+
       :increase_connections ->
         "Connection pool utilization requires expansion"
-      
+
       _ ->
         "Performance metrics indicate scaling is beneficial"
     end
@@ -988,13 +1062,13 @@ defmodule RubberDuck.Agents.DataHealthSensor do
     case scaling_action do
       :scale_up_cpu ->
         %{performance_improvement: 0.3, cost_increase: 0.5, complexity: :medium}
-      
+
       :scale_up_memory ->
         %{performance_improvement: 0.25, cost_increase: 0.3, complexity: :low}
-      
+
       :increase_connections ->
         %{performance_improvement: 0.15, cost_increase: 0.1, complexity: :low}
-      
+
       _ ->
         %{performance_improvement: 0.1, cost_increase: 0.2, complexity: :medium}
     end
@@ -1005,7 +1079,11 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       rollback_action: determine_rollback_action(scaling_action),
       estimated_rollback_time: "5-15 minutes",
       data_safety: :preserved,
-      rollback_triggers: ["Performance degradation", "Resource allocation failure", "Manual trigger"]
+      rollback_triggers: [
+        "Performance degradation",
+        "Resource allocation failure",
+        "Manual trigger"
+      ]
     }
   end
 
@@ -1021,11 +1099,16 @@ defmodule RubberDuck.Agents.DataHealthSensor do
 
   defp determine_anomaly_threshold(metric_type) do
     case metric_type do
-      :cpu -> 0.2      # 20% deviation for CPU
-      :memory -> 0.15  # 15% deviation for memory
-      :query_time -> 0.5  # 50% deviation for query time
-      :connections -> 0.3  # 30% deviation for connections
-      _ -> 0.25        # 25% default deviation
+      # 20% deviation for CPU
+      :cpu -> 0.2
+      # 15% deviation for memory
+      :memory -> 0.15
+      # 50% deviation for query time
+      :query_time -> 0.5
+      # 30% deviation for connections
+      :connections -> 0.3
+      # 25% default deviation
+      _ -> 0.25
     end
   end
 
@@ -1036,7 +1119,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       timestamps = Enum.map(historical_metrics, &Map.get(&1, :timestamp, DateTime.utc_now()))
       earliest = Enum.min_by(timestamps, &DateTime.to_unix/1)
       latest = Enum.max_by(timestamps, &DateTime.to_unix/1)
-      
+
       DateTime.diff(latest, earliest, :hour)
     end
   end
@@ -1048,31 +1131,33 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       # Simple consistency check based on data availability
       timestamps = Enum.map(historical_data, &Map.get(&1, :timestamp, DateTime.utc_now()))
       time_gaps = calculate_time_gaps(timestamps)
-      
+
       # Lower variance in time gaps = higher consistency
       if Enum.empty?(time_gaps) do
         0.5
       else
         avg_gap = Enum.sum(time_gaps) / length(time_gaps)
         gap_variance = Enum.sum(Enum.map(time_gaps, &((&1 - avg_gap) ** 2))) / length(time_gaps)
-        
+
         # Normalize variance to 0-1 scale (lower variance = higher consistency)
-        max(1.0 - (gap_variance / (avg_gap ** 2)), 0.0)
+        max(1.0 - gap_variance / avg_gap ** 2, 0.0)
       end
     end
   end
 
   defp assess_pool_exhaustion_risk(current_connections, trend, max_connections) do
     if trend <= 0 do
-      :no_risk  # No growth or declining connections
+      # No growth or declining connections
+      :no_risk
     else
       hours_to_exhaustion = (max_connections - current_connections) / trend
-      
+
       cond do
         hours_to_exhaustion < 1 -> :immediate
         hours_to_exhaustion < 6 -> :high
         hours_to_exhaustion < 24 -> :medium
-        hours_to_exhaustion < 168 -> :low  # 1 week
+        # 1 week
+        hours_to_exhaustion < 168 -> :low
         true -> :minimal
       end
     end
@@ -1083,7 +1168,7 @@ defmodule RubberDuck.Agents.DataHealthSensor do
       []
     else
       sorted_timestamps = Enum.sort(timestamps, DateTime)
-      
+
       Enum.zip(sorted_timestamps, Enum.drop(sorted_timestamps, 1))
       |> Enum.map(fn {t1, t2} -> DateTime.diff(t2, t1, :hour) end)
     end

@@ -16,7 +16,7 @@ defmodule RubberDuck.Agents.CodeFileAgent do
       RubberDuck.Actions.CreateEntity
     ]
 
-  alias RubberDuck.Skills.{CodeAnalysisSkill, LearningSkill}
+  alias RubberDuck.Skills.CodeAnalysisSkill
 
   @doc """
   Create a new CodeFileAgent instance for a file.

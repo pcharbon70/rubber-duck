@@ -16,9 +16,6 @@ defmodule RubberDuck.Skills.AuthenticationSkill do
       "auth.validate_context"
     ]
 
-  alias RubberDuck.Accounts.User
-  alias RubberDuck.Repo
-
   @doc """
   Enhance authentication session with behavioral analysis.
   """

@@ -113,7 +113,7 @@ defmodule RubberDuck.Actions.PredictiveTokenRenewal do
     end
   end
 
-  defp assess_renewal_security(token_id, usage_data, context) do
+  defp assess_renewal_security(token_id, usage_data, _context) do
     # Assess security factors affecting renewal decision
     security_factors = %{
       token_age: calculate_token_age(token_id),
@@ -182,7 +182,7 @@ defmodule RubberDuck.Actions.PredictiveTokenRenewal do
     {:ok, decision}
   end
 
-  defp execute_renewal_if_needed(token_id, renewal_decision, options) do
+  defp execute_renewal_if_needed(_token_id, renewal_decision, options) do
     if renewal_decision.renewal_recommended do
       auto_execute = Map.get(options, :auto_execute, false)
 
@@ -263,23 +263,32 @@ defmodule RubberDuck.Actions.PredictiveTokenRenewal do
     anomalies = []
 
     # Check for unusual volume
-    if length(recent_events) > 100 do
-      anomalies = [:high_volume | anomalies]
-    end
+    anomalies =
+      if length(recent_events) > 100 do
+        [:high_volume | anomalies]
+      else
+        anomalies
+      end
 
     # Check for geographic anomalies
     locations = Enum.map(recent_events, &Map.get(&1, :location, "unknown"))
 
-    if length(Enum.uniq(locations)) > 5 do
-      anomalies = [:multiple_locations | anomalies]
-    end
+    anomalies =
+      if length(Enum.uniq(locations)) > 5 do
+        [:multiple_locations | anomalies]
+      else
+        anomalies
+      end
 
     # Check for temporal anomalies
     off_hours_events = Enum.count(recent_events, &off_hours_event?/1)
 
-    if off_hours_events > length(recent_events) * 0.3 do
-      anomalies = [:off_hours_usage | anomalies]
-    end
+    anomalies =
+      if off_hours_events > length(recent_events) * 0.3 do
+        [:off_hours_usage | anomalies]
+      else
+        anomalies
+      end
 
     anomalies
   end

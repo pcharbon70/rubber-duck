@@ -16,8 +16,6 @@ defmodule RubberDuck.Agents.AIAnalysisAgent do
       RubberDuck.Actions.CreateEntity
     ]
 
-  alias RubberDuck.Skills.{CodeAnalysisSkill, LearningSkill}
-
   @doc """
   Create a new AIAnalysisAgent instance.
   """

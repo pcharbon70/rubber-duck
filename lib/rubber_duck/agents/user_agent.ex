@@ -16,9 +16,6 @@ defmodule RubberDuck.Agents.UserAgent do
       RubberDuck.Actions.CreateEntity
     ]
 
-  alias RubberDuck.Accounts.User
-  alias RubberDuck.Skills.{LearningSkill, UserManagementSkill}
-
   @doc """
   Create a new UserAgent instance with user context.
   """

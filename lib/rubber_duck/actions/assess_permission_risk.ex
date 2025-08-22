@@ -152,7 +152,7 @@ defmodule RubberDuck.Actions.AssessPermissionRisk do
     {:ok, context_analysis}
   end
 
-  defp generate_mitigation_plan(risk_assessment, behavioral_analysis, context_analysis, options) do
+  defp generate_mitigation_plan(risk_assessment, behavioral_analysis, context_analysis, _options) do
     # Generate comprehensive mitigation plan based on all analyses
     overall_risk = calculate_overall_risk(risk_assessment, behavioral_analysis, context_analysis)
 
@@ -621,7 +621,7 @@ defmodule RubberDuck.Actions.AssessPermissionRisk do
     end
   end
 
-  defp generate_monitoring_requirements(risk_assessment, mitigation_plan) do
+  defp generate_monitoring_requirements(_risk_assessment, mitigation_plan) do
     base_monitoring = ["Standard access logging"]
 
     enhanced_monitoring =

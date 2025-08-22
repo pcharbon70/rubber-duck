@@ -14,7 +14,7 @@ defmodule RubberDuck.Agents.TokenAgent do
     vsn: "1.0.0",
     actions: []
 
-  alias RubberDuck.Skills.{LearningSkill, TokenManagementSkill}
+  alias RubberDuck.Skills.TokenManagementSkill
 
   @doc """
   Create a new TokenAgent instance.
@@ -228,33 +228,6 @@ defmodule RubberDuck.Agents.TokenAgent do
 
   # Private helper functions
 
-  defp apply_session_enhancements(session_data, enhancement_analysis) do
-    recommendations = enhancement_analysis.recommended_enhancements
-
-    enhanced_session =
-      session_data
-      |> Map.put(:security_enhancement_applied, true)
-      |> Map.put(:behavioral_score, enhancement_analysis.behavioral_score)
-      |> Map.put(:enhancement_timestamp, DateTime.utc_now())
-
-    # Apply specific recommendations
-    Enum.reduce(recommendations, enhanced_session, fn recommendation, session ->
-      case recommendation do
-        "Enable multi-factor authentication" ->
-          Map.put(session, :mfa_required, true)
-
-        "Require additional verification" ->
-          Map.put(session, :additional_verification_required, true)
-
-        "Consider session renewal" ->
-          Map.put(session, :renewal_recommended, true)
-
-        _ ->
-          session
-      end
-    end)
-  end
-
   defp execute_lifecycle_actions(lifecycle_analysis, _user_context) do
     case lifecycle_analysis.renewal_recommendation do
       :immediate_renewal ->
@@ -361,7 +334,7 @@ defmodule RubberDuck.Agents.TokenAgent do
     end
   end
 
-  defp perform_token_maintenance(token_id, token_data, agent) do
+  defp perform_token_maintenance(token_id, token_data, _agent) do
     # Perform maintenance check on individual token
     risk_level = Map.get(token_data, :risk_level, :low)
     age = calculate_token_age_hours(token_data)

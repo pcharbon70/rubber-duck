@@ -14,7 +14,7 @@ defmodule RubberDuck.Agents.AuthenticationAgent do
     vsn: "1.0.0",
     actions: []
 
-  alias RubberDuck.Skills.{AuthenticationSkill, LearningSkill, ThreatDetectionSkill}
+  alias RubberDuck.Skills.{AuthenticationSkill, ThreatDetectionSkill}
 
   @doc """
   Create a new AuthenticationAgent instance.

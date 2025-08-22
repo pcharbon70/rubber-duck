@@ -14,9 +14,6 @@ defmodule RubberDuck.Agents.MigrationAgent do
     vsn: "1.0.0",
     actions: []
 
-  alias RubberDuck.Skills.LearningSkill
-  alias RubberDuck.Repo
-
   @doc """
   Create a new MigrationAgent instance.
   """
@@ -41,21 +38,24 @@ defmodule RubberDuck.Agents.MigrationAgent do
   def execute_migration(agent, migration_module, options \\ %{}) do
     # Pre-migration analysis
     pre_analysis = perform_pre_migration_analysis(migration_module, options)
-    
+
     # Check rollback triggers before execution
     rollback_risk = assess_rollback_risk(migration_module, pre_analysis, agent)
-    
+
     if rollback_risk.risk_level == :critical and not Map.get(options, :force_execute, false) do
       {:error, {:migration_risk_too_high, rollback_risk}}
     else
       # Execute migration with monitoring
-      execution_result = execute_migration_with_monitoring(migration_module, pre_analysis, options)
-      
+      execution_result =
+        execute_migration_with_monitoring(migration_module, pre_analysis, options)
+
       # Post-migration validation
       post_analysis = perform_post_migration_analysis(migration_module, execution_result)
-      
+
       # Update migration history
-      migration_record = create_migration_record(migration_module, pre_analysis, execution_result, post_analysis)
+      migration_record =
+        create_migration_record(migration_module, pre_analysis, execution_result, post_analysis)
+
       migration_history = [migration_record | agent.migration_history] |> Enum.take(100)
 
       {:ok, updated_agent} =
@@ -68,11 +68,12 @@ defmodule RubberDuck.Agents.MigrationAgent do
       if should_trigger_rollback?(post_analysis, agent.rollback_triggers) do
         trigger_intelligent_rollback(updated_agent, migration_record, post_analysis)
       else
-        {:ok, %{
-          execution: execution_result,
-          analysis: post_analysis,
-          rollback_triggered: false
-        }, updated_agent}
+        {:ok,
+         %{
+           execution: execution_result,
+           analysis: post_analysis,
+           rollback_triggered: false
+         }, updated_agent}
       end
     end
   end
@@ -81,27 +82,30 @@ defmodule RubberDuck.Agents.MigrationAgent do
   Validate data integrity across database operations.
   """
   def validate_data_integrity(agent, validation_scope \\ :recent_migrations) do
-    integrity_analysis = case validation_scope do
-      :recent_migrations ->
-        validate_recent_migration_integrity(agent)
-      
-      :full_database ->
-        validate_full_database_integrity(agent)
-      
-      :specific_tables ->
-        validate_specific_table_integrity(agent, Map.get(agent, :target_tables, []))
-      
-      _ ->
-        %{error: :invalid_validation_scope}
-    end
+    integrity_analysis =
+      case validation_scope do
+        :recent_migrations ->
+          validate_recent_migration_integrity(agent)
+
+        :full_database ->
+          validate_full_database_integrity(agent)
+
+        :specific_tables ->
+          validate_specific_table_integrity(agent, Map.get(agent, :target_tables, []))
+
+        _ ->
+          %{error: :invalid_validation_scope}
+      end
 
     # Update integrity check history
     integrity_checks = Map.get(agent, :integrity_checks, %{})
-    updated_checks = Map.put(integrity_checks, validation_scope, %{
-      analysis: integrity_analysis,
-      timestamp: DateTime.utc_now(),
-      validation_confidence: calculate_integrity_confidence(integrity_analysis)
-    })
+
+    updated_checks =
+      Map.put(integrity_checks, validation_scope, %{
+        analysis: integrity_analysis,
+        timestamp: DateTime.utc_now(),
+        validation_confidence: calculate_integrity_confidence(integrity_analysis)
+      })
 
     {:ok, updated_agent} =
       __MODULE__.set(agent,
@@ -116,9 +120,10 @@ defmodule RubberDuck.Agents.MigrationAgent do
   Predict performance impact of pending migrations.
   """
   def predict_performance_impact(agent, migration_modules) do
-    impact_predictions = Enum.map(migration_modules, fn migration_module ->
-      analyze_migration_performance_impact(migration_module, agent)
-    end)
+    impact_predictions =
+      Enum.map(migration_modules, fn migration_module ->
+        analyze_migration_performance_impact(migration_module, agent)
+      end)
 
     aggregated_prediction = %{
       migrations_analyzed: length(migration_modules),
@@ -156,9 +161,11 @@ defmodule RubberDuck.Agents.MigrationAgent do
       execution_window: determine_execution_window(priority, scheduling_options)
     }
 
-    migration_queue = [migration_item | agent.migration_queue]
-    |> sort_migration_queue()
-    |> Enum.take(50)  # Limit queue size
+    migration_queue =
+      [migration_item | agent.migration_queue]
+      |> sort_migration_queue()
+      # Limit queue size
+      |> Enum.take(50)
 
     {:ok, updated_agent} =
       __MODULE__.set(agent,
@@ -190,11 +197,16 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp default_rollback_triggers do
     %{
-      integrity_failure_threshold: 0.95,  # 95% integrity required
-      performance_degradation_threshold: 0.3,  # 30% degradation triggers rollback
-      error_rate_threshold: 0.05,  # 5% error rate triggers rollback
-      timeout_threshold_seconds: 300,  # 5 minute timeout
-      data_loss_tolerance: 0.0  # Zero tolerance for data loss
+      # 95% integrity required
+      integrity_failure_threshold: 0.95,
+      # 30% degradation triggers rollback
+      performance_degradation_threshold: 0.3,
+      # 5% error rate triggers rollback
+      error_rate_threshold: 0.05,
+      # 5 minute timeout
+      timeout_threshold_seconds: 300,
+      # Zero tolerance for data loss
+      data_loss_tolerance: 0.0
     }
   end
 
@@ -227,13 +239,13 @@ defmodule RubberDuck.Agents.MigrationAgent do
     }
   end
 
-  defp execute_migration_with_monitoring(migration_module, pre_analysis, options) do
+  defp execute_migration_with_monitoring(migration_module, _pre_analysis, options) do
     start_time = DateTime.utc_now()
-    
+
     # TODO: Integrate with actual Ecto migration execution
     # For now, simulate migration execution
     execution_success = simulate_migration_execution(migration_module, options)
-    
+
     end_time = DateTime.utc_now()
     execution_duration = DateTime.diff(end_time, start_time, :millisecond)
 
@@ -274,8 +286,14 @@ defmodule RubberDuck.Agents.MigrationAgent do
   end
 
   defp should_trigger_rollback?(post_analysis, rollback_triggers) do
-    integrity_ok = post_analysis.integrity_validation.integrity_score >= rollback_triggers.integrity_failure_threshold
-    performance_ok = post_analysis.performance_validation.degradation_score <= rollback_triggers.performance_degradation_threshold
+    integrity_ok =
+      post_analysis.integrity_validation.integrity_score >=
+        rollback_triggers.integrity_failure_threshold
+
+    performance_ok =
+      post_analysis.performance_validation.degradation_score <=
+        rollback_triggers.performance_degradation_threshold
+
     execution_ok = post_analysis.execution_success
 
     not (integrity_ok and performance_ok and execution_ok)
@@ -287,12 +305,18 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
     # Update agent with rollback information
     rollback_history = Map.get(agent, :rollback_history, [])
-    updated_history = [%{
-      migration_record: migration_record,
-      rollback_plan: rollback_plan,
-      rollback_result: rollback_result,
-      rollback_timestamp: DateTime.utc_now()
-    } | rollback_history] |> Enum.take(50)
+
+    updated_history =
+      [
+        %{
+          migration_record: migration_record,
+          rollback_plan: rollback_plan,
+          rollback_result: rollback_result,
+          rollback_timestamp: DateTime.utc_now()
+        }
+        | rollback_history
+      ]
+      |> Enum.take(50)
 
     {:ok, updated_agent} =
       __MODULE__.set(agent,
@@ -300,19 +324,20 @@ defmodule RubberDuck.Agents.MigrationAgent do
         last_rollback: DateTime.utc_now()
       )
 
-    {:ok, %{
-      execution: migration_record.execution_result,
-      analysis: post_analysis,
-      rollback_triggered: true,
-      rollback_result: rollback_result
-    }, updated_agent}
+    {:ok,
+     %{
+       execution: migration_record.execution_result,
+       analysis: post_analysis,
+       rollback_triggered: true,
+       rollback_result: rollback_result
+     }, updated_agent}
   end
 
   # Migration analysis helper functions
 
   defp classify_migration_type(migration_module) do
     module_name = to_string(migration_module)
-    
+
     cond do
       String.contains?(module_name, "CreateTable") -> :create_table
       String.contains?(module_name, "AddColumn") -> :add_column
@@ -326,7 +351,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp estimate_migration_duration(migration_module) do
     migration_type = classify_migration_type(migration_module)
-    
+
     # Estimate duration based on migration type
     case migration_type do
       :create_table -> %{min_seconds: 5, max_seconds: 30, estimated_seconds: 15}
@@ -341,95 +366,119 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp assess_data_impact(migration_module) do
     migration_type = classify_migration_type(migration_module)
-    
+
     %{
-      impact_level: case migration_type do
-        :drop_column -> :high
-        :alter_table -> :medium
-        :add_column -> :low
-        :create_table -> :minimal
-        :add_index -> :minimal
-        :drop_index -> :minimal
-        _ -> :medium
-      end,
-      reversibility: case migration_type do
-        :drop_column -> :irreversible
-        :drop_index -> :reversible
-        :create_table -> :reversible
-        :add_column -> :reversible
-        :add_index -> :reversible
-        _ -> :partially_reversible
-      end,
-      data_loss_risk: case migration_type do
-        :drop_column -> :high
-        :alter_table -> :medium
-        _ -> :low
-      end
+      impact_level: determine_impact_level(migration_type),
+      reversibility: determine_reversibility(migration_type),
+      data_loss_risk: determine_data_loss_risk(migration_type)
     }
+  end
+
+  defp determine_impact_level(migration_type) do
+    case migration_type do
+      :drop_column -> :high
+      :alter_table -> :medium
+      :add_column -> :low
+      :create_table -> :minimal
+      :add_index -> :minimal
+      :drop_index -> :minimal
+      _ -> :medium
+    end
+  end
+
+  defp determine_reversibility(migration_type) do
+    case migration_type do
+      :drop_column -> :irreversible
+      :drop_index -> :reversible
+      :create_table -> :reversible
+      :add_column -> :reversible
+      :add_index -> :reversible
+      _ -> :partially_reversible
+    end
+  end
+
+  defp determine_data_loss_risk(migration_type) do
+    case migration_type do
+      :drop_column -> :high
+      :alter_table -> :medium
+      _ -> :low
+    end
   end
 
   defp estimate_performance_impact(migration_module) do
     migration_type = classify_migration_type(migration_module)
-    
+
     %{
-      execution_impact: case migration_type do
-        :add_index -> :high  # Index creation can be expensive
-        :alter_table -> :medium
-        :create_table -> :low
-        _ -> :minimal
-      end,
-      ongoing_impact: case migration_type do
-        :add_index -> :positive  # Improves query performance
-        :drop_index -> :negative  # May degrade performance
-        :add_column -> :minimal
-        _ -> :neutral
-      end,
-      downtime_required: case migration_type do
-        :alter_table -> true
-        :drop_column -> true
-        _ -> false
-      end
+      execution_impact: determine_execution_impact(migration_type),
+      ongoing_impact: determine_ongoing_impact(migration_type),
+      downtime_required: requires_downtime?(migration_type)
     }
+  end
+
+  defp determine_execution_impact(migration_type) do
+    case migration_type do
+      # Index creation can be expensive
+      :add_index -> :high
+      :alter_table -> :medium
+      :create_table -> :low
+      _ -> :minimal
+    end
+  end
+
+  defp determine_ongoing_impact(migration_type) do
+    case migration_type do
+      # Improves query performance
+      :add_index -> :positive
+      # May degrade performance
+      :drop_index -> :negative
+      :add_column -> :minimal
+      _ -> :neutral
+    end
+  end
+
+  defp requires_downtime?(migration_type) do
+    migration_type in [:alter_table, :drop_column]
   end
 
   defp identify_migration_risks(migration_module) do
     migration_type = classify_migration_type(migration_module)
     data_impact = assess_data_impact(migration_module)
-    
-    risks = []
 
-    risks = case data_impact.data_loss_risk do
-      :high -> [:potential_data_loss | risks]
-      :medium -> [:data_modification_risk | risks]
-      _ -> risks
-    end
-
-    risks = case migration_type do
-      :add_index -> [:potential_lock_timeout, :high_resource_usage | risks]
-      :alter_table -> [:table_lock_required, :potential_downtime | risks]
-      :drop_column -> [:irreversible_change, :application_compatibility | risks]
-      _ -> risks
-    end
-
-    risks = if data_impact.reversibility == :irreversible do
-      [:irreversible_operation | risks]
-    else
-      risks
-    end
-
-    risks
+    []
+    |> add_data_loss_risks(data_impact.data_loss_risk)
+    |> add_migration_type_risks(migration_type)
+    |> add_reversibility_risks(data_impact.reversibility)
   end
+
+  defp add_data_loss_risks(risks, :high), do: [:potential_data_loss | risks]
+  defp add_data_loss_risks(risks, :medium), do: [:data_modification_risk | risks]
+  defp add_data_loss_risks(risks, _), do: risks
+
+  defp add_migration_type_risks(risks, :add_index),
+    do: [:potential_lock_timeout, :high_resource_usage | risks]
+
+  defp add_migration_type_risks(risks, :alter_table),
+    do: [:table_lock_required, :potential_downtime | risks]
+
+  defp add_migration_type_risks(risks, :drop_column),
+    do: [:irreversible_change, :application_compatibility | risks]
+
+  defp add_migration_type_risks(risks, _), do: risks
+
+  defp add_reversibility_risks(risks, :irreversible), do: [:irreversible_operation | risks]
+  defp add_reversibility_risks(risks, _), do: risks
 
   defp determine_backup_requirements(migration_module, options) do
     data_impact = assess_data_impact(migration_module)
     force_backup = Map.get(options, :force_backup, false)
-    
+
     backup_required = force_backup or data_impact.data_loss_risk in [:high, :medium]
-    
+
     %{
       backup_required: backup_required,
       backup_scope: if(backup_required, do: determine_backup_scope(data_impact), else: :none),
-      backup_priority: if(backup_required, do: determine_backup_priority(data_impact), else: :not_required),
+      backup_priority:
+        if(backup_required, do: determine_backup_priority(data_impact), else: :not_required),
       estimated_backup_time: if(backup_required, do: estimate_backup_time(data_impact), else: 0)
     }
   end
@@ -437,14 +486,16 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp assess_rollback_complexity(migration_module) do
     migration_type = classify_migration_type(migration_module)
     data_impact = assess_data_impact(migration_module)
-    
-    complexity_score = case {migration_type, data_impact.reversibility} do
-      {_, :irreversible} -> 1.0  # Maximum complexity
-      {:alter_table, :partially_reversible} -> 0.8
-      {:add_index, :reversible} -> 0.3
-      {:create_table, :reversible} -> 0.2
-      _ -> 0.5
-    end
+
+    complexity_score =
+      case {migration_type, data_impact.reversibility} do
+        # Maximum complexity
+        {_, :irreversible} -> 1.0
+        {:alter_table, :partially_reversible} -> 0.8
+        {:add_index, :reversible} -> 0.3
+        {:create_table, :reversible} -> 0.2
+        _ -> 0.5
+      end
 
     %{
       complexity_score: complexity_score,
@@ -454,7 +505,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
     }
   end
 
-  defp simulate_migration_execution(migration_module, options) do
+  defp simulate_migration_execution(_migration_module, options) do
     # Simulate migration execution with configurable success rate
     success_probability = Map.get(options, :success_probability, 0.9)
     :rand.uniform() < success_probability
@@ -464,7 +515,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
     %{
       cpu_usage_percentage: :rand.uniform(80),
       memory_usage_mb: :rand.uniform(500),
-      io_operations: :rand.uniform(10000),
+      io_operations: :rand.uniform(10_000),
       lock_duration_ms: execution_duration * 0.8,
       connection_usage: :rand.uniform(5)
     }
@@ -472,27 +523,36 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp simulate_data_changes(migration_module) do
     migration_type = classify_migration_type(migration_module)
-    
+
     %{
-      tables_affected: case migration_type do
-        :create_table -> 1
-        :alter_table -> 1
-        :add_index -> 1
-        _ -> 0
-      end,
-      rows_affected: :rand.uniform(10000),
-      columns_affected: case migration_type do
-        :add_column -> 1
-        :drop_column -> 1
-        :alter_table -> :rand.uniform(3)
-        _ -> 0
-      end,
-      indexes_affected: case migration_type do
-        :add_index -> 1
-        :drop_index -> 1
-        _ -> 0
-      end
+      tables_affected: count_affected_tables(migration_type),
+      rows_affected: :rand.uniform(10_000),
+      columns_affected: count_affected_columns(migration_type),
+      indexes_affected: count_affected_indexes(migration_type)
     }
+  end
+
+  defp count_affected_tables(migration_type) do
+    case migration_type do
+      type when type in [:create_table, :alter_table, :add_index] -> 1
+      _ -> 0
+    end
+  end
+
+  defp count_affected_columns(migration_type) do
+    case migration_type do
+      :add_column -> 1
+      :drop_column -> 1
+      :alter_table -> :rand.uniform(3)
+      _ -> 0
+    end
+  end
+
+  defp count_affected_indexes(migration_type) do
+    case migration_type do
+      type when type in [:add_index, :drop_index] -> 1
+      _ -> 0
+    end
   end
 
   defp simulate_errors do
@@ -503,11 +563,11 @@ defmodule RubberDuck.Agents.MigrationAgent do
       "Foreign key constraint violation",
       "Insufficient disk space"
     ]
-    
+
     [Enum.random(error_types)]
   end
 
-  defp validate_post_migration_integrity(execution_result) do
+  defp validate_post_migration_integrity(_execution_result) do
     # Simulate integrity validation
     integrity_checks = [
       {:foreign_key_consistency, :rand.uniform() > 0.1},
@@ -529,14 +589,17 @@ defmodule RubberDuck.Agents.MigrationAgent do
     }
   end
 
-  defp validate_post_migration_performance(execution_result) do
-    baseline_performance = %{query_time: 100, throughput: 1000}  # Simulate baseline
+  defp validate_post_migration_performance(_execution_result) do
+    # Simulate baseline
+    baseline_performance = %{query_time: 100, throughput: 1000}
+
     current_performance = %{
       query_time: baseline_performance.query_time * (0.8 + :rand.uniform() * 0.4),
       throughput: baseline_performance.throughput * (0.8 + :rand.uniform() * 0.4)
     }
 
-    degradation_score = calculate_performance_degradation(baseline_performance, current_performance)
+    degradation_score =
+      calculate_performance_degradation(baseline_performance, current_performance)
 
     %{
       baseline_performance: baseline_performance,
@@ -547,7 +610,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
     }
   end
 
-  defp validate_data_consistency(execution_result) do
+  defp validate_data_consistency(_execution_result) do
     # Simulate data consistency validation
     consistency_checks = [
       {:referential_integrity, :rand.uniform() > 0.02},
@@ -571,16 +634,19 @@ defmodule RubberDuck.Agents.MigrationAgent do
     error_count = length(execution_result.errors_encountered)
     duration = execution_result.execution_duration_ms
 
-    rollback_recommended = cond do
-      not success -> true
-      error_count > 0 -> true
-      duration > 300_000 -> true  # > 5 minutes
-      true -> false
-    end
+    rollback_recommended =
+      cond do
+        not success -> true
+        error_count > 0 -> true
+        # > 5 minutes
+        duration > 300_000 -> true
+        true -> false
+      end
 
     %{
       rollback_recommended: rollback_recommended,
-      rollback_urgency: if(rollback_recommended, do: assess_rollback_urgency(execution_result), else: :none),
+      rollback_urgency:
+        if(rollback_recommended, do: assess_rollback_urgency(execution_result), else: :none),
       rollback_strategy: if(rollback_recommended, do: :automatic, else: :not_needed)
     }
   end
@@ -589,7 +655,8 @@ defmodule RubberDuck.Agents.MigrationAgent do
     confidence_factors = [
       execution_result.execution_success,
       Enum.empty?(execution_result.errors_encountered),
-      execution_result.execution_duration_ms < 60_000  # < 1 minute
+      # < 1 minute
+      execution_result.execution_duration_ms < 60_000
     ]
 
     passed_factors = Enum.count(confidence_factors, & &1)
@@ -599,17 +666,20 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp calculate_historical_risk(migration_module, agent) do
     migration_history = agent.migration_history
     migration_type = classify_migration_type(migration_module)
-    
-    similar_migrations = Enum.filter(migration_history, fn record ->
-      classify_migration_type(record.migration_module) == migration_type
-    end)
+
+    similar_migrations =
+      Enum.filter(migration_history, fn record ->
+        classify_migration_type(record.migration_module) == migration_type
+      end)
 
     if Enum.empty?(similar_migrations) do
-      0.5  # No history, moderate risk
+      # No history, moderate risk
+      0.5
     else
-      failure_rate = Enum.count(similar_migrations, fn record ->
-        not record.overall_success
-      end) / length(similar_migrations)
+      failure_rate =
+        Enum.count(similar_migrations, fn record ->
+          not record.overall_success
+        end) / length(similar_migrations)
 
       failure_rate
     end
@@ -647,23 +717,26 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp extract_risk_factors(pre_analysis) do
     factors = []
 
-    factors = if pre_analysis.data_impact.data_loss_risk == :high do
-      ["High data loss risk" | factors]
-    else
-      factors
-    end
+    factors =
+      if pre_analysis.data_impact.data_loss_risk == :high do
+        ["High data loss risk" | factors]
+      else
+        factors
+      end
 
-    factors = if pre_analysis.performance_impact.downtime_required do
-      ["Downtime required" | factors]
-    else
-      factors
-    end
+    factors =
+      if pre_analysis.performance_impact.downtime_required do
+        ["Downtime required" | factors]
+      else
+        factors
+      end
 
-    factors = if pre_analysis.rollback_complexity.complexity_score > 0.7 do
-      ["Complex rollback requirements" | factors]
-    else
-      factors
-    end
+    factors =
+      if pre_analysis.rollback_complexity.complexity_score > 0.7 do
+        ["Complex rollback requirements" | factors]
+      else
+        factors
+      end
 
     factors
   end
@@ -671,17 +744,19 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp recommend_risk_mitigations(risk_score, pre_analysis) do
     mitigations = []
 
-    mitigations = if risk_score > 0.6 do
-      ["Perform full database backup", "Schedule during maintenance window" | mitigations]
-    else
-      mitigations
-    end
+    mitigations =
+      if risk_score > 0.6 do
+        ["Perform full database backup", "Schedule during maintenance window" | mitigations]
+      else
+        mitigations
+      end
 
-    mitigations = if pre_analysis.data_impact.data_loss_risk == :high do
-      ["Implement additional data validation", "Test rollback procedure" | mitigations]
-    else
-      mitigations
-    end
+    mitigations =
+      if pre_analysis.data_impact.data_loss_risk == :high do
+        ["Implement additional data validation", "Test rollback procedure" | mitigations]
+      else
+        mitigations
+      end
 
     if Enum.empty?(mitigations) do
       ["Standard migration execution acceptable"]
@@ -693,9 +768,9 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp calculate_risk_confidence(pre_analysis, agent) do
     history_depth = length(agent.migration_history)
     analysis_completeness = assess_analysis_completeness(pre_analysis)
-    
+
     history_confidence = min(history_depth / 20.0, 1.0)
-    
+
     (history_confidence + analysis_completeness) / 2
   end
 
@@ -716,16 +791,17 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp validate_recent_migration_integrity(agent) do
     recent_migrations = Enum.take(agent.migration_history, 5)
-    
+
     if Enum.empty?(recent_migrations) do
       %{status: :no_recent_migrations}
     else
-      integrity_scores = Enum.map(recent_migrations, fn migration ->
-        get_in(migration, [:post_analysis, :integrity_validation, :integrity_score]) || 0.5
-      end)
+      integrity_scores =
+        Enum.map(recent_migrations, fn migration ->
+          get_in(migration, [:post_analysis, :integrity_validation, :integrity_score]) || 0.5
+        end)
 
       average_integrity = Enum.sum(integrity_scores) / length(integrity_scores)
-      
+
       %{
         average_integrity_score: average_integrity,
         migrations_analyzed: length(recent_migrations),
@@ -749,13 +825,15 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp validate_specific_table_integrity(_agent, tables) do
     # Simulate table-specific integrity validation
-    table_results = Enum.map(tables, fn table ->
-      {table, %{
-        integrity_score: 0.8 + :rand.uniform() * 0.2,
-        issues_found: :rand.uniform(2),
-        validation_time_ms: :rand.uniform(5000)
-      }}
-    end)
+    table_results =
+      Enum.map(tables, fn table ->
+        {table,
+         %{
+           integrity_score: 0.8 + :rand.uniform() * 0.2,
+           issues_found: :rand.uniform(2),
+           validation_time_ms: :rand.uniform(5000)
+         }}
+      end)
 
     %{
       table_results: table_results,
@@ -778,35 +856,44 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp sort_migration_queue(queue) do
     # Sort by priority and estimated impact
-    Enum.sort_by(queue, fn item ->
-      priority_score = case item.priority do
-        :critical -> 4
-        :high -> 3
-        :normal -> 2
-        :low -> 1
-      end
+    Enum.sort_by(
+      queue,
+      fn item ->
+        priority_score =
+          case item.priority do
+            :critical -> 4
+            :high -> 3
+            :normal -> 2
+            :low -> 1
+          end
 
-      impact_score = case item.estimated_impact.impact_level do
-        :minimal -> 4  # Low impact can run anytime
-        :low -> 3
-        :medium -> 2
-        :high -> 1     # High impact should be scheduled carefully
-      end
+        impact_score =
+          case item.estimated_impact.impact_level do
+            # Low impact can run anytime
+            :minimal -> 4
+            :low -> 3
+            :medium -> 2
+            # High impact should be scheduled carefully
+            :high -> 1
+          end
 
-      {priority_score, impact_score}
-    end, :desc)
+        {priority_score, impact_score}
+      end,
+      :desc
+    )
   end
 
   defp estimate_migration_impact(migration_module) do
     %{
-      impact_level: case classify_migration_type(migration_module) do
-        :create_table -> :minimal
-        :add_column -> :low
-        :add_index -> :medium
-        :alter_table -> :high
-        :drop_column -> :high
-        _ -> :medium
-      end,
+      impact_level:
+        case classify_migration_type(migration_module) do
+          :create_table -> :minimal
+          :add_column -> :low
+          :add_index -> :medium
+          :alter_table -> :high
+          :drop_column -> :high
+          _ -> :medium
+        end,
       estimated_duration: estimate_migration_duration(migration_module),
       resource_requirements: estimate_resource_requirements(migration_module)
     }
@@ -814,7 +901,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp determine_execution_window(priority, scheduling_options) do
     maintenance_window = Map.get(scheduling_options, :maintenance_window, false)
-    
+
     case {priority, maintenance_window} do
       {:critical, _} -> :immediate
       {:high, true} -> :next_maintenance
@@ -827,9 +914,10 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp calculate_recent_success_rate(agent) do
     recent_migrations = Enum.take(agent.migration_history, 10)
-    
+
     if Enum.empty?(recent_migrations) do
-      1.0  # No history, assume success
+      # No history, assume success
+      1.0
     else
       successful = Enum.count(recent_migrations, & &1.overall_success)
       successful / length(recent_migrations)
@@ -838,14 +926,15 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp assess_overall_integrity_status(agent) do
     integrity_checks = Map.get(agent, :integrity_checks, %{})
-    
+
     if map_size(integrity_checks) == 0 do
       :unknown
     else
       latest_checks = Map.values(integrity_checks)
-      
-      avg_confidence = Enum.sum(Enum.map(latest_checks, & &1.validation_confidence)) / length(latest_checks)
-      
+
+      avg_confidence =
+        Enum.sum(Enum.map(latest_checks, & &1.validation_confidence)) / length(latest_checks)
+
       cond do
         avg_confidence > 0.9 -> :excellent
         avg_confidence > 0.8 -> :good
@@ -859,13 +948,14 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp analyze_performance_trend(agent) do
     migration_history = agent.migration_history
     recent_migrations = Enum.take(migration_history, 10)
-    
+
     if length(recent_migrations) < 3 do
       :insufficient_data
     else
-      performance_scores = Enum.map(recent_migrations, fn migration ->
-        1.0 - (migration.post_analysis[:performance_validation][:degradation_score] || 0.0)
-      end)
+      performance_scores =
+        Enum.map(recent_migrations, fn migration ->
+          1.0 - (migration.post_analysis[:performance_validation][:degradation_score] || 0.0)
+        end)
 
       recent_avg = Enum.take(performance_scores, 3) |> Enum.sum() |> Kernel./(3)
       older_avg = Enum.drop(performance_scores, 3) |> Enum.take(3) |> Enum.sum() |> Kernel./(3)
@@ -880,16 +970,17 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp assess_rollback_effectiveness(agent) do
     rollback_history = Map.get(agent, :rollback_history, [])
-    
+
     if Enum.empty?(rollback_history) do
       %{effectiveness: :no_rollbacks, sample_size: 0}
     else
-      successful_rollbacks = Enum.count(rollback_history, fn rollback ->
-        Map.get(rollback.rollback_result, :success, false)
-      end)
+      successful_rollbacks =
+        Enum.count(rollback_history, fn rollback ->
+          Map.get(rollback.rollback_result, :success, false)
+        end)
 
       effectiveness_rate = successful_rollbacks / length(rollback_history)
-      
+
       %{
         effectiveness: categorize_effectiveness_rate(effectiveness_rate),
         success_rate: effectiveness_rate,
@@ -900,28 +991,38 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp generate_migration_recommendations(agent) do
     recommendations = []
-    
+
     success_rate = calculate_recent_success_rate(agent)
     integrity_status = assess_overall_integrity_status(agent)
-    
-    recommendations = if success_rate < 0.8 do
-      ["Review migration testing procedures", "Consider additional validation steps" | recommendations]
-    else
-      recommendations
-    end
 
-    recommendations = if integrity_status in [:concerning, :critical] do
-      ["Investigate integrity issues", "Implement enhanced validation" | recommendations]
-    else
-      recommendations
-    end
+    recommendations =
+      if success_rate < 0.8 do
+        [
+          "Review migration testing procedures",
+          "Consider additional validation steps" | recommendations
+        ]
+      else
+        recommendations
+      end
+
+    recommendations =
+      if integrity_status in [:concerning, :critical] do
+        ["Investigate integrity issues", "Implement enhanced validation" | recommendations]
+      else
+        recommendations
+      end
 
     queue_length = length(agent.migration_queue)
-    recommendations = if queue_length > 10 do
-      ["Schedule migration execution window", "Consider batch migration execution" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if queue_length > 10 do
+        [
+          "Schedule migration execution window",
+          "Consider batch migration execution" | recommendations
+        ]
+      else
+        recommendations
+      end
 
     if Enum.empty?(recommendations) do
       ["Migration system operating within normal parameters"]
@@ -952,10 +1053,14 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp estimate_backup_time(data_impact) do
     case determine_backup_scope(data_impact) do
-      :full_database -> 1800  # 30 minutes
-      :affected_tables -> 300  # 5 minutes
-      :incremental -> 60      # 1 minute
-      _ -> 30                 # 30 seconds
+      # 30 minutes
+      :full_database -> 1800
+      # 5 minutes
+      :affected_tables -> 300
+      # 1 minute
+      :incremental -> 60
+      # 30 seconds
+      _ -> 30
     end
   end
 
@@ -985,7 +1090,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
     else
       impact_scores = Enum.map(impact_predictions, &Map.get(&1, :impact_score, 0.3))
       total_score = Enum.sum(impact_scores)
-      
+
       %{
         total_impact_score: total_score,
         average_impact: total_score / length(impact_predictions),
@@ -999,7 +1104,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
       :no_risk
     else
       risk_levels = Enum.map(impact_predictions, &Map.get(&1, :risk_level, :medium))
-      
+
       cond do
         :critical in risk_levels -> :critical
         :high in risk_levels -> :high
@@ -1012,17 +1117,19 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp optimize_migration_order(impact_predictions) do
     # Sort migrations by risk and impact for optimal execution order
     Enum.sort_by(impact_predictions, fn prediction ->
-      risk_score = case Map.get(prediction, :risk_level, :medium) do
-        :critical -> 4
-        :high -> 3
-        :medium -> 2
-        :low -> 1
-        _ -> 2
-      end
+      risk_score =
+        case Map.get(prediction, :risk_level, :medium) do
+          :critical -> 4
+          :high -> 3
+          :medium -> 2
+          :low -> 1
+          _ -> 2
+        end
 
       impact_score = Map.get(prediction, :impact_score, 0.3)
-      
-      {risk_score, impact_score}  # Low risk, low impact first
+
+      # Low risk, low impact first
+      {risk_score, impact_score}
     end)
   end
 
@@ -1033,19 +1140,21 @@ defmodule RubberDuck.Agents.MigrationAgent do
       "Monitor query execution times"
     ]
 
-    high_risk_migrations = Enum.filter(impact_predictions, fn prediction ->
-      Map.get(prediction, :risk_level) in [:critical, :high]
-    end)
+    high_risk_migrations =
+      Enum.filter(impact_predictions, fn prediction ->
+        Map.get(prediction, :risk_level) in [:critical, :high]
+      end)
 
-    enhanced_monitoring = if not Enum.empty?(high_risk_migrations) do
-      [
-        "Enable real-time performance monitoring",
-        "Implement automated rollback triggers",
-        "Monitor data integrity continuously"
-      ]
-    else
-      []
-    end
+    enhanced_monitoring =
+      if Enum.any?(high_risk_migrations) do
+        [
+          "Enable real-time performance monitoring",
+          "Implement automated rollback triggers",
+          "Monitor data integrity continuously"
+        ]
+      else
+        []
+      end
 
     monitoring_requirements ++ enhanced_monitoring
   end
@@ -1056,16 +1165,17 @@ defmodule RubberDuck.Agents.MigrationAgent do
     else
       history_quality = min(length(agent.migration_history) / 10.0, 1.0)
       prediction_quality = assess_prediction_quality(impact_predictions)
-      
+
       (history_quality + prediction_quality) / 2
     end
   end
 
   defp assess_prediction_quality(impact_predictions) do
     # Assess quality based on prediction completeness
-    complete_predictions = Enum.count(impact_predictions, fn prediction ->
-      Map.has_key?(prediction, :risk_level) and Map.has_key?(prediction, :impact_score)
-    end)
+    complete_predictions =
+      Enum.count(impact_predictions, fn prediction ->
+        Map.has_key?(prediction, :risk_level) and Map.has_key?(prediction, :impact_score)
+      end)
 
     if length(impact_predictions) > 0 do
       complete_predictions / length(impact_predictions)
@@ -1079,7 +1189,7 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp analyze_migration_performance_impact(migration_module, agent) do
     migration_type = classify_migration_type(migration_module)
     historical_data = get_historical_performance_data(migration_type, agent)
-    
+
     %{
       migration_module: migration_module,
       migration_type: migration_type,
@@ -1092,19 +1202,23 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp get_historical_performance_data(migration_type, agent) do
     migration_history = agent.migration_history
-    
-    similar_migrations = Enum.filter(migration_history, fn record ->
-      classify_migration_type(record.migration_module) == migration_type
-    end)
+
+    similar_migrations =
+      Enum.filter(migration_history, fn record ->
+        classify_migration_type(record.migration_module) == migration_type
+      end)
 
     if Enum.empty?(similar_migrations) do
-      %{average_duration: 30_000, success_rate: 0.9}  # Default assumptions
+      # Default assumptions
+      %{average_duration: 30_000, success_rate: 0.9}
     else
-      durations = Enum.map(similar_migrations, fn migration ->
-        migration.execution_result[:execution_duration_ms] || 30_000
-      end)
+      durations =
+        Enum.map(similar_migrations, fn migration ->
+          migration.execution_result[:execution_duration_ms] || 30_000
+        end)
+
       successes = Enum.count(similar_migrations, & &1.overall_success)
-      
+
       %{
         average_duration: Enum.sum(durations) / length(durations),
         success_rate: successes / length(similar_migrations),
@@ -1114,24 +1228,25 @@ defmodule RubberDuck.Agents.MigrationAgent do
   end
 
   defp calculate_impact_score(migration_type, historical_data) do
-    base_impact = case migration_type do
-      :create_table -> 0.2
-      :add_column -> 0.3
-      :add_index -> 0.6
-      :alter_table -> 0.8
-      :drop_column -> 0.9
-      _ -> 0.5
-    end
+    base_impact =
+      case migration_type do
+        :create_table -> 0.2
+        :add_column -> 0.3
+        :add_index -> 0.6
+        :alter_table -> 0.8
+        :drop_column -> 0.9
+        _ -> 0.5
+      end
 
     # Adjust based on historical success rate
     success_adjustment = (1.0 - historical_data.success_rate) * 0.3
-    
+
     min(base_impact + success_adjustment, 1.0)
   end
 
   defp determine_risk_level(migration_type, historical_data) do
     impact_score = calculate_impact_score(migration_type, historical_data)
-    
+
     cond do
       impact_score > 0.8 -> :critical
       impact_score > 0.6 -> :high
@@ -1143,31 +1258,30 @@ defmodule RubberDuck.Agents.MigrationAgent do
 
   defp estimate_resource_requirements(migration_module) do
     migration_type = classify_migration_type(migration_module)
-    
+
     %{
-      cpu_usage: case migration_type do
-        :add_index -> :high
-        :alter_table -> :medium
-        _ -> :low
-      end,
-      memory_usage: case migration_type do
-        :create_table -> :medium
-        :add_index -> :high
-        _ -> :low
-      end,
-      io_usage: case migration_type do
-        :add_index -> :very_high
-        :alter_table -> :high
-        _ -> :medium
-      end,
-      lock_duration: case migration_type do
-        :alter_table -> :long
-        :drop_column -> :long
-        :add_index -> :medium
-        _ -> :short
-      end
+      cpu_usage: determine_cpu_usage(migration_type),
+      memory_usage: determine_memory_usage(migration_type),
+      io_usage: determine_io_usage(migration_type),
+      lock_duration: determine_lock_duration(migration_type)
     }
   end
+
+  defp determine_cpu_usage(:add_index), do: :high
+  defp determine_cpu_usage(:alter_table), do: :medium
+  defp determine_cpu_usage(_), do: :low
+
+  defp determine_memory_usage(:create_table), do: :medium
+  defp determine_memory_usage(:add_index), do: :high
+  defp determine_memory_usage(_), do: :low
+
+  defp determine_io_usage(:add_index), do: :very_high
+  defp determine_io_usage(:alter_table), do: :high
+  defp determine_io_usage(_), do: :medium
+
+  defp determine_lock_duration(type) when type in [:alter_table, :drop_column], do: :long
+  defp determine_lock_duration(:add_index), do: :medium
+  defp determine_lock_duration(_), do: :short
 
   defp generate_prediction_key(migration_modules) do
     module_names = Enum.map(migration_modules, &to_string/1)
@@ -1178,17 +1292,18 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp calculate_performance_degradation(baseline, current) do
     query_degradation = (current.query_time - baseline.query_time) / baseline.query_time
     throughput_degradation = (baseline.throughput - current.throughput) / baseline.throughput
-    
+
     max(query_degradation, throughput_degradation)
   end
 
   defp assess_rollback_urgency(execution_result) do
     error_count = length(execution_result.errors_encountered)
     duration = execution_result.execution_duration_ms
-    
+
     cond do
       error_count > 2 -> :immediate
-      duration > 600_000 -> :high  # > 10 minutes
+      # > 10 minutes
+      duration > 600_000 -> :high
       error_count > 0 -> :moderate
       true -> :low
     end
@@ -1209,26 +1324,32 @@ defmodule RubberDuck.Agents.MigrationAgent do
     # Learn from execution time vs prediction
     predicted_duration = pre_analysis.estimated_duration.estimated_seconds * 1000
     actual_duration = execution_result.execution_duration_ms
-    
-    lessons = if actual_duration > predicted_duration * 2 do
-      ["Migration took significantly longer than predicted - improve duration estimation" | lessons]
-    else
-      lessons
-    end
+
+    lessons =
+      if actual_duration > predicted_duration * 2 do
+        [
+          "Migration took significantly longer than predicted - improve duration estimation"
+          | lessons
+        ]
+      else
+        lessons
+      end
 
     # Learn from integrity validation
-    lessons = if post_analysis.integrity_validation.integrity_score < 0.95 do
-      ["Integrity validation found issues - enhance pre-migration validation" | lessons]
-    else
-      lessons
-    end
+    lessons =
+      if post_analysis.integrity_validation.integrity_score < 0.95 do
+        ["Integrity validation found issues - enhance pre-migration validation" | lessons]
+      else
+        lessons
+      end
 
     # Learn from rollback triggers
-    lessons = if post_analysis.rollback_recommendation.rollback_recommended do
-      ["Rollback was recommended - review migration strategy" | lessons]
-    else
-      lessons
-    end
+    lessons =
+      if post_analysis.rollback_recommendation.rollback_recommended do
+        ["Rollback was recommended - review migration strategy" | lessons]
+      else
+        lessons
+      end
 
     if Enum.empty?(lessons) do
       ["Migration executed successfully within expected parameters"]
@@ -1253,10 +1374,13 @@ defmodule RubberDuck.Agents.MigrationAgent do
     # For now, simulate rollback execution
     %{
       rollback_strategy: rollback_plan.rollback_strategy,
-      rollback_success: :rand.uniform() > 0.1,  # 90% success rate
-      rollback_duration_ms: :rand.uniform(60_000),  # 0-60 seconds
+      # 90% success rate
+      rollback_success: :rand.uniform() > 0.1,
+      # 0-60 seconds
+      rollback_duration_ms: :rand.uniform(60_000),
       data_restored: rollback_plan.data_restoration_required,
-      validation_passed: :rand.uniform() > 0.05,  # 95% validation success
+      # 95% validation success
+      validation_passed: :rand.uniform() > 0.05,
       rollback_timestamp: DateTime.utc_now()
     }
   end
@@ -1264,13 +1388,13 @@ defmodule RubberDuck.Agents.MigrationAgent do
   defp estimate_rollback_time(migration_record) do
     original_duration = migration_record.execution_result.execution_duration_ms
     complexity = migration_record.pre_analysis.rollback_complexity.complexity_score
-    
+
     # Rollback typically takes 50-150% of original migration time
     base_time = original_duration * (0.5 + complexity)
     round(base_time)
   end
 
-  defp create_rollback_validation_plan(migration_record) do
+  defp create_rollback_validation_plan(_migration_record) do
     [
       "Validate data integrity after rollback",
       "Verify application functionality",
