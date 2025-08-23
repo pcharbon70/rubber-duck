@@ -9,3 +9,20 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+
+# Seed preference defaults
+IO.puts("Seeding preference defaults...")
+
+# Seed LLM provider defaults
+case RubberDuck.Preferences.Seeders.LlmDefaultsSeeder.seed_all() do
+  :ok -> IO.puts("✅ LLM defaults seeded successfully")
+  {:error, reason} -> IO.puts("❌ Failed to seed LLM defaults: #{inspect(reason)}")
+end
+
+# Seed budget defaults
+case RubberDuck.Preferences.Seeders.BudgetDefaultsSeeder.seed_all() do
+  :ok -> IO.puts("✅ Budget defaults seeded successfully")  
+  {:error, reason} -> IO.puts("❌ Failed to seed budget defaults: #{inspect(reason)}")
+end
+
+IO.puts("Seeding completed!")

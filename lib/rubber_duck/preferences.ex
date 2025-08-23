@@ -22,6 +22,12 @@ defmodule RubberDuck.Preferences do
     resource RubberDuck.Preferences.Resources.PreferenceTemplate
     resource RubberDuck.Preferences.Resources.PreferenceValidation
     resource RubberDuck.Preferences.Resources.PreferenceCategory
+    resource RubberDuck.Preferences.Resources.BudgetConfiguration
+    resource RubberDuck.Preferences.Resources.BudgetLimit
+    resource RubberDuck.Preferences.Resources.BudgetAlert
+    resource RubberDuck.Preferences.Resources.BudgetUsage
+    resource RubberDuck.Preferences.Resources.BudgetEvent
+    resource RubberDuck.Preferences.Resources.BudgetOverride
   end
 
   authorization do
