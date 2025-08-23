@@ -144,7 +144,7 @@ defmodule RubberDuck.Preferences.OverrideValidatorTest do
       # Below minimum
       assert {:error, _} = OverrideValidator.validate_constraints("range.test", 0)
 
-      # Above maximum  
+      # Above maximum
       assert {:error, _} = OverrideValidator.validate_constraints("range.test", 150)
     end
 

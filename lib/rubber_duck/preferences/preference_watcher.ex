@@ -111,7 +111,7 @@ defmodule RubberDuck.Preferences.PreferenceWatcher do
       )
     end
 
-    # Broadcast to project-specific subscribers  
+    # Broadcast to project-specific subscribers
     if project_id do
       PubSub.broadcast(
         @pubsub_module,
