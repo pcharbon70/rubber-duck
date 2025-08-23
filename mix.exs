@@ -49,7 +49,7 @@ defmodule RubberDuck.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:claude, "~> 0.5", only: [:dev], runtime: false},
+      {:claude, "~> 0.5.1", only: [:dev], runtime: false},
       {:tidewave, "~> 0.2", only: [:dev]},
       {:ex_money_sql, "~> 1.0"},
       {:ex_cldr, "~> 2.0"},
