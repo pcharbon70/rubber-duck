@@ -98,6 +98,9 @@ defmodule RubberDuck.Application do
       # Preference Change Monitoring
       RubberDuck.Preferences.PreferenceWatcher,
 
+      # LLM Provider Monitoring
+      RubberDuck.Preferences.Llm.ProviderMonitor,
+
       # Agent Coordination Hub
       {RubberDuck.AgentCoordinator, []},
 
