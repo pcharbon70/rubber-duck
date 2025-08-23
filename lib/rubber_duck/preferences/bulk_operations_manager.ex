@@ -530,6 +530,7 @@ defmodule RubberDuck.Preferences.BulkOperationsManager do
   end
 
   defp filter_preferences_by_categories(prefs, nil), do: prefs
+
   defp filter_preferences_by_categories(prefs, categories) do
     Enum.filter(prefs, &(&1.category in categories))
   end
@@ -545,6 +546,7 @@ defmodule RubberDuck.Preferences.BulkOperationsManager do
   end
 
   defp count_prefs_by_category(prefs, nil), do: length(prefs)
+
   defp count_prefs_by_category(prefs, categories) do
     Enum.count(prefs, &(&1.category in categories))
   end

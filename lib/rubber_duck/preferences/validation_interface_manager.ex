@@ -245,6 +245,7 @@ defmodule RubberDuck.Preferences.ValidationInterfaceManager do
   defp validate_changes_against_constraints(changes) do
     # Validate all changes against their constraints
     violations = detect_constraint_violations(changes)
+
     if Enum.empty?(violations) do
       {:ok, %{valid: true, violations: []}}
     else

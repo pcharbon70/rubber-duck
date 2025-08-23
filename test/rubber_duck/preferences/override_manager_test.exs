@@ -1,6 +1,7 @@
 defmodule RubberDuck.Preferences.OverrideManagerTest do
   use RubberDuck.DataCase, async: true
 
+  alias RubberDuck.Accounts.User
   alias RubberDuck.Preferences
   alias RubberDuck.Preferences.OverrideManager
 
@@ -184,7 +185,7 @@ defmodule RubberDuck.Preferences.OverrideManagerTest do
 
   defp create_test_user do
     {:ok, user} =
-      RubberDuck.Accounts.User.register_with_password(%{
+      User.register_with_password(%{
         email: "test#{System.unique_integer()}@example.com",
         password: "password123"
       })

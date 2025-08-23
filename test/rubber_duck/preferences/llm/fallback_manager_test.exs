@@ -1,7 +1,10 @@
 defmodule RubberDuck.Preferences.Llm.FallbackManagerTest do
   use RubberDuck.DataCase, async: true
 
+  alias RubberDuck.Accounts.User
+  alias RubberDuck.Preferences
   alias RubberDuck.Preferences.Llm.FallbackManager
+  alias RubberDuck.Preferences.Resources.UserPreference
   alias RubberDuck.Preferences.Seeders.LlmDefaultsSeeder
 
   describe "fallback chain management" do
@@ -26,7 +29,7 @@ defmodule RubberDuck.Preferences.Llm.FallbackManagerTest do
     test "filters fallback chain by enabled providers", %{user: user} do
       # Disable some providers
       {:ok, _} =
-        RubberDuck.Preferences.UserPreference.set_preference(
+        UserPreference.set_preference(
           user.id,
           "llm.providers.enabled",
           # Only Anthropic enabled
@@ -109,7 +112,7 @@ defmodule RubberDuck.Preferences.Llm.FallbackManagerTest do
     test "returns original error when fallback disabled", %{user: user} do
       # Disable fallback
       {:ok, _} =
-        RubberDuck.Preferences.UserPreference.set_preference(
+        UserPreference.set_preference(
           user.id,
           "llm.providers.fallback_enabled",
           Jason.encode!(false),
@@ -144,7 +147,7 @@ defmodule RubberDuck.Preferences.Llm.FallbackManagerTest do
     test "health check respects monitoring preferences", %{user: user} do
       # Disable health monitoring
       {:ok, _} =
-        RubberDuck.Preferences.UserPreference.set_preference(
+        UserPreference.set_preference(
           user.id,
           "llm.monitoring.health_check_enabled",
           Jason.encode!(false),
@@ -182,7 +185,7 @@ defmodule RubberDuck.Preferences.Llm.FallbackManagerTest do
 
   defp create_test_user do
     {:ok, user} =
-      RubberDuck.Accounts.User.register_with_password(%{
+      User.register_with_password(%{
         email: "test#{System.unique_integer()}@example.com",
         password: "password123"
       })
