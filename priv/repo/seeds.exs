@@ -37,4 +37,10 @@ case RubberDuck.Preferences.Seeders.CodeQualityDefaultsSeeder.seed_all() do
   {:error, reason} -> IO.puts("❌ Failed to seed code quality defaults: #{inspect(reason)}")
 end
 
+# Seed preference templates
+case RubberDuck.Preferences.Seeders.TemplateDefaultsSeeder.seed_all() do
+  :ok -> IO.puts("✅ Preference templates seeded successfully")
+  {:error, reason} -> IO.puts("❌ Failed to seed preference templates: #{inspect(reason)}")
+end
+
 IO.puts("Seeding completed!")
