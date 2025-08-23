@@ -8,6 +8,8 @@ defmodule RubberDuck.Preferences.CacheManager do
 
   require Logger
 
+  alias RubberDuck.Preferences.PreferenceResolver
+
   @default_ttl :timer.minutes(30)
 
   @doc """
@@ -159,7 +161,7 @@ defmodule RubberDuck.Preferences.CacheManager do
     Enum.each(warmup_specs, fn %{user_id: user_id, preference_keys: keys, project_id: project_id} ->
       Enum.each(keys, fn key ->
         # This will populate cache as a side effect
-        RubberDuck.Preferences.PreferenceResolver.resolve(user_id, key, project_id)
+        PreferenceResolver.resolve(user_id, key, project_id)
       end)
     end)
 

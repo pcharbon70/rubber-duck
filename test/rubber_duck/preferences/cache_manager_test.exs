@@ -1,6 +1,7 @@
 defmodule RubberDuck.Preferences.CacheManagerTest do
   use ExUnit.Case, async: true
 
+  alias RubberDuck.Accounts.User
   alias RubberDuck.Preferences.CacheManager
 
   @test_table :test_cache
@@ -178,7 +179,7 @@ defmodule RubberDuck.Preferences.CacheManagerTest do
 
   defp create_test_user do
     {:ok, user} =
-      RubberDuck.Accounts.User.register_with_password(%{
+      User.register_with_password(%{
         email: "test#{System.unique_integer()}@example.com",
         password: "password123"
       })

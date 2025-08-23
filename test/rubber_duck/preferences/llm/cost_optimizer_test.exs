@@ -1,7 +1,10 @@
 defmodule RubberDuck.Preferences.Llm.CostOptimizerTest do
   use RubberDuck.DataCase, async: true
 
+  alias RubberDuck.Accounts.User
+  alias RubberDuck.Preferences
   alias RubberDuck.Preferences.Llm.CostOptimizer
+  alias RubberDuck.Preferences.Resources.UserPreference
   alias RubberDuck.Preferences.Seeders.LlmDefaultsSeeder
 
   describe "cost-optimized selection" do
@@ -17,7 +20,7 @@ defmodule RubberDuck.Preferences.Llm.CostOptimizerTest do
     test "selects cost-effective provider when optimization enabled", %{user: user} do
       # Enable cost optimization
       {:ok, _} =
-        RubberDuck.Preferences.UserPreference.set_preference(
+        UserPreference.set_preference(
           user.id,
           "llm.cost.optimization_enabled",
           Jason.encode!(true),
@@ -40,7 +43,7 @@ defmodule RubberDuck.Preferences.Llm.CostOptimizerTest do
     test "uses standard selection when optimization disabled", %{user: user} do
       # Disable cost optimization
       {:ok, _} =
-        RubberDuck.Preferences.UserPreference.set_preference(
+        UserPreference.set_preference(
           user.id,
           "llm.cost.optimization_enabled",
           Jason.encode!(false),
@@ -59,7 +62,7 @@ defmodule RubberDuck.Preferences.Llm.CostOptimizerTest do
     test "respects quality threshold in optimization", %{user: user} do
       # Set high quality threshold
       {:ok, _} =
-        RubberDuck.Preferences.UserPreference.set_preference(
+        UserPreference.set_preference(
           user.id,
           "llm.cost.quality_threshold",
           Jason.encode!(0.9),
@@ -86,7 +89,7 @@ defmodule RubberDuck.Preferences.Llm.CostOptimizerTest do
     test "respects cost threshold preferences", %{user: user} do
       # Set very low cost threshold
       {:ok, _} =
-        RubberDuck.Preferences.UserPreference.set_preference(
+        UserPreference.set_preference(
           user.id,
           "llm.cost.cost_per_token_threshold",
           Jason.encode!(0.000001),
@@ -139,7 +142,7 @@ defmodule RubberDuck.Preferences.Llm.CostOptimizerTest do
 
   defp create_test_user do
     {:ok, user} =
-      RubberDuck.Accounts.User.register_with_password(%{
+      User.register_with_password(%{
         email: "test#{System.unique_integer()}@example.com",
         password: "password123"
       })

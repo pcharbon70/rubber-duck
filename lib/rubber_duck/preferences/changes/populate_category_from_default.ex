@@ -9,6 +9,8 @@ defmodule RubberDuck.Preferences.Changes.PopulateCategoryFromDefault do
 
   use Ash.Resource.Change
 
+  alias RubberDuck.Preferences.Resources.SystemDefault
+
   def change(changeset, _opts, _context) do
     case Ash.Changeset.get_attribute(changeset, :preference_key) do
       nil ->
@@ -37,7 +39,7 @@ defmodule RubberDuck.Preferences.Changes.PopulateCategoryFromDefault do
   end
 
   defp get_system_default_category(preference_key) do
-    case RubberDuck.Preferences.Resources.SystemDefault.read(%{preference_key: preference_key}) do
+    case SystemDefault.read(%{preference_key: preference_key}) do
       {:ok, [system_default]} ->
         {:ok, system_default.category}
 

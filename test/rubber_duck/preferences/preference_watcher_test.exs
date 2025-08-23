@@ -2,6 +2,7 @@ defmodule RubberDuck.Preferences.PreferenceWatcherTest do
   # PubSub tests need to be synchronous
   use RubberDuck.DataCase, async: false
 
+  alias RubberDuck.Accounts.User
   alias RubberDuck.Preferences.PreferenceWatcher
 
   describe "subscription management" do
@@ -186,7 +187,7 @@ defmodule RubberDuck.Preferences.PreferenceWatcherTest do
 
   defp create_test_user do
     {:ok, user} =
-      RubberDuck.Accounts.User.register_with_password(%{
+      User.register_with_password(%{
         email: "test#{System.unique_integer()}@example.com",
         password: "password123"
       })

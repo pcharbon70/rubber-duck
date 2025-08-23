@@ -224,6 +224,7 @@ defmodule RubberDuck.Preferences.TemplateManager do
     public_only = Keyword.get(opts, :public_only, false)
 
     query_opts = build_query_opts(template_type, category)
+
     case get_templates_by_scope(public_only) do
       {:ok, templates} ->
         case filter_templates(templates, query_opts) do
