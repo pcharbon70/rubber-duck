@@ -25,4 +25,10 @@ case RubberDuck.Preferences.Seeders.BudgetDefaultsSeeder.seed_all() do
   {:error, reason} -> IO.puts("❌ Failed to seed budget defaults: #{inspect(reason)}")
 end
 
+# Seed ML defaults
+case RubberDuck.Preferences.Seeders.MlDefaultsSeeder.seed_all() do
+  :ok -> IO.puts("✅ ML defaults seeded successfully")
+  {:error, reason} -> IO.puts("❌ Failed to seed ML defaults: #{inspect(reason)}")
+end
+
 IO.puts("Seeding completed!")
