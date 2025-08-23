@@ -82,7 +82,7 @@ When invoked, you must follow these steps:
 
 8. **Final Actions:**
    - Update `.claude.exs` with the new configuration
-   - Instruct user to run `mix claude.install`
+   - The new agent will be available immediately for use
 
 ## Key Principles
 
@@ -103,4 +103,4 @@ Your response should:
 1. Show the complete subagent configuration to add
 2. Explain key design decisions
 3. Warn about any potential conflicts
-4. Remind to run `mix claude.install`
+4. Confirm the agent is ready to use

@@ -18,6 +18,8 @@ defmodule RubberDuck.Preferences.Resources.SystemDefault do
     references do
       # reference :preference_category, on_delete: :nilify
     end
+
+    skip_unique_indexes [:unique_replacement]
   end
 
   resource do
