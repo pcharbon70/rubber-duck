@@ -8,7 +8,7 @@ defmodule RubberDuck.Preferences.Llm.RoutingIntegration do
 
   require Logger
 
-  alias RubberDuck.Preferences.Llm.{ProviderConfig, ModelSelector, FallbackManager, CostOptimizer}
+  alias RubberDuck.Preferences.Llm.{CostOptimizer, FallbackManager, ModelSelector, ProviderConfig}
 
   @doc """
   Override default provider selection with preference-based logic.
@@ -357,7 +357,7 @@ defmodule RubberDuck.Preferences.Llm.RoutingIntegration do
       Logger.warning("Provider #{provider} error rate exceeded threshold: #{error_rate}")
     end
 
-    if response_time > Map.get(thresholds, "response_time_ms", 10000) do
+    if response_time > Map.get(thresholds, "response_time_ms", 10_000) do
       Logger.warning("Provider #{provider} response time exceeded threshold: #{response_time}ms")
     end
   end
@@ -400,7 +400,7 @@ defmodule RubberDuck.Preferences.Llm.RoutingIntegration do
     # Max 50% penalty for errors
     error_penalty = min(error_rate * 10, 0.5)
     # Max 30% penalty for slow responses
-    response_penalty = min(response_time / 20000, 0.3)
+    response_penalty = min(response_time / 20_000, 0.3)
     availability_score = availability
 
     max(0.0, availability_score - error_penalty - response_penalty)

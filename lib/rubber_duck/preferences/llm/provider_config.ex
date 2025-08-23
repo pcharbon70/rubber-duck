@@ -136,7 +136,7 @@ defmodule RubberDuck.Preferences.Llm.ProviderConfig do
       model: resolve_preference(user_id, "llm.openai.model", project_id, "gpt-4"),
       temperature: resolve_preference(user_id, "llm.openai.temperature", project_id, 0.7),
       max_tokens: resolve_preference(user_id, "llm.openai.max_tokens", project_id, 4096),
-      timeout: resolve_preference(user_id, "llm.openai.timeout", project_id, 30000),
+      timeout: resolve_preference(user_id, "llm.openai.timeout", project_id, 30_000),
       retry_attempts: resolve_preference(user_id, "llm.openai.retry_attempts", project_id, 3)
     }
   end
@@ -152,7 +152,7 @@ defmodule RubberDuck.Preferences.Llm.ProviderConfig do
         ),
       temperature: resolve_preference(user_id, "llm.anthropic.temperature", project_id, 0.7),
       max_tokens: resolve_preference(user_id, "llm.anthropic.max_tokens", project_id, 4096),
-      timeout: resolve_preference(user_id, "llm.anthropic.timeout", project_id, 60000),
+      timeout: resolve_preference(user_id, "llm.anthropic.timeout", project_id, 60_000),
       stream_enabled:
         resolve_preference(user_id, "llm.anthropic.stream_enabled", project_id, true)
     }

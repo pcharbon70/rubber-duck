@@ -136,7 +136,7 @@ defmodule RubberDuck.Preferences.Llm.FallbackManager do
     %{
       user_id: user_id,
       project_id: project_id,
-      fallback_enabled: is_fallback_enabled(user_id, project_id),
+      fallback_enabled: fallback_enabled?(user_id, project_id),
       total_fallback_events: get_fallback_event_count(user_id, project_id),
       most_common_failures: get_common_failure_types(user_id, project_id),
       fallback_success_rate: get_fallback_success_rate(user_id, project_id),
@@ -175,14 +175,12 @@ defmodule RubberDuck.Preferences.Llm.FallbackManager do
   end
 
   defp execute_with_provider(request_fn, provider) do
-    try do
-      request_fn.(provider)
-    rescue
-      error -> {:error, error}
-    catch
-      :exit, reason -> {:error, {:exit, reason}}
-      error -> {:error, error}
-    end
+    request_fn.(provider)
+  rescue
+    error -> {:error, error}
+  catch
+    :exit, reason -> {:error, {:exit, reason}}
+    error -> {:error, error}
   end
 
   defp get_trigger_conditions(config) do
@@ -226,7 +224,7 @@ defmodule RubberDuck.Preferences.Llm.FallbackManager do
 
   defp simulate_health_check(availability, response_time, thresholds) do
     min_availability = Map.get(thresholds, "availability", 0.95)
-    max_response_time = Map.get(thresholds, "response_time_ms", 10000)
+    max_response_time = Map.get(thresholds, "response_time_ms", 10_000)
 
     cond do
       availability < min_availability -> :failed
@@ -235,7 +233,7 @@ defmodule RubberDuck.Preferences.Llm.FallbackManager do
     end
   end
 
-  defp is_fallback_enabled(user_id, project_id) do
+  defp fallback_enabled?(user_id, project_id) do
     case PreferenceResolver.resolve(user_id, "llm.providers.fallback_enabled", project_id) do
       {:ok, enabled} -> enabled
       # Default to enabled

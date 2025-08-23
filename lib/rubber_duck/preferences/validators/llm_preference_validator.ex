@@ -240,13 +240,13 @@ defmodule RubberDuck.Preferences.Validators.LlmPreferenceValidator do
   end
 
   defp validate_health_check_interval(interval)
-       when is_integer(interval) and interval >= 10000 and interval <= 3_600_000 do
+       when is_integer(interval) and interval >= 10_000 and interval <= 3_600_000 do
     :ok
   end
 
   defp validate_health_check_interval(interval) do
     {:error,
-     "Health check interval must be between 10000 and 3600000 milliseconds, got: #{inspect(interval)}"}
+     "Health check interval must be between 10_000 and 360_0000 milliseconds, got: #{inspect(interval)}"}
   end
 
   defp validate_alert_thresholds(thresholds) when is_map(thresholds) do
@@ -256,7 +256,7 @@ defmodule RubberDuck.Preferences.Validators.LlmPreferenceValidator do
       validate_threshold_value(
         Map.get(thresholds, "response_time_ms"),
         100,
-        60000,
+        60_000,
         "response_time_ms"
       ),
       validate_threshold_value(Map.get(thresholds, "availability"), 0.0, 1.0, "availability")

@@ -165,7 +165,7 @@ defmodule RubberDuck.Preferences.Llm.ProviderMonitor do
     status =
       cond do
         current_availability >= 0.95 and response_time < 5000 -> :healthy
-        current_availability >= 0.90 and response_time < 10000 -> :degraded
+        current_availability >= 0.90 and response_time < 10_000 -> :degraded
         true -> :unhealthy
       end
 

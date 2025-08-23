@@ -274,7 +274,7 @@ defmodule RubberDuck.Preferences.Seeders.LlmValidationSeeder do
       %{
         preference_key: "llm.monitoring.health_check_interval",
         validation_type: :range,
-        validation_rule: %{"min" => 10000, "max" => 3_600_000},
+        validation_rule: %{"min" => 10_000, "max" => 3_600_000},
         error_message: "Health check interval must be between 10 seconds and 1 hour",
         severity: :warning,
         order: 1

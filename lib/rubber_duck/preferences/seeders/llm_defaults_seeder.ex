@@ -132,7 +132,7 @@ defmodule RubberDuck.Preferences.Seeders.LlmDefaultsSeeder do
       },
       %{
         preference_key: "llm.openai.timeout",
-        default_value: Jason.encode!(30000),
+        default_value: Jason.encode!(30_000),
         data_type: :integer,
         category: "llm",
         subcategory: "openai",
@@ -196,7 +196,7 @@ defmodule RubberDuck.Preferences.Seeders.LlmDefaultsSeeder do
       },
       %{
         preference_key: "llm.anthropic.timeout",
-        default_value: Jason.encode!(60000),
+        default_value: Jason.encode!(60_000),
         data_type: :integer,
         category: "llm",
         subcategory: "anthropic",
@@ -304,7 +304,7 @@ defmodule RubberDuck.Preferences.Seeders.LlmDefaultsSeeder do
         category: "llm",
         subcategory: "local",
         description: "Context window size for local models",
-        constraints: %{"min" => 512, "max" => 32768}
+        constraints: %{"min" => 512, "max" => 32_768}
       }
     ]
 
@@ -402,7 +402,7 @@ defmodule RubberDuck.Preferences.Seeders.LlmDefaultsSeeder do
           Jason.encode!(%{
             "max_retries" => 3,
             "base_delay_ms" => 1000,
-            "max_delay_ms" => 30000,
+            "max_delay_ms" => 30_000,
             "backoff_multiplier" => 2.0
           }),
         data_type: :json,
@@ -452,7 +452,7 @@ defmodule RubberDuck.Preferences.Seeders.LlmDefaultsSeeder do
         category: "llm",
         subcategory: "monitoring",
         description: "Health check interval in milliseconds",
-        constraints: %{"min" => 10000, "max" => 3_600_000}
+        constraints: %{"min" => 10_000, "max" => 3_600_000}
       },
       %{
         preference_key: "llm.monitoring.performance_tracking",
@@ -475,7 +475,7 @@ defmodule RubberDuck.Preferences.Seeders.LlmDefaultsSeeder do
         default_value:
           Jason.encode!(%{
             "error_rate" => 0.1,
-            "response_time_ms" => 10000,
+            "response_time_ms" => 10_000,
             "availability" => 0.95
           }),
         data_type: :json,

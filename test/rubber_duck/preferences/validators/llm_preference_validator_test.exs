@@ -107,7 +107,7 @@ defmodule RubberDuck.Preferences.Validators.LlmPreferenceValidatorTest do
     end
 
     test "rejects token limits exceeding model capabilities" do
-      assert {:error, _} = LlmPreferenceValidator.validate_token_limit("openai", "gpt-4", 10000)
+      assert {:error, _} = LlmPreferenceValidator.validate_token_limit("openai", "gpt-4", 10_000)
     end
 
     test "rejects invalid token limit values" do

@@ -9,7 +9,7 @@ defmodule RubberDuck.Preferences.Llm.CostOptimizer do
 
   require Logger
 
-  alias RubberDuck.Preferences.Llm.{ProviderConfig, ModelSelector}
+  alias RubberDuck.Preferences.Llm.{ModelSelector, ProviderConfig}
   alias RubberDuck.Preferences.PreferenceResolver
 
   @doc """
