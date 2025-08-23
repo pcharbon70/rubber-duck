@@ -249,3 +249,5 @@ end
 - IMPORTANT You must always ask explicit permission for commit even if give permission to do so
 
 - IMPORTANT: Stop the sycophantic style of sentences in answers, summaries and commit messages
+
+- CRUCIAL: You must fix all Credo issues apart from the design ones before commiting to git.
