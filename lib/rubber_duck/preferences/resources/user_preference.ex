@@ -121,8 +121,10 @@ defmodule RubberDuck.Preferences.Resources.UserPreference do
       change set_attribute(:last_modified, &DateTime.utc_now/0)
       change set_attribute(:source, :manual)
 
-      # Note: Custom change modules will be implemented in future sections
-      # change {RubberDuck.Preferences.Changes.PopulateCategoryFromDefault, []}
+      # Preference system integrations
+      change {RubberDuck.Preferences.Changes.PopulateCategoryFromDefault, []}
+      change {RubberDuck.Preferences.Changes.InvalidatePreferenceCache, []}
+      change {RubberDuck.Preferences.Changes.TrackPreferenceSource, []}
     end
 
     update :apply_template do

@@ -116,9 +116,11 @@ defmodule RubberDuck.Preferences.Resources.ProjectPreference do
       change set_attribute(:temporary, arg(:temporary))
       change set_attribute(:effective_until, arg(:effective_until))
 
-      # Note: Custom change modules will be implemented in future sections
-      # change {RubberDuck.Preferences.Changes.SetApprovalTimestamp, []}
-      # change {RubberDuck.Preferences.Changes.PopulateCategoryFromDefault, []}
+      # Preference system integrations
+      change {RubberDuck.Preferences.Changes.ValidateOverridePermissions, []}
+      change {RubberDuck.Preferences.Changes.PopulateCategoryFromDefault, []}
+      change {RubberDuck.Preferences.Changes.InvalidatePreferenceCache, []}
+      change {RubberDuck.Preferences.Changes.TrackPreferenceSource, []}
     end
 
     update :approve_override do

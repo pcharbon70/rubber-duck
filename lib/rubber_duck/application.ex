@@ -92,6 +92,12 @@ defmodule RubberDuck.Application do
       # Instructions Processor - Workflow composition
       RubberDuck.InstructionsProcessor,
 
+      # Preference Resolution System
+      RubberDuck.Preferences.PreferenceResolver,
+
+      # Preference Change Monitoring
+      RubberDuck.Preferences.PreferenceWatcher,
+
       # Agent Coordination Hub
       {RubberDuck.AgentCoordinator, []},
 
