@@ -17,7 +17,6 @@ defmodule RubberDuck.Agents.UserConfigAgent do
 
   require Logger
 
-
   # Agent state fields are managed through direct state setting
 
   @doc """
