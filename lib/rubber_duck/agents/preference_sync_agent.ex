@@ -172,7 +172,7 @@ defmodule RubberDuck.Agents.PreferenceSyncAgent do
     }
   end
 
-  defp identify_sync_conflicts(sync_results) do
+  defp identify_sync_conflicts(_sync_results) do
     # Identify conflicts in sync results
     []
   end
@@ -330,12 +330,12 @@ defmodule RubberDuck.Agents.PreferenceSyncAgent do
     }
   end
 
-  defp record_successful_distributed_update(agent, update_entry, propagation_results) do
+  defp record_successful_distributed_update(agent, _update_entry, _propagation_results) do
     # Record successful distributed update
     agent
   end
 
-  defp record_failed_distributed_update(agent, update_entry, reason) do
+  defp record_failed_distributed_update(agent, _update_entry, reason) do
     # Record failed distributed update
     Logger.warning("Distributed update failed: #{inspect(reason)}")
     agent

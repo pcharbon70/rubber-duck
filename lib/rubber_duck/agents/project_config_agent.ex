@@ -187,7 +187,7 @@ defmodule RubberDuck.Agents.ProjectConfigAgent do
     [new_entry | tracking] |> Enum.take(100)
   end
 
-  defp update_override_statistics(stats, preference_key, action) do
+  defp update_override_statistics(stats, preference_key, _action) do
     category = get_preference_category(preference_key)
 
     updated_total = stats.total + 1
@@ -271,29 +271,26 @@ defmodule RubberDuck.Agents.ProjectConfigAgent do
   defp analyze_enablement_status(status) do
     suggestions = []
 
-    if not status.enabled do
-      suggestions = [
-        %{
-          type: :enablement,
-          priority: :medium,
-          message: "Project preferences not enabled",
-          suggested_action: "Enable project preferences to allow team customization"
-        }
-        | suggestions
-      ]
+    suggestions = if not status.enabled do
+      [%{
+        type: :enablement,
+        priority: :medium,
+        message: "Project preferences not enabled",
+        suggested_action: "Enable project preferences to allow team customization"
+      } | suggestions]
+    else
+      suggestions
     end
 
-    if status.total_overrides == 0 and status.enabled do
-      suggestions = [
-        %{
-          type: :usage,
-          priority: :low,
-          message: "No preference overrides configured",
-          suggested_action:
-            "Consider applying a template or configuring project-specific preferences"
-        }
-        | suggestions
-      ]
+    suggestions = if status.total_overrides == 0 and status.enabled do
+      [%{
+        type: :usage,
+        priority: :low,
+        message: "No preference overrides configured",
+        suggested_action: "Consider applying a template or configuring project-specific preferences"
+      } | suggestions]
+    else
+      suggestions
     end
 
     suggestions
