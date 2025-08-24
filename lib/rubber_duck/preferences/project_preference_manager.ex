@@ -180,7 +180,7 @@ defmodule RubberDuck.Preferences.ProjectPreferenceManager do
           new_value :: String.t(),
           opts :: keyword()
         ) :: {:ok, ProjectPreference.t()} | {:error, term()}
-  def update_project_override(project_preference_id, new_value, opts \\ []) do
+  def update_project_override(_project_preference_id, new_value, opts \\ []) do
     reason = Keyword.get(opts, :reason, "Update project override")
 
     # Placeholder implementation for update_project_override
@@ -209,7 +209,7 @@ defmodule RubberDuck.Preferences.ProjectPreferenceManager do
   Remove project preference override (revert to user preference).
   """
   @spec remove_project_override(project_preference_id :: binary()) :: :ok | {:error, term()}
-  def remove_project_override(project_preference_id) do
+  def remove_project_override(_project_preference_id) do
     # Placeholder for project preference lookup
     case {:ok, %{preference_key: "test", project_id: "test"}} do
       {:ok, project_pref} ->

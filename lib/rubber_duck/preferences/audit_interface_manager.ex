@@ -20,11 +20,11 @@ defmodule RubberDuck.Preferences.AuditInterfaceManager do
           opts :: keyword()
         ) :: {:ok, list(PreferenceHistory.t())} | {:error, term()}
   def get_preference_history(preference_key, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 50)
+    _limit = Keyword.get(opts, :limit, 50)
     user_id = Keyword.get(opts, :user_id, nil)
     project_id = Keyword.get(opts, :project_id, nil)
 
-    filters = build_history_filters(preference_key, user_id, project_id)
+    _filters = build_history_filters(preference_key, user_id, project_id)
 
     # Placeholder for preference history lookup
     case {:ok, []} do
@@ -147,7 +147,7 @@ defmodule RubberDuck.Preferences.AuditInterfaceManager do
     project_id = Keyword.get(opts, :project_id, nil)
     category = Keyword.get(opts, :category, nil)
 
-    filters = %{
+    _filters = %{
       start_date: start_date,
       end_date: end_date,
       project_id: project_id,
@@ -248,7 +248,7 @@ defmodule RubberDuck.Preferences.AuditInterfaceManager do
     |> Enum.sort_by(& &1.timestamp, {:desc, DateTime})
   end
 
-  defp get_history_entry(history_entry_id) do
+  defp get_history_entry(_history_entry_id) do
     # Placeholder for history entry lookup
     case {:ok, %{}} do
       {:ok, entry} -> {:ok, entry}
@@ -396,8 +396,8 @@ defmodule RubberDuck.Preferences.AuditInterfaceManager do
     Enum.count(project_prefs, & &1.temporary)
   end
 
-  defp get_recent_changes(project_id, days) do
-    since_date = Date.add(Date.utc_today(), -days)
+  defp get_recent_changes(_project_id, days) do
+    _since_date = Date.add(Date.utc_today(), -days)
 
     # Placeholder for recent changes lookup
     case {:ok, []} do

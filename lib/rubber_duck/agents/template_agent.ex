@@ -325,7 +325,7 @@ defmodule RubberDuck.Agents.TemplateAgent do
     end
   end
 
-  defp analyze_template_categories(agent) do
+  defp analyze_template_categories(_agent) do
     # Placeholder for category analysis
     %{most_used_category: "system"}
   end

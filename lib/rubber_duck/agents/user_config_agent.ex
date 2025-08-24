@@ -17,7 +17,6 @@ defmodule RubberDuck.Agents.UserConfigAgent do
 
   require Logger
 
-  alias RubberDuck.Preferences.PreferenceResolver
 
   # Agent state fields are managed through direct state setting
 

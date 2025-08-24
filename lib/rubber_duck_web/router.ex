@@ -43,6 +43,13 @@ defmodule RubberDuckWeb.Router do
       #
       # If an authenticated user must *not* be present:
       # on_mount {RubberDuckWeb.LiveUserAuth, :live_no_user}
+
+      # Preference Management Routes
+      live("/preferences", Preferences.DashboardLive, :index)
+      live("/preferences/templates", Preferences.TemplateBrowserLive, :index)
+      live("/preferences/analytics", Preferences.AnalyticsLive, :index)
+      live("/preferences/edit/:key", Preferences.CategoryEditorLive, :edit)
+      live("/preferences/approvals", Preferences.ApprovalWorkflowLive, :index)
     end
   end
 
@@ -87,10 +94,35 @@ defmodule RubberDuckWeb.Router do
     )
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", RubberDuckWeb do
-  #   pipe_through :api
-  # end
+  # API Routes
+  scope "/api", RubberDuckWeb.API do
+    pipe_through(:api)
+
+    # Preference Management API
+    scope "/v1" do
+      # Preferences CRUD
+      get("/preferences", PreferencesController, :index)
+      post("/preferences", PreferencesController, :create)
+      get("/preferences/:id", PreferencesController, :show)
+      put("/preferences/:id", PreferencesController, :update)
+      delete("/preferences/:id", PreferencesController, :delete)
+      post("/preferences/batch", PreferencesController, :batch)
+
+      # Templates
+      get("/templates", TemplatesController, :index)
+      post("/templates", TemplatesController, :create)
+      get("/templates/:id", TemplatesController, :show)
+      put("/templates/:id", TemplatesController, :update)
+      delete("/templates/:id", TemplatesController, :delete)
+      post("/templates/:id/apply", TemplatesController, :apply)
+
+      # Analytics
+      get("/analytics/usage", AnalyticsController, :usage)
+      get("/analytics/trends", AnalyticsController, :trends)
+      get("/analytics/recommendations", AnalyticsController, :recommendations)
+      get("/analytics/inheritance", AnalyticsController, :inheritance)
+    end
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:rubber_duck, :dev_routes) do
