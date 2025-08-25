@@ -12,6 +12,8 @@ defmodule RubberDuck.Preferences.Resources.SecurityPolicy do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
+  alias RubberDuck.Preferences.Security.EncryptionManager
+
   postgres do
     table "security_policies"
     repo RubberDuck.Repo
@@ -315,7 +317,7 @@ defmodule RubberDuck.Preferences.Resources.SecurityPolicy do
 
     # If encryption is required, pattern should target sensitive data
     if encryption_required and pattern do
-      if RubberDuck.Preferences.Security.EncryptionManager.sensitive_preference?(pattern) do
+      if EncryptionManager.sensitive_preference?(pattern) do
         changeset
       else
         Ash.Changeset.add_error(

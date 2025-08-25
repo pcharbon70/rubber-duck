@@ -9,7 +9,7 @@ defmodule RubberDuck.Preferences.Security.SecurityMonitor do
 
   use GenServer
 
-  alias RubberDuck.Preferences.Security.AuditLogger
+  alias RubberDuck.Preferences.Security.{AuditLogger, EncryptionManager}
 
   require Logger
 
@@ -256,7 +256,7 @@ defmodule RubberDuck.Preferences.Security.SecurityMonitor do
   end
 
   defp sensitive_preference?(preference_key) do
-    RubberDuck.Preferences.Security.EncryptionManager.sensitive_preference?(preference_key)
+    EncryptionManager.sensitive_preference?(preference_key)
   end
 
   defp trigger_security_alert(alert_data) do
