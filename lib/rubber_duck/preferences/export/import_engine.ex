@@ -9,10 +9,12 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
 
   alias RubberDuck.Preferences.Export.FormatHandlers.{BinaryHandler, JsonHandler, YamlHandler}
   alias RubberDuck.Preferences.Migration.VersionManager
+
   alias RubberDuck.Preferences.Resources.{
     SystemDefault,
     UserPreference
   }
+
   alias RubberDuck.Preferences.Security.AuditLogger
 
   require Logger
