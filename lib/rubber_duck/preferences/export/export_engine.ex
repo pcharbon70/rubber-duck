@@ -9,10 +9,12 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
 
   alias RubberDuck.Preferences.Export.FormatHandlers.{BinaryHandler, JsonHandler, YamlHandler}
   alias RubberDuck.Preferences.Migration.VersionManager
+
   alias RubberDuck.Preferences.Resources.{
     SystemDefault,
     UserPreference
   }
+
   alias RubberDuck.Preferences.Security.{AuditLogger, EncryptionManager}
 
   require Logger
@@ -230,6 +232,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   end
 
   defp get_processed_value(_preference_key, value, false), do: value
+
   defp get_processed_value(preference_key, value, true) do
     case EncryptionManager.encrypt_if_sensitive(preference_key, value) do
       {:ok, encrypted_value} -> encrypted_value
