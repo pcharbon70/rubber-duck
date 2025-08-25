@@ -177,35 +177,40 @@ defmodule RubberDuck.Verdict.Optimization.ProgressiveEvaluator do
   end
   
   defp build_detailed_criteria(evaluation_type, screening_result) do
-    base_criteria = case evaluation_type do
-      :quality ->
-        "Perform comprehensive code quality analysis including architecture, design patterns, testability, and long-term maintainability."
-      
-      :security ->
-        "Conduct thorough security analysis including data flow analysis, authentication patterns, and potential attack vectors."
-      
-      :performance ->
-        "Analyze performance characteristics including algorithmic complexity, memory usage, and optimization opportunities."
-      
-      :maintainability ->
-        "Evaluate maintainability factors including complexity, coupling, documentation quality, and evolution readiness."
-      
-      :best_practices ->
-        "Review adherence to advanced Elixir/OTP patterns, supervision trees, and fault tolerance practices."
-      
-      _ ->
-        "Perform comprehensive evaluation across all quality dimensions."
-    end
-    
-    # Add context from screening if available
-    case screening_result do
-      nil -> base_criteria
-      %{issues: issues} when length(issues) > 0 ->
-        "#{base_criteria}\n\nPay special attention to these areas flagged in initial screening: #{Enum.join(issues, ", ")}"
-      
-      _ -> base_criteria
-    end
+    base_criteria = get_base_criteria_for_type(evaluation_type)
+    enhance_criteria_with_screening(base_criteria, screening_result)
   end
+
+  defp get_base_criteria_for_type(:quality) do
+    "Perform comprehensive code quality analysis including architecture, design patterns, testability, and long-term maintainability."
+  end
+
+  defp get_base_criteria_for_type(:security) do
+    "Conduct thorough security analysis including data flow analysis, authentication patterns, and potential attack vectors."
+  end
+
+  defp get_base_criteria_for_type(:performance) do
+    "Analyze performance characteristics including algorithmic complexity, memory usage, and optimization opportunities."
+  end
+
+  defp get_base_criteria_for_type(:maintainability) do
+    "Evaluate maintainability factors including complexity, coupling, documentation quality, and evolution readiness."
+  end
+
+  defp get_base_criteria_for_type(:best_practices) do
+    "Review adherence to advanced Elixir/OTP patterns, supervision trees, and fault tolerance practices."
+  end
+
+  defp get_base_criteria_for_type(_) do
+    "Perform comprehensive evaluation across all quality dimensions."
+  end
+
+  defp enhance_criteria_with_screening(base_criteria, nil), do: base_criteria
+  defp enhance_criteria_with_screening(base_criteria, %{issues: []}), do: base_criteria
+  defp enhance_criteria_with_screening(base_criteria, %{issues: issues}) when is_list(issues) do
+    "#{base_criteria}\n\nPay special attention to these areas flagged in initial screening: #{Enum.join(issues, ", ")}"
+  end
+  defp enhance_criteria_with_screening(base_criteria, _), do: base_criteria
   
   defp requires_detailed_analysis?(screening_result, config) do
     # Check for specific patterns that always require detailed analysis

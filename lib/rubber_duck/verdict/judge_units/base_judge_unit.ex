@@ -185,36 +185,54 @@ defmodule RubberDuck.Verdict.JudgeUnits.BaseJudgeUnit do
   end
   
   defp validate_evaluation_result(result) do
+    with :ok <- validate_required_fields(result),
+         :ok <- validate_score_field(result),
+         :ok <- validate_confidence_field(result),
+         :ok <- validate_list_fields(result) do
+      
+      {:ok, %{
+        score: result["score"],
+        confidence: result["confidence"],
+        issues: result["issues"],
+        recommendations: result["recommendations"],
+        reasoning: result["reasoning"]
+      }}
+    end
+  end
+
+  defp validate_required_fields(result) do
     required_fields = ["score", "confidence", "issues", "recommendations", "reasoning"]
     
     missing_fields = Enum.filter(required_fields, fn field ->
       not Map.has_key?(result, field)
     end)
     
+    if Enum.empty?(missing_fields) do
+      :ok
+    else
+      {:error, "Missing required fields: #{Enum.join(missing_fields, ", ")}"}
+    end
+  end
+
+  defp validate_score_field(result) do
+    case result["score"] do
+      score when is_number(score) and score >= 0 and score <= 1 -> :ok
+      _ -> {:error, "Score must be a number between 0.0 and 1.0"}
+    end
+  end
+
+  defp validate_confidence_field(result) do
+    case result["confidence"] do
+      confidence when is_number(confidence) and confidence >= 0 and confidence <= 1 -> :ok
+      _ -> {:error, "Confidence must be a number between 0.0 and 1.0"}
+    end
+  end
+
+  defp validate_list_fields(result) do
     cond do
-      not Enum.empty?(missing_fields) ->
-        {:error, "Missing required fields: #{Enum.join(missing_fields, ", ")}"}
-      
-      not is_number(result["score"]) or result["score"] < 0 or result["score"] > 1 ->
-        {:error, "Score must be a number between 0.0 and 1.0"}
-      
-      not is_number(result["confidence"]) or result["confidence"] < 0 or result["confidence"] > 1 ->
-        {:error, "Confidence must be a number between 0.0 and 1.0"}
-      
-      not is_list(result["issues"]) ->
-        {:error, "Issues must be a list"}
-      
-      not is_list(result["recommendations"]) ->
-        {:error, "Recommendations must be a list"}
-      
-      true ->
-        {:ok, %{
-          score: result["score"],
-          confidence: result["confidence"],
-          issues: result["issues"],
-          recommendations: result["recommendations"],
-          reasoning: result["reasoning"]
-        }}
+      not is_list(result["issues"]) -> {:error, "Issues must be a list"}
+      not is_list(result["recommendations"]) -> {:error, "Recommendations must be a list"}
+      true -> :ok
     end
   end
   
