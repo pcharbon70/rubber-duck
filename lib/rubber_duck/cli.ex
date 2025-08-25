@@ -7,7 +7,14 @@ defmodule RubberDuck.CLI do
   CLI design patterns with progressive discovery and intelligent context awareness.
   """
 
-  alias RubberDuck.CLI.{ConfigCommands, ProjectCommands, TemplateCommands, UtilityCommands}
+  alias RubberDuck.CLI.{
+    ConfigCommands,
+    ExportCommands,
+    MigrationCommands, 
+    ProjectCommands,
+    TemplateCommands,
+    UtilityCommands
+  }
 
   @doc """
   Main CLI entry point.

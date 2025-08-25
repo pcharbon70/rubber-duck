@@ -10,6 +10,9 @@ defmodule RubberDuck.CLI.UtilityCommands do
 
   alias RubberDuck.Agents.PreferenceMigrationAgent
   alias RubberDuck.Preferences.ValidationInterfaceManager
+  alias RubberDuck.Preferences.Migration.{SchemaMigrator, VersionManager}
+  alias RubberDuck.Preferences.Export.{ExportEngine, ImportEngine}
+  alias RubberDuck.Preferences.Backup.BackupManager
 
   @doc """
   Validate current configuration.
@@ -67,17 +70,134 @@ defmodule RubberDuck.CLI.UtilityCommands do
   end
 
   @doc """
+  Export preferences to file.
+  """
+  def export_config(opts) do
+    format = Map.get(opts, :format, "json")
+    output_file = Map.get(opts, :output, generate_export_filename(format))
+    scope = Map.get(opts, :scope, "all")
+
+    IO.puts("📤 Exporting preferences (#{scope}) to #{output_file}...")
+
+    export_opts = [
+      format: String.to_atom(format),
+      scope: String.to_atom(scope),
+      encrypt_sensitive: Map.get(opts, :encrypt, true),
+      compression: Map.get(opts, :compress, false)
+    ]
+
+    case ExportEngine.export_preferences(export_opts) do
+      {:ok, result} ->
+        case File.write(output_file, result.data) do
+          :ok ->
+            IO.puts("✅ Export completed successfully")
+            IO.puts("  File: #{output_file}")
+            IO.puts("  Size: #{format_bytes(byte_size(result.data))}")
+
+          {:error, reason} ->
+            IO.puts("❌ Failed to write export file: #{reason}")
+            System.halt(1)
+        end
+
+      {:error, reason} ->
+        IO.puts("❌ Export failed: #{reason}")
+        System.halt(1)
+    end
+  end
+
+  @doc """
+  Import preferences from file.
+  """
+  def import_config(opts) do
+    input_file = Map.get(opts, :input)
+    format = Map.get(opts, :format, "json")
+    dry_run = Map.get(opts, :dry_run, false)
+
+    unless input_file do
+      IO.puts("❌ Input file required. Use --input to specify.")
+      System.halt(1)
+    end
+
+    IO.puts("📥 Importing preferences from #{input_file}...")
+
+    case File.read(input_file) do
+      {:ok, data} ->
+        import_opts = [
+          format: String.to_atom(format),
+          dry_run: dry_run,
+          merge_strategy: String.to_atom(Map.get(opts, :merge, "merge"))
+        ]
+
+        case ImportEngine.import_preferences(data, import_opts) do
+          {:ok, result} ->
+            if dry_run do
+              IO.puts("✅ Dry run completed")
+              IO.puts("  Would import: #{result.imported_count} items")
+            else
+              IO.puts("✅ Import completed successfully")
+              IO.puts("  Imported: #{result.imported_count} items")
+            end
+
+            unless Enum.empty?(result.conflicts) do
+              IO.puts("  Conflicts: #{length(result.conflicts)}")
+            end
+
+          {:error, reason} ->
+            IO.puts("❌ Import failed: #{reason}")
+            System.halt(1)
+        end
+
+      {:error, reason} ->
+        IO.puts("❌ Could not read input file: #{reason}")
+        System.halt(1)
+    end
+  end
+
+  @doc """
   Migrate preferences to latest schema.
   """
   def migrate_config(opts) do
     target_version = Map.get(opts, :version, "latest")
     dry_run = Map.get(opts, :dry_run, false)
-    verbose = Map.get(opts, :verbose, false)
+    force = Map.get(opts, :force, false)
 
+    # Use new SchemaMigrator if target version is specified, otherwise use legacy
+    if target_version != "latest" and VersionManager.valid_version?(target_version) do
+      migrate_to_specific_version(target_version, dry_run, force, opts)
+    else
+      migrate_with_legacy_system(target_version, dry_run, opts)
+    end
+  end
+
+  defp migrate_to_specific_version(target_version, dry_run, force, opts) do
+    IO.puts("🔄 Migrating to schema version #{target_version}...")
+
+    case SchemaMigrator.migrate_to_version(target_version, dry_run: dry_run, force: force) do
+      {:ok, result} ->
+        if dry_run do
+          IO.puts("✅ Dry run completed")
+          IO.puts("  Migration ID: #{result.migration_id}")
+        else
+          IO.puts("✅ Migration completed successfully")
+          IO.puts("  Migration ID: #{result.migration_id}")
+          
+          if Map.get(opts, :verbose) do
+            IO.puts("  Executed steps:")
+            Enum.each(result.executed_steps, &IO.puts("    - #{&1}"))
+          end
+        end
+
+      {:error, reason} ->
+        IO.puts("❌ Migration failed: #{reason}")
+        System.halt(1)
+    end
+  end
+
+  defp migrate_with_legacy_system(target_version, dry_run, opts) do
+    verbose = Map.get(opts, :verbose, false)
     IO.puts("🔄 Migrating preferences to #{target_version}...")
 
     {:ok, migration_agent} = PreferenceMigrationAgent.create_preference_migration_agent()
-
     migration_rules = get_migration_rules(target_version)
 
     case PreferenceMigrationAgent.migrate_preferences_to_version(
@@ -224,6 +344,16 @@ defmodule RubberDuck.CLI.UtilityCommands do
     IO.puts("\n⚠️  Warnings:")
     Enum.each(warnings, &IO.puts("  - #{&1.message}"))
   end
+
+  defp generate_export_filename(format) do
+    timestamp = DateTime.utc_now() |> DateTime.to_iso8601(:basic)
+    "preferences_export_#{timestamp}.#{format}"
+  end
+
+  defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
+  defp format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
+  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024, do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+  defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
 
   defp display_conflicts(conflicts) do
     Enum.each(conflicts.constraint_violations, fn {key, message} ->
