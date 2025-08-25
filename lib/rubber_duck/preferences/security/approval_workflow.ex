@@ -62,51 +62,53 @@ defmodule RubberDuck.Preferences.Security.ApprovalWorkflow do
           {:ok, ApprovalRequest.t()} | {:error, term()}
   def approve_request(approval_request_id, approver_id, notes \\ "") do
     case ApprovalRequest.read(approval_request_id) do
-      {:ok, [request]} ->
-        case can_approve_request?(approver_id, request) do
-          true ->
-            case ApprovalRequest.approve(request, %{
-                   approver_id: approver_id,
-                   approval_notes: notes
-                 }) do
-              {:ok, updated_request} ->
-                # Execute the approved action
-                execute_approved_action(updated_request)
-
-                # Log approval event
-                AuditLogger.log_authorization_event(%{
-                  user_id: approver_id,
-                  action: "approval_granted",
-                  approval_request_id: updated_request.id,
-                  preference_key: updated_request.preference_key,
-                  original_requester: updated_request.requester_id
-                })
-
-                {:ok, updated_request}
-
-              error ->
-                error
-            end
-
-          false ->
-            # Log unauthorized approval attempt
-            AuditLogger.log_security_event(%{
-              user_id: approver_id,
-              action: "unauthorized_approval_attempt",
-              approval_request_id: approval_request_id,
-              threat_level: "medium",
-              details: "User attempted to approve request without proper authorization"
-            })
-
-            {:error, "Insufficient permissions to approve this request"}
-        end
-
-      {:ok, []} ->
-        {:error, "Approval request not found"}
-
-      error ->
-        error
+      {:ok, [request]} -> handle_approval_request(request, approver_id, notes)
+      {:ok, []} -> {:error, "Approval request not found"}
+      error -> error
     end
+  end
+
+  defp handle_approval_request(request, approver_id, notes) do
+    case can_approve_request?(approver_id, request) do
+      true -> process_approval(request, approver_id, notes)
+      false -> handle_unauthorized_approval(approver_id, request.id)
+    end
+  end
+
+  defp process_approval(request, approver_id, notes) do
+    case ApprovalRequest.approve(request, %{approver_id: approver_id, approval_notes: notes}) do
+      {:ok, updated_request} -> finalize_approval(updated_request, approver_id)
+      error -> error
+    end
+  end
+
+  defp finalize_approval(updated_request, approver_id) do
+    # Execute the approved action
+    execute_approved_action(updated_request)
+
+    # Log approval event
+    AuditLogger.log_authorization_event(%{
+      user_id: approver_id,
+      action: "approval_granted",
+      approval_request_id: updated_request.id,
+      preference_key: updated_request.preference_key,
+      original_requester: updated_request.requester_id
+    })
+
+    {:ok, updated_request}
+  end
+
+  defp handle_unauthorized_approval(approver_id, approval_request_id) do
+    # Log unauthorized approval attempt
+    AuditLogger.log_security_event(%{
+      user_id: approver_id,
+      action: "unauthorized_approval_attempt",
+      approval_request_id: approval_request_id,
+      threat_level: "medium",
+      details: "User attempted to approve request without proper authorization"
+    })
+
+    {:error, "Insufficient permissions to approve this request"}
   end
 
   @doc """
@@ -120,40 +122,38 @@ defmodule RubberDuck.Preferences.Security.ApprovalWorkflow do
           {:ok, ApprovalRequest.t()} | {:error, term()}
   def reject_request(approval_request_id, approver_id, reason) do
     case ApprovalRequest.read(approval_request_id) do
-      {:ok, [request]} ->
-        case can_approve_request?(approver_id, request) do
-          true ->
-            case ApprovalRequest.reject(request, %{
-                   approver_id: approver_id,
-                   approval_notes: reason
-                 }) do
-              {:ok, updated_request} ->
-                # Log rejection event
-                AuditLogger.log_authorization_event(%{
-                  user_id: approver_id,
-                  action: "approval_rejected",
-                  approval_request_id: updated_request.id,
-                  preference_key: updated_request.preference_key,
-                  original_requester: updated_request.requester_id,
-                  reason: reason
-                })
-
-                {:ok, updated_request}
-
-              error ->
-                error
-            end
-
-          false ->
-            {:error, "Insufficient permissions to reject this request"}
-        end
-
-      {:ok, []} ->
-        {:error, "Approval request not found"}
-
-      error ->
-        error
+      {:ok, [request]} -> handle_rejection_request(request, approver_id, reason)
+      {:ok, []} -> {:error, "Approval request not found"}
+      error -> error
     end
+  end
+
+  defp handle_rejection_request(request, approver_id, reason) do
+    case can_approve_request?(approver_id, request) do
+      true -> process_rejection(request, approver_id, reason)
+      false -> {:error, "Insufficient permissions to reject this request"}
+    end
+  end
+
+  defp process_rejection(request, approver_id, reason) do
+    case ApprovalRequest.reject(request, %{approver_id: approver_id, approval_notes: reason}) do
+      {:ok, updated_request} -> finalize_rejection(updated_request, approver_id, reason)
+      error -> error
+    end
+  end
+
+  defp finalize_rejection(updated_request, approver_id, reason) do
+    # Log rejection event
+    AuditLogger.log_authorization_event(%{
+      user_id: approver_id,
+      action: "approval_rejected",
+      approval_request_id: updated_request.id,
+      preference_key: updated_request.preference_key,
+      original_requester: updated_request.requester_id,
+      reason: reason
+    })
+
+    {:ok, updated_request}
   end
 
   @doc """
