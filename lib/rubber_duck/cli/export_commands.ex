@@ -29,27 +29,37 @@ defmodule RubberDuck.CLI.ExportCommands do
     ]
 
     case ExportEngine.export_preferences(export_opts) do
-      {:ok, result} ->
-        case write_export_file(output_file, result.data) do
-          :ok ->
-            IO.puts("✅ Export completed successfully")
-            IO.puts("  File: #{output_file}")
-            IO.puts("  Size: #{format_bytes(byte_size(result.data))}")
-            IO.puts("  Format: #{format}")
-
-            if Map.get(opts, :verbose) do
-              display_export_metadata(result.metadata)
-            end
-
-          {:error, reason} ->
-            IO.puts("❌ Failed to write export file: #{reason}")
-            System.halt(1)
-        end
-
-      {:error, reason} ->
-        IO.puts("❌ Export failed: #{reason}")
-        System.halt(1)
+      {:ok, result} -> handle_export_result(result, output_file, format, opts)
+      {:error, reason} -> handle_export_error(reason)
     end
+  end
+
+  defp handle_export_result(result, output_file, format, opts) do
+    case write_export_file(output_file, result.data) do
+      :ok -> display_export_success(result, output_file, format, opts)
+      {:error, reason} -> handle_export_write_error(reason)
+    end
+  end
+
+  defp display_export_success(result, output_file, format, opts) do
+    IO.puts("✅ Export completed successfully")
+    IO.puts("  File: #{output_file}")
+    IO.puts("  Size: #{format_bytes(byte_size(result.data))}")
+    IO.puts("  Format: #{format}")
+
+    if Map.get(opts, :verbose) do
+      display_export_metadata(result.metadata)
+    end
+  end
+
+  defp handle_export_write_error(reason) do
+    IO.puts("❌ Failed to write export file: #{reason}")
+    System.halt(1)
+  end
+
+  defp handle_export_error(reason) do
+    IO.puts("❌ Export failed: #{reason}")
+    System.halt(1)
   end
 
   @doc """
@@ -144,25 +154,7 @@ defmodule RubberDuck.CLI.ExportCommands do
 
     case BackupManager.create_backup(backup_opts) do
       {:ok, result} ->
-        # Copy backup to specified location if needed
-        if output_file != result.path do
-          case File.cp(result.path, output_file) do
-            :ok ->
-              IO.puts("✅ Backup created successfully")
-              IO.puts("  Backup ID: #{result.backup_id}")
-              IO.puts("  File: #{output_file}")
-              IO.puts("  Size: #{format_bytes(result.size_bytes)}")
-
-            {:error, reason} ->
-              IO.puts("❌ Failed to copy backup to #{output_file}: #{reason}")
-              IO.puts("  Backup available at: #{result.path}")
-          end
-        else
-          IO.puts("✅ Backup created successfully")
-          IO.puts("  Backup ID: #{result.backup_id}")
-          IO.puts("  File: #{result.path}")
-          IO.puts("  Size: #{format_bytes(result.size_bytes)}")
-        end
+        handle_backup_file_placement(result, output_file)
 
       {:error, reason} ->
         IO.puts("❌ Backup failed: #{reason}")
@@ -196,17 +188,8 @@ defmodule RubberDuck.CLI.ExportCommands do
         ]
 
         case ImportEngine.restore_from_backup(backup_data, restore_opts) do
-          {:ok, result} ->
-            if dry_run do
-              IO.puts("✅ Dry run completed")
-            else
-              IO.puts("✅ Backup restored successfully")
-              IO.puts("  Restored items: #{result.restored_count}")
-            end
-
-          {:error, reason} ->
-            IO.puts("❌ Restore failed: #{reason}")
-            System.halt(1)
+          {:ok, result} -> handle_restore_result(result, dry_run)
+          {:error, reason} -> handle_restore_error(reason)
         end
 
       {:error, reason} ->
@@ -378,5 +361,46 @@ defmodule RubberDuck.CLI.ExportCommands do
 
   defp format_datetime(datetime) do
     DateTime.to_string(datetime) |> String.slice(0, 19)
+  end
+
+  defp handle_backup_file_placement(result, output_file) do
+    if output_file != result.path do
+      copy_backup_to_output(result, output_file)
+    else
+      display_backup_success(result, result.path)
+    end
+  end
+
+  defp copy_backup_to_output(result, output_file) do
+    case File.cp(result.path, output_file) do
+      :ok -> display_backup_success(result, output_file)
+      {:error, reason} -> display_backup_copy_error(result, output_file, reason)
+    end
+  end
+
+  defp display_backup_success(result, file_path) do
+    IO.puts("✅ Backup created successfully")
+    IO.puts("  Backup ID: #{result.backup_id}")
+    IO.puts("  File: #{file_path}")
+    IO.puts("  Size: #{format_bytes(result.size_bytes)}")
+  end
+
+  defp display_backup_copy_error(result, output_file, reason) do
+    IO.puts("❌ Failed to copy backup to #{output_file}: #{reason}")
+    IO.puts("  Backup available at: #{result.path}")
+  end
+
+  defp handle_restore_result(result, true) do
+    IO.puts("✅ Dry run completed")
+  end
+
+  defp handle_restore_result(result, false) do
+    IO.puts("✅ Backup restored successfully")
+    IO.puts("  Restored items: #{result.restored_count}")
+  end
+
+  defp handle_restore_error(reason) do
+    IO.puts("❌ Restore failed: #{reason}")
+    System.halt(1)
   end
 end

@@ -49,27 +49,39 @@ defmodule RubberDuck.CLI.MigrationCommands do
     verbose = Map.get(opts, :verbose, false)
 
     case VersionManager.current_version() do
-      {:ok, current} ->
-        IO.puts("📋 Current Schema Version: #{current}")
-
-        case VersionManager.up_to_date?() do
-          {:ok, true} ->
-            IO.puts("✅ Schema is up to date")
-
-          {:ok, false} ->
-            IO.puts("⚠️  Schema updates available")
-            if verbose, do: show_available_updates()
-
-          {:error, reason} ->
-            IO.puts("❌ Could not check update status: #{reason}")
-        end
-
-        if verbose, do: show_detailed_status()
-
-      {:error, reason} ->
-        IO.puts("❌ Could not determine current version: #{reason}")
-        System.halt(1)
+      {:ok, current} -> display_migration_status(current, verbose)
+      {:error, reason} -> handle_version_error(reason)
     end
+  end
+
+  defp display_migration_status(current, verbose) do
+    IO.puts("📋 Current Schema Version: #{current}")
+
+    case VersionManager.up_to_date?() do
+      {:ok, true} -> display_up_to_date_status()
+      {:ok, false} -> display_update_available_status(verbose)
+      {:error, reason} -> display_update_check_error(reason)
+    end
+
+    if verbose, do: show_detailed_status()
+  end
+
+  defp display_up_to_date_status do
+    IO.puts("✅ Schema is up to date")
+  end
+
+  defp display_update_available_status(verbose) do
+    IO.puts("⚠️  Schema updates available")
+    if verbose, do: show_available_updates()
+  end
+
+  defp display_update_check_error(reason) do
+    IO.puts("❌ Could not check update status: #{reason}")
+  end
+
+  defp handle_version_error(reason) do
+    IO.puts("❌ Could not determine current version: #{reason}")
+    System.halt(1)
   end
 
   @doc """
@@ -124,26 +136,35 @@ defmodule RubberDuck.CLI.MigrationCommands do
     end
 
     case SchemaMigrator.migrate_to_version(target_version, dry_run: dry_run, force: force) do
-      {:ok, result} ->
-        if dry_run do
-          IO.puts("✅ Dry run completed")
-          IO.puts("  Migration ID: #{result.migration_id}")
-          IO.puts("  Steps: #{length(result.executed_steps)}")
-        else
-          IO.puts("✅ Migration completed successfully")
-          IO.puts("  Migration ID: #{result.migration_id}")
-          IO.puts("  Backup ID: #{result[:backup_id]}")
-
-          if Map.get(opts, :verbose) do
-            IO.puts("  Executed steps:")
-            Enum.each(result.executed_steps, &IO.puts("    - #{&1}"))
-          end
-        end
-
-      {:error, reason} ->
-        IO.puts("❌ Migration failed: #{reason}")
-        System.halt(1)
+      {:ok, result} -> handle_migration_result(result, dry_run, opts)
+      {:error, reason} -> handle_migration_error(reason)
     end
+  end
+
+  defp handle_migration_result(result, true, _opts) do
+    IO.puts("✅ Dry run completed")
+    IO.puts("  Migration ID: #{result.migration_id}")
+    IO.puts("  Steps: #{length(result.executed_steps)}")
+  end
+
+  defp handle_migration_result(result, false, opts) do
+    IO.puts("✅ Migration completed successfully")
+    IO.puts("  Migration ID: #{result.migration_id}")
+    IO.puts("  Backup ID: #{result[:backup_id]}")
+
+    if Map.get(opts, :verbose) do
+      display_migration_steps(result.executed_steps)
+    end
+  end
+
+  defp display_migration_steps(executed_steps) do
+    IO.puts("  Executed steps:")
+    Enum.each(executed_steps, &IO.puts("    - #{&1}"))
+  end
+
+  defp handle_migration_error(reason) do
+    IO.puts("❌ Migration failed: #{reason}")
+    System.halt(1)
   end
 
   defp execute_rollback(target_version, dry_run, opts) do

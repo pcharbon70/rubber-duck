@@ -129,22 +129,8 @@ defmodule RubberDuck.CLI.UtilityCommands do
         ]
 
         case ImportEngine.import_preferences(data, import_opts) do
-          {:ok, result} ->
-            if dry_run do
-              IO.puts("✅ Dry run completed")
-              IO.puts("  Would import: #{result.imported_count} items")
-            else
-              IO.puts("✅ Import completed successfully")
-              IO.puts("  Imported: #{result.imported_count} items")
-            end
-
-            unless Enum.empty?(result.conflicts) do
-              IO.puts("  Conflicts: #{length(result.conflicts)}")
-            end
-
-          {:error, reason} ->
-            IO.puts("❌ Import failed: #{reason}")
-            System.halt(1)
+          {:ok, result} -> handle_import_success(result, dry_run)
+          {:error, reason} -> handle_import_error(reason)
         end
 
       {:error, reason} ->
@@ -173,24 +159,29 @@ defmodule RubberDuck.CLI.UtilityCommands do
     IO.puts("🔄 Migrating to schema version #{target_version}...")
 
     case SchemaMigrator.migrate_to_version(target_version, dry_run: dry_run, force: force) do
-      {:ok, result} ->
-        if dry_run do
-          IO.puts("✅ Dry run completed")
-          IO.puts("  Migration ID: #{result.migration_id}")
-        else
-          IO.puts("✅ Migration completed successfully")
-          IO.puts("  Migration ID: #{result.migration_id}")
-
-          if Map.get(opts, :verbose) do
-            IO.puts("  Executed steps:")
-            Enum.each(result.executed_steps, &IO.puts("    - #{&1}"))
-          end
-        end
-
-      {:error, reason} ->
-        IO.puts("❌ Migration failed: #{reason}")
-        System.halt(1)
+      {:ok, result} -> handle_utility_migration_result(result, dry_run, opts)
+      {:error, reason} -> handle_utility_migration_error(reason)
     end
+  end
+
+  defp handle_utility_migration_result(result, true, _opts) do
+    IO.puts("✅ Dry run completed")
+    IO.puts("  Migration ID: #{result.migration_id}")
+  end
+
+  defp handle_utility_migration_result(result, false, opts) do
+    IO.puts("✅ Migration completed successfully")
+    IO.puts("  Migration ID: #{result.migration_id}")
+
+    if Map.get(opts, :verbose) do
+      IO.puts("  Executed steps:")
+      Enum.each(result.executed_steps, &IO.puts("    - #{&1}"))
+    end
+  end
+
+  defp handle_utility_migration_error(reason) do
+    IO.puts("❌ Migration failed: #{reason}")
+    System.halt(1)
   end
 
   defp migrate_with_legacy_system(target_version, dry_run, opts) do
@@ -357,6 +348,29 @@ defmodule RubberDuck.CLI.UtilityCommands do
     do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
 
   defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
+
+  defp display_import_conflicts(conflicts) do
+    unless Enum.empty?(conflicts) do
+      IO.puts("  Conflicts: #{length(conflicts)}")
+    end
+  end
+
+  defp handle_import_success(result, true) do
+    IO.puts("✅ Dry run completed")
+    IO.puts("  Would import: #{result.imported_count} items")
+    display_import_conflicts(result.conflicts)
+  end
+
+  defp handle_import_success(result, false) do
+    IO.puts("✅ Import completed successfully")
+    IO.puts("  Imported: #{result.imported_count} items")
+    display_import_conflicts(result.conflicts)
+  end
+
+  defp handle_import_error(reason) do
+    IO.puts("❌ Import failed: #{reason}")
+    System.halt(1)
+  end
 
   defp display_conflicts(conflicts) do
     Enum.each(conflicts.constraint_violations, fn {key, message} ->
