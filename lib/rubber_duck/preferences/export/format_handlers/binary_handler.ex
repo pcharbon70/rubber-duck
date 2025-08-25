@@ -6,6 +6,8 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
   using Erlang's External Term Format (ETF) with compression and integrity checking.
   """
 
+  alias RubberDuck.Preferences.Export.FormatHandlers.JsonHandler
+
   # "RDPB" - RubberDuck Preference Binary
   @magic_header <<0x52, 0x44, 0x50, 0x42>>
   @format_version 1
@@ -51,7 +53,7 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
   @spec validate_structure(data :: map()) :: {:ok, map()} | {:error, [String.t()]}
   def validate_structure(data) do
     # Use same validation as JSON handler since the data structure is the same
-    RubberDuck.Preferences.Export.FormatHandlers.JsonHandler.validate_structure(data)
+    JsonHandler.validate_structure(data)
   end
 
   @doc """

@@ -2,6 +2,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
   use ExUnit.Case, async: true
 
   alias RubberDuck.Preferences.Export.ExportEngine
+  alias RubberDuck.Preferences.Security.{AuditLogger, EncryptionManager}
 
   describe "export_preferences/1" do
     test "exports preferences in JSON format" do
@@ -108,7 +109,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
           assert {:ok, _result} = ExportEngine.create_backup_export(opts)
 
           # Verify audit logging was called
-          assert_called(RubberDuck.Preferences.Security.AuditLogger.log_preference_change(_))
+          assert_called(AuditLogger.log_preference_change(_))
         end
       end
     end
@@ -137,9 +138,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
           assert {:ok, result} = ExportEngine.export_preferences(opts)
 
           # Verify encryption was applied
-          assert_called(
-            RubberDuck.Preferences.Security.EncryptionManager.encrypt_if_sensitive(_, _)
-          )
+          assert_called(EncryptionManager.encrypt_if_sensitive(_, _))
         end
       end
     end

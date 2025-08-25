@@ -8,6 +8,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   """
 
   alias RubberDuck.Preferences.Export.FormatHandlers.{BinaryHandler, JsonHandler, YamlHandler}
+  alias RubberDuck.Preferences.Migration.VersionManager
   alias RubberDuck.Preferences.Resources.{
     SystemDefault,
     UserPreference
@@ -311,7 +312,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   end
 
   defp get_current_schema_version do
-    case RubberDuck.Preferences.Migration.VersionManager.current_version() do
+    case VersionManager.current_version() do
       {:ok, version} -> version
       {:error, _} -> "unknown"
     end

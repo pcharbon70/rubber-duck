@@ -6,6 +6,8 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.YamlHandler do
   human-readable structure and proper type preservation.
   """
 
+  alias RubberDuck.Preferences.Export.FormatHandlers.JsonHandler
+
   @doc """
   Format preference data as YAML.
   """
@@ -40,7 +42,7 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.YamlHandler do
   @spec validate_structure(data :: map()) :: {:ok, map()} | {:error, [String.t()]}
   def validate_structure(data) do
     # Use same validation as JSON handler since structure is the same
-    RubberDuck.Preferences.Export.FormatHandlers.JsonHandler.validate_structure(data)
+    JsonHandler.validate_structure(data)
   end
 
   ## Private Functions
