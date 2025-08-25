@@ -33,7 +33,7 @@ defmodule RubberDuck.Preferences do
     resource RubberDuck.Preferences.Resources.AuditLog
     resource RubberDuck.Preferences.Resources.SecurityPolicy
     resource RubberDuck.Preferences.Resources.ApprovalRequest
-    
+
     # Migration & Export resources
     resource RubberDuck.Preferences.Resources.PreferenceSchemaVersion
   end

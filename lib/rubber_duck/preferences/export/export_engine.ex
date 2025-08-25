@@ -13,6 +13,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
     ProjectPreference,
     PreferenceTemplate
   }
+
   alias RubberDuck.Preferences.Security.{EncryptionManager, AuditLogger}
   alias RubberDuck.Preferences.Export.FormatHandlers.{JsonHandler, YamlHandler, BinaryHandler}
 
@@ -33,7 +34,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   - `:compression` - Whether to compress the export
   """
   @spec export_preferences(opts :: keyword()) ::
-    {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
+          {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
   def export_preferences(opts \\ []) do
     format = Keyword.get(opts, :format, :json)
     scope = Keyword.get(opts, :scope, :all)
@@ -48,9 +49,9 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   Export specific user preferences.
   """
   @spec export_user_preferences(user_id :: String.t(), opts :: keyword()) ::
-    {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
+          {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
   def export_user_preferences(user_id, opts \\ []) do
-    export_opts = Keyword.merge(opts, [scope: :user, user_id: user_id])
+    export_opts = Keyword.merge(opts, scope: :user, user_id: user_id)
     export_preferences(export_opts)
   end
 
@@ -58,9 +59,9 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   Export project preferences.
   """
   @spec export_project_preferences(project_id :: String.t(), opts :: keyword()) ::
-    {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
+          {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
   def export_project_preferences(project_id, opts \\ []) do
-    export_opts = Keyword.merge(opts, [scope: :project, project_id: project_id])
+    export_opts = Keyword.merge(opts, scope: :project, project_id: project_id)
     export_preferences(export_opts)
   end
 
@@ -68,9 +69,9 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   Export system defaults.
   """
   @spec export_system_defaults(opts :: keyword()) ::
-    {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
+          {:ok, %{data: binary(), metadata: map()}} | {:error, term()}
   def export_system_defaults(opts \\ []) do
-    export_opts = Keyword.merge(opts, [scope: :system])
+    export_opts = Keyword.merge(opts, scope: :system)
     export_preferences(export_opts)
   end
 
@@ -78,17 +79,18 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   Create a comprehensive backup export.
   """
   @spec create_backup_export(opts :: keyword()) ::
-    {:ok, %{backup_id: String.t(), data: binary(), metadata: map()}} | {:error, term()}
+          {:ok, %{backup_id: String.t(), data: binary(), metadata: map()}} | {:error, term()}
   def create_backup_export(opts \\ []) do
     backup_id = generate_backup_id()
 
-    backup_opts = Keyword.merge(opts, [
-      scope: :all,
-      include_metadata: true,
-      encrypt_sensitive: true,
-      compression: true,
-      backup_id: backup_id
-    ])
+    backup_opts =
+      Keyword.merge(opts,
+        scope: :all,
+        include_metadata: true,
+        encrypt_sensitive: true,
+        compression: true,
+        backup_id: backup_id
+      )
 
     case export_preferences(backup_opts) do
       {:ok, result} ->
@@ -107,7 +109,8 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
 
         {:ok, Map.put(result, :backup_id, backup_id)}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -120,7 +123,8 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
       format not in @supported_formats ->
         {:error, "Unsupported export format: #{format}"}
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
@@ -130,7 +134,8 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
         processed_data = process_export_data(preferences, opts)
         format_and_finalize_export(processed_data, format, opts)
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -140,13 +145,13 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
          {:ok, user_preferences} <- get_filtered_user_preferences(opts),
          {:ok, project_preferences} <- get_filtered_project_preferences(opts),
          {:ok, templates} <- get_filtered_templates(opts) do
-
-      {:ok, %{
-        system_defaults: system_defaults,
-        user_preferences: user_preferences,
-        project_preferences: project_preferences,
-        templates: templates
-      }}
+      {:ok,
+       %{
+         system_defaults: system_defaults,
+         user_preferences: user_preferences,
+         project_preferences: project_preferences,
+         templates: templates
+       }}
     end
   end
 
@@ -176,7 +181,8 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   defp get_filtered_user_preferences(opts) do
     # Apply filters if specified
     case Keyword.get(opts, :user_filter) do
-      nil -> {:ok, []}  # Would get all user preferences
+      # Would get all user preferences
+      nil -> {:ok, []}
       user_id -> UserPreference.by_user(user_id)
     end
   end
@@ -196,9 +202,12 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
 
     # Process each preference type
     processed = %{
-      system_defaults: process_system_defaults(preferences[:system_defaults] || [], encrypt_sensitive),
-      user_preferences: process_user_preferences(preferences[:user_preferences] || [], encrypt_sensitive),
-      project_preferences: process_project_preferences(preferences[:project_preferences] || [], encrypt_sensitive),
+      system_defaults:
+        process_system_defaults(preferences[:system_defaults] || [], encrypt_sensitive),
+      user_preferences:
+        process_user_preferences(preferences[:user_preferences] || [], encrypt_sensitive),
+      project_preferences:
+        process_project_preferences(preferences[:project_preferences] || [], encrypt_sensitive),
       templates: process_templates(preferences[:templates] || [], encrypt_sensitive)
     }
 
@@ -207,49 +216,47 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   end
 
   defp process_system_defaults(defaults, encrypt_sensitive) do
-    Enum.map(defaults, fn default ->
-      value = if encrypt_sensitive do
-        case EncryptionManager.encrypt_if_sensitive(default.preference_key, default.default_value) do
-          {:ok, encrypted_value} -> encrypted_value
-          {:error, _} -> default.default_value
-        end
-      else
-        default.default_value
-      end
+    Enum.map(defaults, &process_single_system_default(&1, encrypt_sensitive))
+  end
 
-      %{
-        preference_key: default.preference_key,
-        value: value,
-        category: default.category,
-        description: default.description,
-        data_type: default.data_type,
-        constraints: default.constraints,
-        sensitive: EncryptionManager.sensitive_preference?(default.preference_key)
-      }
-    end)
+  defp process_single_system_default(default, encrypt_sensitive) do
+    value = get_processed_value(default.preference_key, default.default_value, encrypt_sensitive)
+
+    %{
+      preference_key: default.preference_key,
+      value: value,
+      category: default.category,
+      description: default.description,
+      data_type: default.data_type,
+      constraints: default.constraints,
+      sensitive: EncryptionManager.sensitive_preference?(default.preference_key)
+    }
+  end
+
+  defp get_processed_value(preference_key, value, false), do: value
+  defp get_processed_value(preference_key, value, true) do
+    case EncryptionManager.encrypt_if_sensitive(preference_key, value) do
+      {:ok, encrypted_value} -> encrypted_value
+      {:error, _} -> value
+    end
   end
 
   defp process_user_preferences(preferences, encrypt_sensitive) do
-    Enum.map(preferences, fn pref ->
-      value = if encrypt_sensitive do
-        case EncryptionManager.encrypt_if_sensitive(pref.preference_key, pref.value) do
-          {:ok, encrypted_value} -> encrypted_value
-          {:error, _} -> pref.value
-        end
-      else
-        pref.value
-      end
+    Enum.map(preferences, &process_single_user_preference(&1, encrypt_sensitive))
+  end
 
-      %{
-        user_id: pref.user_id,
-        preference_key: pref.preference_key,
-        value: value,
-        category: pref.category,
-        source: pref.source,
-        sensitive: EncryptionManager.sensitive_preference?(pref.preference_key),
-        last_modified: pref.updated_at
-      }
-    end)
+  defp process_single_user_preference(pref, encrypt_sensitive) do
+    value = get_processed_value(pref.preference_key, pref.value, encrypt_sensitive)
+
+    %{
+      user_id: pref.user_id,
+      preference_key: pref.preference_key,
+      value: value,
+      category: pref.category,
+      source: pref.source,
+      sensitive: EncryptionManager.sensitive_preference?(pref.preference_key),
+      last_modified: pref.updated_at
+    }
   end
 
   defp process_project_preferences(preferences, _encrypt_sensitive) do
@@ -283,7 +290,8 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
 
         {:ok, %{data: final_data, metadata: metadata}}
 
-      error -> error
+      error ->
+        error
     end
   end
 

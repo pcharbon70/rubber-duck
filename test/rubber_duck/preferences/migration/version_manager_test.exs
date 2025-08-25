@@ -8,7 +8,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
       # Mock the current version lookup
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         current_version: fn -> {:ok, [%{version: "1.2.3"}]} end do
-
         assert {:ok, "1.2.3"} = VersionManager.current_version()
       end
     end
@@ -16,7 +15,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
     test "returns default version when no current version exists" do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         current_version: fn -> {:ok, []} end do
-
         assert {:ok, "1.0.0"} = VersionManager.current_version()
       end
     end
@@ -46,7 +44,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
     test "returns true when target version is newer" do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         current_version: fn -> {:ok, [%{version: "1.0.0"}]} end do
-
         assert {:ok, true} = VersionManager.migration_required?("1.1.0")
         assert {:ok, true} = VersionManager.migration_required?("2.0.0")
       end
@@ -55,7 +52,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
     test "returns false when target version is same or older" do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         current_version: fn -> {:ok, [%{version: "1.1.0"}]} end do
-
         assert {:ok, false} = VersionManager.migration_required?("1.1.0")
         assert {:ok, false} = VersionManager.migration_required?("1.0.0")
       end
@@ -90,7 +86,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
 
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         create: fn _params -> {:ok, %{version: "1.2.0", id: "test-id"}} end do
-
         assert {:ok, result} = VersionManager.register_version(version_params)
         assert result.version == "1.2.0"
       end
@@ -99,7 +94,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
     test "handles creation errors" do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         create: fn _params -> {:error, "Database error"} end do
-
         assert {:error, "Database error"} = VersionManager.register_version(%{version: "1.0.0"})
       end
     end
@@ -112,7 +106,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         by_version: fn "1.1.0" -> {:ok, [mock_version]} end,
         mark_applied: fn _version -> {:ok, %{mock_version | applied_at: DateTime.utc_now()}} end do
-
         assert {:ok, result} = VersionManager.apply_version("1.1.0")
         assert result.applied_at
       end
@@ -121,7 +114,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
     test "handles missing version" do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         by_version: fn "9.9.9" -> {:ok, []} end do
-
         assert {:error, "Schema version not found: 9.9.9"} = VersionManager.apply_version("9.9.9")
       end
     end
@@ -134,7 +126,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         current_version: fn -> {:ok, [%{version: "1.5.0"}]} end,
         read: fn -> {:ok, [mock_latest]} end do
-
         assert {:ok, true} = VersionManager.up_to_date?()
       end
     end
@@ -145,7 +136,6 @@ defmodule RubberDuck.Preferences.Migration.VersionManagerTest do
       with_mock RubberDuck.Preferences.Resources.PreferenceSchemaVersion, [:passthrough],
         current_version: fn -> {:ok, [%{version: "1.0.0"}]} end,
         read: fn -> {:ok, [mock_latest]} end do
-
         assert {:ok, false} = VersionManager.up_to_date?()
       end
     end

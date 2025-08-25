@@ -30,18 +30,20 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
   Check if a migration is required from current version to target version.
   """
   @spec migration_required?(target_version :: String.t()) ::
-    {:ok, boolean()} | {:error, term()}
+          {:ok, boolean()} | {:error, term()}
   def migration_required?(target_version) do
     case current_version() do
       {:ok, current} ->
         case compare_versions(current, target_version) do
           :equal -> {:ok, false}
           :older -> {:ok, true}
-          :newer -> {:ok, false}  # Downgrade scenario
+          # Downgrade scenario
+          :newer -> {:ok, false}
           :incomparable -> {:error, "Version comparison failed"}
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -49,7 +51,7 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
   Get the upgrade path from current version to target version.
   """
   @spec get_upgrade_path(target_version :: String.t()) ::
-    {:ok, [PreferenceSchemaVersion.t()]} | {:error, term()}
+          {:ok, [PreferenceSchemaVersion.t()]} | {:error, term()}
   def get_upgrade_path(target_version) do
     case current_version() do
       {:ok, current} ->
@@ -58,7 +60,8 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
           {:error, reason} -> {:error, reason}
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -77,7 +80,7 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
   Register a new schema version in the system.
   """
   @spec register_version(version_params :: map()) ::
-    {:ok, PreferenceSchemaVersion.t()} | {:error, term()}
+          {:ok, PreferenceSchemaVersion.t()} | {:error, term()}
   def register_version(version_params) do
     case PreferenceSchemaVersion.create(version_params) do
       {:ok, version} ->
@@ -96,14 +99,16 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
 
         {:ok, version}
 
-      error -> error
+      error ->
+        error
     end
   end
 
   @doc """
   Apply a schema version to mark it as current.
   """
-  @spec apply_version(version :: String.t()) :: {:ok, PreferenceSchemaVersion.t()} | {:error, term()}
+  @spec apply_version(version :: String.t()) ::
+          {:ok, PreferenceSchemaVersion.t()} | {:error, term()}
   def apply_version(version) do
     case PreferenceSchemaVersion.by_version(version) do
       {:ok, [schema_version]} ->
@@ -121,13 +126,15 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
 
             {:ok, updated_version}
 
-          error -> error
+          error ->
+            error
         end
 
       {:ok, []} ->
         {:error, "Schema version not found: #{version}"}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -151,7 +158,8 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
           error -> error
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -177,22 +185,25 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
   defp parse_version(version) do
     case Regex.run(~r/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/, version) do
       [_, major, minor, patch] ->
-        {:ok, %{
-          major: String.to_integer(major),
-          minor: String.to_integer(minor),
-          patch: String.to_integer(patch),
-          pre_release: nil
-        }}
+        {:ok,
+         %{
+           major: String.to_integer(major),
+           minor: String.to_integer(minor),
+           patch: String.to_integer(patch),
+           pre_release: nil
+         }}
 
       [_, major, minor, patch, pre_release] ->
-        {:ok, %{
-          major: String.to_integer(major),
-          minor: String.to_integer(minor),
-          patch: String.to_integer(patch),
-          pre_release: pre_release
-        }}
+        {:ok,
+         %{
+           major: String.to_integer(major),
+           minor: String.to_integer(minor),
+           patch: String.to_integer(patch),
+           pre_release: pre_release
+         }}
 
-      _ -> {:error, "Invalid version format"}
+      _ ->
+        {:error, "Invalid version format"}
     end
   end
 
@@ -213,13 +224,15 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
     # For now, return a simple path
     case PreferenceSchemaVersion.read() do
       {:ok, all_versions} ->
-        path = Enum.filter(all_versions, fn version ->
-          version_between?(version.version, current_version, target_version)
-        end)
+        path =
+          Enum.filter(all_versions, fn version ->
+            version_between?(version.version, current_version, target_version)
+          end)
 
         {:ok, Enum.sort_by(path, &parse_version_for_sort/1)}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -255,7 +268,8 @@ defmodule RubberDuck.Preferences.Migration.VersionManager do
         latest = Enum.max_by(versions, &parse_version_for_sort/1, fn -> nil end)
         if latest, do: {:ok, latest}, else: {:error, "No versions found"}
 
-      error -> error
+      error ->
+        error
     end
   end
 end

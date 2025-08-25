@@ -9,7 +9,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.export_preferences(opts)
         assert is_binary(result.data)
         assert result.metadata.format == :json
@@ -21,7 +20,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.export_preferences(opts)
         assert is_binary(result.data)
         assert result.metadata.format == :yaml
@@ -33,7 +31,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.export_preferences(opts)
         assert is_binary(result.data)
         assert result.metadata.format == :binary
@@ -51,7 +48,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.export_preferences(opts)
 
         assert result.metadata.export_version
@@ -69,7 +65,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.UserPreference, [:passthrough],
         by_user: fn ^user_id -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.export_user_preferences(user_id, opts)
         assert result.metadata.scope == :user
       end
@@ -82,7 +77,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.export_system_defaults(opts)
         assert result.metadata.scope == :system
       end
@@ -95,7 +89,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.create_backup_export(opts)
 
         assert result.backup_id
@@ -110,14 +103,12 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         with_mock RubberDuck.Preferences.Security.AuditLogger, [:passthrough],
           log_preference_change: fn _event -> :ok end do
-
           assert {:ok, _result} = ExportEngine.create_backup_export(opts)
 
           # Verify audit logging was called
-          assert_called RubberDuck.Preferences.Security.AuditLogger.log_preference_change(_)
+          assert_called(RubberDuck.Preferences.Security.AuditLogger.log_preference_change(_))
         end
       end
     end
@@ -140,15 +131,15 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, mock_defaults} end do
-
         with_mock RubberDuck.Preferences.Security.EncryptionManager, [:passthrough],
           sensitive_preference?: fn "api.secret_key" -> true end,
           encrypt_if_sensitive: fn "api.secret_key", "secret123" -> {:ok, "encrypted_value"} end do
-
           assert {:ok, result} = ExportEngine.export_preferences(opts)
 
           # Verify encryption was applied
-          assert_called RubberDuck.Preferences.Security.EncryptionManager.encrypt_if_sensitive(_, _)
+          assert_called(
+            RubberDuck.Preferences.Security.EncryptionManager.encrypt_if_sensitive(_, _)
+          )
         end
       end
     end
@@ -158,7 +149,6 @@ defmodule RubberDuck.Preferences.Export.ExportEngineTest do
 
       with_mock RubberDuck.Preferences.Resources.SystemDefault, [:passthrough],
         read: fn -> {:ok, []} end do
-
         assert {:ok, result} = ExportEngine.export_preferences(opts)
         assert result.metadata.encryption_used == false
       end

@@ -6,7 +6,8 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
   using Erlang's External Term Format (ETF) with compression and integrity checking.
   """
 
-  @magic_header <<0x52, 0x44, 0x50, 0x42>>  # "RDPB" - RubberDuck Preference Binary
+  # "RDPB" - RubberDuck Preference Binary
+  @magic_header <<0x52, 0x44, 0x50, 0x42>>
   @format_version 1
 
   @doc """
@@ -38,7 +39,8 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
           data = :erlang.binary_to_term(payload, [:safe])
           {:ok, data}
 
-        {:error, reason} -> {:error, reason}
+        {:error, reason} ->
+          {:error, reason}
       end
     rescue
       error -> {:error, "Binary parsing failed: #{inspect(error)}"}
@@ -67,7 +69,8 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
           header_info = parse_binary_header(binary_data)
           {:ok, header_info}
 
-        {:error, reason} -> {:error, reason}
+        {:error, reason} ->
+          {:error, reason}
       end
     rescue
       error -> {:error, "Binary info extraction failed: #{inspect(error)}"}
@@ -85,25 +88,16 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
     size = byte_size(serialized_data)
 
     @magic_header <>
-    <<@format_version::8>> <>
-    <<checksum::32>> <>
-    <<size::32>> <>
-    serialized_data
+      <<@format_version::8>> <>
+      <<checksum::32>> <>
+      <<size::32>> <>
+      serialized_data
   end
 
   defp validate_binary_header(binary_data) do
     case binary_data do
       <<@magic_header, @format_version::8, checksum::32, size::32, payload::binary>> ->
-        if byte_size(payload) == size do
-          calculated_checksum = :erlang.crc32(payload)
-          if calculated_checksum == checksum do
-            {:ok, payload}
-          else
-            {:error, "Binary data corruption detected (checksum mismatch)"}
-          end
-        else
-          {:error, "Binary data corruption detected (size mismatch)"}
-        end
+        validate_payload_integrity(payload, size, checksum)
 
       <<@magic_header, version::8, _rest::binary>> ->
         {:error, "Unsupported binary format version: #{version}"}
@@ -126,6 +120,23 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
 
       _ ->
         %{error: "Invalid binary header"}
+    end
+  end
+
+  defp validate_payload_integrity(payload, expected_size, expected_checksum) do
+    case byte_size(payload) do
+      ^expected_size -> validate_checksum(payload, expected_checksum)
+      _ -> {:error, "Binary data corruption detected (size mismatch)"}
+    end
+  end
+
+  defp validate_checksum(payload, expected_checksum) do
+    calculated_checksum = :erlang.crc32(payload)
+    
+    if calculated_checksum == expected_checksum do
+      {:ok, payload}
+    else
+      {:error, "Binary data corruption detected (checksum mismatch)"}
     end
   end
 end

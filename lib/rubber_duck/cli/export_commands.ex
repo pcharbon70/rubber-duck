@@ -272,6 +272,7 @@ defmodule RubberDuck.CLI.ExportCommands do
 
     unless Enum.empty?(result.conflicts) do
       IO.puts("  Conflicts: #{length(result.conflicts)}")
+
       Enum.each(result.conflicts, fn conflict ->
         IO.puts("    - #{conflict.type}: #{conflict.preference_key}")
       end)
@@ -293,6 +294,7 @@ defmodule RubberDuck.CLI.ExportCommands do
 
     unless Enum.empty?(preview.conflicts) do
       IO.puts("\n⚠️  Conflicts detected:")
+
       Enum.each(preview.conflicts, fn conflict ->
         IO.puts("  - #{conflict.type}: #{conflict.preference_key}")
       end)
@@ -300,7 +302,9 @@ defmodule RubberDuck.CLI.ExportCommands do
 
     unless Enum.empty?(preview.changes) do
       IO.puts("\n📝 Changes to be made:")
-      Enum.take(preview.changes, 10) |> Enum.each(fn change ->
+
+      Enum.take(preview.changes, 10)
+      |> Enum.each(fn change ->
         IO.puts("  - #{change.action}: #{change.preference_key}")
       end)
 
@@ -311,22 +315,25 @@ defmodule RubberDuck.CLI.ExportCommands do
   end
 
   defp display_versions(versions, "table") do
-    IO.puts("\n" <>
-      String.pad_trailing("VERSION", 15) <>
-      " | " <>
-      String.pad_trailing("NAME", 25) <>
-      " | " <>
-      String.pad_trailing("STATUS", 12) <>
-      " | DESCRIPTION")
+    IO.puts(
+      "\n" <>
+        String.pad_trailing("VERSION", 15) <>
+        " | " <>
+        String.pad_trailing("NAME", 25) <>
+        " | " <>
+        String.pad_trailing("STATUS", 12) <>
+        " | DESCRIPTION"
+    )
 
     IO.puts(String.duplicate("-", 80))
 
     Enum.each(versions, fn version ->
-      status = cond do
-        version.applied_at -> "CURRENT"
-        version.deprecated -> "DEPRECATED"
-        true -> "AVAILABLE"
-      end
+      status =
+        cond do
+          version.applied_at -> "CURRENT"
+          version.deprecated -> "DEPRECATED"
+          true -> "AVAILABLE"
+        end
 
       version_str = String.pad_trailing(version.version, 15)
       name_str = String.pad_trailing(version.version_name || "N/A", 25)
@@ -341,11 +348,13 @@ defmodule RubberDuck.CLI.ExportCommands do
     if Enum.empty?(backups) do
       IO.puts("No backups found.")
     else
-      IO.puts("\n" <>
-        String.pad_trailing("BACKUP ID", 30) <>
-        " | " <>
-        String.pad_trailing("CREATED", 20) <>
-        " | SIZE")
+      IO.puts(
+        "\n" <>
+          String.pad_trailing("BACKUP ID", 30) <>
+          " | " <>
+          String.pad_trailing("CREATED", 20) <>
+          " | SIZE"
+      )
 
       IO.puts(String.duplicate("-", 60))
 
@@ -361,7 +370,10 @@ defmodule RubberDuck.CLI.ExportCommands do
 
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1024 * 1024, do: "#{Float.round(bytes / 1024, 1)} KB"
-  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024, do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+
+  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024,
+    do: "#{Float.round(bytes / (1024 * 1024), 1)} MB"
+
   defp format_bytes(bytes), do: "#{Float.round(bytes / (1024 * 1024 * 1024), 1)} GB"
 
   defp format_datetime(datetime) do

@@ -10,7 +10,7 @@ defmodule RubberDuck.CLI do
   alias RubberDuck.CLI.{
     ConfigCommands,
     ExportCommands,
-    MigrationCommands, 
+    MigrationCommands,
     ProjectCommands,
     TemplateCommands,
     UtilityCommands

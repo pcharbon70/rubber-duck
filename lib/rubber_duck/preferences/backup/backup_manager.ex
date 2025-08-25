@@ -30,7 +30,8 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   - `:include_templates` - Include templates (default: true)
   """
   @spec create_backup(opts :: keyword()) ::
-    {:ok, %{backup_id: String.t(), size_bytes: integer(), path: String.t()}} | {:error, term()}
+          {:ok, %{backup_id: String.t(), size_bytes: integer(), path: String.t()}}
+          | {:error, term()}
   def create_backup(opts \\ []) do
     backup_id = generate_backup_id()
 
@@ -43,10 +44,12 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
             log_backup_creation(backup_id, storage_result, opts)
             {:ok, storage_result}
 
-          error -> error
+          error ->
+            error
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -54,7 +57,7 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   Restore from a backup.
   """
   @spec restore_backup(backup_id :: String.t(), opts :: keyword()) ::
-    {:ok, %{restored_count: integer(), restoration_log: [String.t()]}} | {:error, term()}
+          {:ok, %{restored_count: integer(), restoration_log: [String.t()]}} | {:error, term()}
   def restore_backup(backup_id, opts \\ []) do
     case load_backup(backup_id) do
       {:ok, backup_data} ->
@@ -65,10 +68,12 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
             log_backup_restoration(backup_id, restore_result)
             {:ok, restore_result}
 
-          error -> error
+          error ->
+            error
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -76,7 +81,8 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   List available backups with metadata.
   """
   @spec list_backups(opts :: keyword()) ::
-    {:ok, [%{backup_id: String.t(), created_at: DateTime.t(), size_bytes: integer()}]} | {:error, term()}
+          {:ok, [%{backup_id: String.t(), created_at: DateTime.t(), size_bytes: integer()}]}
+          | {:error, term()}
   def list_backups(opts \\ []) do
     limit = Keyword.get(opts, :limit, 50)
 
@@ -89,16 +95,17 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   Delete old backups based on retention policy.
   """
   @spec cleanup_old_backups(opts :: keyword()) ::
-    {:ok, %{deleted_count: integer(), retained_count: integer()}} | {:error, term()}
+          {:ok, %{deleted_count: integer(), retained_count: integer()}} | {:error, term()}
   def cleanup_old_backups(opts \\ []) do
     retention_days = Keyword.get(opts, :retention_days, @default_retention_days)
     cutoff_date = DateTime.add(DateTime.utc_now(), -retention_days * 24 * 3600, :second)
 
     case list_backups() do
       {:ok, backups} ->
-        old_backups = Enum.filter(backups, fn backup ->
-          DateTime.compare(backup.created_at, cutoff_date) == :lt
-        end)
+        old_backups =
+          Enum.filter(backups, fn backup ->
+            DateTime.compare(backup.created_at, cutoff_date) == :lt
+          end)
 
         delete_results = Enum.map(old_backups, &delete_backup/1)
         deleted_count = Enum.count(delete_results, &match?({:ok, _}, &1))
@@ -108,7 +115,8 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
 
         {:ok, %{deleted_count: deleted_count, retained_count: retained_count}}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -116,7 +124,8 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   Verify backup integrity.
   """
   @spec verify_backup(backup_id :: String.t()) ::
-    {:ok, %{valid: boolean(), checksum_valid: boolean(), parseable: boolean()}} | {:error, term()}
+          {:ok, %{valid: boolean(), checksum_valid: boolean(), parseable: boolean()}}
+          | {:error, term()}
   def verify_backup(backup_id) do
     case load_backup(backup_id) do
       {:ok, backup_data} ->
@@ -129,7 +138,8 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
             {:ok, %{valid: false, checksum_valid: true, parseable: false}}
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -137,7 +147,7 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   Schedule automated backup.
   """
   @spec schedule_backup(schedule :: String.t(), opts :: keyword()) ::
-    {:ok, %{schedule_id: String.t()}} | {:error, term()}
+          {:ok, %{schedule_id: String.t()}} | {:error, term()}
   def schedule_backup(schedule, opts \\ []) do
     # This would integrate with a job scheduler like Oban
     # For now, return a mock schedule ID
@@ -173,13 +183,14 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
 
     case File.write(file_path, export_result.data) do
       :ok ->
-        {:ok, %{
-          backup_id: backup_id,
-          size_bytes: byte_size(export_result.data),
-          path: file_path,
-          format: export_result.metadata.format,
-          created_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           backup_id: backup_id,
+           size_bytes: byte_size(export_result.data),
+           path: file_path,
+           format: export_result.metadata.format,
+           created_at: DateTime.utc_now()
+         }}
 
       {:error, reason} ->
         {:error, "Failed to store backup: #{inspect(reason)}"}
@@ -191,12 +202,14 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
 
     case File.read(file_path) do
       {:ok, data} ->
-        {:ok, %{
-          backup_id: backup_id,
-          data: data,
-          format: :binary,  # Would detect format from file or metadata
-          loaded_at: DateTime.utc_now()
-        }}
+        {:ok,
+         %{
+           backup_id: backup_id,
+           data: data,
+           # Would detect format from file or metadata
+           format: :binary,
+           loaded_at: DateTime.utc_now()
+         }}
 
       {:error, reason} ->
         {:error, "Failed to load backup: #{inspect(reason)}"}

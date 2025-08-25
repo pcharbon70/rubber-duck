@@ -67,9 +67,10 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.JsonHandler do
   defp validate_metadata_fields(metadata, errors) do
     required_fields = ["export_version", "exported_at", "format", "schema_version"]
 
-    missing_fields = Enum.filter(required_fields, fn field ->
-      not Map.has_key?(metadata, field)
-    end)
+    missing_fields =
+      Enum.filter(required_fields, fn field ->
+        not Map.has_key?(metadata, field)
+      end)
 
     case missing_fields do
       [] -> errors
@@ -82,7 +83,8 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.JsonHandler do
 
     Enum.reduce(sections, errors, fn section, acc ->
       case Map.get(data, section) do
-        nil -> acc  # Optional sections
+        # Optional sections
+        nil -> acc
         list when is_list(list) -> validate_preference_list(section, list, acc)
         _ -> ["#{section} must be a list" | acc]
       end
@@ -102,10 +104,11 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.JsonHandler do
   defp validate_system_defaults(defaults, errors) do
     required_fields = ["preference_key", "value", "category", "data_type"]
 
-    invalid_defaults = Enum.filter(defaults, fn default ->
-      not is_map(default) or
-      Enum.any?(required_fields, fn field -> not Map.has_key?(default, field) end)
-    end)
+    invalid_defaults =
+      Enum.filter(defaults, fn default ->
+        not is_map(default) or
+          Enum.any?(required_fields, fn field -> not Map.has_key?(default, field) end)
+      end)
 
     case invalid_defaults do
       [] -> errors
@@ -116,10 +119,11 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.JsonHandler do
   defp validate_user_preferences(preferences, errors) do
     required_fields = ["user_id", "preference_key", "value", "category"]
 
-    invalid_prefs = Enum.filter(preferences, fn pref ->
-      not is_map(pref) or
-      Enum.any?(required_fields, fn field -> not Map.has_key?(pref, field) end)
-    end)
+    invalid_prefs =
+      Enum.filter(preferences, fn pref ->
+        not is_map(pref) or
+          Enum.any?(required_fields, fn field -> not Map.has_key?(pref, field) end)
+      end)
 
     case invalid_prefs do
       [] -> errors

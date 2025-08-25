@@ -180,13 +180,15 @@ defmodule RubberDuck.CLI.MigrationCommands do
   end
 
   defp display_versions(versions, "table") do
-    IO.puts("\n" <>
-      String.pad_trailing("VERSION", 15) <>
-      " | " <>
-      String.pad_trailing("NAME", 25) <>
-      " | " <>
-      String.pad_trailing("STATUS", 12) <>
-      " | DESCRIPTION")
+    IO.puts(
+      "\n" <>
+        String.pad_trailing("VERSION", 15) <>
+        " | " <>
+        String.pad_trailing("NAME", 25) <>
+        " | " <>
+        String.pad_trailing("STATUS", 12) <>
+        " | DESCRIPTION"
+    )
 
     IO.puts(String.duplicate("-", 80))
 
@@ -206,16 +208,17 @@ defmodule RubberDuck.CLI.MigrationCommands do
   end
 
   defp display_versions(versions, "json") do
-    simplified_versions = Enum.map(versions, fn version ->
-      %{
-        version: version.version,
-        name: version.version_name,
-        applied: not is_nil(version.applied_at),
-        deprecated: version.deprecated,
-        breaking_changes: version.breaking_changes,
-        migration_required: version.migration_required
-      }
-    end)
+    simplified_versions =
+      Enum.map(versions, fn version ->
+        %{
+          version: version.version,
+          name: version.version_name,
+          applied: not is_nil(version.applied_at),
+          deprecated: version.deprecated,
+          breaking_changes: version.breaking_changes,
+          migration_required: version.migration_required
+        }
+      end)
 
     case Jason.encode(simplified_versions, pretty: true) do
       {:ok, json} -> IO.puts(json)

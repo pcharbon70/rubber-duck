@@ -13,6 +13,7 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
     ProjectPreference,
     PreferenceTemplate
   }
+
   alias RubberDuck.Preferences.Security.{EncryptionManager, AuditLogger}
   alias RubberDuck.Preferences.Export.FormatHandlers.{JsonHandler, YamlHandler, BinaryHandler}
   alias RubberDuck.Preferences.Migration.VersionManager
@@ -32,7 +33,8 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   - `:decrypt_sensitive` - Whether to decrypt sensitive preferences
   """
   @spec import_preferences(data :: binary(), opts :: keyword()) ::
-    {:ok, %{imported_count: integer(), conflicts: [map()], warnings: [String.t()]}} | {:error, term()}
+          {:ok, %{imported_count: integer(), conflicts: [map()], warnings: [String.t()]}}
+          | {:error, term()}
   def import_preferences(data, opts \\ []) do
     format = Keyword.get(opts, :format, :json)
     merge_strategy = Keyword.get(opts, :merge_strategy, :merge)
@@ -48,7 +50,7 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   Preview import operation without applying changes.
   """
   @spec preview_import(data :: binary(), format :: atom()) ::
-    {:ok, %{preview: map(), conflicts: [map()], changes: [map()]}} | {:error, term()}
+          {:ok, %{preview: map(), conflicts: [map()], changes: [map()]}} | {:error, term()}
   def preview_import(data, format \\ :json) do
     case parse_import_data(data, format) do
       {:ok, parsed_data} ->
@@ -57,7 +59,8 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
           error -> error
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -65,9 +68,9 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   Import user preferences for a specific user.
   """
   @spec import_user_preferences(user_id :: String.t(), data :: binary(), opts :: keyword()) ::
-    {:ok, %{imported_count: integer(), conflicts: [map()]}} | {:error, term()}
+          {:ok, %{imported_count: integer(), conflicts: [map()]}} | {:error, term()}
   def import_user_preferences(user_id, data, opts \\ []) do
-    import_opts = Keyword.merge(opts, [scope: :user, target_user_id: user_id])
+    import_opts = Keyword.merge(opts, scope: :user, target_user_id: user_id)
     import_preferences(data, import_opts)
   end
 
@@ -75,9 +78,9 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   Import system defaults (admin only operation).
   """
   @spec import_system_defaults(data :: binary(), opts :: keyword()) ::
-    {:ok, %{imported_count: integer(), conflicts: [map()]}} | {:error, term()}
+          {:ok, %{imported_count: integer(), conflicts: [map()]}} | {:error, term()}
   def import_system_defaults(data, opts \\ []) do
-    import_opts = Keyword.merge(opts, [scope: :system])
+    import_opts = Keyword.merge(opts, scope: :system)
     import_preferences(data, import_opts)
   end
 
@@ -85,13 +88,14 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   Restore from backup export.
   """
   @spec restore_from_backup(backup_data :: binary(), opts :: keyword()) ::
-    {:ok, %{restored_count: integer(), restoration_log: [String.t()]}} | {:error, term()}
+          {:ok, %{restored_count: integer(), restoration_log: [String.t()]}} | {:error, term()}
   def restore_from_backup(backup_data, opts \\ []) do
-    restore_opts = Keyword.merge(opts, [
-      merge_strategy: :overwrite,
-      validate_schema: true,
-      scope: :all
-    ])
+    restore_opts =
+      Keyword.merge(opts,
+        merge_strategy: :overwrite,
+        validate_schema: true,
+        scope: :all
+      )
 
     case import_preferences(backup_data, restore_opts) do
       {:ok, result} ->
@@ -107,12 +111,14 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
           }
         })
 
-        {:ok, %{
-          restored_count: result.imported_count,
-          restoration_log: ["Backup restoration completed successfully"]
-        }}
+        {:ok,
+         %{
+           restored_count: result.imported_count,
+           restoration_log: ["Backup restoration completed successfully"]
+         }}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -129,7 +135,8 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
       merge_strategy not in @merge_strategies ->
         {:error, "Unsupported merge strategy: #{merge_strategy}"}
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
@@ -140,10 +147,12 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
           {:ok, validated_data} ->
             execute_import(validated_data, merge_strategy, dry_run, opts)
 
-          error -> error
+          error ->
+            error
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -163,20 +172,22 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
     errors = []
 
     # Validate structure
-    errors = case JsonHandler.validate_structure(parsed_data) do
-      {:ok, _} -> errors
-      {:error, structure_errors} -> structure_errors ++ errors
-    end
+    errors =
+      case JsonHandler.validate_structure(parsed_data) do
+        {:ok, _} -> errors
+        {:error, structure_errors} -> structure_errors ++ errors
+      end
 
     # Validate schema compatibility
-    errors = if Keyword.get(opts, :validate_schema, true) do
-      case validate_schema_compatibility(parsed_data) do
-        :ok -> errors
-        {:error, schema_errors} -> schema_errors ++ errors
+    errors =
+      if Keyword.get(opts, :validate_schema, true) do
+        case validate_schema_compatibility(parsed_data) do
+          :ok -> errors
+          {:error, schema_errors} -> schema_errors ++ errors
+        end
+      else
+        errors
       end
-    else
-      errors
-    end
 
     if Enum.empty?(errors) do
       {:ok, parsed_data}
@@ -193,7 +204,8 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
         if VersionManager.versions_compatible?(current_schema, export_schema) do
           :ok
         else
-          {:error, ["Schema version incompatibility: current=#{current_schema}, import=#{export_schema}"]}
+          {:error,
+           ["Schema version incompatibility: current=#{current_schema}, import=#{export_schema}"]}
         end
 
       {:error, _} ->
@@ -212,7 +224,8 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
           apply_import(validated_data, conflict_analysis, merge_strategy, opts)
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -220,18 +233,20 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
     conflicts = []
 
     # Analyze system defaults conflicts
-    conflicts = if scope in [:all, :system] do
-      analyze_system_defaults_conflicts(data["system_defaults"] || [], conflicts)
-    else
-      conflicts
-    end
+    conflicts =
+      if scope in [:all, :system] do
+        analyze_system_defaults_conflicts(data["system_defaults"] || [], conflicts)
+      else
+        conflicts
+      end
 
     # Analyze user preferences conflicts
-    conflicts = if scope in [:all, :user] do
-      analyze_user_preferences_conflicts(data["user_preferences"] || [], conflicts)
-    else
-      conflicts
-    end
+    conflicts =
+      if scope in [:all, :user] do
+        analyze_user_preferences_conflicts(data["user_preferences"] || [], conflicts)
+      else
+        conflicts
+      end
 
     {:ok, %{conflicts: conflicts, total_items: count_import_items(data)}}
   end
@@ -247,10 +262,14 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
             existing_value: "existing",
             import_value: default["value"]
           }
+
           [conflict | acc]
 
-        {:ok, []} -> acc
-        {:error, _} -> acc
+        {:ok, []} ->
+          acc
+
+        {:error, _} ->
+          acc
       end
     end)
   end
@@ -259,22 +278,7 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
     # Check for existing user preferences that would be overwritten
     Enum.reduce(preferences, conflicts, fn pref, acc ->
       case UserPreference.by_user_and_category(pref["user_id"], pref["category"]) do
-        {:ok, existing_prefs} ->
-          existing_keys = Enum.map(existing_prefs, & &1.preference_key)
-
-          if pref["preference_key"] in existing_keys do
-            conflict = %{
-              type: "user_preference_conflict",
-              user_id: pref["user_id"],
-              preference_key: pref["preference_key"],
-              existing_value: "existing",
-              import_value: pref["value"]
-            }
-            [conflict | acc]
-          else
-            acc
-          end
-
+        {:ok, existing_prefs} -> check_user_preference_conflict(pref, existing_prefs, acc)
         {:ok, []} -> acc
         {:error, _} -> acc
       end
@@ -282,42 +286,47 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   end
 
   defp simulate_import(_data, conflict_analysis) do
-    {:ok, %{
-      imported_count: conflict_analysis.total_items,
-      conflicts: conflict_analysis.conflicts,
-      warnings: [],
-      dry_run: true
-    }}
+    {:ok,
+     %{
+       imported_count: conflict_analysis.total_items,
+       conflicts: conflict_analysis.conflicts,
+       warnings: [],
+       dry_run: true
+     }}
   end
 
   defp apply_import(data, conflict_analysis, merge_strategy, opts) do
     imported_count = 0
 
     # Import system defaults if in scope
-    imported_count = case import_system_defaults_data(data["system_defaults"] || [], merge_strategy) do
-      {:ok, count} -> imported_count + count
-      {:error, _} -> imported_count
-    end
+    imported_count =
+      case import_system_defaults_data(data["system_defaults"] || [], merge_strategy) do
+        {:ok, count} -> imported_count + count
+        {:error, _} -> imported_count
+      end
 
     # Import user preferences if in scope
-    imported_count = case import_user_preferences_data(data["user_preferences"] || [], merge_strategy, opts) do
-      {:ok, count} -> imported_count + count
-      {:error, _} -> imported_count
-    end
+    imported_count =
+      case import_user_preferences_data(data["user_preferences"] || [], merge_strategy, opts) do
+        {:ok, count} -> imported_count + count
+        {:error, _} -> imported_count
+      end
 
     Logger.info("Import completed: #{imported_count} items imported")
 
-    {:ok, %{
-      imported_count: imported_count,
-      conflicts: conflict_analysis.conflicts,
-      warnings: []
-    }}
+    {:ok,
+     %{
+       imported_count: imported_count,
+       conflicts: conflict_analysis.conflicts,
+       warnings: []
+     }}
   end
 
   defp import_system_defaults_data(defaults, merge_strategy) do
-    results = Enum.map(defaults, fn default ->
-      import_single_system_default(default, merge_strategy)
-    end)
+    results =
+      Enum.map(defaults, fn default ->
+        import_single_system_default(default, merge_strategy)
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
     {:ok, successful}
@@ -332,15 +341,17 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   defp import_user_preferences_data(preferences, merge_strategy, opts) do
     target_user_id = Keyword.get(opts, :target_user_id)
 
-    filtered_preferences = if target_user_id do
-      Enum.filter(preferences, &(&1["user_id"] == target_user_id))
-    else
-      preferences
-    end
+    filtered_preferences =
+      if target_user_id do
+        Enum.filter(preferences, &(&1["user_id"] == target_user_id))
+      else
+        preferences
+      end
 
-    results = Enum.map(filtered_preferences, fn pref ->
-      import_single_user_preference(pref, merge_strategy)
-    end)
+    results =
+      Enum.map(filtered_preferences, fn pref ->
+        import_single_user_preference(pref, merge_strategy)
+      end)
 
     successful = Enum.count(results, &match?({:ok, _}, &1))
     {:ok, successful}
@@ -367,41 +378,62 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
       templates_count: length(data["templates"] || [])
     }
 
-    {:ok, %{
-      preview: preview,
-      conflicts: conflicts,
-      changes: changes
-    }}
+    {:ok,
+     %{
+       preview: preview,
+       conflicts: conflicts,
+       changes: changes
+     }}
   end
 
   defp analyze_potential_changes(data, changes) do
     # Analyze what changes would be made
-    system_changes = Enum.map(data["system_defaults"] || [], fn default ->
-      %{
-        type: "system_default",
-        action: "create_or_update",
-        preference_key: default["preference_key"],
-        new_value: default["value"]
-      }
-    end)
+    system_changes =
+      Enum.map(data["system_defaults"] || [], fn default ->
+        %{
+          type: "system_default",
+          action: "create_or_update",
+          preference_key: default["preference_key"],
+          new_value: default["value"]
+        }
+      end)
 
-    user_changes = Enum.map(data["user_preferences"] || [], fn pref ->
-      %{
-        type: "user_preference",
-        action: "create_or_update",
-        user_id: pref["user_id"],
-        preference_key: pref["preference_key"],
-        new_value: pref["value"]
-      }
-    end)
+    user_changes =
+      Enum.map(data["user_preferences"] || [], fn pref ->
+        %{
+          type: "user_preference",
+          action: "create_or_update",
+          user_id: pref["user_id"],
+          preference_key: pref["preference_key"],
+          new_value: pref["value"]
+        }
+      end)
 
     changes ++ system_changes ++ user_changes
   end
 
   defp count_import_items(data) do
-    (length(data["system_defaults"] || []) +
-     length(data["user_preferences"] || []) +
-     length(data["project_preferences"] || []) +
-     length(data["templates"] || []))
+    length(data["system_defaults"] || []) +
+      length(data["user_preferences"] || []) +
+      length(data["project_preferences"] || []) +
+      length(data["templates"] || [])
+  end
+
+  defp check_user_preference_conflict(pref, existing_prefs, acc) do
+    existing_keys = Enum.map(existing_prefs, & &1.preference_key)
+
+    if pref["preference_key"] in existing_keys do
+      conflict = %{
+        type: "user_preference_conflict",
+        user_id: pref["user_id"],
+        preference_key: pref["preference_key"],
+        existing_value: "existing",
+        import_value: pref["value"]
+      }
+
+      [conflict | acc]
+    else
+      acc
+    end
   end
 end

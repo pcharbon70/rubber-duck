@@ -21,7 +21,7 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
   and validation with complete rollback support on failure.
   """
   @spec migrate_to_version(target_version :: String.t(), opts :: keyword()) ::
-    {:ok, %{migration_id: String.t(), executed_steps: [String.t()]}} | {:error, term()}
+          {:ok, %{migration_id: String.t(), executed_steps: [String.t()]}} | {:error, term()}
   def migrate_to_version(target_version, opts \\ []) do
     dry_run = Keyword.get(opts, :dry_run, false)
     force = Keyword.get(opts, :force, false)
@@ -38,7 +38,7 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
   Performs rollback operation with data restoration and validation.
   """
   @spec rollback_to_version(target_version :: String.t(), opts :: keyword()) ::
-    {:ok, %{rollback_id: String.t(), restored_items: integer()}} | {:error, term()}
+          {:ok, %{rollback_id: String.t(), restored_items: integer()}} | {:error, term()}
   def rollback_to_version(target_version, opts \\ []) do
     dry_run = Keyword.get(opts, :dry_run, false)
 
@@ -52,14 +52,15 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
   Generate migration script for moving between two schema versions.
   """
   @spec generate_migration_script(from_version :: String.t(), to_version :: String.t()) ::
-    {:ok, String.t()} | {:error, term()}
+          {:ok, String.t()} | {:error, term()}
   def generate_migration_script(from_version, to_version) do
     case VersionManager.get_upgrade_path(to_version) do
       {:ok, upgrade_path} ->
         script = build_migration_script(from_version, to_version, upgrade_path)
         {:ok, script}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -67,28 +68,31 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
   Validate that a migration can be performed safely.
   """
   @spec validate_migration_safety(target_version :: String.t()) ::
-    {:ok, %{safe: boolean(), warnings: [String.t()]}} | {:error, term()}
+          {:ok, %{safe: boolean(), warnings: [String.t()]}} | {:error, term()}
   def validate_migration_safety(target_version) do
     warnings = []
 
     # Check for breaking changes
-    warnings = case has_breaking_changes?(target_version) do
-      {:ok, true} -> ["Target version contains breaking changes" | warnings]
-      {:ok, false} -> warnings
-      {:error, _} -> ["Could not check for breaking changes" | warnings]
-    end
+    warnings =
+      case has_breaking_changes?(target_version) do
+        {:ok, true} -> ["Target version contains breaking changes" | warnings]
+        {:ok, false} -> warnings
+        {:error, _} -> ["Could not check for breaking changes" | warnings]
+      end
 
     # Check data compatibility
-    warnings = case validate_data_compatibility(target_version) do
-      {:ok, issues} -> issues ++ warnings
-      {:error, _} -> ["Could not validate data compatibility" | warnings]
-    end
+    warnings =
+      case validate_data_compatibility(target_version) do
+        {:ok, issues} -> issues ++ warnings
+        {:error, _} -> ["Could not validate data compatibility" | warnings]
+      end
 
     # Check system dependencies
-    warnings = case validate_system_dependencies(target_version) do
-      {:ok, deps} -> deps ++ warnings
-      {:error, _} -> ["Could not validate system dependencies" | warnings]
-    end
+    warnings =
+      case validate_system_dependencies(target_version) do
+        {:ok, deps} -> deps ++ warnings
+        {:error, _} -> ["Could not validate system dependencies" | warnings]
+      end
 
     safe = Enum.empty?(warnings)
 
@@ -99,7 +103,7 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
   Create a backup before migration execution.
   """
   @spec create_pre_migration_backup(target_version :: String.t()) ::
-    {:ok, String.t()} | {:error, term()}
+          {:ok, String.t()} | {:error, term()}
   def create_pre_migration_backup(target_version) do
     backup_context = %{
       reason: "Pre-migration backup for version #{target_version}",
@@ -126,7 +130,8 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
 
         {:ok, backup_id}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -139,13 +144,18 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
 
       not force ->
         case validate_migration_safety(target_version) do
-          {:ok, %{safe: true}} -> :ok
+          {:ok, %{safe: true}} ->
+            :ok
+
           {:ok, %{safe: false, warnings: warnings}} ->
             {:error, "Migration safety check failed: #{Enum.join(warnings, ", ")}"}
-          {:error, reason} -> {:error, reason}
+
+          {:error, reason} ->
+            {:error, reason}
         end
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
@@ -157,7 +167,8 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
           _ -> {:error, "Cannot rollback to newer or same version"}
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -186,18 +197,20 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
           execute_migration_steps(upgrade_path, migration_id, backup_id, opts)
         end
 
-      error -> error
+      error ->
+        error
     end
   end
 
   defp simulate_migration_steps(upgrade_path, migration_id) do
     steps = Enum.map(upgrade_path, &"Apply version #{&1.version}")
 
-    {:ok, %{
-      migration_id: migration_id,
-      executed_steps: steps,
-      dry_run: true
-    }}
+    {:ok,
+     %{
+       migration_id: migration_id,
+       executed_steps: steps,
+       dry_run: true
+     }}
   end
 
   defp execute_migration_steps(upgrade_path, migration_id, backup_id, opts) do
@@ -205,23 +218,26 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
 
     try do
       # Execute each migration step
-      steps = Enum.reduce(upgrade_path, [], fn version, acc ->
-        step_result = execute_single_migration_step(version, opts)
-        [step_result | acc]
-      end)
+      steps =
+        Enum.reduce(upgrade_path, [], fn version, acc ->
+          step_result = execute_single_migration_step(version, opts)
+          [step_result | acc]
+        end)
 
       # Mark final version as applied
       case apply_final_version(List.last(upgrade_path)) do
         {:ok, _} ->
           Logger.info("Migration #{migration_id} completed successfully")
 
-          {:ok, %{
-            migration_id: migration_id,
-            executed_steps: Enum.reverse(steps),
-            backup_id: backup_id
-          }}
+          {:ok,
+           %{
+             migration_id: migration_id,
+             executed_steps: Enum.reverse(steps),
+             backup_id: backup_id
+           }}
 
-        error -> error
+        error ->
+          error
       end
     rescue
       exception ->
@@ -240,6 +256,7 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
   end
 
   defp apply_final_version(nil), do: {:ok, nil}
+
   defp apply_final_version(version) do
     VersionManager.apply_version(version.version)
   end
@@ -261,11 +278,12 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
     # For now, return a mock result
     Logger.info("Rollback #{rollback_id} completed")
 
-    {:ok, %{
-      rollback_id: rollback_id,
-      restored_items: 0,
-      target_version: target_version
-    }}
+    {:ok,
+     %{
+       rollback_id: rollback_id,
+       restored_items: 0,
+       target_version: target_version
+     }}
   end
 
   defp has_breaking_changes?(target_version) do

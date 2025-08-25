@@ -64,6 +64,7 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.YamlHandler do
   end
 
   defp format_metadata_section(nil), do: nil
+
   defp format_metadata_section(metadata) do
     """
     export_metadata:
@@ -77,44 +78,50 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.YamlHandler do
 
   defp format_system_defaults_section(nil), do: nil
   defp format_system_defaults_section([]), do: nil
+
   defp format_system_defaults_section(defaults) do
-    formatted_defaults = Enum.map(defaults, fn default ->
-      """
-        - preference_key: "#{default.preference_key}"
-          value: "#{default.value}"
-          category: "#{default.category}"
-          data_type: "#{default.data_type}"
-          sensitive: #{default.sensitive}
-      """
-    end)
+    formatted_defaults =
+      Enum.map(defaults, fn default ->
+        """
+          - preference_key: "#{default.preference_key}"
+            value: "#{default.value}"
+            category: "#{default.category}"
+            data_type: "#{default.data_type}"
+            sensitive: #{default.sensitive}
+        """
+      end)
 
     "system_defaults:\n" <> Enum.join(formatted_defaults, "")
   end
 
   defp format_user_preferences_section(nil), do: nil
   defp format_user_preferences_section([]), do: nil
+
   defp format_user_preferences_section(preferences) do
-    formatted_prefs = Enum.map(preferences, fn pref ->
-      """
-        - user_id: "#{pref.user_id}"
-          preference_key: "#{pref.preference_key}"
-          value: "#{pref.value}"
-          category: "#{pref.category}"
-          sensitive: #{pref.sensitive}
-      """
-    end)
+    formatted_prefs =
+      Enum.map(preferences, fn pref ->
+        """
+          - user_id: "#{pref.user_id}"
+            preference_key: "#{pref.preference_key}"
+            value: "#{pref.value}"
+            category: "#{pref.category}"
+            sensitive: #{pref.sensitive}
+        """
+      end)
 
     "user_preferences:\n" <> Enum.join(formatted_prefs, "")
   end
 
   defp format_project_preferences_section(nil), do: nil
   defp format_project_preferences_section([]), do: nil
+
   defp format_project_preferences_section(_preferences) do
     "project_preferences: []"
   end
 
   defp format_templates_section(nil), do: nil
   defp format_templates_section([]), do: nil
+
   defp format_templates_section(_templates) do
     "templates: []"
   end
