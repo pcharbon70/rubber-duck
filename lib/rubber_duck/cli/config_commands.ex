@@ -29,7 +29,10 @@ defmodule RubberDuck.CLI.ConfigCommands do
 
   defp ensure_user_id_present(user_id) do
     return_if_present(user_id, fn ->
-      IO.puts("Error: User ID required. Use --user-id or set RUBBER_DUCK_USER_ID environment variable.")
+      IO.puts(
+        "Error: User ID required. Use --user-id or set RUBBER_DUCK_USER_ID environment variable."
+      )
+
       System.halt(1)
     end)
   end
@@ -203,6 +206,7 @@ defmodule RubberDuck.CLI.ConfigCommands do
   end
 
   defp determine_user_or_project_source(nil, _key), do: "user"
+
   defp determine_user_or_project_source(project_id, key) do
     case check_project_override(project_id, key) do
       true -> "project"
@@ -217,11 +221,13 @@ defmodule RubberDuck.CLI.ConfigCommands do
         preferences = build_preferences_list(user_id, project_id, filtered_defaults)
         {:ok, preferences}
 
-      error -> error
+      error ->
+        error
     end
   end
 
   defp filter_defaults_by_category(system_defaults, nil), do: system_defaults
+
   defp filter_defaults_by_category(system_defaults, category) do
     Enum.filter(system_defaults, &(&1.category == category))
   end
@@ -369,6 +375,7 @@ defmodule RubberDuck.CLI.ConfigCommands do
   end
 
   defp show_constraint_help(nil), do: show_generic_help()
+
   defp show_constraint_help(constraints) do
     case constraints do
       %{allowed_values: values} when is_list(values) ->

@@ -119,23 +119,23 @@ defmodule RubberDuckWeb.GraphQL.Resolvers.SubscriptionResolver do
   """
   def filter_preference_change(preference_event, subscription_args) do
     passes_scope_filter?(preference_event, subscription_args) and
-    passes_user_filter?(preference_event, subscription_args) and
-    passes_project_filter?(preference_event, subscription_args)
+      passes_user_filter?(preference_event, subscription_args) and
+      passes_project_filter?(preference_event, subscription_args)
   end
 
   defp passes_scope_filter?(preference_event, subscription_args) do
     is_nil(subscription_args[:scope]) or
-    preference_event.scope == subscription_args[:scope]
+      preference_event.scope == subscription_args[:scope]
   end
 
   defp passes_user_filter?(preference_event, subscription_args) do
     is_nil(subscription_args[:user_id]) or
-    preference_event.user_id == subscription_args[:user_id]
+      preference_event.user_id == subscription_args[:user_id]
   end
 
   defp passes_project_filter?(preference_event, subscription_args) do
     is_nil(subscription_args[:project_id]) or
-    preference_event.project_id == subscription_args[:project_id]
+      preference_event.project_id == subscription_args[:project_id]
   end
 
   @doc """

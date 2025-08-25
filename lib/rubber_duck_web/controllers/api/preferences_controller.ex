@@ -510,6 +510,7 @@ defmodule RubberDuckWeb.API.PreferencesController do
   end
 
   defp resolve_preference_source_type(nil, _preference_key), do: "user"
+
   defp resolve_preference_source_type(project_id, preference_key) do
     case check_project_override(project_id, preference_key) do
       true -> "project"
@@ -558,6 +559,7 @@ defmodule RubberDuckWeb.API.PreferencesController do
   end
 
   defp get_project_value(nil), do: nil
+
   defp get_project_value(_project_id) do
     # TODO: Implement project preference lookup
     nil

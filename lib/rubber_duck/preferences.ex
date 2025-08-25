@@ -28,6 +28,11 @@ defmodule RubberDuck.Preferences do
     resource RubberDuck.Preferences.Resources.BudgetUsage
     resource RubberDuck.Preferences.Resources.BudgetEvent
     resource RubberDuck.Preferences.Resources.BudgetOverride
+
+    # Security resources
+    resource RubberDuck.Preferences.Resources.AuditLog
+    resource RubberDuck.Preferences.Resources.SecurityPolicy
+    resource RubberDuck.Preferences.Resources.ApprovalRequest
   end
 
   authorization do

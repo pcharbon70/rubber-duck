@@ -10,7 +10,6 @@ defmodule RubberDuck.Preferences.ValidationInterfaceManager do
 
   require Logger
 
-
   alias RubberDuck.Preferences.Validators.{
     CodeQualityPreferenceValidator,
     LlmPreferenceValidator,

@@ -238,7 +238,8 @@ defmodule RubberDuck.Webhooks do
 
   defp handle_successful_delivery(remaining_queue, state) do
     updated_stats = %{
-      state.stats | successful_deliveries: state.stats.successful_deliveries + 1
+      state.stats
+      | successful_deliveries: state.stats.successful_deliveries + 1
     }
 
     new_state = %{state | event_queue: remaining_queue, stats: updated_stats}
@@ -258,7 +259,9 @@ defmodule RubberDuck.Webhooks do
     updated_retry_queue = :queue.in(retry_event, state.retry_queue)
 
     new_state = %{
-      state | event_queue: remaining_queue, retry_queue: updated_retry_queue
+      state
+      | event_queue: remaining_queue,
+        retry_queue: updated_retry_queue
     }
 
     process_event_queue(new_state)
@@ -266,7 +269,8 @@ defmodule RubberDuck.Webhooks do
 
   defp mark_delivery_as_failed(remaining_queue, state) do
     updated_stats = %{
-      state.stats | failed_deliveries: state.stats.failed_deliveries + 1
+      state.stats
+      | failed_deliveries: state.stats.failed_deliveries + 1
     }
 
     new_state = %{state | event_queue: remaining_queue, stats: updated_stats}
@@ -295,7 +299,8 @@ defmodule RubberDuck.Webhooks do
 
   defp handle_retry_success(remaining_retry_queue, state) do
     updated_stats = %{
-      state.stats | successful_deliveries: state.stats.successful_deliveries + 1
+      state.stats
+      | successful_deliveries: state.stats.successful_deliveries + 1
     }
 
     new_state = %{state | retry_queue: remaining_retry_queue, stats: updated_stats}
@@ -320,7 +325,8 @@ defmodule RubberDuck.Webhooks do
 
   defp mark_retry_as_failed(remaining_retry_queue, state) do
     updated_stats = %{
-      state.stats | failed_deliveries: state.stats.failed_deliveries + 1
+      state.stats
+      | failed_deliveries: state.stats.failed_deliveries + 1
     }
 
     new_state = %{state | retry_queue: remaining_retry_queue, stats: updated_stats}

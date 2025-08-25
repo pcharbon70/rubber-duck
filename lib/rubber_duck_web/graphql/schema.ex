@@ -384,12 +384,10 @@ defmodule RubberDuckWeb.GraphQL.Schema do
       update_template: &TemplatesResolver.update_template/3,
       delete_template: &TemplatesResolver.delete_template/3,
       apply_template: &TemplatesResolver.apply_template/3,
-      batch_update_preferences:
-        &PreferencesResolver.batch_update_preferences/3,
+      batch_update_preferences: &PreferencesResolver.batch_update_preferences/3,
 
       # Subscription Resolvers
-      preference_changed:
-        &SubscriptionResolver.preference_changed/3,
+      preference_changed: &SubscriptionResolver.preference_changed/3,
       template_applied: &SubscriptionResolver.template_applied/3,
       analytics_updated: &SubscriptionResolver.analytics_updated/3
     }
