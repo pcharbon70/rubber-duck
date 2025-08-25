@@ -14,9 +14,8 @@ defmodule RubberDuck.Verdict.Engine do
   - Integration with RubberDuck preference system
   """
 
-  alias RubberDuck.Preferences.PreferenceResolver
-  alias RubberDuck.Verdict.JudgeUnits.BaseJudgeUnit
   alias RubberDuck.Verdict.Optimization.{IntelligentCache, ProgressiveEvaluator}
+  alias RubberDuck.Verdict.Resources.{EvaluationResult, EvaluationRun}
 
   require Logger
 
@@ -49,7 +48,7 @@ defmodule RubberDuck.Verdict.Engine do
         ) :: {:ok, map()} | {:error, term()}
   def evaluate_code(code, evaluation_type, options \\ []) do
     case validate_evaluation_request(code, evaluation_type, options) do
-      :ok -> perform_evaluation(code, evaluation_type, options)
+      :ok -> perform_tracked_evaluation(code, evaluation_type, options)
       {:error, reason} -> {:error, reason}
     end
   end
@@ -138,7 +137,7 @@ defmodule RubberDuck.Verdict.Engine do
 
   ## Private Functions
 
-  defp validate_evaluation_request(code, evaluation_type, options) do
+  defp validate_evaluation_request(code, evaluation_type, _options) do
     cond do
       is_nil(code) or code == "" ->
         {:error, "Code cannot be empty"}
@@ -164,17 +163,75 @@ defmodule RubberDuck.Verdict.Engine do
     end
   end
 
-  defp perform_evaluation(code, evaluation_type, options) do
+  defp perform_tracked_evaluation(code, evaluation_type, options) do
     user_id = Keyword.get(options, :user_id)
     project_id = Keyword.get(options, :project_id)
 
     # Get evaluation configuration
     case get_evaluation_config(user_id, project_id) do
       {:ok, config} ->
-        execute_evaluation_pipeline(code, evaluation_type, config, options)
+        case create_evaluation_run(code, evaluation_type, config, options) do
+          {:ok, evaluation_run} ->
+            execute_tracked_evaluation_pipeline(
+              evaluation_run,
+              code,
+              evaluation_type,
+              config,
+              options
+            )
+
+          error ->
+            error
+        end
 
       error ->
         error
+    end
+  end
+
+  defp create_evaluation_run(code, evaluation_type, config, options) do
+    user_id = Keyword.get(options, :user_id)
+    project_id = Keyword.get(options, :project_id)
+
+    code_hash = :crypto.hash(:sha256, code) |> Base.encode16()
+
+    run_params = %{
+      user_id: user_id,
+      project_id: project_id,
+      evaluation_type: evaluation_type,
+      code_hash: code_hash,
+      code_size_bytes: byte_size(code),
+      configuration_snapshot: config,
+      evaluation_strategy: determine_initial_strategy(evaluation_type, config),
+      metadata: %{
+        created_via: "verdict_engine",
+        options: Map.new(options)
+      }
+    }
+
+    case EvaluationRun.create(run_params) do
+      {:ok, run} ->
+        # Mark as started
+        EvaluationRun.start_evaluation(run)
+
+      error ->
+        error
+    end
+  end
+
+  defp execute_tracked_evaluation_pipeline(evaluation_run, code, evaluation_type, config, options) do
+    # Execute the evaluation and track results
+    case execute_evaluation_pipeline(code, evaluation_type, config, options) do
+      {:ok, result} ->
+        case store_evaluation_results(evaluation_run, result, config) do
+          {:ok, _stored_results} -> finalize_tracked_evaluation(evaluation_run, result)
+          error -> error
+        end
+
+      {:error, reason} ->
+        # Mark evaluation as failed
+        EvaluationRun.fail_evaluation(evaluation_run, %{error_message: inspect(reason)})
+        {:error, reason}
     end
   end
 
@@ -204,7 +261,7 @@ defmodule RubberDuck.Verdict.Engine do
     end
   end
 
-  defp resolve_verdict_preferences(user_id, project_id) do
+  defp resolve_verdict_preferences(_user_id, _project_id) do
     # Use the existing preference resolution system
     base_config = @default_config
 
@@ -269,5 +326,73 @@ defmodule RubberDuck.Verdict.Engine do
        confidence: confidence,
        model: model_config
      }}
+  end
+
+  defp determine_initial_strategy(evaluation_type, config) do
+    case {evaluation_type, Map.get(config, :progressive_evaluation, true)} do
+      {:security, _} -> :detailed
+      {:comprehensive, _} -> :comprehensive
+      {_, true} -> :progressive
+      {_, false} -> :detailed
+    end
+  end
+
+  defp store_evaluation_results(evaluation_run, result, _config) do
+    result_params = build_result_storage_params(evaluation_run, result)
+
+    case EvaluationResult.create(result_params) do
+      {:ok, stored_result} -> {:ok, [stored_result]}
+      error -> error
+    end
+  end
+
+  defp build_result_storage_params(evaluation_run, result) do
+    %{
+      evaluation_run_id: evaluation_run.id,
+      judge_unit_type: result.judge_unit || "base_judge",
+      model_used: result.model_used,
+      score: Decimal.new(result.score),
+      confidence: Decimal.new(result.confidence),
+      issues_found: result.issues || [],
+      recommendations: result.recommendations || [],
+      reasoning: result.reasoning,
+      evaluation_stage: result.evaluation_stage || :detailed,
+      tokens_used: result.tokens_used || 0,
+      cost_usd: Decimal.new(result.cost_usd || 0.0),
+      latency_ms: result.latency_ms || 0,
+      llm_request_metadata: build_llm_metadata(result)
+    }
+  end
+
+  defp build_llm_metadata(result) do
+    %{
+      model: result.model_used,
+      timestamp: result.timestamp
+    }
+  end
+
+  defp complete_evaluation_run(evaluation_run, result) do
+    completion_params = %{
+      total_cost_usd: Decimal.new(result.cost_usd || 0.0),
+      total_tokens_used: result.tokens_used || 0,
+      total_latency_ms: result.latency_ms || 0
+    }
+
+    EvaluationRun.complete_evaluation(evaluation_run, completion_params)
+  end
+
+  defp finalize_tracked_evaluation(evaluation_run, result) do
+    # Complete the evaluation run
+    case complete_evaluation_run(evaluation_run, result) do
+      {:ok, completed_run} ->
+        enhanced_result = Map.merge(result, %{
+          evaluation_run_id: completed_run.id,
+          tracking_enabled: true
+        })
+
+        {:ok, enhanced_result}
+
+      error -> error
+    end
   end
 end
