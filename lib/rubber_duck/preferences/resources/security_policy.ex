@@ -267,10 +267,10 @@ defmodule RubberDuck.Preferences.Resources.SecurityPolicy do
         try do
           # Validate that pattern can be compiled as regex if it contains wildcards
           if String.contains?(pattern, ["*", "?", "[", "]"]) do
-            pattern
-            |> String.replace("*", ".*")
-            |> String.replace("?", ".")
-            |> Regex.compile!()
+            _compiled_regex = pattern
+              |> String.replace("*", ".*")
+              |> String.replace("?", ".")
+              |> Regex.compile!()
           end
 
           changeset
