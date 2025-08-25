@@ -11,12 +11,10 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.JsonHandler do
   """
   @spec format(data :: map()) :: {:ok, binary()} | {:error, term()}
   def format(data) do
-    try do
-      json_data = Jason.encode!(data, pretty: true)
-      {:ok, json_data}
-    rescue
-      error -> {:error, "JSON encoding failed: #{inspect(error)}"}
-    end
+    json_data = Jason.encode!(data, pretty: true)
+    {:ok, json_data}
+  rescue
+    error -> {:error, "JSON encoding failed: #{inspect(error)}"}
   end
 
   @doc """

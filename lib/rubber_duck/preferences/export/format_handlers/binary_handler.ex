@@ -15,17 +15,15 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
   """
   @spec format(data :: map()) :: {:ok, binary()} | {:error, term()}
   def format(data) do
-    try do
-      # Serialize data using Erlang Term Format
-      serialized = :erlang.term_to_binary(data, [:compressed])
+    # Serialize data using Erlang Term Format
+    serialized = :erlang.term_to_binary(data, [:compressed])
 
-      # Add header and version information
-      binary_data = build_binary_format(serialized)
+    # Add header and version information
+    binary_data = build_binary_format(serialized)
 
-      {:ok, binary_data}
-    rescue
-      error -> {:error, "Binary encoding failed: #{inspect(error)}"}
-    end
+    {:ok, binary_data}
+  rescue
+    error -> {:error, "Binary encoding failed: #{inspect(error)}"}
   end
 
   @doc """
@@ -33,18 +31,16 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
   """
   @spec parse(binary_data :: binary()) :: {:ok, map()} | {:error, term()}
   def parse(binary_data) when is_binary(binary_data) do
-    try do
-      case validate_binary_header(binary_data) do
-        {:ok, payload} ->
-          data = :erlang.binary_to_term(payload, [:safe])
-          {:ok, data}
+    case validate_binary_header(binary_data) do
+      {:ok, payload} ->
+        data = :erlang.binary_to_term(payload, [:safe])
+        {:ok, data}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    rescue
-      error -> {:error, "Binary parsing failed: #{inspect(error)}"}
+      {:error, reason} ->
+        {:error, reason}
     end
+  rescue
+    error -> {:error, "Binary parsing failed: #{inspect(error)}"}
   end
 
   def parse(_), do: {:error, "Input must be binary data"}
@@ -63,18 +59,16 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
   """
   @spec get_binary_info(binary_data :: binary()) :: {:ok, map()} | {:error, term()}
   def get_binary_info(binary_data) when is_binary(binary_data) do
-    try do
-      case validate_binary_header(binary_data) do
-        {:ok, _payload} ->
-          header_info = parse_binary_header(binary_data)
-          {:ok, header_info}
+    case validate_binary_header(binary_data) do
+      {:ok, _payload} ->
+        header_info = parse_binary_header(binary_data)
+        {:ok, header_info}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    rescue
-      error -> {:error, "Binary info extraction failed: #{inspect(error)}"}
+      {:error, reason} ->
+        {:error, reason}
     end
+  rescue
+    error -> {:error, "Binary info extraction failed: #{inspect(error)}"}
   end
 
   def get_binary_info(_), do: {:error, "Input must be binary data"}
@@ -132,7 +126,7 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.BinaryHandler do
 
   defp validate_checksum(payload, expected_checksum) do
     calculated_checksum = :erlang.crc32(payload)
-    
+
     if calculated_checksum == expected_checksum do
       {:ok, payload}
     else

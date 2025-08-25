@@ -7,16 +7,13 @@ defmodule RubberDuck.Preferences.Export.ImportEngine do
   dry-run operations for safe data import.
   """
 
+  alias RubberDuck.Preferences.Export.FormatHandlers.{BinaryHandler, JsonHandler, YamlHandler}
+  alias RubberDuck.Preferences.Migration.VersionManager
   alias RubberDuck.Preferences.Resources.{
     SystemDefault,
-    UserPreference,
-    ProjectPreference,
-    PreferenceTemplate
+    UserPreference
   }
-
-  alias RubberDuck.Preferences.Security.{EncryptionManager, AuditLogger}
-  alias RubberDuck.Preferences.Export.FormatHandlers.{JsonHandler, YamlHandler, BinaryHandler}
-  alias RubberDuck.Preferences.Migration.VersionManager
+  alias RubberDuck.Preferences.Security.AuditLogger
 
   require Logger
 

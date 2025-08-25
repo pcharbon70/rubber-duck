@@ -11,14 +11,12 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.YamlHandler do
   """
   @spec format(data :: map()) :: {:ok, binary()} | {:error, term()}
   def format(data) do
-    try do
-      # For now, convert to JSON then to YAML-like format
-      # In a full implementation, this would use a YAML library like yaml_elixir
-      yaml_data = convert_to_yaml_format(data)
-      {:ok, yaml_data}
-    rescue
-      error -> {:error, "YAML encoding failed: #{inspect(error)}"}
-    end
+    # For now, convert to JSON then to YAML-like format
+    # In a full implementation, this would use a YAML library like yaml_elixir
+    yaml_data = convert_to_yaml_format(data)
+    {:ok, yaml_data}
+  rescue
+    error -> {:error, "YAML encoding failed: #{inspect(error)}"}
   end
 
   @doc """
@@ -26,14 +24,12 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.YamlHandler do
   """
   @spec parse(yaml_data :: binary()) :: {:ok, map()} | {:error, term()}
   def parse(yaml_data) when is_binary(yaml_data) do
-    try do
-      # For now, parse as simple YAML-like format
-      # In a full implementation, this would use a YAML library
-      parsed_data = parse_yaml_format(yaml_data)
-      {:ok, parsed_data}
-    rescue
-      error -> {:error, "YAML parsing failed: #{inspect(error)}"}
-    end
+    # For now, parse as simple YAML-like format
+    # In a full implementation, this would use a YAML library
+    parsed_data = parse_yaml_format(yaml_data)
+    {:ok, parsed_data}
+  rescue
+    error -> {:error, "YAML parsing failed: #{inspect(error)}"}
   end
 
   def parse(_), do: {:error, "Input must be binary YAML data"}
@@ -129,7 +125,7 @@ defmodule RubberDuck.Preferences.Export.FormatHandlers.YamlHandler do
   defp parse_yaml_format(yaml_data) do
     # Simple YAML-like parser
     # In a full implementation, this would use a proper YAML library
-    lines = String.split(yaml_data, "\n")
+    _lines = String.split(yaml_data, "\n")
 
     # For now, return a basic structure
     %{

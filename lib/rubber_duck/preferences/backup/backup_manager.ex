@@ -7,15 +7,12 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   PreferenceMigrationAgent backup functionality.
   """
 
-  alias RubberDuck.Preferences.Export.ExportEngine
-  alias RubberDuck.Preferences.Export.ImportEngine
+  alias RubberDuck.Preferences.Export.{ExportEngine, ImportEngine}
   alias RubberDuck.Preferences.Security.AuditLogger
-  alias RubberDuck.Agents.PreferenceMigrationAgent
 
   require Logger
 
   @default_retention_days 30
-  @backup_formats [:binary, :json, :yaml]
 
   @doc """
   Create a comprehensive system backup.
@@ -84,7 +81,7 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
           {:ok, [%{backup_id: String.t(), created_at: DateTime.t(), size_bytes: integer()}]}
           | {:error, term()}
   def list_backups(opts \\ []) do
-    limit = Keyword.get(opts, :limit, 50)
+    _limit = Keyword.get(opts, :limit, 50)
 
     # This would query the backup storage system
     # For now, return an empty list
@@ -148,7 +145,7 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
   """
   @spec schedule_backup(schedule :: String.t(), opts :: keyword()) ::
           {:ok, %{schedule_id: String.t()}} | {:error, term()}
-  def schedule_backup(schedule, opts \\ []) do
+  def schedule_backup(schedule, _opts \\ []) do
     # This would integrate with a job scheduler like Oban
     # For now, return a mock schedule ID
     schedule_id = "schedule_#{System.unique_integer([:positive])}"
@@ -173,7 +170,7 @@ defmodule RubberDuck.Preferences.Backup.BackupManager do
     ExportEngine.create_backup_export(export_opts)
   end
 
-  defp store_backup(backup_id, export_result, opts) do
+  defp store_backup(backup_id, export_result, _opts) do
     # This would store the backup to file system or cloud storage
     # For now, return mock storage result
     file_path = "/tmp/backups/#{backup_id}.backup"

@@ -6,8 +6,8 @@ defmodule RubberDuck.CLI.MigrationCommands do
   data transformations, rollback operations, and migration management.
   """
 
-  alias RubberDuck.Preferences.Migration.{SchemaMigrator, VersionManager}
   alias RubberDuck.Preferences.Backup.BackupManager
+  alias RubberDuck.Preferences.Migration.{SchemaMigrator, VersionManager}
 
   require Logger
 
@@ -167,7 +167,7 @@ defmodule RubberDuck.CLI.MigrationCommands do
     System.halt(1)
   end
 
-  defp execute_rollback(target_version, dry_run, opts) do
+  defp execute_rollback(target_version, dry_run, _opts) do
     if dry_run do
       IO.puts("🔍 Dry run: Rollback to #{target_version}")
     else

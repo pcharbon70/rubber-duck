@@ -7,15 +7,12 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   data, and metadata preservation for reliable import operations.
   """
 
+  alias RubberDuck.Preferences.Export.FormatHandlers.{BinaryHandler, JsonHandler, YamlHandler}
   alias RubberDuck.Preferences.Resources.{
     SystemDefault,
-    UserPreference,
-    ProjectPreference,
-    PreferenceTemplate
+    UserPreference
   }
-
-  alias RubberDuck.Preferences.Security.{EncryptionManager, AuditLogger}
-  alias RubberDuck.Preferences.Export.FormatHandlers.{JsonHandler, YamlHandler, BinaryHandler}
+  alias RubberDuck.Preferences.Security.{AuditLogger, EncryptionManager}
 
   require Logger
 
@@ -119,12 +116,10 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
   defp validate_export_options(opts) do
     format = Keyword.get(opts, :format, :json)
 
-    cond do
-      format not in @supported_formats ->
-        {:error, "Unsupported export format: #{format}"}
-
-      true ->
-        :ok
+    if format in @supported_formats do
+      :ok
+    else
+      {:error, "Unsupported export format: #{format}"}
     end
   end
 
@@ -233,7 +228,7 @@ defmodule RubberDuck.Preferences.Export.ExportEngine do
     }
   end
 
-  defp get_processed_value(preference_key, value, false), do: value
+  defp get_processed_value(_preference_key, value, false), do: value
   defp get_processed_value(preference_key, value, true) do
     case EncryptionManager.encrypt_if_sensitive(preference_key, value) do
       {:ok, encrypted_value} -> encrypted_value

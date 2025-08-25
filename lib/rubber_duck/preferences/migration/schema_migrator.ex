@@ -7,10 +7,10 @@ defmodule RubberDuck.Preferences.Migration.SchemaMigrator do
   with comprehensive safety checks and audit logging.
   """
 
+  alias RubberDuck.Agents.PreferenceMigrationAgent
   alias RubberDuck.Preferences.Migration.VersionManager
   alias RubberDuck.Preferences.Resources.PreferenceSchemaVersion
   alias RubberDuck.Preferences.Security.AuditLogger
-  alias RubberDuck.Agents.PreferenceMigrationAgent
 
   require Logger
 

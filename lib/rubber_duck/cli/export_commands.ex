@@ -390,7 +390,7 @@ defmodule RubberDuck.CLI.ExportCommands do
     IO.puts("  Backup available at: #{result.path}")
   end
 
-  defp handle_restore_result(result, true) do
+  defp handle_restore_result(_result, true) do
     IO.puts("✅ Dry run completed")
   end
 

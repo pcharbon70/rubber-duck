@@ -9,10 +9,10 @@ defmodule RubberDuck.CLI.UtilityCommands do
   require Logger
 
   alias RubberDuck.Agents.PreferenceMigrationAgent
-  alias RubberDuck.Preferences.ValidationInterfaceManager
-  alias RubberDuck.Preferences.Migration.{SchemaMigrator, VersionManager}
-  alias RubberDuck.Preferences.Export.{ExportEngine, ImportEngine}
   alias RubberDuck.Preferences.Backup.BackupManager
+  alias RubberDuck.Preferences.Export.{ExportEngine, ImportEngine}
+  alias RubberDuck.Preferences.Migration.{SchemaMigrator, VersionManager}
+  alias RubberDuck.Preferences.ValidationInterfaceManager
 
   @doc """
   Validate current configuration.
