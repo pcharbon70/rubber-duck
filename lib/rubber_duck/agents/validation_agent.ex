@@ -195,17 +195,19 @@ defmodule RubberDuck.Agents.ValidationAgent do
   defp generate_validation_suggestions(validation_result, agent) do
     suggestions = []
 
-    suggestions = if not validation_result.valid do
-      suggestions ++ suggest_validation_fixes(validation_result.individual_validations)
-    else
-      suggestions
-    end
+    suggestions =
+      if not validation_result.valid do
+        suggestions ++ suggest_validation_fixes(validation_result.individual_validations)
+      else
+        suggestions
+      end
 
-    suggestions = if validation_result.conflicts.has_conflicts do
-      suggestions ++ suggest_conflict_resolutions(validation_result.conflicts)
-    else
-      suggestions
-    end
+    suggestions =
+      if validation_result.conflicts.has_conflicts do
+        suggestions ++ suggest_conflict_resolutions(validation_result.conflicts)
+      else
+        suggestions
+      end
 
     suggestions = suggestions ++ suggest_based_on_history(agent)
 

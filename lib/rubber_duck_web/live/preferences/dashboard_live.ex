@@ -444,6 +444,7 @@ defmodule RubberDuckWeb.Preferences.DashboardLive do
   end
 
   defp resolve_source_with_project_check(nil, _key), do: "user"
+
   defp resolve_source_with_project_check(project_id, key) do
     case check_project_override(project_id, key) do
       true -> "project"

@@ -8,7 +8,7 @@ defmodule RubberDuckWeb.GraphQL.Resolvers.PreferencesResolver do
 
   alias RubberDuck.Preferences.PreferenceResolver
   alias RubberDuck.Preferences.Resources.{SystemDefault, UserPreference}
-  
+
   require Logger
 
   @doc """
@@ -244,6 +244,7 @@ defmodule RubberDuckWeb.GraphQL.Resolvers.PreferencesResolver do
   end
 
   defp resolve_user_preference_source(nil, _preference_key), do: :user
+
   defp resolve_user_preference_source(project_id, preference_key) do
     case check_project_override(project_id, preference_key) do
       true -> :project

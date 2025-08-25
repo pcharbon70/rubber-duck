@@ -40,47 +40,6 @@ defmodule RubberDuck.Preferences.Resources.UserPreference do
     plural_name :user_preferences
   end
 
-  # Security policies for preference access control
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-    
-    policy action_type(:read) do
-      description "Users can read their own preferences, admins can read any"
-      
-      authorize_if expr(user_id == ^actor(:id))
-      authorize_if actor_attribute_equals(:role, :admin)
-      authorize_if actor_attribute_equals(:role, :security_admin)
-      authorize_if relating_to_actor(:user)
-    end
-    
-    policy action_type(:create) do
-      description "Users can create their own preferences"
-      
-      authorize_if expr(user_id == ^actor(:id))
-      authorize_if actor_attribute_equals(:role, :admin)
-    end
-    
-    policy action_type(:update) do
-      description "Users can update their own preferences, with approval for sensitive ones"
-      
-      authorize_if expr(user_id == ^actor(:id))
-      authorize_if actor_attribute_equals(:role, :admin)
-      
-      # Additional check for sensitive preferences would be added here
-      # This would integrate with the SecurityPolicy resource
-    end
-    
-    policy action_type(:destroy) do
-      description "Users can delete their own preferences, admins can delete any"
-      
-      authorize_if expr(user_id == ^actor(:id))
-      authorize_if actor_attribute_equals(:role, :admin)
-      authorize_if actor_attribute_equals(:role, :security_admin)
-    end
-  end
-
   code_interface do
     define :create, action: :create
     define :read, action: :read
@@ -195,6 +154,47 @@ defmodule RubberDuck.Preferences.Resources.UserPreference do
       argument :category, :string, allow_nil?: false
 
       filter expr(user_id == ^arg(:user_id) and category == ^arg(:category))
+    end
+  end
+
+  # Security policies for preference access control
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy action_type(:read) do
+      description "Users can read their own preferences, admins can read any"
+
+      authorize_if expr(user_id == ^actor(:id))
+      authorize_if actor_attribute_equals(:role, :admin)
+      authorize_if actor_attribute_equals(:role, :security_admin)
+      authorize_if relating_to_actor(:user)
+    end
+
+    policy action_type(:create) do
+      description "Users can create their own preferences"
+
+      authorize_if expr(user_id == ^actor(:id))
+      authorize_if actor_attribute_equals(:role, :admin)
+    end
+
+    policy action_type(:update) do
+      description "Users can update their own preferences, with approval for sensitive ones"
+
+      authorize_if expr(user_id == ^actor(:id))
+      authorize_if actor_attribute_equals(:role, :admin)
+
+      # Additional check for sensitive preferences would be added here
+      # This would integrate with the SecurityPolicy resource
+    end
+
+    policy action_type(:destroy) do
+      description "Users can delete their own preferences, admins can delete any"
+
+      authorize_if expr(user_id == ^actor(:id))
+      authorize_if actor_attribute_equals(:role, :admin)
+      authorize_if actor_attribute_equals(:role, :security_admin)
     end
   end
 
