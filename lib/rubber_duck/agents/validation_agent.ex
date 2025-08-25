@@ -196,10 +196,10 @@ defmodule RubberDuck.Agents.ValidationAgent do
     suggestions = []
 
     suggestions =
-      if not validation_result.valid do
-        suggestions ++ suggest_validation_fixes(validation_result.individual_validations)
-      else
+      if validation_result.valid do
         suggestions
+      else
+        suggestions ++ suggest_validation_fixes(validation_result.individual_validations)
       end
 
     suggestions =

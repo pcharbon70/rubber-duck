@@ -272,7 +272,9 @@ defmodule RubberDuck.Agents.ProjectConfigAgent do
     suggestions = []
 
     suggestions =
-      if not status.enabled do
+      if status.enabled do
+        suggestions
+      else
         [
           %{
             type: :enablement,
@@ -282,8 +284,6 @@ defmodule RubberDuck.Agents.ProjectConfigAgent do
           }
           | suggestions
         ]
-      else
-        suggestions
       end
 
     suggestions =
