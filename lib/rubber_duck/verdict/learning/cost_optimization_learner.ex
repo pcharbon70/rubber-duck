@@ -790,32 +790,39 @@ defmodule RubberDuck.Verdict.Learning.CostOptimizationLearner do
 
   defp calculate_overall_efficiency_rating(average_util, peak_util, variance) do
     # Combine factors for overall rating
-    util_score =
-      case classify_utilization_level(average_util) do
-        :optimal -> 0.9
-        :high -> 0.8
-        :moderate -> 0.6
-        _ -> 0.4
-      end
-
-    peak_score =
-      case classify_peak_efficiency(peak_util) do
-        :good -> 0.8
-        # High peak can indicate capacity issues
-        :high -> 0.6
-        :concerning -> 0.4
-        _ -> 0.5
-      end
-
-    consistency_score =
-      case classify_utilization_consistency(variance) do
-        :very_consistent -> 0.9
-        :consistent -> 0.8
-        :somewhat_consistent -> 0.6
-        _ -> 0.4
-      end
+    util_score = calculate_utilization_score(average_util)
+    peak_score = calculate_peak_score(peak_util)
+    consistency_score = calculate_consistency_score(variance)
 
     (util_score + peak_score + consistency_score) / 3
+  end
+
+  defp calculate_utilization_score(average_util) do
+    case classify_utilization_level(average_util) do
+      :optimal -> 0.9
+      :high -> 0.8
+      :moderate -> 0.6
+      _ -> 0.4
+    end
+  end
+
+  defp calculate_peak_score(peak_util) do
+    case classify_peak_efficiency(peak_util) do
+      :good -> 0.8
+      # High peak can indicate capacity issues
+      :high -> 0.6
+      :concerning -> 0.4
+      _ -> 0.5
+    end
+  end
+
+  defp calculate_consistency_score(variance) do
+    case classify_utilization_consistency(variance) do
+      :very_consistent -> 0.9
+      :consistent -> 0.8
+      :somewhat_consistent -> 0.6
+      _ -> 0.4
+    end
   end
 
   # Helper stubs for comprehensive implementation
