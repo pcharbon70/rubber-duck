@@ -1,7 +1,7 @@
 defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   @moduledoc """
   Ash resource for storing identified patterns and their effectiveness tracking.
-  
+
   Persists machine learning-identified patterns from success analysis, failure detection,
   user preference profiling, and temporal trend analysis to enable pattern evolution
   tracking and continuous learning system improvement.
@@ -24,15 +24,126 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
     description "Machine learning identified patterns for continuous system improvement"
   end
 
+  code_interface do
+    define :create
+    define :validate_pattern
+    define :apply_pattern
+    define :update_effectiveness
+    define :deprecate_pattern
+    define :archive_pattern
+    define :read
+  end
+
+  actions do
+    defaults [:read]
+
+    create :create do
+      accept [
+        :pattern_type,
+        :pattern_name,
+        :pattern_description,
+        :pattern_data,
+        :confidence_score,
+        :pattern_strength,
+        :data_points_used,
+        :statistical_significance,
+        :actionable_insights,
+        :recommended_actions,
+        :application_contexts,
+        :learning_priority,
+        :user_segment_applicability,
+        :temporal_applicability,
+        :identified_by
+      ]
+
+      change set_attribute(:pattern_status, :identified)
+    end
+
+    update :validate_pattern do
+      accept [:validation_results, :effectiveness_score]
+      require_atomic? false
+
+      change set_attribute(:pattern_status, :validated)
+      change set_attribute(:last_validated, &DateTime.utc_now/0)
+    end
+
+    update :apply_pattern do
+      require_atomic? false
+
+      change set_attribute(:pattern_status, :applied)
+      change set_attribute(:last_applied, &DateTime.utc_now/0)
+      change increment(:application_count, amount: 1)
+    end
+
+    update :update_effectiveness do
+      accept [:effectiveness_score, :success_rate, :evolution_history]
+      require_atomic? false
+    end
+
+    update :deprecate_pattern do
+      require_atomic? false
+
+      change set_attribute(:pattern_status, :deprecated)
+    end
+
+    update :archive_pattern do
+      require_atomic? false
+
+      change set_attribute(:pattern_status, :archived)
+    end
+  end
+
+  preparations do
+    prepare build(sort: [confidence_score: :desc, pattern_strength: :desc])
+  end
+
+  changes do
+    change before_action(&set_pattern_defaults/2) do
+      on [:create]
+    end
+
+    change after_action(&log_pattern_identification/3) do
+      on [:create]
+    end
+
+    change after_action(&update_evolution_history/3) do
+      on [:update]
+    end
+  end
+
+  validations do
+    validate present([:pattern_type, :pattern_name, :confidence_score, :data_points_used])
+
+    validate numericality(:confidence_score,
+               greater_than_or_equal_to: 0.0,
+               less_than_or_equal_to: 1.0
+             )
+
+    validate numericality(:pattern_strength,
+               greater_than_or_equal_to: 0.0,
+               less_than_or_equal_to: 1.0
+             )
+
+    validate numericality(:data_points_used, greater_than: 0)
+  end
+
   attributes do
     uuid_primary_key :id
 
     attribute :pattern_type, :atom do
       description "Type of pattern identified"
+
       constraints one_of: [
-        :success_patterns, :failure_modes, :user_preferences, :temporal_trends,
-        :judge_performance, :system_optimization, :bias_patterns, :coordination_patterns
-      ]
+                    :success_patterns,
+                    :failure_modes,
+                    :user_preferences,
+                    :temporal_trends,
+                    :judge_performance,
+                    :system_optimization,
+                    :bias_patterns,
+                    :coordination_patterns
+                  ]
+
       allow_nil? false
     end
 
@@ -159,130 +270,52 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
     # Would add relationships to other learning resources when implemented
   end
 
-  actions do
-    defaults [:read]
-
-    create :create do
-      accept [
-        :pattern_type, :pattern_name, :pattern_description, :pattern_data,
-        :confidence_score, :pattern_strength, :data_points_used,
-        :statistical_significance, :actionable_insights, :recommended_actions,
-        :application_contexts, :learning_priority, :user_segment_applicability,
-        :temporal_applicability, :identified_by
-      ]
-      
-      change set_attribute(:pattern_status, :identified)
-    end
-
-    update :validate_pattern do
-      accept [:validation_results, :effectiveness_score]
-      require_atomic? false
-      
-      change set_attribute(:pattern_status, :validated)
-      change set_attribute(:last_validated, &DateTime.utc_now/0)
-    end
-
-    update :apply_pattern do
-      require_atomic? false
-      
-      change set_attribute(:pattern_status, :applied)
-      change set_attribute(:last_applied, &DateTime.utc_now/0)
-      change increment(:application_count, amount: 1)
-    end
-
-    update :update_effectiveness do
-      accept [:effectiveness_score, :success_rate, :evolution_history]
-      require_atomic? false
-    end
-
-    update :deprecate_pattern do
-      require_atomic? false
-      
-      change set_attribute(:pattern_status, :deprecated)
-    end
-
-    update :archive_pattern do
-      require_atomic? false
-      
-      change set_attribute(:pattern_status, :archived)
-    end
-  end
-
-  code_interface do
-    define :create
-    define :validate_pattern
-    define :apply_pattern
-    define :update_effectiveness
-    define :deprecate_pattern
-    define :archive_pattern
-    define :read
-  end
-
   calculations do
     calculate :is_high_confidence, :boolean, expr(confidence_score > 0.8)
     calculate :is_validated, :boolean, expr(pattern_status in [:validated, :applied])
     calculate :is_effective, :boolean, expr(effectiveness_score > 0.7)
-    calculate :pattern_age_days, :integer,
-      expr(fragment("EXTRACT(DAY FROM (? - ?))", now(), identified_at))
-    
-    calculate :days_since_last_application, :integer,
-      expr(fragment("EXTRACT(DAY FROM (? - ?))", now(), last_applied))
-      
-    calculate :validation_status, :string, expr(
-      cond do
-        is_nil(last_validated) -> "unvalidated"
-        pattern_status == :validated -> "validated"
-        pattern_status == :applied -> "in_use"
-        true -> "unknown"
-      end
-    )
-  end
 
-  preparations do
-    prepare build(sort: [confidence_score: :desc, pattern_strength: :desc])
-  end
+    calculate :pattern_age_days,
+              :integer,
+              expr(fragment("EXTRACT(DAY FROM (? - ?))", now(), identified_at))
 
-  validations do
-    validate present([:pattern_type, :pattern_name, :confidence_score, :data_points_used])
-    
-    validate numericality(:confidence_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
-    validate numericality(:pattern_strength, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
-    validate numericality(:data_points_used, greater_than: 0)
-  end
+    calculate :days_since_last_application,
+              :integer,
+              expr(fragment("EXTRACT(DAY FROM (? - ?))", now(), last_applied))
 
-  changes do
-    change before_action(&set_pattern_defaults/2) do
-      on [:create]
-    end
-    
-    change after_action(&log_pattern_identification/3) do
-      on [:create]
-    end
-    
-    change after_action(&update_evolution_history/3) do
-      on [:update]
-    end
+    calculate :validation_status,
+              :string,
+              expr(
+                cond do
+                  is_nil(last_validated) -> "unvalidated"
+                  pattern_status == :validated -> "validated"
+                  pattern_status == :applied -> "in_use"
+                  true -> "unknown"
+                end
+              )
   end
 
   # Custom change functions
 
   def set_pattern_defaults(changeset, _opts) do
     pattern_type = Ash.Changeset.get_attribute(changeset, :pattern_type)
-    
+
     # Set default learning priority based on pattern type
-    default_priority = case pattern_type do
-      :failure_modes -> :high
-      :bias_patterns -> :critical
-      :success_patterns -> :medium
-      _ -> :medium
-    end
-    
-    changeset = if is_nil(Ash.Changeset.get_attribute(changeset, :learning_priority)) do
-      Ash.Changeset.change_attribute(changeset, :learning_priority, default_priority)
-    else
-      changeset
-    end
-    
+    default_priority =
+      case pattern_type do
+        :failure_modes -> :high
+        :bias_patterns -> :critical
+        :success_patterns -> :medium
+        _ -> :medium
+      end
+
+    changeset =
+      if is_nil(Ash.Changeset.get_attribute(changeset, :learning_priority)) do
+        Ash.Changeset.change_attribute(changeset, :learning_priority, default_priority)
+      else
+        changeset
+      end
+
     # Set default temporal applicability
     if is_nil(Ash.Changeset.get_attribute(changeset, :temporal_applicability)) do
       Ash.Changeset.change_attribute(changeset, :temporal_applicability, %{
@@ -299,29 +332,33 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
     pattern_type = result.pattern_type
     confidence = result.confidence_score
     data_points = result.data_points_used
-    
+
     require Logger
-    Logger.info("Pattern identified: #{pattern_type} with confidence #{confidence} from #{data_points} data points")
-    
+
+    Logger.info(
+      "Pattern identified: #{pattern_type} with confidence #{confidence} from #{data_points} data points"
+    )
+
     {:ok, result}
   end
 
   def update_evolution_history(changeset, result, _opts) do
     action_name = changeset.action.name
     current_history = result.evolution_history || %{}
-    
+
     evolution_entry = %{
       action: action_name,
       timestamp: DateTime.utc_now(),
       previous_status: changeset.data.pattern_status,
       new_status: result.pattern_status
     }
-    
-    updated_history = Map.put(current_history, DateTime.to_iso8601(DateTime.utc_now()), evolution_entry)
-    
+
+    updated_history =
+      Map.put(current_history, DateTime.to_iso8601(DateTime.utc_now()), evolution_entry)
+
     # Update the result with new evolution history
     updated_result = %{result | evolution_history: updated_history}
-    
+
     {:ok, updated_result}
   end
 
@@ -331,17 +368,19 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   Get high-confidence patterns for immediate application.
   """
   def get_high_confidence_patterns(pattern_type \\ nil) do
-    query = __MODULE__
+    query =
+      __MODULE__
       |> Ash.Query.filter(is_high_confidence: true)
       |> Ash.Query.filter(pattern_status: [:validated, :applied])
       |> Ash.Query.sort(confidence_score: :desc, pattern_strength: :desc)
-    
-    query = if pattern_type do
-      Ash.Query.filter(query, pattern_type: pattern_type)
-    else
-      query
-    end
-    
+
+    query =
+      if pattern_type do
+        Ash.Query.filter(query, pattern_type: pattern_type)
+      else
+        query
+      end
+
     query |> Ash.read!()
   end
 
@@ -372,13 +411,14 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   Get pattern analytics and usage statistics.
   """
   def get_pattern_analytics(days_back \\ 30) do
-    recent_patterns = __MODULE__
+    recent_patterns =
+      __MODULE__
       |> Ash.Query.filter(pattern_age_days <= days_back)
       |> Ash.read!()
-    
+
     by_type = Enum.group_by(recent_patterns, & &1.pattern_type)
     by_status = Enum.group_by(recent_patterns, & &1.pattern_status)
-    
+
     %{
       total_patterns: length(recent_patterns),
       high_confidence_count: Enum.count(recent_patterns, & &1.is_high_confidence),
@@ -397,17 +437,19 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   """
   def cleanup_ineffective_patterns(effectiveness_threshold \\ 0.3) do
     # Find patterns that should be deprecated
-    ineffective_patterns = __MODULE__
+    ineffective_patterns =
+      __MODULE__
       |> Ash.Query.filter(pattern_status: :applied)
       |> Ash.Query.filter(effectiveness_score < effectiveness_threshold)
-      |> Ash.Query.filter(application_count > 5)  # Only deprecate if tried multiple times
+      # Only deprecate if tried multiple times
+      |> Ash.Query.filter(application_count > 5)
       |> Ash.read!()
-    
+
     # Deprecate ineffective patterns
     Enum.each(ineffective_patterns, fn pattern ->
       deprecate_pattern(pattern)
     end)
-    
+
     Logger.info("Deprecated #{length(ineffective_patterns)} ineffective patterns")
     {:ok, length(ineffective_patterns)}
   end
@@ -416,16 +458,18 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   Find similar patterns for cross-validation and consolidation.
   """
   def find_similar_patterns(target_pattern, similarity_threshold \\ 0.8) do
-    all_patterns = __MODULE__
+    all_patterns =
+      __MODULE__
       |> Ash.Query.filter(pattern_type: target_pattern.pattern_type)
       |> Ash.Query.filter(id != target_pattern.id)
       |> Ash.read!()
-    
-    similar_patterns = Enum.filter(all_patterns, fn pattern ->
-      similarity = calculate_pattern_similarity(target_pattern, pattern)
-      similarity >= similarity_threshold
-    end)
-    
+
+    similar_patterns =
+      Enum.filter(all_patterns, fn pattern ->
+        similarity = calculate_pattern_similarity(target_pattern, pattern)
+        similarity >= similarity_threshold
+      end)
+
     Enum.map(similar_patterns, fn pattern ->
       %{
         pattern: pattern,
@@ -440,27 +484,33 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   defp calculate_type_distribution(patterns_by_type) do
     Enum.map(patterns_by_type, fn {type, patterns} ->
       {type, length(patterns)}
-    end) |> Map.new()
+    end)
+    |> Map.new()
   end
 
   defp calculate_status_distribution(patterns_by_status) do
     Enum.map(patterns_by_status, fn {status, patterns} ->
       {status, length(patterns)}
-    end) |> Map.new()
+    end)
+    |> Map.new()
   end
 
   defp calculate_average_confidence([]), do: 0.0
+
   defp calculate_average_confidence(patterns) do
     confidences = Enum.map(patterns, & &1.confidence_score)
     Enum.sum(confidences) / length(confidences)
   end
 
   defp calculate_average_effectiveness([]), do: 0.0
+
   defp calculate_average_effectiveness(patterns) do
-    effectiveness_scores = Enum.map(patterns, fn pattern ->
-      Map.get(pattern, :effectiveness_score, 0.0)
-    end) |> Enum.filter(fn score -> score > 0 end)
-    
+    effectiveness_scores =
+      Enum.map(patterns, fn pattern ->
+        Map.get(pattern, :effectiveness_score, 0.0)
+      end)
+      |> Enum.filter(fn score -> score > 0 end)
+
     if Enum.empty?(effectiveness_scores) do
       0.0
     else
@@ -469,23 +519,29 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   end
 
   defp calculate_application_statistics(patterns) do
-    applied_patterns = Enum.filter(patterns, fn pattern ->
-      pattern.pattern_status in [:applied] and pattern.application_count > 0
-    end)
-    
+    applied_patterns =
+      Enum.filter(patterns, fn pattern ->
+        pattern.pattern_status in [:applied] and pattern.application_count > 0
+      end)
+
     if Enum.empty?(applied_patterns) do
-      %{total_applications: 0, average_applications_per_pattern: 0.0, most_applied_pattern_type: :none}
+      %{
+        total_applications: 0,
+        average_applications_per_pattern: 0.0,
+        most_applied_pattern_type: :none
+      }
     else
       total_applications = Enum.sum(Enum.map(applied_patterns, & &1.application_count))
       average_applications = total_applications / length(applied_patterns)
-      
-      most_applied_type = applied_patterns
+
+      most_applied_type =
+        applied_patterns
         |> Enum.group_by(& &1.pattern_type)
-        |> Enum.max_by(fn {_type, patterns} -> 
+        |> Enum.max_by(fn {_type, patterns} ->
           Enum.sum(Enum.map(patterns, & &1.application_count))
         end)
         |> elem(0)
-      
+
       %{
         total_applications: total_applications,
         average_applications_per_pattern: average_applications,
@@ -497,35 +553,37 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
   defp calculate_pattern_similarity(pattern1, pattern2) do
     # Calculate similarity between two patterns
     type_similarity = if pattern1.pattern_type == pattern2.pattern_type, do: 1.0, else: 0.0
-    
+
     confidence_similarity = 1.0 - abs(pattern1.confidence_score - pattern2.confidence_score)
     strength_similarity = 1.0 - abs(pattern1.pattern_strength - pattern2.pattern_strength)
-    
+
     # Data similarity (simplified)
     data_similarity = calculate_data_similarity(pattern1.pattern_data, pattern2.pattern_data)
-    
+
     # Weighted average
-    (type_similarity * 0.4 + confidence_similarity * 0.2 + strength_similarity * 0.2 + data_similarity * 0.2)
+    type_similarity * 0.4 + confidence_similarity * 0.2 + strength_similarity * 0.2 +
+      data_similarity * 0.2
   end
 
   defp calculate_data_similarity(data1, data2) when is_map(data1) and is_map(data2) do
     # Simplified data similarity calculation
-    common_keys = Map.keys(data1) ++ Map.keys(data2) |> Enum.uniq()
-    
+    common_keys = (Map.keys(data1) ++ Map.keys(data2)) |> Enum.uniq()
+
     if Enum.empty?(common_keys) do
       0.0
     else
-      similarities = Enum.map(common_keys, fn key ->
-        val1 = Map.get(data1, key)
-        val2 = Map.get(data2, key)
-        
-        if val1 == val2 do
-          1.0
-        else
-          0.0
-        end
-      end)
-      
+      similarities =
+        Enum.map(common_keys, fn key ->
+          val1 = Map.get(data1, key)
+          val2 = Map.get(data2, key)
+
+          if val1 == val2 do
+            1.0
+          else
+            0.0
+          end
+        end)
+
       Enum.sum(similarities) / length(similarities)
     end
   end
@@ -534,7 +592,7 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
 
   defp assess_consolidation_potential(pattern1, pattern2) do
     similarity = calculate_pattern_similarity(pattern1, pattern2)
-    
+
     case similarity do
       score when score > 0.9 -> :high_consolidation_potential
       score when score > 0.7 -> :medium_consolidation_potential

@@ -7,8 +7,8 @@ defmodule RubberDuck.Agents.VerdictOrchestratorAgent do
   the existing Verdict framework with sophisticated multi-agent capabilities.
   """
 
-  alias RubberDuck.Verdict.Coordination.ConsensusEngine
   alias RubberDuck.Verdict.Adaptation.DynamicRoutingEngine
+  alias RubberDuck.Verdict.Coordination.ConsensusEngine
 
   require Logger
 
@@ -156,12 +156,20 @@ defmodule RubberDuck.Agents.VerdictOrchestratorAgent do
     evaluation_context = build_evaluation_context(evaluation_type, options)
     available_judges = [:code_quality, :architecture, :test_quality, :security]
     user_profile = extract_user_profile(options)
-    
-    case DynamicRoutingEngine.select_optimal_judges(evaluation_context, available_judges, user_profile, options) do
+
+    case DynamicRoutingEngine.select_optimal_judges(
+           evaluation_context,
+           available_judges,
+           user_profile,
+           options
+         ) do
       {:ok, judge_selection} ->
-        Logger.info("Adaptive judge selection: #{inspect(judge_selection.selected_judges)} (confidence: #{judge_selection.selection_confidence})")
+        Logger.info(
+          "Adaptive judge selection: #{inspect(judge_selection.selected_judges)} (confidence: #{judge_selection.selection_confidence})"
+        )
+
         {:ok, judge_selection.selected_judges}
-        
+
       {:error, reason} ->
         Logger.warning("Adaptive routing failed, using fallback: #{reason}")
         fallback_judge_selection(evaluation_type, options)
@@ -507,16 +515,17 @@ defmodule RubberDuck.Agents.VerdictOrchestratorAgent do
     # Fallback to original strategy-based selection
     case determine_agent_strategy(evaluation_type, options) do
       {:ok, strategy} ->
-        selected_agents = case strategy do
-          :comprehensive -> [:code_quality, :architecture, :test_quality, :security]
-          :security_focused -> [:security, :code_quality, :architecture]  
-          :quality_focused -> [:code_quality, :test_quality, :architecture]
-          :performance_focused -> [:architecture, :code_quality]
-          _ -> [:code_quality]
-        end
-        
+        selected_agents =
+          case strategy do
+            :comprehensive -> [:code_quality, :architecture, :test_quality, :security]
+            :security_focused -> [:security, :code_quality, :architecture]
+            :quality_focused -> [:code_quality, :test_quality, :architecture]
+            :performance_focused -> [:architecture, :code_quality]
+            _ -> [:code_quality]
+          end
+
         {:ok, selected_agents}
-        
+
       error ->
         error
     end
@@ -524,14 +533,15 @@ defmodule RubberDuck.Agents.VerdictOrchestratorAgent do
 
   defp determine_evaluation_complexity(evaluation_type, options) do
     # Determine complexity based on evaluation type and options
-    base_complexity = case evaluation_type do
-      :comprehensive_evaluation -> :high
-      :security_evaluation -> :high
-      :performance_evaluation -> :medium
-      :basic_evaluation -> :low
-      _ -> :medium
-    end
-    
+    base_complexity =
+      case evaluation_type do
+        :comprehensive_evaluation -> :high
+        :security_evaluation -> :high
+        :performance_evaluation -> :medium
+        :basic_evaluation -> :low
+        _ -> :medium
+      end
+
     # Adjust based on options
     complexity_override = Keyword.get(options, :complexity_override, nil)
     complexity_override || base_complexity

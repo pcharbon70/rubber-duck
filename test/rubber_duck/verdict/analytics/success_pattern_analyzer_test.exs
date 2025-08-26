@@ -31,9 +31,9 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
           cost_total: 0.025
         }
       ]
-      
+
       {:ok, result} = SuccessPatternAnalyzer.identify_success_patterns(evaluation_data)
-      
+
       assert is_map(result)
       assert is_list(result.patterns)
       assert is_list(result.insights)
@@ -46,14 +46,15 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
       insufficient_data = [
         %{evaluation_id: "single", user_satisfaction: 0.8}
       ]
-      
+
       # Should handle single data point appropriately
       result = SuccessPatternAnalyzer.identify_success_patterns(insufficient_data)
-      
+
       case result do
         {:ok, patterns} ->
           assert is_map(patterns)
           assert patterns.data_points_analyzed == 1
+
         {:error, reason} ->
           assert String.contains?(reason, "insufficient") or String.contains?(reason, "enough")
       end
@@ -66,15 +67,16 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
         %{evaluation_id: "alg_3", user_satisfaction: 0.85, accuracy_score: 0.85},
         %{evaluation_id: "alg_4", user_satisfaction: 0.87, accuracy_score: 0.87}
       ]
-      
+
       algorithms = [:k_means, :hierarchical, :dbscan]
-      
+
       Enum.each(algorithms, fn algorithm ->
-        {:ok, result} = SuccessPatternAnalyzer.identify_success_patterns(
-          evaluation_data,
-          [algorithm: algorithm]
-        )
-        
+        {:ok, result} =
+          SuccessPatternAnalyzer.identify_success_patterns(
+            evaluation_data,
+            algorithm: algorithm
+          )
+
         assert result.clustering_metadata.algorithm_used == algorithm
         assert is_list(result.patterns)
       end)
@@ -99,9 +101,9 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
           user_satisfaction: 0.7
         }
       ]
-      
+
       {:ok, result} = SuccessPatternAnalyzer.identify_optimization_patterns(performance_data)
-      
+
       assert is_map(result)
       assert is_list(result.patterns)
       assert is_list(result.optimization_opportunities)
@@ -111,16 +113,19 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
 
     test "handles performance data with missing metrics" do
       incomplete_data = [
-        %{system_component: :judge_coordination},  # Missing performance metrics
-        %{processing_time: 4_000}  # Missing other metrics
+        # Missing performance metrics
+        %{system_component: :judge_coordination},
+        # Missing other metrics
+        %{processing_time: 4_000}
       ]
-      
+
       result = SuccessPatternAnalyzer.identify_optimization_patterns(incomplete_data)
-      
+
       # Should handle gracefully
       case result do
         {:ok, patterns} ->
           assert is_map(patterns)
+
         {:error, reason} ->
           assert is_binary(reason)
       end
@@ -149,9 +154,10 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
           user_satisfaction: 0.8
         }
       ]
-      
-      {:ok, result} = SuccessPatternAnalyzer.analyze_coordination_success_patterns(coordination_data)
-      
+
+      {:ok, result} =
+        SuccessPatternAnalyzer.analyze_coordination_success_patterns(coordination_data)
+
       assert is_map(result)
       assert is_list(result.patterns)
       assert is_map(result.feature_importance)
@@ -180,13 +186,14 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
           coordination_strategy: :exhaustive_consensus
         }
       ]
-      
-      {:ok, result} = SuccessPatternAnalyzer.analyze_coordination_success_patterns(mixed_coordination_data)
-      
+
+      {:ok, result} =
+        SuccessPatternAnalyzer.analyze_coordination_success_patterns(mixed_coordination_data)
+
       # Should identify the effective patterns
       assert result.successful_cluster_count >= 0
       assert is_list(result.coordination_insights)
-      
+
       # Should provide actionable insights
       assert length(result.coordination_insights) >= 0
     end
@@ -197,18 +204,38 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
       # Data with clear patterns
       clear_pattern_data = [
         # Fast, accurate evaluations
-        %{evaluation_id: "fast_1", processing_time_ms: 1_500, accuracy_score: 0.9, user_satisfaction: 0.95},
-        %{evaluation_id: "fast_2", processing_time_ms: 1_600, accuracy_score: 0.88, user_satisfaction: 0.92},
+        %{
+          evaluation_id: "fast_1",
+          processing_time_ms: 1_500,
+          accuracy_score: 0.9,
+          user_satisfaction: 0.95
+        },
+        %{
+          evaluation_id: "fast_2",
+          processing_time_ms: 1_600,
+          accuracy_score: 0.88,
+          user_satisfaction: 0.92
+        },
         # Slower but still accurate evaluations
-        %{evaluation_id: "slow_1", processing_time_ms: 4_000, accuracy_score: 0.85, user_satisfaction: 0.8},
-        %{evaluation_id: "slow_2", processing_time_ms: 4_200, accuracy_score: 0.83, user_satisfaction: 0.78}
+        %{
+          evaluation_id: "slow_1",
+          processing_time_ms: 4_000,
+          accuracy_score: 0.85,
+          user_satisfaction: 0.8
+        },
+        %{
+          evaluation_id: "slow_2",
+          processing_time_ms: 4_200,
+          accuracy_score: 0.83,
+          user_satisfaction: 0.78
+        }
       ]
-      
+
       {:ok, result} = SuccessPatternAnalyzer.identify_success_patterns(clear_pattern_data)
-      
+
       # Should identify distinct patterns
       assert length(result.patterns) > 0
-      
+
       # Each pattern should have meaningful characteristics
       Enum.each(result.patterns, fn pattern ->
         assert Map.has_key?(pattern, :pattern_type)
@@ -223,13 +250,13 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
   describe "statistical analysis" do
     test "performs statistical validation of patterns" do
       evaluation_data = generate_statistical_test_data()
-      
+
       {:ok, result} = SuccessPatternAnalyzer.identify_success_patterns(evaluation_data)
-      
+
       # Should include statistical metadata
       assert Map.has_key?(result, :clustering_metadata)
       assert is_number(result.clustering_metadata.cluster_count)
-      
+
       # Patterns should have confidence scores
       Enum.each(result.patterns, fn pattern ->
         assert is_number(pattern.confidence)
@@ -257,16 +284,16 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
           user_satisfaction_impact: 0.25
         }
       ]
-      
+
       {:ok, result} = SuccessPatternAnalyzer.identify_optimization_patterns(performance_data)
-      
+
       assert is_list(result.optimization_opportunities)
       assert Map.has_key?(result, :correlation_analysis)
-      
+
       # Should identify specific optimization opportunities
       optimization_opportunities = result.optimization_opportunities
       assert length(optimization_opportunities) >= 0
-      
+
       Enum.each(optimization_opportunities, fn opportunity ->
         assert Map.has_key?(opportunity, :optimization_type)
         assert Map.has_key?(opportunity, :implementation_priority)

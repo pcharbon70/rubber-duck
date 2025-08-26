@@ -337,7 +337,7 @@ defmodule RubberDuck.Agents.FeedbackProcessorAgentTest do
       invalid_type_feedback = [
         %{
           # Should be string
-          evaluation_id: 12345,
+          evaluation_id: 12_345,
           # Should be atom
           feedback_type: "not_atom",
           # Should be number

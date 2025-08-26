@@ -307,7 +307,7 @@ defmodule RubberDuck.Verdict.Feedback.ImplicitFeedbackAnalyzer do
       if is_atom(rejection_reason) and rejection_reason != :unknown, do: 0.1, else: 0.0
 
     # Alternative actions show user intent
-    alternative_value = if not is_nil(alternative_action), do: 0.1, else: 0.0
+    alternative_value = if is_nil(alternative_action), do: 0.0, else: 0.1
 
     min(1.0, base_value + reason_value + alternative_value)
   end
@@ -419,22 +419,30 @@ defmodule RubberDuck.Verdict.Feedback.ImplicitFeedbackAnalyzer do
   defp classify_rejection_speed(_), do: :unknown
 
   defp assess_dissatisfaction_level(rejection_reason, rejection_speed) do
-    reason_severity =
-      case rejection_reason do
-        :quality_issues -> :high
-        :accuracy_concerns -> :high
-        :speed_issues -> :medium
-        :usability_problems -> :medium
-        _ -> :low
-      end
+    reason_severity = calculate_reason_severity(rejection_reason)
+    speed_factor = calculate_speed_factor(rejection_speed)
+    combine_severity_factors(reason_severity, speed_factor)
+  end
 
-    speed_factor =
-      case classify_rejection_speed(rejection_speed) do
-        :immediate -> :high
-        :quick -> :medium
-        _ -> :low
-      end
+  defp calculate_reason_severity(rejection_reason) do
+    case rejection_reason do
+      :quality_issues -> :high
+      :accuracy_concerns -> :high
+      :speed_issues -> :medium
+      :usability_problems -> :medium
+      _ -> :low
+    end
+  end
 
+  defp calculate_speed_factor(rejection_speed) do
+    case classify_rejection_speed(rejection_speed) do
+      :immediate -> :high
+      :quick -> :medium
+      _ -> :low
+    end
+  end
+
+  defp combine_severity_factors(reason_severity, speed_factor) do
     case {reason_severity, speed_factor} do
       {:high, :high} -> :severe
       {:high, _} -> :high
@@ -535,17 +543,27 @@ defmodule RubberDuck.Verdict.Feedback.ImplicitFeedbackAnalyzer do
   defp classify_edit_frequency(_), do: :extensive
 
   defp classify_edit_complexity(edit_types) do
-    complexity_score =
-      Enum.reduce(edit_types, 0, fn edit_type, acc ->
-        case edit_type do
-          :minor_text_edit -> acc + 1
-          :criteria_adjustment -> acc + 3
-          :score_modification -> acc + 2
-          :complete_rewrite -> acc + 5
-          _ -> acc + 1
-        end
-      end)
+    complexity_score = calculate_complexity_score(edit_types)
+    score_to_complexity_level(complexity_score)
+  end
 
+  defp calculate_complexity_score(edit_types) do
+    Enum.reduce(edit_types, 0, fn edit_type, acc ->
+      acc + edit_type_score(edit_type)
+    end)
+  end
+
+  defp edit_type_score(edit_type) do
+    case edit_type do
+      :minor_text_edit -> 1
+      :criteria_adjustment -> 3
+      :score_modification -> 2
+      :complete_rewrite -> 5
+      _ -> 1
+    end
+  end
+
+  defp score_to_complexity_level(complexity_score) do
     cond do
       complexity_score <= 2 -> :simple
       complexity_score <= 6 -> :moderate
