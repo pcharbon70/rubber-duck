@@ -259,13 +259,15 @@ defmodule RubberDuck.Verdict.Resources.EvaluationRun do
   end
 
   calculations do
-    calculate :duration_ms, :integer, expr(
-      if is_nil(completed_at) do
-        nil
-      else
-        fragment("EXTRACT(epoch FROM (? - ?)) * 1000", completed_at, started_at)
-      end
-    )
+    calculate :duration_ms,
+              :integer,
+              expr(
+                if is_nil(completed_at) do
+                  nil
+                else
+                  fragment("EXTRACT(epoch FROM (? - ?)) * 1000", completed_at, started_at)
+                end
+              )
 
     calculate :is_completed, :boolean, expr(status == :completed)
     calculate :is_cached, :boolean, expr(cache_hit or not is_nil(similar_evaluation_id))

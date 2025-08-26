@@ -297,36 +297,6 @@ defmodule RubberDuck.CLI.ExportCommands do
     end
   end
 
-  defp display_versions(versions, "table") do
-    IO.puts(
-      "\n" <>
-        String.pad_trailing("VERSION", 15) <>
-        " | " <>
-        String.pad_trailing("NAME", 25) <>
-        " | " <>
-        String.pad_trailing("STATUS", 12) <>
-        " | DESCRIPTION"
-    )
-
-    IO.puts(String.duplicate("-", 80))
-
-    Enum.each(versions, fn version ->
-      status =
-        cond do
-          version.applied_at -> "CURRENT"
-          version.deprecated -> "DEPRECATED"
-          true -> "AVAILABLE"
-        end
-
-      version_str = String.pad_trailing(version.version, 15)
-      name_str = String.pad_trailing(version.version_name || "N/A", 25)
-      status_str = String.pad_trailing(status, 12)
-      description = String.slice(version.description || "", 0, 40)
-
-      IO.puts("#{version_str} | #{name_str} | #{status_str} | #{description}")
-    end)
-  end
-
   defp display_backups(backups, "table") do
     if Enum.empty?(backups) do
       IO.puts("No backups found.")

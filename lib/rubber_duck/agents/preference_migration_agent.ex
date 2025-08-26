@@ -312,13 +312,4 @@ defmodule RubberDuck.Agents.PreferenceMigrationAgent do
   defp generate_rollback_steps(_migration_spec), do: []
   defp analyze_rollback_dependencies(_migration_spec), do: []
   defp estimate_rollback_time(_migration_spec), do: 60
-
-  defp validate_data_integrity, do: %{status: :valid, message: "Data integrity maintained"}
-  defp validate_schema_consistency, do: %{status: :valid, message: "Schema consistency verified"}
-  defp test_preference_resolution, do: %{status: :valid, message: "Preference resolution working"}
-  defp measure_performance_impact, do: %{status: :valid, message: "Performance impact minimal"}
-
-  defp find_failed_checks(validation_results) do
-    Enum.filter(validation_results, fn {_check, result} -> result.status != :valid end)
-  end
 end

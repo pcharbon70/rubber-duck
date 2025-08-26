@@ -87,27 +87,6 @@ defmodule RubberDuck.CLI do
     Map.get(command_map, command, :unknown)
   end
 
-  # Parser functions for command-specific logic
-  defp parse_basic_command(:set, [key, value | opts]) do
-    {:config, :set, %{key: key, value: value, opts: parse_options(opts)}}
-  end
-
-  defp parse_basic_command(:get, [key | opts]) do
-    {:config, :get, %{key: key, opts: parse_options(opts)}}
-  end
-
-  defp parse_basic_command(:list, opts) do
-    {:config, :list, %{opts: parse_options(opts)}}
-  end
-
-  defp parse_basic_command(:reset, [key | opts]) do
-    {:config, :reset, %{key: key, opts: parse_options(opts)}}
-  end
-
-  defp parse_basic_command(command, _args) do
-    {:error, "Invalid arguments for #{command} command"}
-  end
-
   defp parse_help_command([subcommand]) do
     {:help, String.to_atom(subcommand)}
   end
@@ -119,40 +98,6 @@ defmodule RubberDuck.CLI do
   defp parse_help_command(_args) do
     {:help, :config}
   end
-
-  defp parse_options(opts) do
-    opts
-    |> Enum.chunk_every(2)
-    |> Enum.reduce(%{}, fn
-      ["--" <> key, value], acc ->
-        Map.put(acc, String.to_atom(key), value)
-
-      ["-" <> key, value], acc ->
-        Map.put(acc, parse_short_flag(key), value)
-
-      [flag], acc ->
-        cond do
-          String.starts_with?(flag, "--") ->
-            Map.put(acc, String.to_atom(String.slice(flag, 2..-1//1)), true)
-
-          String.starts_with?(flag, "-") ->
-            Map.put(acc, parse_short_flag(String.slice(flag, 1..-1//1)), true)
-
-          true ->
-            acc
-        end
-
-      _, acc ->
-        acc
-    end)
-  end
-
-  defp parse_short_flag("u"), do: :user_id
-  defp parse_short_flag("p"), do: :project_id
-  defp parse_short_flag("c"), do: :category
-  defp parse_short_flag("v"), do: :verbose
-  defp parse_short_flag("h"), do: :help
-  defp parse_short_flag(flag), do: String.to_atom(flag)
 
   defp execute_config_command(action, opts) do
     case action do
