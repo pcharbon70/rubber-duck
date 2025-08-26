@@ -186,6 +186,7 @@ defmodule RubberDuck.Agents.FeedbackProcessorAgent do
     case validate_batch_structure(feedback_batch) do
       :ok ->
         process_batch_validation(feedback_batch)
+
       {:error, reason} ->
         {:error, reason}
     end

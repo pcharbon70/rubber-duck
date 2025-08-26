@@ -351,4 +351,3 @@ defmodule RubberDuck.Agents.FeedbackProcessorAgentTest do
     end
   end
 end
-
