@@ -1,7 +1,7 @@
 defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   @moduledoc """
   Comprehensive feedback validation for quality assurance and learning optimization.
-  
+
   Validates feedback data quality, consistency, and learning potential to ensure
   high-quality input for the continuous learning system and prevent noise
   from degrading learning model performance.
@@ -31,44 +31,32 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   @doc """
   Validate individual feedback item for quality and learning potential.
-  
+
   ## Parameters
   - `feedback_item` - Feedback item to validate
-  
+
   ## Returns
   - `{:ok, validated_feedback}` - Validation successful with enhanced metadata
   - `{:error, reason}` - Validation failed with specific reason
   """
   def validate_feedback_item(feedback_item) do
-    case validate_feedback_structure(feedback_item) do
-      {:ok, structured_feedback} ->
-        case validate_feedback_quality(structured_feedback) do
-          {:ok, quality_validated} ->
-            case validate_learning_potential(quality_validated) do
-              {:ok, learning_validated} ->
-                enhanced_feedback = enhance_feedback_metadata(learning_validated)
-                {:ok, enhanced_feedback}
-                
-              {:error, reason} ->
-                {:error, "Learning validation failed: #{reason}"}
-            end
-            
-          {:error, reason} ->
-            {:error, "Quality validation failed: #{reason}"}
-        end
-        
-      {:error, reason} ->
-        {:error, "Structure validation failed: #{reason}"}
+    with {:ok, structured_feedback} <- validate_feedback_structure(feedback_item),
+         {:ok, quality_validated} <- validate_feedback_quality(structured_feedback),
+         {:ok, learning_validated} <- validate_learning_potential(quality_validated) do
+      enhanced_feedback = enhance_feedback_metadata(learning_validated)
+      {:ok, enhanced_feedback}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
   @doc """
   Validate feedback data for a specific source type.
-  
+
   ## Parameters
   - `feedback_data` - Raw feedback data
   - `source_type` - Type of feedback source
-  
+
   ## Returns
   - `{:ok, validated_data}` - Validation successful
   - `{:error, reason}` - Validation failed
@@ -86,13 +74,13 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
               completeness_score: calculate_completeness_score(feedback_data),
               reliability_indicators: assess_reliability_indicators(feedback_data, source_type)
             }
-            
+
             {:ok, validated_data}
-            
+
           {:error, reason} ->
             {:error, reason}
         end
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -100,11 +88,11 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   @doc """
   Batch validate multiple feedback items with performance optimization.
-  
+
   ## Parameters
   - `feedback_batch` - List of feedback items to validate
   - `validation_options` - Options for batch validation
-  
+
   ## Returns
   - `{:ok, validation_results}` - Batch validation results
   - `{:error, reason}` - Batch validation failed
@@ -112,16 +100,17 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   def validate_feedback_batch(feedback_batch, validation_options \\ []) do
     if is_list(feedback_batch) and length(feedback_batch) > 0 do
       parallel_validation = Keyword.get(validation_options, :parallel, true)
-      
-      validation_results = if parallel_validation do
-        validate_batch_parallel(feedback_batch)
-      else
-        validate_batch_sequential(feedback_batch)
-      end
-      
+
+      validation_results =
+        if parallel_validation do
+          validate_batch_parallel(feedback_batch)
+        else
+          validate_batch_sequential(feedback_batch)
+        end
+
       successful_validations = Enum.filter(validation_results, &match?({:ok, _}, &1))
       failed_validations = Enum.filter(validation_results, &match?({:error, _}, &1))
-      
+
       batch_results = %{
         total_items: length(feedback_batch),
         successful_count: length(successful_validations),
@@ -136,7 +125,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
           options: validation_options
         }
       }
-      
+
       {:ok, batch_results}
     else
       {:error, "Invalid feedback batch: must be non-empty list"}
@@ -147,17 +136,19 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp validate_feedback_structure(feedback_item) do
     required_base_fields = [:feedback_type, :evaluation_id]
-    
-    missing_fields = Enum.filter(required_base_fields, fn field ->
-      not Map.has_key?(feedback_item, field) or is_nil(Map.get(feedback_item, field))
-    end)
-    
+
+    missing_fields =
+      Enum.filter(required_base_fields, fn field ->
+        not Map.has_key?(feedback_item, field) or is_nil(Map.get(feedback_item, field))
+      end)
+
     if Enum.empty?(missing_fields) do
       feedback_type = Map.get(feedback_item, :feedback_type)
-      
+
       case validate_type_specific_fields(feedback_item, feedback_type) do
         :ok ->
           {:ok, Map.put(feedback_item, :structure_validated, true)}
+
         {:error, reason} ->
           {:error, reason}
       end
@@ -168,11 +159,12 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp validate_type_specific_fields(feedback_item, feedback_type) do
     required_fields = Map.get(@required_fields_by_type, feedback_type, [])
-    
-    missing_type_fields = Enum.filter(required_fields, fn field ->
-      not Map.has_key?(feedback_item, field) or is_nil(Map.get(feedback_item, field))
-    end)
-    
+
+    missing_type_fields =
+      Enum.filter(required_fields, fn field ->
+        not Map.has_key?(feedback_item, field) or is_nil(Map.get(feedback_item, field))
+      end)
+
     if Enum.empty?(missing_type_fields) do
       case validate_field_values(feedback_item, feedback_type) do
         :ok -> :ok
@@ -187,10 +179,13 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
     case feedback_type do
       :explicit_rating ->
         validate_rating_values(feedback_item)
+
       :explicit_correction ->
         validate_correction_values(feedback_item)
+
       :explicit_comment ->
         validate_comment_values(feedback_item)
+
       _ ->
         # For other types, basic validation is sufficient
         :ok
@@ -204,16 +199,16 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
       check_content_quality(feedback_item),
       check_consistency(feedback_item)
     ]
-    
+
     failed_checks = Enum.filter(quality_checks, &match?({:error, _}, &1))
-    
+
     if Enum.empty?(failed_checks) do
       quality_metadata = %{
         quality_validated: true,
         quality_score: calculate_overall_quality_score(quality_checks),
         validation_timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, Map.merge(feedback_item, quality_metadata)}
     else
       error_reasons = Enum.map(failed_checks, fn {:error, reason} -> reason end)
@@ -224,10 +219,9 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   defp validate_learning_potential(feedback_item) do
     learning_value = calculate_feedback_learning_value(feedback_item)
     confidence_score = calculate_feedback_confidence_score(feedback_item)
-    
-    if learning_value >= @quality_thresholds.min_learning_value and 
-       confidence_score >= @quality_thresholds.min_confidence_score do
-      
+
+    if learning_value >= @quality_thresholds.min_learning_value and
+         confidence_score >= @quality_thresholds.min_confidence_score do
       learning_metadata = %{
         learning_validated: true,
         calculated_learning_value: learning_value,
@@ -235,10 +229,11 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
         learning_categories: determine_learning_categories(feedback_item),
         priority_level: calculate_priority_level(learning_value, confidence_score)
       }
-      
+
       {:ok, Map.merge(feedback_item, learning_metadata)}
     else
-      {:error, "Insufficient learning potential: value=#{learning_value}, confidence=#{confidence_score}"}
+      {:error,
+       "Insufficient learning potential: value=#{learning_value}, confidence=#{confidence_score}"}
     end
   end
 
@@ -246,7 +241,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp validate_rating_values(feedback_item) do
     rating = Map.get(feedback_item, :rating)
-    
+
     if is_number(rating) and rating >= 1 and rating <= 5 do
       :ok
     else
@@ -256,7 +251,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp validate_correction_values(feedback_item) do
     correction_details = Map.get(feedback_item, :correction_details)
-    
+
     if is_map(correction_details) and map_size(correction_details) > 0 do
       :ok
     else
@@ -266,7 +261,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp validate_comment_values(feedback_item) do
     comment = Map.get(feedback_item, :comment)
-    
+
     if is_binary(comment) and String.length(comment) >= 5 do
       :ok
     else
@@ -278,7 +273,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp check_data_completeness(feedback_item) do
     completeness_score = calculate_completeness_score(feedback_item)
-    
+
     if completeness_score >= @quality_thresholds.min_data_completeness do
       {:ok, completeness_score}
     else
@@ -290,7 +285,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
     if Map.has_key?(feedback_item, :timestamp) do
       timestamp = Map.get(feedback_item, :timestamp)
       hours_ago = DateTime.diff(DateTime.utc_now(), timestamp, :hour)
-      
+
       if hours_ago <= @quality_thresholds.max_processing_age_hours do
         {:ok, :temporal_valid}
       else
@@ -304,7 +299,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp check_content_quality(feedback_item) do
     content_quality_score = assess_content_quality(feedback_item)
-    
+
     if content_quality_score > 0.5 do
       {:ok, content_quality_score}
     else
@@ -318,9 +313,9 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
       check_type_consistency(feedback_item),
       check_value_consistency(feedback_item)
     ]
-    
+
     failed_consistency = Enum.filter(consistency_checks, &match?({:error, _}, &1))
-    
+
     if Enum.empty?(failed_consistency) do
       {:ok, :consistent}
     else
@@ -342,14 +337,15 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp calculate_batch_quality_score(validation_results) do
     successful_results = Enum.filter(validation_results, &match?({:ok, _}, &1))
-    
+
     if Enum.empty?(successful_results) do
       0.0
     else
-      quality_scores = Enum.map(successful_results, fn {:ok, item} ->
-        Map.get(item, :quality_score, 0.5)
-      end)
-      
+      quality_scores =
+        Enum.map(successful_results, fn {:ok, item} ->
+          Map.get(item, :quality_score, 0.5)
+        end)
+
       Enum.sum(quality_scores) / length(quality_scores)
     end
   end
@@ -357,25 +353,29 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   # Quality calculation helpers
 
   defp calculate_completeness_score(feedback_item) do
-    total_possible_fields = 10  # Rough estimate of comprehensive feedback
-    present_fields = Enum.count(feedback_item, fn {_key, value} -> 
-      not is_nil(value) and value != ""
-    end)
-    
+    # Rough estimate of comprehensive feedback
+    total_possible_fields = 10
+
+    present_fields =
+      Enum.count(feedback_item, fn {_key, value} ->
+        not is_nil(value) and value != ""
+      end)
+
     min(1.0, present_fields / total_possible_fields)
   end
 
   defp calculate_feedback_learning_value(feedback_item) do
     feedback_type = Map.get(feedback_item, :feedback_type)
-    
-    base_value = case feedback_type do
-      :explicit_correction -> 0.9
-      :explicit_rating -> 0.7
-      :judge_agreement -> 0.8
-      :implicit_rejection -> 0.75
-      _ -> 0.6
-    end
-    
+
+    base_value =
+      case feedback_type do
+        :explicit_correction -> 0.9
+        :explicit_rating -> 0.7
+        :judge_agreement -> 0.8
+        :implicit_rejection -> 0.75
+        _ -> 0.6
+      end
+
     # Adjust based on data quality
     quality_adjustment = calculate_quality_adjustment(feedback_item)
     min(1.0, base_value + quality_adjustment)
@@ -383,25 +383,26 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp calculate_feedback_confidence_score(feedback_item) do
     feedback_type = Map.get(feedback_item, :feedback_type)
-    
-    base_confidence = case feedback_type do
-      type when type in [:explicit_correction, :explicit_rating] -> 0.85
-      type when type in [:judge_agreement, :system_performance] -> 0.8
-      type when type in [:implicit_rejection, :implicit_retry] -> 0.7
-      _ -> 0.6
-    end
-    
+
+    base_confidence =
+      case feedback_type do
+        type when type in [:explicit_correction, :explicit_rating] -> 0.85
+        type when type in [:judge_agreement, :system_performance] -> 0.8
+        type when type in [:implicit_rejection, :implicit_retry] -> 0.7
+        _ -> 0.6
+      end
+
     # Adjust based on data completeness and quality
     completeness_bonus = calculate_completeness_score(feedback_item) * 0.1
     quality_bonus = assess_content_quality(feedback_item) * 0.05
-    
+
     min(1.0, base_confidence + completeness_bonus + quality_bonus)
   end
 
   defp calculate_quality_adjustment(feedback_item) do
     completeness = calculate_completeness_score(feedback_item)
     content_quality = assess_content_quality(feedback_item)
-    
+
     adjustment = (completeness + content_quality) / 2 * 0.1
     max(-0.2, min(0.2, adjustment))
   end
@@ -411,26 +412,32 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
     case Map.get(feedback_item, :feedback_type) do
       :explicit_comment ->
         assess_comment_quality(Map.get(feedback_item, :comment))
+
       :explicit_correction ->
         assess_correction_quality(Map.get(feedback_item, :correction_details))
+
       :explicit_rating ->
         assess_rating_quality(Map.get(feedback_item, :rating), Map.get(feedback_item, :context))
+
       _ ->
-        0.7  # Default moderate quality for other types
+        # Default moderate quality for other types
+        0.7
     end
   end
 
   defp calculate_overall_quality_score(quality_checks) do
     successful_checks = Enum.filter(quality_checks, &match?({:ok, _}, &1))
-    
+
     if Enum.empty?(successful_checks) do
       0.0
     else
-      scores = Enum.map(successful_checks, fn
-        {:ok, score} when is_number(score) -> score
-        {:ok, _} -> 0.8  # Default score for non-numeric results
-      end)
-      
+      scores =
+        Enum.map(successful_checks, fn
+          {:ok, score} when is_number(score) -> score
+          # Default score for non-numeric results
+          {:ok, _} -> 0.8
+        end)
+
       Enum.sum(scores) / length(scores)
     end
   end
@@ -438,41 +445,46 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   # Content quality assessment helpers
 
   defp assess_comment_quality(nil), do: 0.0
+
   defp assess_comment_quality(comment) when is_binary(comment) do
     base_score = 0.5
-    
+
     # Length indicates thoughtfulness
     length_bonus = min(0.3, String.length(comment) / 200.0)
-    
+
     # Presence of specific terms indicates quality
     quality_indicators = [
       String.contains?(comment, ["because", "should", "could", "suggest"]),
       String.contains?(comment, ["improve", "better", "enhance", "fix"]),
-      not String.contains?(comment, ["bad", "terrible", "awful"])  # Constructive vs destructive
+      # Constructive vs destructive
+      not String.contains?(comment, ["bad", "terrible", "awful"])
     ]
-    
+
     indicator_bonus = Enum.count(quality_indicators, & &1) * 0.05
-    
+
     min(1.0, base_score + length_bonus + indicator_bonus)
   end
 
   defp assess_comment_quality(_), do: 0.2
 
   defp assess_correction_quality(nil), do: 0.0
+
   defp assess_correction_quality(correction_details) when is_map(correction_details) do
     base_score = 0.7
-    
+
     # More detailed corrections are higher quality
     detail_bonus = min(0.2, map_size(correction_details) / 10.0)
-    
+
     # Specific correction types indicate quality
     quality_fields = [:suggested_score, :reasoning, :specific_issues, :recommendations]
-    present_quality_fields = Enum.count(quality_fields, fn field ->
-      Map.has_key?(correction_details, field) and not is_nil(correction_details[field])
-    end)
-    
+
+    present_quality_fields =
+      Enum.count(quality_fields, fn field ->
+        Map.has_key?(correction_details, field) and not is_nil(correction_details[field])
+      end)
+
     field_bonus = present_quality_fields * 0.05
-    
+
     min(1.0, base_score + detail_bonus + field_bonus)
   end
 
@@ -480,17 +492,18 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp assess_rating_quality(rating, context) when is_number(rating) do
     base_score = 0.6
-    
+
     # Context provided with rating increases quality
-    context_bonus = if is_map(context) and map_size(context) > 0 do
-      min(0.2, map_size(context) / 5.0)
-    else
-      0.0
-    end
-    
+    context_bonus =
+      if is_map(context) and map_size(context) > 0 do
+        min(0.2, map_size(context) / 5.0)
+      else
+        0.0
+      end
+
     # Extreme ratings (1, 5) often indicate strong feelings and are valuable
     extremity_bonus = if rating in [1, 5], do: 0.1, else: 0.0
-    
+
     min(1.0, base_score + context_bonus + extremity_bonus)
   end
 
@@ -502,12 +515,16 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
     case source_type do
       :user_interface ->
         validate_ui_feedback_requirements(feedback_data)
+
       :api ->
         validate_api_feedback_requirements(feedback_data)
+
       :system_automated ->
         validate_system_feedback_requirements(feedback_data)
+
       _ ->
-        :ok  # Generic validation for unknown sources
+        # Generic validation for unknown sources
+        :ok
     end
   end
 
@@ -551,10 +568,11 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   defp check_internal_consistency(feedback_item) do
     # Check that feedback values are internally consistent
     feedback_type = Map.get(feedback_item, :feedback_type)
-    
+
     case feedback_type do
       :explicit_rating ->
         check_rating_consistency(feedback_item)
+
       _ ->
         {:ok, :consistent}
     end
@@ -562,7 +580,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp check_type_consistency(feedback_item) do
     feedback_type = Map.get(feedback_item, :feedback_type)
-    
+
     if feedback_type in Map.keys(@required_fields_by_type) do
       {:ok, :type_consistent}
     else
@@ -576,16 +594,17 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
       :explicit_rating ->
         rating = Map.get(feedback_item, :rating)
         comment = Map.get(feedback_item, :comment, "")
-        
+
         # Check if rating matches comment sentiment (simplified)
         sentiment = infer_comment_sentiment(comment)
         rating_sentiment = infer_rating_sentiment(rating)
-        
+
         if sentiment == :unknown or rating_sentiment == :unknown or sentiment == rating_sentiment do
           {:ok, :value_consistent}
         else
           {:error, "Rating and comment sentiment mismatch"}
         end
+
       _ ->
         {:ok, :value_consistent}
     end
@@ -594,7 +613,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   defp check_rating_consistency(feedback_item) do
     rating = Map.get(feedback_item, :rating)
     context = Map.get(feedback_item, :context, %{})
-    
+
     # Check if rating makes sense with provided context
     if rating in [1, 2] and Map.get(context, :satisfaction, :unknown) == :high do
       {:error, "Low rating with high satisfaction context"}
@@ -613,7 +632,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
       learning_recommendations: generate_learning_recommendations(feedback_item),
       processing_recommendations: generate_processing_recommendations(feedback_item)
     }
-    
+
     Map.merge(feedback_item, enhanced_metadata)
   end
 
@@ -629,7 +648,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   defp generate_learning_recommendations(feedback_item) do
     learning_value = Map.get(feedback_item, :calculated_learning_value, 0.5)
     confidence = Map.get(feedback_item, :calculated_confidence_score, 0.5)
-    
+
     case {learning_value > 0.8, confidence > 0.8} do
       {true, true} -> [:high_priority_learning, :immediate_processing]
       {true, false} -> [:cautious_learning, :validation_required]
@@ -640,7 +659,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp generate_processing_recommendations(feedback_item) do
     priority_level = Map.get(feedback_item, :priority_level, :medium)
-    
+
     case priority_level do
       :critical -> [:immediate_processing, :high_resource_allocation]
       :high -> [:priority_processing, :standard_resources]
@@ -654,7 +673,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
   defp calculate_data_quality_score(feedback_data) do
     completeness = calculate_completeness_score(feedback_data)
     content_quality = assess_content_quality(feedback_data)
-    
+
     (completeness + content_quality) / 2
   end
 
@@ -668,7 +687,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp determine_learning_categories(feedback_item) do
     feedback_type = Map.get(feedback_item, :feedback_type)
-    
+
     case feedback_type do
       :explicit_correction -> [:evaluation_criteria_adjustment, :quality_enhancement]
       :judge_agreement -> [:judge_selection_optimization, :coordination_optimization]
@@ -679,7 +698,7 @@ defmodule RubberDuck.Verdict.Feedback.FeedbackValidator do
 
   defp calculate_priority_level(learning_value, confidence_score) do
     combined_score = (learning_value + confidence_score) / 2
-    
+
     cond do
       combined_score >= 0.9 -> :critical
       combined_score >= 0.8 -> :high
