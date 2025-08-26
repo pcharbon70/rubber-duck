@@ -24,6 +24,9 @@ defmodule RubberDuck.Verdict do
 
     # Configuration management resources
     resource RubberDuck.Verdict.Resources.VerdictConfiguration
+    
+    # Three-tier configuration resources
+    resource RubberDuck.Verdict.VerdictSystemConfiguration
   end
 
   authorization do

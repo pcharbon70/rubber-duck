@@ -16,6 +16,7 @@ defmodule RubberDuck.Verdict.Engine do
 
   alias RubberDuck.Verdict.Optimization.{IntelligentCache, ProgressiveEvaluator}
   alias RubberDuck.Verdict.Resources.{EvaluationResult, EvaluationRun}
+  alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
 
   require Logger
 
@@ -261,13 +262,21 @@ defmodule RubberDuck.Verdict.Engine do
     end
   end
 
-  defp resolve_verdict_preferences(_user_id, _project_id) do
-    # Use the existing preference resolution system
-    base_config = @default_config
-
-    # This would resolve Verdict-specific preferences using PreferenceResolver
-    # For now, return default configuration
-    {:ok, base_config}
+  defp resolve_verdict_preferences(user_id, project_id) do
+    # Use the new three-tier configuration resolution system
+    case VerdictConfigurationResolver.resolve_configuration(user_id, project_id) do
+      {:ok, resolved_config} ->
+        Logger.debug("Resolved Verdict configuration for user #{user_id}, project #{project_id}")
+        {:ok, resolved_config}
+        
+      {:error, reason} ->
+        Logger.warning("Failed to resolve Verdict preferences, using defaults: #{inspect(reason)}")
+        # Fallback to system defaults if resolution fails
+        case VerdictConfigurationResolver.get_system_configuration() do
+          {:ok, system_config} -> {:ok, system_config}
+          _ -> {:ok, @default_config}  # Final fallback to hardcoded defaults
+        end
+    end
   end
 
   defp build_evaluation_config(preferences) do
