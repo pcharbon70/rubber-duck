@@ -268,13 +268,17 @@ defmodule RubberDuck.Verdict.Engine do
       {:ok, resolved_config} ->
         Logger.debug("Resolved Verdict configuration for user #{user_id}, project #{project_id}")
         {:ok, resolved_config}
-        
+
       {:error, reason} ->
-        Logger.warning("Failed to resolve Verdict preferences, using defaults: #{inspect(reason)}")
+        Logger.warning(
+          "Failed to resolve Verdict preferences, using defaults: #{inspect(reason)}"
+        )
+
         # Fallback to system defaults if resolution fails
         case VerdictConfigurationResolver.get_system_configuration() do
           {:ok, system_config} -> {:ok, system_config}
-          _ -> {:ok, @default_config}  # Final fallback to hardcoded defaults
+          # Final fallback to hardcoded defaults
+          _ -> {:ok, @default_config}
         end
     end
   end

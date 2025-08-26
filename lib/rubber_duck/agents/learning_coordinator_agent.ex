@@ -126,7 +126,13 @@ defmodule RubberDuck.Agents.LearningCoordinatorAgent do
 
     case get_learning_session(agent, learning_session_id) do
       {:ok, learning_session} ->
-        handle_effectiveness_validation(agent, learning_session, validation_data, options, learning_session_id)
+        handle_effectiveness_validation(
+          agent,
+          learning_session,
+          validation_data,
+          options,
+          learning_session_id
+        )
 
       {:error, reason} ->
         {:error, reason, agent}
@@ -873,7 +879,13 @@ defmodule RubberDuck.Agents.LearningCoordinatorAgent do
   defp assess_adaptation_risk(_adaptation), do: :medium
   defp estimate_implementation_complexity(_adaptation), do: :medium
 
-  defp handle_effectiveness_validation(agent, learning_session, validation_data, options, learning_session_id) do
+  defp handle_effectiveness_validation(
+         agent,
+         learning_session,
+         validation_data,
+         options,
+         learning_session_id
+       ) do
     case perform_effectiveness_validation(learning_session, validation_data, options) do
       {:ok, validation_result} ->
         case assess_validation_outcome(validation_result, agent.state.configuration) do
@@ -894,12 +906,9 @@ defmodule RubberDuck.Agents.LearningCoordinatorAgent do
   defp handle_rollback_requirement(agent, learning_session_id, assessment, validation_result) do
     case perform_learning_rollback(agent, learning_session_id, assessment) do
       {:ok, rollback_result, rolled_back_agent} ->
-        Logger.warning(
-          "Learning rollback performed for session #{learning_session_id}"
-        )
+        Logger.warning("Learning rollback performed for session #{learning_session_id}")
 
-        {:ok, %{validation_result | rollback_performed: rollback_result},
-         rolled_back_agent}
+        {:ok, %{validation_result | rollback_performed: rollback_result}, rolled_back_agent}
 
       {:error, rollback_reason} ->
         Logger.error("Learning rollback failed: #{rollback_reason}")
