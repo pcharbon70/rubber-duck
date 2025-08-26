@@ -385,14 +385,16 @@ defmodule RubberDuck.Verdict.Engine do
     # Complete the evaluation run
     case complete_evaluation_run(evaluation_run, result) do
       {:ok, completed_run} ->
-        enhanced_result = Map.merge(result, %{
-          evaluation_run_id: completed_run.id,
-          tracking_enabled: true
-        })
+        enhanced_result =
+          Map.merge(result, %{
+            evaluation_run_id: completed_run.id,
+            tracking_enabled: true
+          })
 
         {:ok, enhanced_result}
 
-      error -> error
+      error ->
+        error
     end
   end
 end
