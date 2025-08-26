@@ -481,24 +481,21 @@ defmodule RubberDuck.Verdict.Analytics.UserPreferenceProfiler do
     session_length = behavioral_patterns.session_length_preference || 0.5
     interaction_style = behavioral_patterns.interaction_style || :moderate
     
-    # Longer sessions and detailed interactions suggest less cost sensitivity
     base_sensitivity = 0.6
-    
-    length_factor = case session_length do
-      :short -> 0.3  # High cost sensitivity
-      :medium -> 0.0  # Neutral
-      :long -> -0.2  # Lower cost sensitivity
-      _ -> 0.0
-    end
-    
-    interaction_factor = case interaction_style do
-      :minimal -> 0.2  # Higher cost sensitivity
-      :detailed -> -0.1  # Lower cost sensitivity
-      _ -> 0.0
-    end
+    length_factor = calculate_session_length_factor(session_length)
+    interaction_factor = calculate_interaction_style_factor(interaction_style)
     
     min(1.0, max(0.0, base_sensitivity + length_factor + interaction_factor))
   end
+
+  defp calculate_session_length_factor(:short), do: 0.3
+  defp calculate_session_length_factor(:medium), do: 0.0  
+  defp calculate_session_length_factor(:long), do: -0.2
+  defp calculate_session_length_factor(_), do: 0.0
+
+  defp calculate_interaction_style_factor(:minimal), do: 0.2
+  defp calculate_interaction_style_factor(:detailed), do: -0.1
+  defp calculate_interaction_style_factor(_), do: 0.0
 
   defp assess_feedback_verbosity_preference(feedback_patterns) do
     # Analyze user's preference for detailed vs concise feedback

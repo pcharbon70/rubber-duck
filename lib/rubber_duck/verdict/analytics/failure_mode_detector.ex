@@ -785,34 +785,39 @@ defmodule RubberDuck.Verdict.Analytics.FailureModeDetector do
   end
 
   defp calculate_average_failure_severity(failures) do
-    severities = Enum.map(failures, fn failure ->
-      assess_individual_failure_severity(Map.get(failure, :record, %{}))
-    end)
-    
-    severity_scores = Enum.map(severities, fn severity ->
-      case severity do
-        :critical -> 4
-        :high -> 3
-        :medium -> 2
-        :low -> 1
-        _ -> 0
-      end
-    end)
-    
-    if Enum.empty?(severity_scores) do
+    if Enum.empty?(failures) do
       :unknown
     else
-      avg_score = Enum.sum(severity_scores) / length(severity_scores)
+      severity_scores = failures
+        |> Enum.map(&extract_failure_severity_score/1)
+        |> Enum.filter(&is_number/1)
       
-      case round(avg_score) do
-        4 -> :critical
-        3 -> :high
-        2 -> :medium
-        1 -> :low
-        _ -> :unknown
-      end
+      calculate_severity_from_scores(severity_scores)
     end
   end
+
+  defp extract_failure_severity_score(failure) do
+    severity = assess_individual_failure_severity(Map.get(failure, :record, %{}))
+    convert_severity_to_score(severity)
+  end
+
+  defp convert_severity_to_score(:critical), do: 4
+  defp convert_severity_to_score(:high), do: 3
+  defp convert_severity_to_score(:medium), do: 2
+  defp convert_severity_to_score(:low), do: 1
+  defp convert_severity_to_score(_), do: 0
+
+  defp calculate_severity_from_scores([]), do: :unknown
+  defp calculate_severity_from_scores(severity_scores) do
+    avg_score = Enum.sum(severity_scores) / length(severity_scores)
+    convert_score_to_severity(round(avg_score))
+  end
+
+  defp convert_score_to_severity(4), do: :critical
+  defp convert_score_to_severity(3), do: :high
+  defp convert_score_to_severity(2), do: :medium
+  defp convert_score_to_severity(1), do: :low
+  defp convert_score_to_severity(_), do: :unknown
 
   # Assessment helper stubs (would implement comprehensive analysis)
 
