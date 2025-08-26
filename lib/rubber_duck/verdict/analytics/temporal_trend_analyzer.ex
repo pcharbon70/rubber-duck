@@ -546,7 +546,7 @@ defmodule RubberDuck.Verdict.Analytics.TemporalTrendAnalyzer do
       cond do
         # Less than 5 minutes
         median_diff < 300 -> :minute
-        # Less than 2 hours  
+        # Less than 2 hours
         median_diff < 7200 -> :hour
         # Less than 2 days
         median_diff < 172_800 -> :day

@@ -177,7 +177,7 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzerTest do
           success_rate: 0.95,
           coordination_strategy: :specialized_consensus
         },
-        # Less effective coordination  
+        # Less effective coordination
         %{
           agent_count: 5,
           consensus_score: 0.6,

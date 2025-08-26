@@ -12,13 +12,13 @@ defmodule RubberDuck.Agents.LearningCoordinatorAgent do
   require Logger
 
   alias RubberDuck.Verdict.Learning.{
-    JudgeSelectionLearner,
-    CriteriaAdaptationEngine,
     CostOptimizationLearner,
+    CriteriaAdaptationEngine,
+    JudgeSelectionLearner,
     QualityImprovementEngine
   }
 
-  alias RubberDuck.Agents.{PatternRecognitionAgent, BiasDetectionAgent}
+  alias RubberDuck.Agents.{BiasDetectionAgent, PatternRecognitionAgent}
   alias RubberDuck.Verdict.Analytics.PatternRecognition
 
   @learning_engines [

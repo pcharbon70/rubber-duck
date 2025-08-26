@@ -405,7 +405,7 @@ defmodule RubberDuck.Verdict.Analytics.ComparativePerformanceAnalyzer do
     # Check for processing time bottlenecks
     bottlenecks = check_processing_time_bottlenecks(performance_analysis, bottlenecks)
 
-    # Check for resource utilization bottlenecks  
+    # Check for resource utilization bottlenecks
     bottlenecks = check_resource_utilization_bottlenecks(performance_analysis, bottlenecks)
 
     # Check for coordination bottlenecks
