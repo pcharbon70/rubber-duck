@@ -7,6 +7,7 @@ defmodule RubberDuck.Agents.VerdictOrchestratorAgent do
   the existing Verdict framework with sophisticated multi-agent capabilities.
   """
 
+  alias RubberDuck.Verdict.Adaptation.DynamicRoutingEngine
   alias RubberDuck.Verdict.Coordination.ConsensusEngine
 
   require Logger
@@ -151,31 +152,27 @@ defmodule RubberDuck.Agents.VerdictOrchestratorAgent do
   end
 
   defp select_judge_agents(_agent, evaluation_type, options) do
-    # Use JudgeSelectionAgent to determine optimal agent combination
-    case determine_agent_strategy(evaluation_type, options) do
-      {:ok, strategy} ->
-        selected_agents =
-          case strategy do
-            :comprehensive ->
-              [:code_quality, :architecture, :test_quality, :security]
+    # Use adaptive routing for intelligent judge selection
+    evaluation_context = build_evaluation_context(evaluation_type, options)
+    available_judges = [:code_quality, :architecture, :test_quality, :security]
+    user_profile = extract_user_profile(options)
 
-            :security_focused ->
-              [:security, :code_quality, :architecture]
+    case DynamicRoutingEngine.select_optimal_judges(
+           evaluation_context,
+           available_judges,
+           user_profile,
+           options
+         ) do
+      {:ok, judge_selection} ->
+        Logger.info(
+          "Adaptive judge selection: #{inspect(judge_selection.selected_judges)} (confidence: #{judge_selection.selection_confidence})"
+        )
 
-            :quality_focused ->
-              [:code_quality, :test_quality, :architecture]
+        {:ok, judge_selection.selected_judges}
 
-            :performance_focused ->
-              [:architecture, :code_quality]
-
-            _ ->
-              [:code_quality]
-          end
-
-        {:ok, selected_agents}
-
-      error ->
-        error
+      {:error, reason} ->
+        Logger.warning("Adaptive routing failed, using fallback: #{reason}")
+        fallback_judge_selection(evaluation_type, options)
     end
   end
 
@@ -494,5 +491,83 @@ defmodule RubberDuck.Agents.VerdictOrchestratorAgent do
     else
       0.0
     end
+  end
+
+  # Integration helper functions
+
+  defp build_evaluation_context(evaluation_type, options) do
+    %{
+      evaluation_type: evaluation_type,
+      complexity: determine_evaluation_complexity(evaluation_type, options),
+      quality_requirements: extract_quality_requirements(options),
+      cost_constraints: extract_cost_constraints(options),
+      urgency: Keyword.get(options, :urgency, :normal),
+      user_context: extract_user_context(options)
+    }
+  end
+
+  defp extract_user_profile(options) do
+    # Extract user profile from options if available
+    Keyword.get(options, :user_profile, nil)
+  end
+
+  defp fallback_judge_selection(evaluation_type, options) do
+    # Fallback to original strategy-based selection
+    case determine_agent_strategy(evaluation_type, options) do
+      {:ok, strategy} ->
+        selected_agents =
+          case strategy do
+            :comprehensive -> [:code_quality, :architecture, :test_quality, :security]
+            :security_focused -> [:security, :code_quality, :architecture]
+            :quality_focused -> [:code_quality, :test_quality, :architecture]
+            :performance_focused -> [:architecture, :code_quality]
+            _ -> [:code_quality]
+          end
+
+        {:ok, selected_agents}
+
+      error ->
+        error
+    end
+  end
+
+  defp determine_evaluation_complexity(evaluation_type, options) do
+    # Determine complexity based on evaluation type and options
+    base_complexity =
+      case evaluation_type do
+        :comprehensive_evaluation -> :high
+        :security_evaluation -> :high
+        :performance_evaluation -> :medium
+        :basic_evaluation -> :low
+        _ -> :medium
+      end
+
+    # Adjust based on options
+    complexity_override = Keyword.get(options, :complexity_override, nil)
+    complexity_override || base_complexity
+  end
+
+  defp extract_quality_requirements(options) do
+    %{
+      min_accuracy: Keyword.get(options, :min_accuracy, 0.8),
+      thoroughness: Keyword.get(options, :thoroughness, :standard),
+      quality_priority: Keyword.get(options, :quality_priority, :medium)
+    }
+  end
+
+  defp extract_cost_constraints(options) do
+    %{
+      max_cost: Keyword.get(options, :max_cost, 0.15),
+      cost_priority: Keyword.get(options, :cost_priority, :medium),
+      budget_limit: Keyword.get(options, :budget_limit, 0.2)
+    }
+  end
+
+  defp extract_user_context(options) do
+    %{
+      user_id: Keyword.get(options, :user_id, nil),
+      user_preferences: Keyword.get(options, :user_preferences, %{}),
+      session_context: Keyword.get(options, :session_context, %{})
+    }
   end
 end

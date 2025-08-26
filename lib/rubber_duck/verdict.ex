@@ -16,6 +16,12 @@ defmodule RubberDuck.Verdict do
     resource RubberDuck.Verdict.Resources.JudgeMetrics
     resource RubberDuck.Verdict.Resources.EvaluationFeedback
 
+    # Feedback and learning resources
+    resource RubberDuck.Verdict.Feedback.FeedbackCollection
+    resource RubberDuck.Verdict.Analytics.PatternRecognition
+    resource RubberDuck.Verdict.Learning.LearningModel
+    resource RubberDuck.Verdict.Adaptation.AdaptationHistory
+
     # Configuration management resources
     resource RubberDuck.Verdict.Resources.VerdictConfiguration
   end
