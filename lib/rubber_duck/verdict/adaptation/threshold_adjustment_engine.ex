@@ -595,21 +595,7 @@ defmodule RubberDuck.Verdict.Adaptation.ThresholdAdjustmentEngine do
       %{efficiency_score: 0.75, coordination_quality: :good}
     else
       efficiency_scores =
-        Enum.map(coordination_patterns, fn pattern ->
-          pattern_data = Map.get(pattern, :pattern_data, %{})
-
-          # Calculate efficiency based on time and success
-          consensus_time = Map.get(pattern_data, :consensus_time_ms, 7_000)
-          consensus_achieved = Map.get(pattern_data, :consensus_achieved, false)
-
-          if consensus_achieved do
-            # Efficiency inversely related to time (faster = more efficient)
-            max(0.0, 1.0 - consensus_time / 15_000)
-          else
-            # No efficiency if consensus failed
-            0.0
-          end
-        end)
+        Enum.map(coordination_patterns, &calculate_pattern_efficiency/1)
 
       average_efficiency = Enum.sum(efficiency_scores) / length(efficiency_scores)
 
@@ -973,4 +959,18 @@ defmodule RubberDuck.Verdict.Adaptation.ThresholdAdjustmentEngine do
 
   defp calculate_adaptation_velocity(_time_window), do: 0.12
   defp assess_stability_adaptiveness_balance(_time_window), do: :well_balanced
+
+  defp calculate_pattern_efficiency(pattern) do
+    pattern_data = Map.get(pattern, :pattern_data, %{})
+    consensus_time = Map.get(pattern_data, :consensus_time_ms, 7_000)
+    consensus_achieved = Map.get(pattern_data, :consensus_achieved, false)
+
+    if consensus_achieved do
+      # Efficiency inversely related to time (faster = more efficient)
+      max(0.0, 1.0 - consensus_time / 15_000)
+    else
+      # No efficiency if consensus failed
+      0.0
+    end
+  end
 end

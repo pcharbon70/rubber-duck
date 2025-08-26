@@ -572,19 +572,23 @@ defmodule RubberDuck.Verdict.Analytics.PatternRecognition do
     if Enum.empty?(common_keys) do
       0.0
     else
-      similarities =
-        Enum.map(common_keys, fn key ->
-          val1 = Map.get(data1, key)
-          val2 = Map.get(data2, key)
+      calculate_key_similarities(common_keys, data1, data2)
+    end
+  end
 
-          if val1 == val2 do
-            1.0
-          else
-            0.0
-          end
-        end)
+  defp calculate_key_similarities(common_keys, data1, data2) do
+    similarities = Enum.map(common_keys, &calculate_value_similarity(&1, data1, data2))
+    Enum.sum(similarities) / length(similarities)
+  end
 
-      Enum.sum(similarities) / length(similarities)
+  defp calculate_value_similarity(key, data1, data2) do
+    val1 = Map.get(data1, key)
+    val2 = Map.get(data2, key)
+
+    if val1 == val2 do
+      1.0
+    else
+      0.0
     end
   end
 

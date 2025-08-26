@@ -723,27 +723,34 @@ defmodule RubberDuck.Verdict.Learning.JudgeSelectionLearner do
     if length(judge_feedback) < 3 do
       :insufficient_data
     else
-      # Sort by timestamp and analyze trend
-      sorted_feedback =
-        Enum.sort_by(judge_feedback, fn feedback ->
-          Map.get(feedback, :timestamp, DateTime.utc_now())
-        end)
+      calculate_performance_trend(judge_feedback)
+    end
+  end
 
-      effectiveness_scores =
-        Enum.map(sorted_feedback, &extract_effectiveness_score/1)
-        |> Enum.filter(&is_number/1)
+  defp calculate_performance_trend(judge_feedback) do
+    # Sort by timestamp and analyze trend
+    sorted_feedback =
+      Enum.sort_by(judge_feedback, fn feedback ->
+        Map.get(feedback, :timestamp, DateTime.utc_now())
+      end)
 
-      if length(effectiveness_scores) < 3 do
-        :insufficient_data
-      else
-        trend = calculate_simple_trend(effectiveness_scores)
+    effectiveness_scores =
+      Enum.map(sorted_feedback, &extract_effectiveness_score/1)
+      |> Enum.filter(&is_number/1)
 
-        case trend do
-          slope when slope > 0.05 -> :improving
-          slope when slope < -0.05 -> :declining
-          _ -> :stable
-        end
-      end
+    if length(effectiveness_scores) < 3 do
+      :insufficient_data
+    else
+      trend = calculate_simple_trend(effectiveness_scores)
+      classify_trend_slope(trend)
+    end
+  end
+
+  defp classify_trend_slope(trend) do
+    case trend do
+      slope when slope > 0.05 -> :improving
+      slope when slope < -0.05 -> :declining
+      _ -> :stable
     end
   end
 

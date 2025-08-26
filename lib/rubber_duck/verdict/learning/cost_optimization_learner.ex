@@ -600,23 +600,7 @@ defmodule RubberDuck.Verdict.Learning.CostOptimizationLearner do
     if Enum.empty?(quality_cost_data) do
       0.5
     else
-      # Find point with best quality-to-cost ratio
-      ratios =
-        Enum.map(quality_cost_data, fn data ->
-          if data.cost > 0 do
-            data.quality / data.cost
-          else
-            data.quality
-          end
-        end)
-
-      if Enum.empty?(ratios) do
-        0.5
-      else
-        avg_ratio = Enum.sum(ratios) / length(ratios)
-        # Normalize to 0-1 scale
-        min(1.0, max(0.0, avg_ratio / 10.0))
-      end
+      calculate_quality_cost_balance(quality_cost_data)
     end
   end
 
@@ -636,6 +620,27 @@ defmodule RubberDuck.Verdict.Learning.CostOptimizationLearner do
         end)
 
       Enum.sum(efficiency_scores) / length(efficiency_scores)
+    end
+  end
+
+  defp calculate_quality_cost_balance(quality_cost_data) do
+    # Find point with best quality-to-cost ratio
+    ratios = Enum.map(quality_cost_data, &calculate_quality_cost_ratio/1)
+
+    if Enum.empty?(ratios) do
+      0.5
+    else
+      avg_ratio = Enum.sum(ratios) / length(ratios)
+      # Normalize to 0-1 scale
+      min(1.0, max(0.0, avg_ratio / 10.0))
+    end
+  end
+
+  defp calculate_quality_cost_ratio(data) do
+    if data.cost > 0 do
+      data.quality / data.cost
+    else
+      data.quality
     end
   end
 

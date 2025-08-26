@@ -290,19 +290,23 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzer do
 
   defp normalize_feature_vectors(feature_vectors) do
     # Simple min-max normalization - would use proper ML normalization
-    Enum.map(feature_vectors, fn vector ->
-      Enum.reduce(vector, %{}, fn {key, value}, acc ->
-        normalized_value =
-          if is_number(value) do
-            min(1.0, max(0.0, value))
-          else
-            # Default for non-numeric values
-            0.5
-          end
+    Enum.map(feature_vectors, &normalize_single_vector/1)
+  end
 
-        Map.put(acc, key, normalized_value)
-      end)
+  defp normalize_single_vector(vector) do
+    Enum.reduce(vector, %{}, fn {key, value}, acc ->
+      normalized_value = normalize_feature_value(value)
+      Map.put(acc, key, normalized_value)
     end)
+  end
+
+  defp normalize_feature_value(value) do
+    if is_number(value) do
+      min(1.0, max(0.0, value))
+    else
+      # Default for non-numeric values
+      0.5
+    end
   end
 
   defp get_feature_count([]), do: 0
@@ -609,20 +613,24 @@ defmodule RubberDuck.Verdict.Analytics.SuccessPatternAnalyzer do
     # Simplified correlation calculation - would use statistical libraries
     features = extract_performance_features(performance_data)
     feature_names = Map.keys(List.first(features) || %{})
+    calculate_feature_correlations(feature_names, features)
+  end
 
-    correlations =
-      Enum.reduce(feature_names, %{}, fn feature1, acc1 ->
-        Enum.reduce(feature_names, acc1, fn feature2, acc2 ->
-          if feature1 != feature2 do
-            correlation = calculate_feature_correlation(features, feature1, feature2)
-            Map.put(acc2, {feature1, feature2}, correlation)
-          else
-            acc2
-          end
-        end)
-      end)
+  defp calculate_feature_correlations(feature_names, features) do
+    Enum.reduce(feature_names, %{}, fn feature1, acc1 ->
+      calculate_correlations_for_feature(feature1, feature_names, features, acc1)
+    end)
+  end
 
-    correlations
+  defp calculate_correlations_for_feature(feature1, feature_names, features, acc) do
+    Enum.reduce(feature_names, acc, fn feature2, acc2 ->
+      if feature1 != feature2 do
+        correlation = calculate_feature_correlation(features, feature1, feature2)
+        Map.put(acc2, {feature1, feature2}, correlation)
+      else
+        acc2
+      end
+    end)
   end
 
   defp extract_performance_features(performance_data) do
