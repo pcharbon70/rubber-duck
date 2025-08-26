@@ -312,20 +312,22 @@ defmodule RubberDuck.Agents.Judges.ArchitectureJudgeAgent do
     # Calculate coupling metrics
     coupling_metrics = calculate_coupling_metrics(code, context)
 
-    issues = if coupling_metrics.high_coupling_count > 0 do
-      ["High coupling detected in #{coupling_metrics.high_coupling_count} modules" | issues]
-    else
-      issues
-    end
+    issues =
+      if coupling_metrics.high_coupling_count > 0 do
+        ["High coupling detected in #{coupling_metrics.high_coupling_count} modules" | issues]
+      else
+        issues
+      end
 
     # Calculate cohesion metrics
     cohesion_metrics = calculate_cohesion_metrics(code, context)
 
-    issues = if cohesion_metrics.low_cohesion_count > 0 do
-      ["Low cohesion detected in #{cohesion_metrics.low_cohesion_count} modules" | issues]
-    else
-      issues
-    end
+    issues =
+      if cohesion_metrics.low_cohesion_count > 0 do
+        ["Low cohesion detected in #{cohesion_metrics.low_cohesion_count} modules" | issues]
+      else
+        issues
+      end
 
     score = calculate_coupling_cohesion_score(coupling_metrics, cohesion_metrics)
 

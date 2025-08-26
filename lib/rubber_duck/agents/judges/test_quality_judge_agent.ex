@@ -158,29 +158,32 @@ defmodule RubberDuck.Agents.Judges.TestQualityJudgeAgent do
     # Analyze line coverage
     line_coverage = calculate_line_coverage(code, tests, context)
 
-    issues = if line_coverage < 0.8 do
-      ["Low line coverage: #{Float.round(line_coverage * 100, 1)}%" | issues]
-    else
-      issues
-    end
+    issues =
+      if line_coverage < 0.8 do
+        ["Low line coverage: #{Float.round(line_coverage * 100, 1)}%" | issues]
+      else
+        issues
+      end
 
     # Analyze branch coverage
     branch_coverage = calculate_branch_coverage(code, tests, context)
 
-    issues = if branch_coverage < 0.7 do
-      ["Low branch coverage: #{Float.round(branch_coverage * 100, 1)}%" | issues]
-    else
-      issues
-    end
+    issues =
+      if branch_coverage < 0.7 do
+        ["Low branch coverage: #{Float.round(branch_coverage * 100, 1)}%" | issues]
+      else
+        issues
+      end
 
     # Check for untested functions
     untested_functions = find_untested_functions(code, tests)
 
-    issues = if length(untested_functions) > 0 do
-      ["#{length(untested_functions)} functions lack tests" | issues]
-    else
-      issues
-    end
+    issues =
+      if length(untested_functions) > 0 do
+        ["#{length(untested_functions)} functions lack tests" | issues]
+      else
+        issues
+      end
 
     score = calculate_coverage_score(line_coverage, branch_coverage, untested_functions)
 
@@ -350,11 +353,12 @@ defmodule RubberDuck.Agents.Judges.TestQualityJudgeAgent do
     # Check if edge cases are tested
     untested_edge_cases = find_untested_edge_cases(potential_edge_cases, tests)
 
-    issues = if length(untested_edge_cases) > 0 do
-      ["#{length(untested_edge_cases)} edge cases lack tests" | issues]
-    else
-      issues
-    end
+    issues =
+      if length(untested_edge_cases) > 0 do
+        ["#{length(untested_edge_cases)} edge cases lack tests" | issues]
+      else
+        issues
+      end
 
     # Check for boundary value testing
     boundary_testing_issues = check_boundary_testing(code, tests)
@@ -384,11 +388,12 @@ defmodule RubberDuck.Agents.Judges.TestQualityJudgeAgent do
     # Check for integration test presence
     integration_tests = find_integration_tests(tests, context)
 
-    issues = if Enum.empty?(integration_tests) do
-      ["No integration tests found" | issues]
-    else
-      issues
-    end
+    issues =
+      if Enum.empty?(integration_tests) do
+        ["No integration tests found" | issues]
+      else
+        issues
+      end
 
     # Check for contract testing
     contract_testing_issues = check_contract_testing(tests, context)

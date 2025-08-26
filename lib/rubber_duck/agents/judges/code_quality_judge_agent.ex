@@ -206,11 +206,12 @@ defmodule RubberDuck.Agents.Judges.CodeQualityJudgeAgent do
     issues = []
 
     # Check function ordering
-    issues = if has_poor_function_ordering?(code) do
-      ["Functions not logically ordered" | issues]
-    else
-      issues
-    end
+    issues =
+      if has_poor_function_ordering?(code) do
+        ["Functions not logically ordered" | issues]
+      else
+        issues
+      end
 
     # Check module structure
     structure_issues = analyze_module_structure(code, context)
@@ -247,20 +248,22 @@ defmodule RubberDuck.Agents.Judges.CodeQualityJudgeAgent do
     issues = []
 
     # Check for module docs
-    issues = if has_module_docs?(code) do
-      issues
-    else
-      ["Missing module documentation" | issues]
-    end
+    issues =
+      if has_module_docs?(code) do
+        issues
+      else
+        ["Missing module documentation" | issues]
+      end
 
     # Check for function docs
     undocumented_functions = find_undocumented_functions(code)
 
-    issues = if length(undocumented_functions) > 0 do
-      ["Undocumented public functions" | issues]
-    else
-      issues
-    end
+    issues =
+      if length(undocumented_functions) > 0 do
+        ["Undocumented public functions" | issues]
+      else
+        issues
+      end
 
     score = calculate_documentation_score(issues, code)
 
