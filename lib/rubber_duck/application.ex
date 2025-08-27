@@ -101,13 +101,9 @@ defmodule RubberDuck.Application do
   defp security_children do
     [
       # Ash Authentication System
-      {AshAuthentication.Supervisor, [otp_app: :rubber_duck]},
-
-      # Security Monitoring
-      {RubberDuck.SecurityMonitor.Supervisor, []},
-
-      # Threat Detection System
-      {RubberDuck.ThreatDetection.Supervisor, []}
+      {AshAuthentication.Supervisor, [otp_app: :rubber_duck]}
+      
+      # Security monitoring components are integrated in other supervisors
     ]
   end
 

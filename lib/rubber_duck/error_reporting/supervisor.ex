@@ -17,21 +17,12 @@ defmodule RubberDuck.ErrorReporting.Supervisor do
   def init(_init_arg) do
     Logger.info("Starting Error Reporting System...")
 
-    children =
-      [
-        # Error Aggregator
-        {RubberDuck.ErrorReporting.Aggregator, []},
+    children = [
+      # Error Aggregator
+      {RubberDuck.ErrorReporting.Aggregator, []}
 
-        # Context Enricher
-        {RubberDuck.ErrorReporting.ContextEnricher, []},
-
-        # Error Pattern Detector
-        {RubberDuck.ErrorReporting.PatternDetector, []},
-
-        # Tower Reporter (if configured)
-        tower_reporter_child()
-      ]
-      |> Enum.reject(&is_nil/1)
+      # Other error reporting components will be added as they're implemented
+    ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end

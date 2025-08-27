@@ -18,33 +18,15 @@ defmodule RubberDuck.Telemetry.Supervisor do
   def init(_init_arg) do
     Logger.info("Starting Enhanced Telemetry System...")
 
-    children =
-      [
-        # Core telemetry system (existing Phoenix telemetry)
-        RubberDuckWeb.Telemetry,
+    children = [
+      # Core telemetry system (existing Phoenix telemetry)
+      RubberDuckWeb.Telemetry,
 
-        # VM and Application Metrics Collector
-        {RubberDuck.Telemetry.VMMetrics, []},
+      # VM and Application Metrics Collector  
+      {RubberDuck.Telemetry.VMMetrics, []}
 
-        # Agent Performance Metrics
-        {RubberDuck.Telemetry.AgentMetrics, []},
-
-        # Skills Registry Metrics
-        {RubberDuck.Telemetry.SkillsMetrics, []},
-
-        # Database Performance Metrics
-        {RubberDuck.Telemetry.DatabaseMetrics, []},
-
-        # Security Event Metrics
-        {RubberDuck.Telemetry.SecurityMetrics, []},
-
-        # Prometheus Reporter (if configured)
-        prometheus_reporter_child(),
-
-        # Telemetry Event Handler
-        {RubberDuck.Telemetry.EventHandler, []}
-      ]
-      |> Enum.reject(&is_nil/1)
+      # Other telemetry components will be added as they're implemented
+    ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end
