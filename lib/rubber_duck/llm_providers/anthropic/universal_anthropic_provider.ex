@@ -572,7 +572,8 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
     constitutional_chunks = String.split(content, ". ") |> Enum.chunk_every(2)
     
     # Apply Constitutional AI filtering to streaming
-    Enum.with_index(constitutional_chunks, fn chunk, index ->
+    _chunk_count = constitutional_chunks
+    |> Enum.with_index(fn chunk, index ->
       chunk_text = Enum.join(chunk, ". ")
       
       # Apply Constitutional AI content filtering
@@ -587,6 +588,7 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
       
       Process.sleep(80)  # Simulate Constitutional AI processing delay
     end)
+    |> Enum.count()  # Use the return value
     
     callback.(%{type: :message_stop, stop_reason: "end_turn"})
     

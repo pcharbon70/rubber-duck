@@ -426,7 +426,8 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
     content = generate_simulated_content(openai_request)
     chunks = String.split(content, " ") |> Enum.chunk_every(5)
     
-    Enum.with_index(chunks, fn chunk, index ->
+    _chunk_count = chunks
+    |> Enum.with_index(fn chunk, index ->
       callback.(%{
         type: :chunk,
         content: Enum.join(chunk, " "),
@@ -435,6 +436,7 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
       })
       Process.sleep(50)  # Simulate streaming delay
     end)
+    |> Enum.count()  # Use the return value
     
     callback.(%{type: :complete, domain: openai_request[:domain]})
     
