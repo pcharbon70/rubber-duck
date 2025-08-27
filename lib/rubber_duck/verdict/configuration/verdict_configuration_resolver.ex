@@ -506,9 +506,7 @@ defmodule RubberDuck.Verdict.Configuration.VerdictConfigurationResolver do
       {:ok, config} ->
         value = get_nested_value(config, key)
         {:ok, value}
-
-      error ->
-        error
+      error -> error
     end
   end
 
