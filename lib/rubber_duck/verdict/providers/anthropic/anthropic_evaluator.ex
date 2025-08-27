@@ -565,13 +565,7 @@ defmodule RubberDuck.Verdict.Providers.Anthropic.AnthropicEvaluator do
             # Validate score makes sense given text length and detail
             reasoning_quality = assess_reasoning_quality(text)
             adjusted_score = adjust_score_for_reasoning_quality(score, reasoning_quality)
-
-            cond do
-              adjusted_score <= 1.0 -> adjusted_score
-              adjusted_score <= 10.0 -> adjusted_score / 10.0
-              adjusted_score <= 100.0 -> adjusted_score / 100.0
-              true -> 0.8
-            end
+            normalize_claude_score(adjusted_score)
 
           _ ->
             0.8
@@ -720,4 +714,13 @@ defmodule RubberDuck.Verdict.Providers.Anthropic.AnthropicEvaluator do
   end
 
   defp parse_confidence(_), do: 0.85
+
+  defp normalize_claude_score(adjusted_score) do
+    cond do
+      adjusted_score <= 1.0 -> adjusted_score
+      adjusted_score <= 10.0 -> adjusted_score / 10.0
+      adjusted_score <= 100.0 -> adjusted_score / 100.0
+      true -> 0.8
+    end
+  end
 end
