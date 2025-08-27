@@ -140,7 +140,7 @@ defmodule RubberDuck.Application do
       )
 
     # Enhanced configuration with better supervision
-    Map.merge(base_config, %{
+    Keyword.merge(base_config, [
       engine: Oban.Engines.Basic,
       queues: [
         default: 10,
@@ -153,7 +153,7 @@ defmodule RubberDuck.Application do
         Oban.Plugins.Pruner,
         {Oban.Plugins.Cron, crontab: cron_jobs()}
       ]
-    })
+    ])
   end
 
   # Scheduled jobs configuration
