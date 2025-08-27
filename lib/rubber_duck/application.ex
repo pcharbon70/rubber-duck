@@ -16,26 +16,15 @@ defmodule RubberDuck.Application do
   def start(_type, _args) do
     Logger.info("Starting RubberDuck Application with hierarchical supervision...")
 
-    children = [
-      # Infrastructure Layer - Critical foundation services
-      {Supervisor, infrastructure_children(),
-       [strategy: :one_for_one, name: RubberDuck.InfrastructureSupervisor]},
-
-      # Agentic System Layer - Core agent functionality
-      {Supervisor, agentic_children(),
-       [strategy: :one_for_one, name: RubberDuck.AgenticSupervisor]},
-
-      # Security Layer - Authentication and monitoring
-      {Supervisor, security_children(),
-       [strategy: :one_for_one, name: RubberDuck.SecuritySupervisor]},
-
-      # Application Layer - Web interface and external APIs
-      {Supervisor, application_children(),
-       [strategy: :one_for_one, name: RubberDuck.ApplicationSupervisor]},
-
-      # Health Check System
-      RubberDuck.HealthCheck.Supervisor
-    ]
+    children = 
+      infrastructure_children() ++
+      agentic_children() ++
+      security_children() ++
+      application_children() ++
+      [
+        # Health Check System
+        RubberDuck.HealthCheck.Supervisor
+      ]
 
     # Main supervisor with :rest_for_one strategy to ensure proper shutdown ordering
     opts = [strategy: :rest_for_one, name: RubberDuck.MainSupervisor]
@@ -102,10 +91,9 @@ defmodule RubberDuck.Application do
       RubberDuck.Preferences.Llm.ProviderMonitor,
 
       # Agent Coordination Hub
-      {RubberDuck.AgentCoordinator, []},
+      {RubberDuck.Agents.Coordination.AgentCoordinator, []},
 
-      # Learning System Supervisor
-      {RubberDuck.Learning.Supervisor, []}
+      # Learning components are integrated in the Verdict domain
     ]
   end
 
@@ -140,7 +128,7 @@ defmodule RubberDuck.Application do
       )
 
     # Enhanced configuration with better supervision
-    Map.merge(base_config, %{
+    Keyword.merge(base_config, [
       engine: Oban.Engines.Basic,
       queues: [
         default: 10,
@@ -153,7 +141,7 @@ defmodule RubberDuck.Application do
         Oban.Plugins.Pruner,
         {Oban.Plugins.Cron, crontab: cron_jobs()}
       ]
-    })
+    ])
   end
 
   # Scheduled jobs configuration
