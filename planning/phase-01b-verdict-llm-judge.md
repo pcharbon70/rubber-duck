@@ -9,12 +9,13 @@
 ### Summary
 - ✅ **Section 1B.1**: Verdict Framework Integration - **COMPLETED**
 - ✅ **Section 1B.2**: Ash Persistence Layer for Judge Tracking - **COMPLETED**  
-- 📋 **Section 1B.3**: Judge Agent System - **Planned**
-- 📋 **Section 1B.4**: Code Quality Integration Points - **Planned**
-- 📋 **Section 1B.5**: Three-Level Configuration Integration - **Planned**
-- 📋 **Section 1B.6**: Multi-Provider Judge Support - **Planned**
+- ✅ **Section 1B.3**: Judge Agent System - **COMPLETED**
+- ✅ **Section 1B.4**: Continuous Learning and Feedback System - **COMPLETED**
+- ✅ **Section 1B.5**: Three-Level Configuration Integration - **COMPLETED**
+- ✅ **Section 1B.6**: Multi-Provider Judge Support - **COMPLETED**
 - 📋 **Section 1B.7**: Skills & Actions Architecture - **Planned**
 - 📋 **Section 1B.8**: Integration Tests - **Planned**
+- 📋 **Section 1B.9**: Universal LLM Provider System Harmonization - **PLANNED**
 
 ### Key Objectives
 - Implement judge-time compute scaling for 60-80% cost reduction
@@ -714,6 +715,138 @@ Implement the Verdict framework's innovative LLM-as-a-judge system that achieves
   - [ ] User satisfaction
 
 **Test Coverage Target**: 95% coverage with comprehensive integration validation
+
+## 1B.9 Universal LLM Provider System Harmonization 📋 **PLANNED**
+
+### Problem Statement
+Phase 1B.6 created a sophisticated multi-provider system for Verdict evaluations, but Phase 2 (LLM Orchestration System - 98% complete) already contains a comprehensive LLM provider infrastructure at `preferences/llm/`. This creates architectural duplication with two separate provider registries, routing systems, and health monitoring implementations. Future phases (2+) need LLM providers but cannot easily integrate with the Verdict-specific system.
+
+### Architectural Goal
+**Create a unified, system-wide LLM provider infrastructure that serves all use cases:**
+- Verdict framework evaluations (current use case)
+- Agent-to-agent communication (Phase 2+)
+- Tool calling and function execution (Phase 3+)
+- Multi-turn conversations and planning (Phase 4+)
+- Instruction processing and optimization (Phase 9+)
+
+### 1B.9.1 Provider Architecture Unification
+
+#### Tasks:
+- [ ] 1B.9.1.1 Extract universal provider interface
+  - [ ] Move `ProviderInterface` from `verdict/providers/` to `lib/rubber_duck/llm/providers/`
+  - [ ] Generalize interface beyond evaluation to support completion, streaming, embedding, function calling
+  - [ ] Maintain backward compatibility for Verdict evaluation use cases
+  - [ ] Add support for agent-to-agent communication patterns needed by Phase 2+
+
+- [ ] 1B.9.1.2 Merge provider registries and health monitoring
+  - [ ] Consolidate `verdict/providers/provider_registry.ex` with existing `preferences/llm/provider_monitor.ex`
+  - [ ] Create unified `LLM.ProviderService` that serves all system components
+  - [ ] Integrate health monitoring with existing preference system monitoring
+  - [ ] Preserve Constitutional AI features for applicable use cases
+
+- [ ] 1B.9.1.3 Unify routing and selection logic
+  - [ ] Merge `verdict/providers/provider_router.ex` with `preferences/llm/routing_integration.ex`
+  - [ ] Create universal routing supporting both evaluation and orchestration use cases
+  - [ ] Maintain Verdict-specific routing strategies (cost_optimized, quality_first, Constitutional AI)
+  - [ ] Enable general LLM routing for agent communication and planning
+
+- [ ] 1B.9.1.4 Consolidate cost optimization and configuration
+  - [ ] Integrate `verdict/providers/evaluation_context.ex` with existing `preferences/llm/cost_optimizer.ex`
+  - [ ] Unify configuration resolution through existing three-tier preference system
+  - [ ] Ensure Constitutional AI features remain available for safety-critical use cases
+  - [ ] Enable budget tracking across all LLM use cases (evaluation, orchestration, etc.)
+
+### 1B.9.2 Provider Implementation Consolidation
+
+#### Tasks:
+- [ ] 1B.9.2.1 Unify OpenAI provider implementations
+  - [ ] Merge Verdict OpenAI provider with existing Phase 2 OpenAI integration
+  - [ ] Preserve evaluation-specific features while enabling general completion support
+  - [ ] Consolidate rate limiting and cost tracking between systems
+  - [ ] Enable both structured evaluation responses and general chat completions
+
+- [ ] 1B.9.2.2 Unify Anthropic provider implementations
+  - [ ] Integrate Constitutional AI features from Verdict system into universal provider
+  - [ ] Preserve safety-first evaluation while enabling general Claude usage for agents
+  - [ ] Maintain large context optimization for all use cases (evaluation, planning, etc.)
+  - [ ] Enable Constitutional AI principles for agent communication when appropriate
+
+- [ ] 1B.9.2.3 Create universal provider client interface
+  - [ ] Standardize HTTP clients to support all LLM operations (completion, streaming, embedding)
+  - [ ] Enable streaming for both evaluation feedback and agent communication
+  - [ ] Implement universal error handling and retry logic
+  - [ ] Add function calling support for tool-using agents (Phase 3+)
+
+### 1B.9.3 System Integration and Migration
+
+#### Tasks:
+- [ ] 1B.9.3.1 Update Verdict system to use universal providers
+  - [ ] Modify VerdictEngine to use unified `LLM.ProviderService`
+  - [ ] Preserve all evaluation-specific features and Constitutional AI integration
+  - [ ] Maintain compatibility with existing three-tier configuration system
+  - [ ] Ensure no regression in evaluation performance or cost optimization
+
+- [ ] 1B.9.3.2 Prepare foundation for Phase 2+ integration
+  - [ ] Ensure universal provider service supports orchestration use cases
+  - [ ] Create agent-friendly interfaces for multi-turn conversations
+  - [ ] Enable tool calling and function execution capabilities
+  - [ ] Add support for embedding generation and similarity search
+
+- [ ] 1B.9.3.3 Update domain organization and architecture
+  - [ ] Create new `LLM` domain for universal provider infrastructure (`lib/rubber_duck/llm.ex`)
+  - [ ] Move universal provider components to `lib/rubber_duck/llm/providers/`
+  - [ ] Update Verdict domain to reference universal LLM domain
+  - [ ] Maintain clear separation between universal LLM infrastructure and use-case specific logic
+
+### 1B.9.4 Testing and Validation
+
+#### Tasks:
+- [ ] 1B.9.4.1 Create universal provider test suite
+  - [ ] Test suite covering all provider use cases (evaluation, orchestration, general completion)
+  - [ ] Integration tests between Verdict system and universal providers
+  - [ ] Performance tests ensuring no regression in routing or evaluation speed
+  - [ ] Constitutional AI feature tests for safety-critical operations
+
+- [ ] 1B.9.4.2 Validate system-wide compatibility
+  - [ ] Ensure Phase 2 LLM Orchestration can seamlessly use universal provider system
+  - [ ] Test three-tier configuration resolution works for all use cases
+  - [ ] Validate Constitutional AI features remain functional in universal system
+  - [ ] Verify cost optimization and budget tracking across all LLM use cases
+
+#### Integration Tests:
+- [ ] 1B.9.5 Test cross-system provider usage
+  - [ ] Verdict evaluation using universal providers
+  - [ ] Agent orchestration using same provider infrastructure
+  - [ ] Cost tracking and optimization across multiple use cases
+  - [ ] Health monitoring and failover affecting all LLM consumers
+
+### Success Criteria
+
+**Functional Requirements:**
+- **Universal Service**: Single `LLM.ProviderService` serves both Verdict evaluation and Phase 2+ orchestration
+- **Feature Preservation**: All Verdict evaluation features (Constitutional AI, cost optimization) maintained
+- **Phase 2+ Readiness**: Universal providers immediately usable by LLM orchestration agents
+- **Seamless Integration**: No changes required for existing three-tier configuration system
+
+**Performance Requirements:**  
+- **No Regression**: Evaluation and routing performance maintains current levels
+- **Unified Monitoring**: Single health monitoring system for all LLM operations
+- **Cost Optimization**: Budget tracking works across all system LLM usage
+- **Streaming Support**: Real-time feedback for both evaluation and agent communication
+
+**Quality Requirements:**
+- **Clean Architecture**: Clear separation between universal LLM infrastructure and use-case specific logic
+- **Maintainability**: Single codebase for provider management instead of duplicated systems
+- **Extensibility**: Easy to add new providers (Azure, Vertex AI, etc.) for all use cases
+- **Safety**: Constitutional AI principles available system-wide when appropriate
+
+#### Unit Tests:
+- [ ] 1B.9.6 Test universal provider interface compatibility
+- [ ] 1B.9.7 Test configuration resolution across use cases
+- [ ] 1B.9.8 Test provider health monitoring integration
+- [ ] 1B.9.9 Test cost optimization and budget management
+
+**Architecture Benefits**: This harmonization eliminates duplication, enables scaling for Phase 2+, maintains Verdict specialization while creating universal LLM infrastructure, and reduces system complexity through unified provider management.
 
 ---
 
