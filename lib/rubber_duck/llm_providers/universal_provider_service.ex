@@ -112,36 +112,37 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
   end
   
   defp select_provider_for_domain(domain, options) do
-    # Simple provider selection logic
     routing_strategy = Map.get(options, :routing_strategy, :balanced)
     preferred_providers = Map.get(options, :preferred_providers, [])
     
-    case {domain, routing_strategy} do
-      {:evaluation, :constitutional_ai_first} ->
-        # Prefer Anthropic for Constitutional AI evaluation
-        {:ok, @available_providers.anthropic}
-      
-      {:evaluation, _} ->
-        # Default to OpenAI for general evaluation
-        {:ok, @available_providers.openai}
-      
-      {:orchestration, :cost_optimized} ->
-        # Prefer OpenAI for cost-effective orchestration
-        {:ok, @available_providers.openai}
-      
-      {:orchestration, _} ->
-        # Default orchestration provider
-        {:ok, @available_providers.openai}
-      
-      _ ->
-        # Fallback provider selection
-        case preferred_providers do
-          [] -> {:ok, @available_providers.openai}
-          [first_pref | _] -> 
-            case Map.get(@available_providers, String.to_atom(first_pref)) do
-              nil -> {:ok, @available_providers.openai}
-              provider -> {:ok, provider}
-            end
+    case domain do
+      :evaluation -> select_evaluation_provider(routing_strategy)
+      :orchestration -> select_orchestration_provider(routing_strategy)
+      _ -> select_fallback_provider(preferred_providers)
+    end
+  end
+  
+  defp select_evaluation_provider(routing_strategy) do
+    case routing_strategy do
+      :constitutional_ai_first -> {:ok, @available_providers.anthropic}
+      _ -> {:ok, @available_providers.openai}
+    end
+  end
+  
+  defp select_orchestration_provider(routing_strategy) do
+    case routing_strategy do
+      :cost_optimized -> {:ok, @available_providers.openai}
+      _ -> {:ok, @available_providers.openai}
+    end
+  end
+  
+  defp select_fallback_provider(preferred_providers) do
+    case preferred_providers do
+      [] -> {:ok, @available_providers.openai}
+      [first_pref | _] -> 
+        case Map.get(@available_providers, String.to_atom(first_pref)) do
+          nil -> {:ok, @available_providers.openai}
+          provider -> {:ok, provider}
         end
     end
   end
@@ -325,34 +326,42 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
   end
   
   defp estimate_provider_cost(provider_info, content, domain, options) do
-    # Simple cost estimation
-    content_length = case content do
-      content when is_binary(content) -> String.length(content)
-      content when is_list(content) -> Enum.reduce(content, 0, fn msg, acc ->
-        acc + String.length(Map.get(msg, :content, ""))
-      end)
-      _ -> 100
-    end
-    
+    content_length = calculate_content_length(content)
     estimated_tokens = div(content_length, 4) + 300  # ~4 chars per token + overhead
     
     provider_type = get_provider_type_from_module(provider_info.module)
-    cost_per_1k = case provider_type do
+    cost_per_1k = get_provider_cost_rate(provider_type)
+    base_cost = (estimated_tokens / 1000) * cost_per_1k
+    
+    domain_multiplier = get_domain_cost_multiplier(domain)
+    {:ok, base_cost * domain_multiplier}
+  end
+  
+  defp calculate_content_length(content) do
+    case content do
+      content when is_binary(content) -> String.length(content)
+      content when is_list(content) -> 
+        Enum.reduce(content, 0, fn msg, acc ->
+          acc + String.length(Map.get(msg, :content, ""))
+        end)
+      _ -> 100
+    end
+  end
+  
+  defp get_provider_cost_rate(provider_type) do
+    case provider_type do
       :openai -> 0.02
       :anthropic -> 0.015
       _ -> 0.015
     end
-    
-    base_cost = (estimated_tokens / 1000) * cost_per_1k
-    
-    # Domain cost adjustment
-    domain_multiplier = case domain do
+  end
+  
+  defp get_domain_cost_multiplier(domain) do
+    case domain do
       :evaluation -> 1.2    # Evaluation might need more detailed analysis
       :orchestration -> 0.9 # Orchestration might get bulk pricing
       _ -> 1.0
     end
-    
-    {:ok, base_cost * domain_multiplier}
   end
   
   defp get_default_model(provider_type, domain) do

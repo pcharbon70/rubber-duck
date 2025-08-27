@@ -238,32 +238,38 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
     use_case = request.context.use_case
     models = state.config.models
     
-    # Intelligent model selection based on domain and use case
-    model = case {domain, use_case} do
-      # Evaluation domain
-      {:evaluation, :security} -> Map.get(models, :evaluation_detailed, "gpt-4o")
-      {:evaluation, :performance} -> Map.get(models, :evaluation_detailed, "gpt-4o")
-      {:evaluation, _} -> Map.get(models, :evaluation_screening, "gpt-4o-mini")
-      
-      # Orchestration domain
-      {:orchestration, :planning} -> Map.get(models, :orchestration_standard, "gpt-4o")
-      {:orchestration, :agent_communication} -> Map.get(models, :orchestration_communication, "gpt-4o-mini")
-      {:orchestration, _} -> Map.get(models, :orchestration_standard, "gpt-4o")
-      
-      # Planning domain
-      {:planning, _} -> Map.get(models, :planning_complex, "gpt-4o")
-      
-      # Communication domain
-      {:communication, _} -> Map.get(models, :orchestration_communication, "gpt-4o-mini")
-      
-      # Default
-      _ -> Map.get(models, :evaluation_screening, "gpt-4o-mini")
-    end
+    model = select_model_by_domain(domain, use_case, models)
     
     if Map.has_key?(@supported_models, model) do
       {:ok, model}
     else
       {:error, "Model not supported: #{model}"}
+    end
+  end
+  
+  defp select_model_by_domain(domain, use_case, models) do
+    case domain do
+      :evaluation -> select_evaluation_model(use_case, models)
+      :orchestration -> select_orchestration_model(use_case, models)
+      :planning -> Map.get(models, :planning_complex, "gpt-4o")
+      :communication -> Map.get(models, :orchestration_communication, "gpt-4o-mini")
+      _ -> Map.get(models, :evaluation_screening, "gpt-4o-mini")
+    end
+  end
+  
+  defp select_evaluation_model(use_case, models) do
+    case use_case do
+      :security -> Map.get(models, :evaluation_detailed, "gpt-4o")
+      :performance -> Map.get(models, :evaluation_detailed, "gpt-4o")
+      _ -> Map.get(models, :evaluation_screening, "gpt-4o-mini")
+    end
+  end
+  
+  defp select_orchestration_model(use_case, models) do
+    case use_case do
+      :planning -> Map.get(models, :orchestration_standard, "gpt-4o")
+      :agent_communication -> Map.get(models, :orchestration_communication, "gpt-4o-mini")
+      _ -> Map.get(models, :orchestration_standard, "gpt-4o")
     end
   end
   
@@ -570,7 +576,17 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
   end
   
   defp estimate_tokens_for_request(request, model) do
-    content_tokens = case request.content do
+    content_tokens = calculate_content_tokens(request.content)
+    domain_overhead = get_domain_token_overhead(request.context.domain)
+    response_estimate = 300  # Estimated response tokens
+    
+    total_estimate = content_tokens + domain_overhead + response_estimate
+    
+    validate_token_limit(total_estimate, model)
+  end
+  
+  defp calculate_content_tokens(content) do
+    case content do
       content when is_binary(content) -> div(String.length(content), 4)
       content when is_list(content) -> 
         content
@@ -578,20 +594,19 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
         |> Enum.sum()
       _ -> 100
     end
-    
-    # Add domain-specific overhead
-    domain_overhead = case request.context.domain do
+  end
+  
+  defp get_domain_token_overhead(domain) do
+    case domain do
       :evaluation -> 800   # Evaluation prompts are detailed
       :orchestration -> 400 # Orchestration is more concise
       :planning -> 600     # Planning needs context
       :communication -> 200 # Communication is simple
       _ -> 300
     end
-    
-    response_estimate = 300  # Estimated response tokens
-    
-    total_estimate = content_tokens + domain_overhead + response_estimate
-    
+  end
+  
+  defp validate_token_limit(total_estimate, model) do
     model_info = Map.get(@supported_models, model)
     if total_estimate <= model_info.max_tokens do
       {:ok, total_estimate}
