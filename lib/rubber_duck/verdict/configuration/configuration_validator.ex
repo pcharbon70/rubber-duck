@@ -717,7 +717,7 @@ defmodule RubberDuck.Verdict.Configuration.ConfigurationValidator do
   defp validate_model_available_in_providers(model, providers) do
     case get_model_provider(model) do
       {:ok, required_provider} ->
-        if required_provider in providers or length(providers) == 0 do
+        if required_provider in providers or Enum.empty?(providers) do
           :ok
         else
           {:error, "Model #{model} not available in preferred providers"}
