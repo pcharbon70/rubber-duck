@@ -269,13 +269,7 @@ defmodule RubberDuck.Verdict.Engine do
 
           error ->
             Logger.error("Universal provider evaluation failed, falling back to ProgressiveEvaluator")
-            # Fallback to existing system if universal provider fails
-            case ProgressiveEvaluator.evaluate(code, evaluation_type, config, options) do
-              {:ok, result} ->
-                IntelligentCache.cache_result(cache_key, result, config)
-                {:ok, Map.put(result, :cache_hit, false)}
-              error -> error
-            end
+            fallback_to_progressive_evaluator(code, evaluation_type, config, options, cache_key)
         end
 
       error ->
@@ -433,6 +427,16 @@ defmodule RubberDuck.Verdict.Engine do
   end
   
   # Universal Provider System Integration
+  
+  defp fallback_to_progressive_evaluator(code, evaluation_type, config, options, cache_key) do
+    # Fallback to existing system if universal provider fails
+    case ProgressiveEvaluator.evaluate(code, evaluation_type, config, options) do
+      {:ok, result} ->
+        IntelligentCache.cache_result(cache_key, result, config)
+        {:ok, Map.put(result, :cache_hit, false)}
+      error -> error
+    end
+  end
   
   defp adapt_universal_result_for_verdict(universal_result, config) do
     # Adapt EvaluationAdapter result to Verdict Engine format

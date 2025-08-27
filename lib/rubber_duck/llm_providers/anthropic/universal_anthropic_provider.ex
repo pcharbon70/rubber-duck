@@ -670,19 +670,21 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
   defp create_constitutional_ai_callback(original_callback, constitutional_check) do
     fn stream_event ->
       if constitutional_check.constitutional_compliance do
-        # Apply Constitutional AI filtering to stream
-        filtered_event = case Map.get(stream_event, :delta) do
-          %{text: text} ->
-            filtered_text = apply_constitutional_content_filtering(text)
-            put_in(stream_event, [:delta, :text], filtered_text)
-          
-          _ -> stream_event
-        end
-        
+        filtered_event = apply_constitutional_ai_stream_filtering(stream_event)
         original_callback.(Map.put(filtered_event, :constitutional_ai_filtered, true))
       else
         original_callback.(stream_event)
       end
+    end
+  end
+  
+  defp apply_constitutional_ai_stream_filtering(stream_event) do
+    case Map.get(stream_event, :delta) do
+      %{text: text} ->
+        filtered_text = apply_constitutional_content_filtering(text)
+        put_in(stream_event, [:delta, :text], filtered_text)
+      
+      _ -> stream_event
     end
   end
   
