@@ -18,7 +18,7 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
   @behaviour RubberDuck.LlmProviders.UniversalProviderInterface
 
   require Logger
-  
+
   alias RubberDuck.LlmProviders.UniversalProviderInterface
 
   @provider_type :openai
@@ -224,7 +224,8 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
          {:ok, token_estimate} <- estimate_tokens_for_request(request, model) do
       model_info = Map.get(@supported_models, model, %{cost_per_1k_tokens: 0.02})
 
-      cost_estimate = UniversalProviderInterface.calculate_universal_cost_estimate(
+      cost_estimate =
+        UniversalProviderInterface.calculate_universal_cost_estimate(
           token_estimate,
           model_info.cost_per_1k_tokens,
           request.context
@@ -324,7 +325,8 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
     # Build request optimized for code evaluation (from Verdict system)
     system_prompt = "You are an expert code reviewer providing detailed, actionable feedback."
 
-    user_prompt = UniversalProviderInterface.build_universal_prompt(
+    user_prompt =
+      UniversalProviderInterface.build_universal_prompt(
         request.content,
         :evaluation,
         request.context.use_case,

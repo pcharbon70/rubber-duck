@@ -16,7 +16,7 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
   """
 
   require Logger
-  
+
   alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
 
   # Simple provider configuration that works with existing systems

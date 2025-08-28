@@ -19,7 +19,7 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
   @behaviour RubberDuck.LlmProviders.UniversalProviderInterface
 
   require Logger
-  
+
   alias RubberDuck.LlmProviders.UniversalProviderInterface
 
   @provider_type :anthropic
