@@ -299,23 +299,33 @@ defmodule RubberDuck.Verdict.Providers.ProviderRegistry do
   # Private implementation
 
   defp initialize_provider(module, config) do
-    try do
-      module.initialize(config)
-    rescue
-      error ->
-        {:error, "Provider initialization failed: #{Exception.message(error)}"}
+    case safe_initialize_provider(module, config) do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, reason}
     end
   end
 
+  defp safe_initialize_provider(module, config) do
+    module.initialize(config)
+  rescue
+    error ->
+      {:error, "Provider initialization failed: #{Exception.message(error)}"}
+  end
+
   defp get_provider_capabilities(module, provider_state) do
-    try do
-      case module.get_capabilities(provider_state) do
-        {:ok, capabilities} -> capabilities
-        {:error, _} -> %{supports_streaming: false, max_context_tokens: 4096}
-      end
-    rescue
-      _ -> %{supports_streaming: false, max_context_tokens: 4096}
+    case safe_get_provider_capabilities(module, provider_state) do
+      {:ok, capabilities} -> capabilities
+      {:error, _} -> %{supports_streaming: false, max_context_tokens: 4096}
     end
+  end
+
+  defp safe_get_provider_capabilities(module, provider_state) do
+    case module.get_capabilities(provider_state) do
+      {:ok, capabilities} -> {:ok, capabilities}
+      {:error, _} -> {:ok, %{supports_streaming: false, max_context_tokens: 4096}}
+    end
+  rescue
+    _ -> {:ok, %{supports_streaming: false, max_context_tokens: 4096}}
   end
 
   defp perform_health_check(provider_info) do
