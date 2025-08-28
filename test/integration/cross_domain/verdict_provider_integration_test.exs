@@ -12,6 +12,9 @@ defmodule RubberDuck.Integration.CrossDomain.VerdictProviderIntegrationTest do
 
   use RubberDuck.IntegrationCase, async: false
 
+  # Alias commonly used modules
+  alias RubberDuck.Verdict.Engine
+
   @moduletag :integration
   @moduletag :cross_domain
 
@@ -56,7 +59,7 @@ defmodule RubberDuck.Integration.CrossDomain.VerdictProviderIntegrationTest do
       results =
         Enum.map(evaluation_requests, fn {code, eval_type, test_note} ->
           {:ok, result} =
-            RubberDuck.Verdict.Engine.evaluate_code(
+            Engine.evaluate_code(
               code,
               eval_type,
               user_id: user.id,
@@ -135,7 +138,7 @@ defmodule RubberDuck.Integration.CrossDomain.VerdictProviderIntegrationTest do
       security_test_code = load_test_code_sample("security_test_code.ex")
 
       {:ok, evaluation_result} =
-        RubberDuck.Verdict.Engine.evaluate_code(
+        Engine.evaluate_code(
           security_test_code,
           :security,
           user_id: user.id,

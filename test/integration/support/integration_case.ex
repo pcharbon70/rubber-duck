@@ -12,6 +12,16 @@ defmodule RubberDuck.IntegrationCase do
 
   use ExUnit.CaseTemplate
 
+  # Alias commonly used modules
+  alias RubberDuck.LlmProviders.{
+    ProviderRegistry,
+    UniversalProviderInitializer,
+    UniversalProviderService
+  }
+
+  alias RubberDuck.SkillsActions.{SkillsRegistry, ActionOrchestrator}
+  alias RubberDuck.Verdict.Engine
+
   using do
     quote do
       use ExUnit.Case
@@ -70,10 +80,10 @@ defmodule RubberDuck.IntegrationCase do
     configure_mock_ollama_provider()
 
     # Initialize provider registry
-    {:ok, _pid} = RubberDuck.LlmProviders.ProviderRegistry.start_link()
+    {:ok, _pid} = ProviderRegistry.start_link()
 
     # Auto-register providers
-    RubberDuck.LlmProviders.UniversalProviderInitializer.auto_register_universal_providers()
+    UniversalProviderInitializer.auto_register_universal_providers()
   end
 
   @doc """
@@ -81,13 +91,13 @@ defmodule RubberDuck.IntegrationCase do
   """
   def initialize_skills_registry do
     # Start skills registry
-    {:ok, _pid} = RubberDuck.SkillsActions.SkillsRegistry.start_link()
+    {:ok, _pid} = SkillsRegistry.start_link()
 
     # Auto-register existing skills
-    RubberDuck.SkillsActions.SkillsRegistry.auto_register_existing_skills()
+    SkillsRegistry.auto_register_existing_skills()
 
     # Start action orchestrator
-    {:ok, _pid} = RubberDuck.SkillsActions.ActionOrchestrator.start_link()
+    {:ok, _pid} = ActionOrchestrator.start_link()
   end
 
   @doc """
@@ -318,7 +328,7 @@ defmodule RubberDuck.IntegrationCase do
     start_time = System.monotonic_time(:millisecond)
 
     result =
-      RubberDuck.Verdict.Engine.evaluate_code(
+      Engine.evaluate_code(
         request.code,
         request.evaluation_type,
         user_id: request.user_id,
