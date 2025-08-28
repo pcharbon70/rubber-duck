@@ -6,8 +6,8 @@ defmodule RubberDuck.Verdict.Providers.ProviderRouterTest do
   use ExUnit.Case, async: true
   use RubberDuck.DataCase
 
-  alias RubberDuck.Verdict.Providers.ProviderRouter
   alias RubberDuck.Verdict.Providers.EvaluationContext
+  alias RubberDuck.Verdict.Providers.ProviderRouter
 
   describe "provider selection" do
     test "select_provider/2 chooses appropriate provider for evaluation type" do

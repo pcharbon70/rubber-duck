@@ -8,6 +8,7 @@ defmodule RubberDuck.Preferences.Llm.RoutingIntegration do
 
   require Logger
 
+  alias RubberDuck.LlmProviders.Adapters.OrchestrationAdapter
   alias RubberDuck.Preferences.Llm.{CostOptimizer, FallbackManager, ModelSelector, ProviderConfig}
 
   @doc """
@@ -443,4 +444,160 @@ defmodule RubberDuck.Preferences.Llm.RoutingIntegration do
   defp get_google_quality(:google, "gemini-1.5-pro"), do: 0.88
   defp get_google_quality(:google, "gemini-1.5-flash"), do: 0.82
   defp get_google_quality(_, _), do: nil
+
+  # Universal Provider System Integration
+
+  @doc """
+  Execute orchestration using Universal Provider System via OrchestrationAdapter.
+
+  This replaces direct provider calls with universal provider routing while
+  preserving all Preferences LLM features including cost optimization.
+  """
+  def orchestrate_via_universal_providers(prompt, user_id, project_id \\ nil, options \\ []) do
+    Logger.info("Orchestrating via Universal Provider System for user: #{user_id}")
+
+    # Convert Preferences options to OrchestrationAdapter format
+    orchestration_options = %{
+      # Always enabled for Preferences system
+      cost_optimization_required: true,
+      routing_strategy: :cost_optimized,
+      user_id: user_id,
+      project_id: project_id,
+      max_tokens: Keyword.get(options, :max_tokens, 1000),
+      temperature: Keyword.get(options, :temperature, 0.3),
+      specialized_features: [:cost_optimization, :agent_communication, :bulk_operations],
+      metadata: %{
+        via_preferences_system: true,
+        original_options: options
+      }
+    }
+
+    case OrchestrationAdapter.orchestrate(
+           prompt,
+           :agent_communication,
+           user_id,
+           project_id,
+           orchestration_options
+         ) do
+      {:ok, universal_result} ->
+        # Adapt result back to Preferences format
+        preferences_result =
+          adapt_universal_orchestration_to_preferences(universal_result, options)
+
+        Logger.debug("Orchestration completed via Universal Provider System")
+        {:ok, preferences_result}
+
+      error ->
+        Logger.error("Universal provider orchestration failed: #{inspect(error)}")
+        # Fallback to existing provider selection if universal system fails
+        fallback_to_existing_selection(user_id, options, project_id)
+    end
+  end
+
+  @doc """
+  Agent conversation using Universal Provider System with cost optimization.
+  """
+  def agent_conversation_via_universal_providers(
+        conversation_history,
+        user_id,
+        project_id \\ nil,
+        options \\ []
+      ) do
+    Logger.info("Agent conversation via Universal Provider System")
+
+    orchestration_options = %{
+      cost_optimization_required: true,
+      routing_strategy: :cost_optimized,
+      user_id: user_id,
+      project_id: project_id,
+      specialized_features: [:cost_optimization, :multi_turn_support, :context_preservation],
+      metadata: %{via_preferences_agent_conversation: true}
+    }
+
+    OrchestrationAdapter.agent_conversation(
+      conversation_history,
+      user_id,
+      project_id,
+      orchestration_options
+    )
+  end
+
+  @doc """
+  Migrate existing Preferences LLM operations to Universal Provider System.
+  """
+  def migrate_to_universal_providers(user_id, project_id \\ nil) do
+    Logger.info(
+      "Migrating Preferences LLM operations to Universal Provider System for user: #{user_id}"
+    )
+
+    # Check compatibility
+    case OrchestrationAdapter.check_preferences_compatibility(user_id, project_id) do
+      {:ok, compatibility} ->
+        if compatibility.universal_provider_compatible do
+          Logger.info("Universal Provider System compatible for user: #{user_id}")
+
+          {:ok,
+           %{
+             migration_status: :compatible,
+             cost_optimization_available: compatibility.cost_optimization_available,
+             preferred_providers: compatibility.preferred_providers,
+             migration_ready: true
+           }}
+        else
+          {:error, "Universal Provider System not compatible with current preferences"}
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp adapt_universal_orchestration_to_preferences(universal_result, original_options) do
+    # Adapt OrchestrationAdapter result to Preferences LLM format
+    %{
+      provider: universal_result.provider,
+      model: universal_result.model,
+      content: universal_result.content,
+      success: universal_result.success,
+
+      # Preferences-specific fields
+      cost_optimized: universal_result.cost_optimized,
+      cost_usd: universal_result.cost_usd,
+      completion_quality: universal_result.completion_quality,
+      cost_efficiency: universal_result.cost_efficiency,
+
+      # Enhanced with universal provider features
+      universal_provider_used: true,
+      orchestration_type: universal_result.orchestration_type,
+      agent_communication_optimized: universal_result.agent_communication_optimized,
+
+      # Preserve original request context
+      config: %{
+        original_options: original_options,
+        universal_provider_metadata: universal_result.metadata
+      }
+    }
+  end
+
+  defp fallback_to_existing_selection(user_id, options, project_id) do
+    Logger.warning("Falling back to existing provider selection")
+
+    # Use existing provider selection as fallback
+    config = ProviderConfig.get_complete_config(user_id, project_id)
+
+    case determine_selection_strategy(config, options) do
+      :cost_optimized ->
+        CostOptimizer.select_cost_optimal_provider(user_id, options, project_id)
+
+      _ ->
+        # Simple fallback selection
+        {:ok,
+         %{
+           provider: :openai,
+           model: "gpt-4o-mini",
+           config: config,
+           fallback: true
+         }}
+    end
+  end
 end

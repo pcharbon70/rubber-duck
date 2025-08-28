@@ -12,8 +12,8 @@ defmodule RubberDuck.Verdict.Providers.ProviderRouter do
 
   require Logger
 
-  alias RubberDuck.Verdict.Providers.ProviderRegistry
   alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
+  alias RubberDuck.Verdict.Providers.ProviderRegistry
 
   @routing_strategies [:cost_optimized, :quality_first, :balanced, :fastest, :most_reliable]
   @default_strategy :balanced

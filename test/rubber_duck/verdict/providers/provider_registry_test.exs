@@ -6,8 +6,8 @@ defmodule RubberDuck.Verdict.Providers.ProviderRegistryTest do
   use ExUnit.Case, async: true
   use RubberDuck.DataCase
 
-  alias RubberDuck.Verdict.Providers.ProviderRegistry
   alias RubberDuck.Verdict.Providers.ProviderInterface
+  alias RubberDuck.Verdict.Providers.ProviderRegistry
 
   # Mock provider for testing
   defmodule MockProvider do

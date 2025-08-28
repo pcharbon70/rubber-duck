@@ -1,16 +1,17 @@
 defmodule RubberDuck.Verdict.Providers.ProviderInterface do
   @moduledoc """
-  Unified provider interface for all AI evaluation providers.
+  DEPRECATED: Use RubberDuck.LlmProviders.UniversalProviderInterface instead.
 
-  This behaviour defines the contract that all AI providers (OpenAI, Anthropic, 
-  Ollama, etc.) must implement to integrate with the Verdict framework.
+  This module has been replaced by the Universal Provider System which consolidates
+  LLM provider functionality across all domains. The new system provides:
+  - Support for evaluation, orchestration, planning, and communication domains
+  - Constitutional AI integration across all use cases
+  - Cost optimization and intelligent routing
+  - Elimination of duplicate provider implementations
 
-  The interface provides:
-  - Standardized evaluation methods across all providers
-  - Unified response format for consistent processing
-  - Provider capability discovery and health monitoring
-  - Cost tracking and rate limiting integration
-  - Streaming evaluation support for real-time feedback
+  Migration path: Use RubberDuck.LlmProviders.Adapters.EvaluationAdapter for evaluation use cases.
+
+  Legacy provider interface for AI evaluation providers.
   """
 
   @type provider_config :: %{
