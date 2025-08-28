@@ -16,6 +16,8 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
   """
 
   require Logger
+  
+  alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
 
   # Simple provider configuration that works with existing systems
   @available_providers %{
@@ -474,7 +476,7 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
     case domain do
       :evaluation ->
         # Use Verdict configuration resolution
-        case RubberDuck.Verdict.Configuration.VerdictConfigurationResolver.resolve_configuration(
+        case VerdictConfigurationResolver.resolve_configuration(
                user_id,
                project_id
              ) do

@@ -10,6 +10,7 @@ defmodule RubberDuck.LlmProviders.UniversalProviderInitializer do
   require Logger
 
   alias RubberDuck.LlmProviders.{ProviderRegistry, UniversalProviderService}
+  alias RubberDuck.LlmProviders.Adapters.EvaluationAdapter
 
   @doc """
   Initialize Universal Provider System and migrate existing providers.
@@ -228,7 +229,7 @@ defmodule RubberDuck.LlmProviders.UniversalProviderInitializer do
 
   defp validate_evaluation_domain_migration do
     # Test evaluation domain via universal providers
-    case RubberDuck.LlmProviders.Adapters.EvaluationAdapter.get_available_evaluation_providers() do
+    case EvaluationAdapter.get_available_evaluation_providers() do
       {:ok, providers} ->
         if Enum.any?(providers, fn {_type, capabilities} ->
              capabilities.supports_constitutional_ai

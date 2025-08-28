@@ -18,6 +18,8 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
   @behaviour RubberDuck.LlmProviders.UniversalProviderInterface
 
   require Logger
+  
+  alias RubberDuck.LlmProviders.UniversalProviderInterface
 
   @provider_type :openai
   @supported_domains [:evaluation, :orchestration, :planning, :communication]
@@ -206,10 +208,7 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
       |> Enum.into(%{})
 
     # Aggregate overall health
-    overall_health =
-      RubberDuck.LlmProviders.UniversalProviderInterface.aggregate_domain_health(
-        domain_health_results
-      )
+    overall_health = UniversalProviderInterface.aggregate_domain_health(domain_health_results)
 
     {:ok,
      Map.merge(overall_health, %{
@@ -225,8 +224,7 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
          {:ok, token_estimate} <- estimate_tokens_for_request(request, model) do
       model_info = Map.get(@supported_models, model, %{cost_per_1k_tokens: 0.02})
 
-      cost_estimate =
-        RubberDuck.LlmProviders.UniversalProviderInterface.calculate_universal_cost_estimate(
+      cost_estimate = UniversalProviderInterface.calculate_universal_cost_estimate(
           token_estimate,
           model_info.cost_per_1k_tokens,
           request.context
@@ -259,7 +257,7 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
   end
 
   defp validate_universal_request(request) do
-    RubberDuck.LlmProviders.UniversalProviderInterface.validate_universal_request(request)
+    UniversalProviderInterface.validate_universal_request(request)
   end
 
   defp select_model_for_request(state, request) do
@@ -326,8 +324,7 @@ defmodule RubberDuck.LlmProviders.OpenAI.UniversalOpenAIProvider do
     # Build request optimized for code evaluation (from Verdict system)
     system_prompt = "You are an expert code reviewer providing detailed, actionable feedback."
 
-    user_prompt =
-      RubberDuck.LlmProviders.UniversalProviderInterface.build_universal_prompt(
+    user_prompt = UniversalProviderInterface.build_universal_prompt(
         request.content,
         :evaluation,
         request.context.use_case,

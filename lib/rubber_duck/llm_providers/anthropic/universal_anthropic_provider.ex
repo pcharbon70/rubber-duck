@@ -19,6 +19,8 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
   @behaviour RubberDuck.LlmProviders.UniversalProviderInterface
 
   require Logger
+  
+  alias RubberDuck.LlmProviders.UniversalProviderInterface
 
   @provider_type :anthropic
   # Claude excels at thoughtful domains
@@ -264,10 +266,7 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
       |> Enum.into(%{})
 
     # Aggregate overall health with Constitutional AI considerations
-    overall_health =
-      RubberDuck.LlmProviders.UniversalProviderInterface.aggregate_domain_health(
-        domain_health_results
-      )
+    overall_health = UniversalProviderInterface.aggregate_domain_health(domain_health_results)
 
     {:ok,
      Map.merge(overall_health, %{
@@ -285,7 +284,7 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
       model_info = Map.get(@supported_models, model, %{cost_per_1k_tokens: 0.015})
 
       cost_estimate =
-        RubberDuck.LlmProviders.UniversalProviderInterface.calculate_universal_cost_estimate(
+        UniversalProviderInterface.calculate_universal_cost_estimate(
           token_estimate,
           model_info.cost_per_1k_tokens,
           request.context
@@ -318,7 +317,7 @@ defmodule RubberDuck.LlmProviders.Anthropic.UniversalAnthropicProvider do
   end
 
   defp validate_universal_request(request) do
-    RubberDuck.LlmProviders.UniversalProviderInterface.validate_universal_request(request)
+    UniversalProviderInterface.validate_universal_request(request)
   end
 
   defp initialize_constitutional_ai(constitutional_ai_config) do
