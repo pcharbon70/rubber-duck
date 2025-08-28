@@ -4,7 +4,7 @@ defmodule RubberDuck.IntegrationCase do
 
   This test case provides comprehensive setup for testing:
   - End-to-end evaluation workflows with all Phase 1B components
-  - Cross-domain integration between Verdict, Universal Providers, and Skills systems  
+  - Cross-domain integration between Verdict, Universal Providers, and Skills systems
   - Configuration resolution across three-tier hierarchy
   - Performance testing under concurrent load
   - Constitutional AI principles maintenance across integrated workflows
@@ -86,7 +86,7 @@ defmodule RubberDuck.IntegrationCase do
     # Auto-register existing skills
     RubberDuck.SkillsActions.SkillsRegistry.auto_register_existing_skills()
 
-    # Start action orchestrator  
+    # Start action orchestrator
     {:ok, _pid} = RubberDuck.SkillsActions.ActionOrchestrator.start_link()
   end
 
@@ -165,7 +165,7 @@ defmodule RubberDuck.IntegrationCase do
 
     merged_settings = Map.merge(default_settings, settings)
 
-    # Create project (would use actual Project creation in production)  
+    # Create project (would use actual Project creation in production)
     %{
       id: generate_test_project_id(),
       name: "Integration Test Project",
@@ -194,12 +194,12 @@ defmodule RubberDuck.IntegrationCase do
         defmodule ComplexTestModule do
           use GenServer
           require Logger
-          
+
           @doc "Complex module for integration testing"
           def start_link(opts) do
             GenServer.start_link(__MODULE__, opts, name: __MODULE__)
           end
-          
+
           def init(opts) do
             state = %{
               data: Map.get(opts, :initial_data, %{}),
@@ -207,16 +207,16 @@ defmodule RubberDuck.IntegrationCase do
             }
             {:ok, state}
           end
-          
+
           def process_data(data) do
             GenServer.call(__MODULE__, {:process, data})
           end
-          
+
           def handle_call({:process, data}, _from, state) do
             result = transform_data(data, state.config)
             {:reply, result, state}
           end
-          
+
           defp transform_data(data, config) do
             # Complex transformation logic
             data
@@ -224,7 +224,7 @@ defmodule RubberDuck.IntegrationCase do
             |> Map.put(:config_applied, config)
             |> validate_data()
           end
-          
+
           defp validate_data(data) do
             if Map.has_key?(data, :required_field) do
               {:ok, data}
@@ -243,19 +243,19 @@ defmodule RubberDuck.IntegrationCase do
             query = "SELECT * FROM users WHERE name = '" <> input <> "'"
             execute_query(query)
           end
-          
+
           def execute_query(query) do
             # Simulated database query execution
             Logger.info("Executing query: #{query}")
             {:ok, "Query executed"}
           end
-          
+
           def handle_sensitive_data(user_data) do
             # Another security test scenario
             password = Map.get(user_data, :password)
             store_in_logs(password)  # Security issue
           end
-          
+
           defp store_in_logs(data) do
             Logger.info("Storing data: #{data}")
           end
@@ -317,13 +317,14 @@ defmodule RubberDuck.IntegrationCase do
   defp execute_single_evaluation_with_timing(request) do
     start_time = System.monotonic_time(:millisecond)
 
-    result = RubberDuck.Verdict.Engine.evaluate_code(
-      request.code,
-      request.evaluation_type,
-      user_id: request.user_id,
-      project_id: request.project_id,
-      criteria: request.criteria
-    )
+    result =
+      RubberDuck.Verdict.Engine.evaluate_code(
+        request.code,
+        request.evaluation_type,
+        user_id: request.user_id,
+        project_id: request.project_id,
+        criteria: request.criteria
+      )
 
     execution_time = System.monotonic_time(:millisecond) - start_time
 

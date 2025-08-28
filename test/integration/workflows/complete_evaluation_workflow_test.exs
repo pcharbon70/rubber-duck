@@ -383,7 +383,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       assert Map.get(metadata, :universal_provider_used, false),
              "Universal Provider System not used"
 
-      # Should have routing decision metadata  
+      # Should have routing decision metadata
       assert Map.has_key?(metadata, :provider_routing_decision),
              "No provider routing decision metadata"
 
