@@ -13,8 +13,8 @@ defmodule RubberDuck.Verdict.Providers.ProviderHealthMonitor do
   use GenServer
   require Logger
 
-  alias RubberDuck.Verdict.Providers.ProviderRegistry
   alias RubberDuck.Verdict.Providers.ProviderInterface
+  alias RubberDuck.Verdict.Providers.ProviderRegistry
 
   # 30 seconds
   @health_check_interval 30_000

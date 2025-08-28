@@ -1,10 +1,10 @@
 defmodule RubberDuck.Verdict.Providers.ProviderRegistry do
   @moduledoc """
   DEPRECATED: Use RubberDuck.LlmProviders.ProviderRegistry instead.
-  
+
   This module has been replaced by the Universal Provider System.
   Migration path: Use RubberDuck.LlmProviders.Adapters.EvaluationAdapter.
-  
+
   Legacy provider registry for managing AI evaluation providers.
 
   This module manages the registration, discovery, and lifecycle of all

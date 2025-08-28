@@ -14,10 +14,10 @@ defmodule RubberDuck.Verdict.Engine do
   - Integration with RubberDuck preference system
   """
 
+  alias RubberDuck.LlmProviders.Adapters.EvaluationAdapter
+  alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
   alias RubberDuck.Verdict.Optimization.{IntelligentCache, ProgressiveEvaluator}
   alias RubberDuck.Verdict.Resources.{EvaluationResult, EvaluationRun}
-  alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
-  alias RubberDuck.LlmProviders.Adapters.EvaluationAdapter
 
   require Logger
 
@@ -250,7 +250,7 @@ defmodule RubberDuck.Verdict.Engine do
         # Perform evaluation using Universal Provider System via EvaluationAdapter
         user_id = Keyword.get(options, :user_id, "system")
         project_id = Keyword.get(options, :project_id)
-        
+
         evaluation_options = %{
           quality_threshold: Map.get(config, :default_quality_threshold, 0.8),
           max_tokens: Map.get(config, :max_tokens_per_evaluation, 1500),
@@ -259,8 +259,14 @@ defmodule RubberDuck.Verdict.Engine do
           streaming: Keyword.get(options, :streaming, false),
           metadata: %{via_verdict_engine: true}
         }
-        
-        case EvaluationAdapter.evaluate_code(code, evaluation_type, user_id, project_id, evaluation_options) do
+
+        case EvaluationAdapter.evaluate_code(
+               code,
+               evaluation_type,
+               user_id,
+               project_id,
+               evaluation_options
+             ) do
           {:ok, universal_result} ->
             # Adapt result for Verdict system format and cache
             verdict_result = adapt_universal_result_for_verdict(universal_result, config)
@@ -268,7 +274,10 @@ defmodule RubberDuck.Verdict.Engine do
             {:ok, Map.put(verdict_result, :cache_hit, false)}
 
           error ->
-            Logger.error("Universal provider evaluation failed, falling back to ProgressiveEvaluator")
+            Logger.error(
+              "Universal provider evaluation failed, falling back to ProgressiveEvaluator"
+            )
+
             fallback_to_progressive_evaluator(code, evaluation_type, config, options, cache_key)
         end
 
@@ -425,19 +434,21 @@ defmodule RubberDuck.Verdict.Engine do
         error
     end
   end
-  
+
   # Universal Provider System Integration
-  
+
   defp fallback_to_progressive_evaluator(code, evaluation_type, config, options, cache_key) do
     # Fallback to existing system if universal provider fails
     case ProgressiveEvaluator.evaluate(code, evaluation_type, config, options) do
       {:ok, result} ->
         IntelligentCache.cache_result(cache_key, result, config)
         {:ok, Map.put(result, :cache_hit, false)}
-      error -> error
+
+      error ->
+        error
     end
   end
-  
+
   defp adapt_universal_result_for_verdict(universal_result, config) do
     # Adapt EvaluationAdapter result to Verdict Engine format
     %{
@@ -447,28 +458,29 @@ defmodule RubberDuck.Verdict.Engine do
       confidence: universal_result.confidence,
       model_used: universal_result.model,
       provider_used: to_string(universal_result.provider),
-      
+
       # Evaluation details
       issues: universal_result.issues,
       recommendations: universal_result.recommendations,
       reasoning: universal_result.reasoning,
-      
+
       # Cost and performance
       cost_usd: universal_result.cost_usd,
       tokens_used: universal_result.tokens_used,
       latency_ms: universal_result.response_time_ms,
-      
+
       # Universal provider enhancements
       constitutional_ai_enhanced: Map.get(universal_result, :constitutional_ai_enhanced, false),
       universal_provider_used: true,
       evaluation_type: universal_result.evaluation_type,
-      
+
       # Metadata
       timestamp: DateTime.utc_now(),
-      metadata: Map.merge(Map.get(config, :metadata, %{}), %{
-        universal_provider_integration: true,
-        original_universal_metadata: universal_result.metadata
-      })
+      metadata:
+        Map.merge(Map.get(config, :metadata, %{}), %{
+          universal_provider_integration: true,
+          original_universal_metadata: universal_result.metadata
+        })
     }
   end
 end

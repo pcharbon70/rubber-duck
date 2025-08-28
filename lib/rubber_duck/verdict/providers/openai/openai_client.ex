@@ -201,19 +201,21 @@ defmodule RubberDuck.Verdict.Providers.OpenAI.OpenAIClient do
     # Simulate streaming by chunking the response
     chunks = String.split(response_body, " ") |> Enum.chunk_every(10)
 
-    _chunk_count = chunks
-    |> Enum.with_index(fn chunk, index ->
-      callback.(%{
-        type: :chunk,
-        content: Enum.join(chunk, " "),
-        chunk_index: index,
-        timestamp: DateTime.utc_now()
-      })
+    _chunk_count =
+      chunks
+      |> Enum.with_index(fn chunk, index ->
+        callback.(%{
+          type: :chunk,
+          content: Enum.join(chunk, " "),
+          chunk_index: index,
+          timestamp: DateTime.utc_now()
+        })
 
-      # Small delay to simulate streaming
-      Process.sleep(50)
-    end)
-    |> Enum.count()  # Use the return value
+        # Small delay to simulate streaming
+        Process.sleep(50)
+      end)
+      # Use the return value
+      |> Enum.count()
 
     callback.(%{
       type: :complete,

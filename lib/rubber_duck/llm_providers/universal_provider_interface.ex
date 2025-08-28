@@ -667,12 +667,12 @@ defmodule RubberDuck.LlmProviders.UniversalProviderInterface do
     cond do
       # Excellent
       response_time_ms <= 1000 -> 1.0
-      # Good  
+      # Good
       response_time_ms <= 3000 -> 0.8
       # Acceptable
       response_time_ms <= 5000 -> 0.6
       # Poor
-      response_time_ms <= 10000 -> 0.4
+      response_time_ms <= 10_000 -> 0.4
       # Very poor
       true -> 0.2
     end

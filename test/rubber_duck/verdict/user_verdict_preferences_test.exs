@@ -6,8 +6,8 @@ defmodule RubberDuck.Verdict.UserVerdictPreferencesTest do
   use ExUnit.Case, async: true
   use RubberDuck.DataCase
 
-  alias RubberDuck.Verdict.UserVerdictPreferences
   alias RubberDuck.Accounts.User
+  alias RubberDuck.Verdict.UserVerdictPreferences
 
   setup do
     {:ok, user} =
