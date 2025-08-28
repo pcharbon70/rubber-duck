@@ -43,8 +43,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
     with {:ok, system_config} <- resolve_system_skills_config(),
          {:ok, user_config} <- resolve_user_skills_config(user_id),
          {:ok, project_config} <- resolve_project_skills_config(project_id),
-         {:ok, merged_config} <- merge_configuration_hierarchy(system_config, user_config, project_config) do
-
+         {:ok, merged_config} <-
+           merge_configuration_hierarchy(system_config, user_config, project_config) do
       {:ok, merged_config}
     else
       error ->
@@ -73,7 +73,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
 
         {:ok, skill_preferences}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -84,17 +85,20 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
     case resolve_skills_actions_configuration(user_id, project_id) do
       {:ok, config} ->
         orchestration_preferences = %{
-          coordination_strategy: Map.get(config.actions, :action_coordination_strategy, :balanced),
+          coordination_strategy:
+            Map.get(config.actions, :action_coordination_strategy, :balanced),
           parallel_execution_limit: Map.get(config.actions, :parallel_execution_limit, 5),
           workflow_timeout_ms: Map.get(config.actions, :workflow_timeout_ms, 30_000),
-          error_recovery_strategy: Map.get(config.actions, :error_recovery_strategy, :graceful_degradation),
+          error_recovery_strategy:
+            Map.get(config.actions, :error_recovery_strategy, :graceful_degradation),
           performance_monitoring: Map.get(config.actions, :performance_monitoring_enabled, true),
           llm_optimization_enabled: Map.get(config.orchestration, :llm_optimization_enabled, true)
         }
 
         {:ok, orchestration_preferences}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -106,18 +110,22 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
       {:ok, config} ->
         workflow_templates = Map.get(config.workflows, :templates, %{})
 
-        template_preferences = case Map.get(workflow_templates, workflow_type) do
-          nil -> get_default_workflow_template(workflow_type)
-          template -> template
-        end
+        template_preferences =
+          case Map.get(workflow_templates, workflow_type) do
+            nil -> get_default_workflow_template(workflow_type)
+            template -> template
+          end
 
-        {:ok, Map.merge(template_preferences, %{
-          llm_optimization: Map.get(config.workflows, :llm_optimization_enabled, true),
-          constitutional_ai_compliance: Map.get(config.workflows, :constitutional_ai_compliance, false),
-          performance_tracking: Map.get(config.workflows, :performance_tracking_enabled, true)
-        })}
+        {:ok,
+         Map.merge(template_preferences, %{
+           llm_optimization: Map.get(config.workflows, :llm_optimization_enabled, true),
+           constitutional_ai_compliance:
+             Map.get(config.workflows, :constitutional_ai_compliance, false),
+           performance_tracking: Map.get(config.workflows, :performance_tracking_enabled, true)
+         })}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -161,70 +169,77 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
 
   defp resolve_system_skills_config do
     # Resolve system-level skills & actions configuration
-    {:ok, %{
-      skills: %{
-        registry_cache_ttl: 300_000,  # 5 minutes
-        capability_matching_algorithm: :weighted_overlap,
-        performance_monitoring_enabled: true,
-        llm_assistance_enabled: true,
-        constitutional_ai_for_skills: false
-      },
-      actions: %{
-        action_coordination_strategy: :balanced,
-        parallel_execution_limit: 10,
-        workflow_timeout_ms: 60_000,
-        error_recovery_strategy: :retry_with_fallback,
-        performance_monitoring_enabled: true
-      },
-      workflows: %{
-        llm_optimization_enabled: true,
-        performance_tracking_enabled: true,
-        constitutional_ai_compliance: false,
-        default_execution_pattern: :sequential
-      },
-      orchestration: %{
-        max_concurrent_workflows: 20,
-        workflow_result_caching: true,
-        dependency_resolution_strategy: :lazy,
-        llm_optimization_enabled: true
-      }
-    }}
+    {:ok,
+     %{
+       skills: %{
+         # 5 minutes
+         registry_cache_ttl: 300_000,
+         capability_matching_algorithm: :weighted_overlap,
+         performance_monitoring_enabled: true,
+         llm_assistance_enabled: true,
+         constitutional_ai_for_skills: false
+       },
+       actions: %{
+         action_coordination_strategy: :balanced,
+         parallel_execution_limit: 10,
+         workflow_timeout_ms: 60_000,
+         error_recovery_strategy: :retry_with_fallback,
+         performance_monitoring_enabled: true
+       },
+       workflows: %{
+         llm_optimization_enabled: true,
+         performance_tracking_enabled: true,
+         constitutional_ai_compliance: false,
+         default_execution_pattern: :sequential
+       },
+       orchestration: %{
+         max_concurrent_workflows: 20,
+         workflow_result_caching: true,
+         dependency_resolution_strategy: :lazy,
+         llm_optimization_enabled: true
+       }
+     }}
   end
 
   defp resolve_user_skills_config(user_id) do
     # Use existing preference resolution for user-level skills preferences
     case PreferenceResolver.get_preference("skills_actions", user_id) do
       {:ok, user_prefs} ->
-        {:ok, %{
-          skills: extract_user_skills_preferences(user_prefs),
-          actions: extract_user_actions_preferences(user_prefs),
-          workflows: extract_user_workflow_preferences(user_prefs),
-          orchestration: extract_user_orchestration_preferences(user_prefs)
-        }}
+        {:ok,
+         %{
+           skills: extract_user_skills_preferences(user_prefs),
+           actions: extract_user_actions_preferences(user_prefs),
+           workflows: extract_user_workflow_preferences(user_prefs),
+           orchestration: extract_user_orchestration_preferences(user_prefs)
+         }}
 
       {:error, :not_found} ->
         {:ok, get_default_user_skills_config()}
 
-      error -> error
+      error ->
+        error
     end
   end
 
   defp resolve_project_skills_config(nil), do: {:ok, %{}}
+
   defp resolve_project_skills_config(project_id) do
     # Resolve project-level skills & actions configuration
     case PreferenceResolver.get_preference("skills_actions", nil, project_id) do
       {:ok, project_prefs} ->
-        {:ok, %{
-          skills: extract_project_skills_preferences(project_prefs),
-          actions: extract_project_actions_preferences(project_prefs),
-          workflows: extract_project_workflow_preferences(project_prefs),
-          orchestration: extract_project_orchestration_preferences(project_prefs)
-        }}
+        {:ok,
+         %{
+           skills: extract_project_skills_preferences(project_prefs),
+           actions: extract_project_actions_preferences(project_prefs),
+           workflows: extract_project_workflow_preferences(project_prefs),
+           orchestration: extract_project_orchestration_preferences(project_prefs)
+         }}
 
       {:error, :not_found} ->
         {:ok, %{}}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -234,7 +249,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
       skills: merge_domain_config(:skills, system_config, user_config, project_config),
       actions: merge_domain_config(:actions, system_config, user_config, project_config),
       workflows: merge_domain_config(:workflows, system_config, user_config, project_config),
-      orchestration: merge_domain_config(:orchestration, system_config, user_config, project_config)
+      orchestration:
+        merge_domain_config(:orchestration, system_config, user_config, project_config)
     }
 
     case validate_skills_actions_configuration(merged_config) do
@@ -375,7 +391,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
   defp extract_user_actions_preferences(user_prefs) do
     %{
       preferred_actions: Map.get(user_prefs, "preferred_actions", []),
-      action_coordination_strategy: Map.get(user_prefs, "action_coordination_strategy", :balanced),
+      action_coordination_strategy:
+        Map.get(user_prefs, "action_coordination_strategy", :balanced),
       parallel_execution_limit: Map.get(user_prefs, "parallel_execution_limit", 5),
       workflow_timeout_ms: Map.get(user_prefs, "workflow_timeout_ms", 30_000)
     }
@@ -408,7 +425,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
   defp extract_project_actions_preferences(project_prefs) do
     %{
       project_action_templates: Map.get(project_prefs, "project_action_templates", %{}),
-      project_coordination_strategy: Map.get(project_prefs, "project_coordination_strategy", :balanced),
+      project_coordination_strategy:
+        Map.get(project_prefs, "project_coordination_strategy", :balanced),
       project_workflow_patterns: Map.get(project_prefs, "project_workflow_patterns", [])
     }
   end
@@ -423,9 +441,11 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
 
   defp extract_project_orchestration_preferences(project_prefs) do
     %{
-      project_orchestration_style: Map.get(project_prefs, "project_orchestration_style", :standard),
+      project_orchestration_style:
+        Map.get(project_prefs, "project_orchestration_style", :standard),
       team_coordination_patterns: Map.get(project_prefs, "team_coordination_patterns", []),
-      resource_allocation_strategy: Map.get(project_prefs, "resource_allocation_strategy", :fair_share)
+      resource_allocation_strategy:
+        Map.get(project_prefs, "resource_allocation_strategy", :fair_share)
     }
   end
 
@@ -448,7 +468,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
           timeout_ms < 1000 or timeout_ms > 300_000 ->
             {:error, "Skill timeout must be between 1 second and 5 minutes"}
 
-          true -> :ok
+          true ->
+            :ok
         end
 
       fields ->
@@ -467,7 +488,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
       workflow_timeout < 5000 or workflow_timeout > 600_000 ->
         {:error, "Workflow timeout must be between 5 seconds and 10 minutes"}
 
-      true -> :ok
+      true ->
+        :ok
     end
   end
 
@@ -507,7 +529,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
         # Create new user preference
         PreferenceResolver.set_preference(preference_key, user_id, new_preferences)
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -523,7 +546,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
       {:error, :not_found} ->
         PreferenceResolver.set_preference(preference_key, nil, project_id, new_preferences)
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -549,7 +573,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
 
         preferences.constitutional_ai_enabled or skill_name in safety_critical_skills
 
-      _ -> false
+      _ ->
+        false
     end
   end
 
@@ -559,14 +584,19 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
   def get_llm_provider_preferences_for_skills(user_id, project_id \\ nil) do
     case resolve_skills_actions_configuration(user_id, project_id) do
       {:ok, config} ->
-        {:ok, %{
-          llm_assistance_enabled: Map.get(config.skills, :llm_assistance_enabled, true),
-          constitutional_ai_for_skills: Map.get(config.skills, :constitutional_ai_for_skills, false),
-          llm_optimization_enabled: Map.get(config.orchestration, :llm_optimization_enabled, true),
-          cost_optimization_priority: Map.get(config.orchestration, :cost_optimization_priority, :medium)
-        }}
+        {:ok,
+         %{
+           llm_assistance_enabled: Map.get(config.skills, :llm_assistance_enabled, true),
+           constitutional_ai_for_skills:
+             Map.get(config.skills, :constitutional_ai_for_skills, false),
+           llm_optimization_enabled:
+             Map.get(config.orchestration, :llm_optimization_enabled, true),
+           cost_optimization_priority:
+             Map.get(config.orchestration, :cost_optimization_priority, :medium)
+         }}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -576,23 +606,25 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
   def build_enhanced_execution_context(base_context, user_id, project_id \\ nil) do
     case resolve_skills_actions_configuration(user_id, project_id) do
       {:ok, config} ->
-        enhanced_context = Map.merge(base_context, %{
-          skills_config: config.skills,
-          actions_config: config.actions,
-          workflows_config: config.workflows,
-          orchestration_config: config.orchestration,
-          configuration_resolved_at: DateTime.utc_now()
-        })
+        enhanced_context =
+          Map.merge(base_context, %{
+            skills_config: config.skills,
+            actions_config: config.actions,
+            workflows_config: config.workflows,
+            orchestration_config: config.orchestration,
+            configuration_resolved_at: DateTime.utc_now()
+          })
 
         {:ok, enhanced_context}
 
       error ->
         Logger.warning("Failed to enhance context with configuration: #{inspect(error)}")
         # Return base context with defaults
-        {:ok, Map.merge(base_context, %{
-          skills_config: %{},
-          configuration_source: :default_fallback
-        })}
+        {:ok,
+         Map.merge(base_context, %{
+           skills_config: %{},
+           configuration_source: :default_fallback
+         })}
     end
   end
 
@@ -602,22 +634,25 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
   def get_workflow_execution_preferences(workflow_type, user_id, project_id \\ nil) do
     case get_orchestration_preferences(user_id, project_id) do
       {:ok, orchestration_prefs} ->
-        workflow_prefs = case get_workflow_template_preferences(workflow_type, user_id, project_id) do
-          {:ok, template_prefs} -> template_prefs
-          _ -> %{}
-        end
+        workflow_prefs =
+          case get_workflow_template_preferences(workflow_type, user_id, project_id) do
+            {:ok, template_prefs} -> template_prefs
+            _ -> %{}
+          end
 
-        {:ok, %{
-          coordination_strategy: orchestration_prefs.coordination_strategy,
-          parallel_limit: orchestration_prefs.parallel_execution_limit,
-          timeout_ms: orchestration_prefs.workflow_timeout_ms,
-          llm_optimization: workflow_prefs[:llm_optimization] || false,
-          constitutional_ai_compliance: workflow_prefs[:constitutional_ai_compliance] || false,
-          performance_tracking: workflow_prefs[:performance_tracking] || true,
-          execution_pattern: workflow_prefs[:execution_pattern] || :sequential
-        }}
+        {:ok,
+         %{
+           coordination_strategy: orchestration_prefs.coordination_strategy,
+           parallel_limit: orchestration_prefs.parallel_execution_limit,
+           timeout_ms: orchestration_prefs.workflow_timeout_ms,
+           llm_optimization: workflow_prefs[:llm_optimization] || false,
+           constitutional_ai_compliance: workflow_prefs[:constitutional_ai_compliance] || false,
+           performance_tracking: workflow_prefs[:performance_tracking] || true,
+           execution_pattern: workflow_prefs[:execution_pattern] || :sequential
+         }}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -628,7 +663,8 @@ defmodule RubberDuck.SkillsActions.Adapters.ConfigurationAdapter do
   """
   def cache_configuration(user_id, project_id, config) do
     cache_key = build_config_cache_key(user_id, project_id)
-    cache_ttl = 300_000  # 5 minutes
+    # 5 minutes
+    cache_ttl = 300_000
 
     # Would integrate with existing cache system
     Logger.debug("Caching skills & actions configuration for #{cache_key}")
