@@ -588,17 +588,17 @@ defmodule RubberDuck.SkillsActions.ActionOrchestrator do
 
   defp validate_pattern_specific_fields(workflow_definition) do
     pattern = workflow_definition.pattern
-    
+
     case pattern do
       :parallel -> validate_skills_actions_field(workflow_definition, "Parallel")
-      :sequential -> validate_skills_actions_field(workflow_definition, "Sequential")  
+      :sequential -> validate_skills_actions_field(workflow_definition, "Sequential")
       :conditional -> validate_workflow_tree_field(workflow_definition)
       :pipeline -> validate_pipeline_stages_field(workflow_definition)
       :scatter_gather -> validate_scatter_tasks_field(workflow_definition)
       _ -> :ok
     end
   end
-  
+
   defp validate_skills_actions_field(workflow_definition, pattern_name) do
     if Map.has_key?(workflow_definition, :skills_actions) do
       :ok
@@ -606,7 +606,7 @@ defmodule RubberDuck.SkillsActions.ActionOrchestrator do
       {:error, "#{pattern_name} workflow missing skills_actions"}
     end
   end
-  
+
   defp validate_workflow_tree_field(workflow_definition) do
     if Map.has_key?(workflow_definition, :workflow_tree) do
       :ok
@@ -614,7 +614,7 @@ defmodule RubberDuck.SkillsActions.ActionOrchestrator do
       {:error, "Conditional workflow missing workflow_tree"}
     end
   end
-  
+
   defp validate_pipeline_stages_field(workflow_definition) do
     if Map.has_key?(workflow_definition, :pipeline_stages) do
       :ok
@@ -622,7 +622,7 @@ defmodule RubberDuck.SkillsActions.ActionOrchestrator do
       {:error, "Pipeline workflow missing pipeline_stages"}
     end
   end
-  
+
   defp validate_scatter_tasks_field(workflow_definition) do
     if Map.has_key?(workflow_definition, :scatter_tasks) do
       :ok
