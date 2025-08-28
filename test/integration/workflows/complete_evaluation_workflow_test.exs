@@ -14,6 +14,9 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
 
   use RubberDuck.IntegrationCase, async: false
 
+  # Alias commonly used modules
+  alias RubberDuck.Verdict.Engine
+
   @moduletag :integration
   @moduletag :workflow
 
@@ -44,7 +47,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       start_time = System.monotonic_time(:millisecond)
 
       {:ok, evaluation_result} =
-        RubberDuck.Verdict.Engine.evaluate_code(
+        Engine.evaluate_code(
           code_sample,
           # Security evaluation should trigger Constitutional AI
           :security,
@@ -128,7 +131,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       complex_code = load_test_code_sample("complex_elixir_module.ex")
 
       {:ok, evaluation_result} =
-        RubberDuck.Verdict.Engine.evaluate_code(
+        Engine.evaluate_code(
           complex_code,
           :quality,
           user_id: user.id,
@@ -188,7 +191,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       code_sample = load_test_code_sample("security_test_code.ex")
 
       {:ok, evaluation_result} =
-        RubberDuck.Verdict.Engine.evaluate_code(
+        Engine.evaluate_code(
           code_sample,
           :security,
           user_id: user.id,
@@ -249,7 +252,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
         evaluation_types
         |> Enum.map(fn eval_type ->
           {:ok, result} =
-            RubberDuck.Verdict.Engine.evaluate_code(
+            Engine.evaluate_code(
               code_sample,
               eval_type,
               user_id: user.id,
@@ -305,7 +308,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
           # Use complex code that takes time to evaluate
           complex_code = String.duplicate(load_test_code_sample("complex_elixir_module.ex"), 3)
 
-          RubberDuck.Verdict.Engine.evaluate_code(
+          Engine.evaluate_code(
             complex_code,
             :quality,
             user_id: user.id,
@@ -365,7 +368,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       security_code = load_test_code_sample("security_test_code.ex")
 
       {:ok, evaluation_result} =
-        RubberDuck.Verdict.Engine.evaluate_code(
+        Engine.evaluate_code(
           security_code,
           :security,
           user_id: user.id,
@@ -422,7 +425,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       code_sample = load_test_code_sample("complex_elixir_module.ex")
 
       {:ok, evaluation_result} =
-        RubberDuck.Verdict.Engine.evaluate_code(
+        Engine.evaluate_code(
           code_sample,
           :quality,
           user_id: user.id,
@@ -481,7 +484,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       results =
         Enum.map(evaluation_requests, fn request ->
           {:ok, result} =
-            RubberDuck.Verdict.Engine.evaluate_code(
+            Engine.evaluate_code(
               request.code,
               request.evaluation_type,
               user_id: request.user_id,
@@ -560,7 +563,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
       code_sample = load_test_code_sample("complex_elixir_module.ex")
 
       {:ok, evaluation_result} =
-        RubberDuck.Verdict.Engine.evaluate_code(
+        Engine.evaluate_code(
           code_sample,
           :quality,
           user_id: user.id,

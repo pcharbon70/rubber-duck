@@ -15,11 +15,13 @@ defmodule RubberDuck.IntegrationCase do
   # Alias commonly used modules
   alias RubberDuck.LlmProviders.{
     ProviderRegistry,
+    ProviderRouter,
     UniversalProviderInitializer,
+    UniversalProviderRegistry,
     UniversalProviderService
   }
 
-  alias RubberDuck.SkillsActions.{SkillsRegistry, ActionOrchestrator}
+  alias RubberDuck.SkillsActions.{ActionOrchestrator, SkillsRegistry}
   alias RubberDuck.Verdict.Engine
 
   using do
@@ -123,7 +125,7 @@ defmodule RubberDuck.IntegrationCase do
   """
   def cleanup_integration_environment do
     # Shutdown Universal Provider System
-    RubberDuck.LlmProviders.UniversalProviderRegistry.shutdown_all_universal_providers()
+    UniversalProviderRegistry.shutdown_all_universal_providers()
 
     # Clean up telemetry handlers
     :telemetry.detach("integration-test-handlers")

@@ -12,6 +12,11 @@ defmodule RubberDuck.Integration.Performance.ConcurrentEvaluationsTest do
 
   use RubberDuck.IntegrationCase, async: false
 
+  # Alias commonly used modules
+  alias RubberDuck.LlmProviders.ProviderRouter
+  alias RubberDuck.SkillsActions.{ActionOrchestrator, SkillsRegistry}
+  alias RubberDuck.Verdict.Engine
+
   @moduletag :integration
   @moduletag :performance
   # Extended timeout for load testing
@@ -162,7 +167,7 @@ defmodule RubberDuck.Integration.Performance.ConcurrentEvaluationsTest do
 
             # Simulate provider routing decision
             routing_result =
-              RubberDuck.LlmProviders.ProviderRouter.select_provider(
+              ProviderRouter.select_provider(
                 :evaluation,
                 %{
                   user_id: request.user_id,
@@ -273,7 +278,7 @@ defmodule RubberDuck.Integration.Performance.ConcurrentEvaluationsTest do
             start_time = System.monotonic_time(:millisecond)
 
             recommendation_result =
-              RubberDuck.SkillsActions.SkillsRegistry.recommend_optimal_skill(
+              SkillsRegistry.recommend_optimal_skill(
                 request.agent_need,
                 request.context,
                 request.user_id
@@ -359,7 +364,7 @@ defmodule RubberDuck.Integration.Performance.ConcurrentEvaluationsTest do
             start_time = System.monotonic_time(:millisecond)
 
             workflow_result =
-              RubberDuck.SkillsActions.ActionOrchestrator.execute_parallel_workflow(
+              ActionOrchestrator.execute_parallel_workflow(
                 request.skills_actions,
                 request.execution_context
               )
@@ -446,7 +451,7 @@ defmodule RubberDuck.Integration.Performance.ConcurrentEvaluationsTest do
           1..6
           |> Enum.map(fn index ->
             Task.async(fn ->
-              RubberDuck.SkillsActions.SkillsRegistry.discover_skills(%{
+              SkillsRegistry.discover_skills(%{
                 capabilities: ["analyze", "learn", "detect"],
                 performance: %{max_execution_time_ms: 5000}
               })
