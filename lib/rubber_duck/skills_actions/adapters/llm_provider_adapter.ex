@@ -644,14 +644,17 @@ defmodule RubberDuck.SkillsActions.Adapters.LlmProviderAdapter do
   defp execute_skill_directly(skill_module, params, execution_context) do
     # Direct skill execution without LLM assistance
     case safe_execute_skill(skill_module, params, execution_context) do
-      {:ok, result} -> 
-        {:ok, %{
-          skill_module: skill_module,
-          result: result,
-          execution_source: :direct,
-          timestamp: DateTime.utc_now()
-        }}
-      error -> error
+      {:ok, result} ->
+        {:ok,
+         %{
+           skill_module: skill_module,
+           result: result,
+           execution_source: :direct,
+           timestamp: DateTime.utc_now()
+         }}
+
+      error ->
+        error
     end
   end
 
