@@ -10,9 +10,9 @@ defmodule RubberDuck.IntegrationHelpers.ConfigurationHelpers do
   """
 
   # Alias commonly used modules
-  alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
-  alias RubberDuck.SkillsActions.Adapters.ConfigurationAdapter
   alias RubberDuck.LlmProviders.UniversalProviderService
+  alias RubberDuck.SkillsActions.Adapters.ConfigurationAdapter
+  alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
 
   @doc """
   Create comprehensive three-tier configuration scenario.

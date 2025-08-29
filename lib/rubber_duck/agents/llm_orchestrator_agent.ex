@@ -27,7 +27,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
   require Logger
 
-  alias RubberDuck.LlmProviders.{UniversalProviderService, ProviderRouter}
+  alias RubberDuck.LlmProviders.{ProviderRouter, UniversalProviderService}
   alias RubberDuck.SkillsActions.SkillsRegistry
 
   @orchestration_skills [

@@ -26,7 +26,7 @@ defmodule RubberDuck.Agents.ProviderHealthSensor do
 
   require Logger
 
-  alias RubberDuck.LlmProviders.{UniversalProviderService, ProviderRegistry}
+  alias RubberDuck.LlmProviders.{ProviderRegistry, UniversalProviderService}
 
   # 15 seconds - more frequent than base system
   @health_check_interval 15_000
@@ -131,7 +131,7 @@ defmodule RubberDuck.Agents.ProviderHealthSensor do
       predictive_analytics: %{
         prediction_models: %{},
         # 1 hour
-        forecast_horizon: 3600_000,
+        forecast_horizon: 3_600_000,
         prediction_accuracy: %{}
       },
       alert_thresholds: @health_thresholds,

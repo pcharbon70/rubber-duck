@@ -25,7 +25,7 @@ defmodule RubberDuck.Skills.ProviderSelectionSkill do
 
   require Logger
 
-  alias RubberDuck.LlmProviders.{UniversalProviderService, ProviderRouter}
+  alias RubberDuck.LlmProviders.{ProviderRouter, UniversalProviderService}
 
   @doc """
   Select optimal provider for request based on multi-criteria optimization.

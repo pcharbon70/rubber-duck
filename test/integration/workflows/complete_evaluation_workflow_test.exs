@@ -15,6 +15,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
   use RubberDuck.IntegrationCase, async: false
 
   # Alias commonly used modules
+  alias RubberDuck.LlmProviders.ProviderRegistry
   alias RubberDuck.Verdict.Engine
 
   @moduletag :integration
@@ -627,7 +628,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
     Process.send_after(self(), {:restore_provider, provider}, duration_ms)
 
     # Mark provider as unhealthy
-    RubberDuck.LlmProviders.ProviderRegistry.mark_provider_unhealthy(
+    ProviderRegistry.mark_provider_unhealthy(
       provider,
       "Integration test failure simulation"
     )
@@ -638,7 +639,7 @@ defmodule RubberDuck.Integration.Workflows.CompleteEvaluationWorkflowTest do
     Logger.info("Restoring #{provider} after simulated failure")
 
     # Restore provider health (would integrate with actual health system)
-    RubberDuck.LlmProviders.ProviderRegistry.mark_provider_healthy(provider)
+    ProviderRegistry.mark_provider_healthy(provider)
 
     {:noreply, state}
   end
