@@ -9,8 +9,8 @@ defmodule RubberDuck.LlmProviders.UniversalProviderInitializer do
 
   require Logger
 
-  alias RubberDuck.LlmProviders.{ProviderRegistry, UniversalProviderService}
   alias RubberDuck.LlmProviders.Adapters.EvaluationAdapter
+  alias RubberDuck.LlmProviders.{ProviderRegistry, UniversalProviderService}
 
   @doc """
   Initialize Universal Provider System and migrate existing providers.

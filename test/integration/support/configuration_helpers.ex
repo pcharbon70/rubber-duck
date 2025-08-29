@@ -9,6 +9,11 @@ defmodule RubberDuck.IntegrationHelpers.ConfigurationHelpers do
   - Testing configuration change propagation in integrated scenarios
   """
 
+  # Alias commonly used modules
+  alias RubberDuck.LlmProviders.UniversalProviderService
+  alias RubberDuck.SkillsActions.Adapters.ConfigurationAdapter
+  alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
+
   @doc """
   Create comprehensive three-tier configuration scenario.
   """
@@ -40,23 +45,13 @@ defmodule RubberDuck.IntegrationHelpers.ConfigurationHelpers do
     result =
       case domain do
         :verdict ->
-          RubberDuck.Verdict.Configuration.VerdictConfigurationResolver.resolve_configuration(
-            user_id,
-            project_id
-          )
+          VerdictConfigurationResolver.resolve_configuration(user_id, project_id)
 
         :skills_actions ->
-          RubberDuck.SkillsActions.Adapters.ConfigurationAdapter.resolve_skills_actions_configuration(
-            user_id,
-            project_id
-          )
+          ConfigurationAdapter.resolve_skills_actions_configuration(user_id, project_id)
 
         :universal_providers ->
-          RubberDuck.LlmProviders.UniversalProviderService.resolve_provider_config(
-            domain,
-            user_id,
-            project_id
-          )
+          UniversalProviderService.resolve_provider_config(domain, user_id, project_id)
 
         _ ->
           {:error, "Unknown domain: #{domain}"}
@@ -177,11 +172,7 @@ defmodule RubberDuck.IntegrationHelpers.ConfigurationHelpers do
     monitoring_data = Task.await(monitoring_task)
 
     # Validate final configuration
-    {:ok, final_config} =
-      RubberDuck.Verdict.Configuration.VerdictConfigurationResolver.resolve_configuration(
-        user_id,
-        project_id
-      )
+    {:ok, final_config} = VerdictConfigurationResolver.resolve_configuration(user_id, project_id)
 
     %{
       final_config: final_config,
@@ -328,10 +319,7 @@ defmodule RubberDuck.IntegrationHelpers.ConfigurationHelpers do
   end
 
   defp capture_configuration_snapshot(user_id, project_id) do
-    case RubberDuck.Verdict.Configuration.VerdictConfigurationResolver.resolve_configuration(
-           user_id,
-           project_id
-         ) do
+    case VerdictConfigurationResolver.resolve_configuration(user_id, project_id) do
       {:ok, config} ->
         %{
           preferred_providers: Map.get(config, :preferred_providers, []),
