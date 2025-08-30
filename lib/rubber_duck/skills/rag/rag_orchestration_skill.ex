@@ -544,7 +544,10 @@ defmodule RubberDuck.Skills.Rag.RagOrchestrationSkill do
         {:ok, updated_generation}
 
       {:error, reason} ->
-        Logger.warning("RagOrchestrationSkill: Evaluation failed, proceeding without", error: reason)
+        Logger.warning("RagOrchestrationSkill: Evaluation failed, proceeding without",
+          error: reason
+        )
+
         # Continue without evaluation rather than fail the entire pipeline
         {:ok, generation}
     end

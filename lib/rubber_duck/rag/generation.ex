@@ -340,14 +340,14 @@ defmodule RubberDuck.Rag.Generation do
       {:embedding_generated, embedding_generated?(generation)},
       {:query_received, query_received?(generation)}
     ]
-    
+
     find_current_stage(stage_checks, :initialized)
   end
 
   defp find_current_stage([], default_stage), do: default_stage
-  
+
   defp find_current_stage([{stage, true} | _], _default_stage), do: stage
-  
+
   defp find_current_stage([{_stage, false} | rest], default_stage) do
     find_current_stage(rest, default_stage)
   end
