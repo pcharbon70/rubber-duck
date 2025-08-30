@@ -206,7 +206,8 @@ defmodule RubberDuck.Workflows.SkillsComposition do
   defp validate_skills_group({group_name, group_skills}) do
     case validate_skills_for_composition(group_skills) do
       {:ok, validated_skills} -> {group_name, validated_skills}
-      {:error, _reason} -> {group_name, []}  # Empty group on validation failure
+      # Empty group on validation failure
+      {:error, _reason} -> {group_name, []}
     end
   end
 
