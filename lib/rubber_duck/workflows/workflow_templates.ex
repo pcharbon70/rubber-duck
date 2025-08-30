@@ -23,7 +23,7 @@ defmodule RubberDuck.Workflows.WorkflowTemplates do
 
   require Logger
 
-  alias RubberDuck.Workflows.{ReactorConfig, OptionalWorkflowUtils}
+  alias RubberDuck.Workflows.{OptionalWorkflowUtils, ReactorConfig}
 
   # Pre-defined workflow templates
   @workflow_templates %{
