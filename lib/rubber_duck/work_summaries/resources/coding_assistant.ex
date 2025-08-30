@@ -17,6 +17,68 @@ defmodule RubberDuck.WorkSummaries.Resources.CodingAssistant do
     repo RubberDuck.Repo
   end
 
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      description "Create a new coding assistant record"
+
+      accept [
+        :name,
+        :version,
+        :capabilities,
+        :provider_preferences,
+        :performance_metrics,
+        :configuration
+      ]
+
+      validate present([:name])
+    end
+
+    update :update do
+      description "Update coding assistant information"
+
+      accept [
+        :version,
+        :capabilities,
+        :provider_preferences,
+        :performance_metrics,
+        :configuration,
+        :is_active
+      ]
+    end
+
+    read :active_assistants do
+      description "Get only active assistants"
+      filter expr(is_active == true)
+    end
+
+    read :by_name do
+      description "Find assistant by name"
+
+      argument :assistant_name, :string do
+        allow_nil? false
+      end
+
+      filter expr(name == ^arg(:assistant_name))
+    end
+  end
+
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    policy action_type([:create, :update, :destroy]) do
+      # Will be restricted based on user context in production
+      authorize_if always()
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -77,69 +139,18 @@ defmodule RubberDuck.WorkSummaries.Resources.CodingAssistant do
     end
   end
 
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      description "Create a new coding assistant record"
-      
-      accept [
-        :name,
-        :version,
-        :capabilities,
-        :provider_preferences,
-        :performance_metrics,
-        :configuration
-      ]
-
-      validate present([:name])
-    end
-
-    update :update do
-      description "Update coding assistant information"
-      
-      accept [
-        :version,
-        :capabilities,
-        :provider_preferences,
-        :performance_metrics,
-        :configuration,
-        :is_active
-      ]
-    end
-
-    read :active_assistants do
-      description "Get only active assistants"
-      filter expr(is_active == true)
-    end
-
-    read :by_name do
-      description "Find assistant by name"
-      
-      argument :assistant_name, :string do
-        allow_nil? false
-      end
-      
-      filter expr(name == ^arg(:assistant_name))
-    end
-  end
-
   calculations do
-    calculate :total_summaries_count, :integer, expr(
-      count(work_summaries, field: :id)
-    ) do
+    calculate :total_summaries_count, :integer, expr(count(work_summaries, field: :id)) do
       description "Total number of summaries created by this assistant"
     end
 
-    calculate :avg_summary_quality, :decimal, expr(
-      avg(work_summaries, field: :quality_score)
-    ) do
+    calculate :avg_summary_quality, :decimal, expr(avg(work_summaries, field: :quality_score)) do
       description "Average quality score of summaries"
     end
 
-    calculate :total_work_time, :integer, expr(
-      sum(work_summaries, field: :work_duration_minutes)
-    ) do
+    calculate :total_work_time,
+              :integer,
+              expr(sum(work_summaries, field: :work_duration_minutes)) do
       description "Total work time in minutes"
     end
   end
@@ -153,20 +164,6 @@ defmodule RubberDuck.WorkSummaries.Resources.CodingAssistant do
 
     sum :total_duration, :work_summaries, :work_duration_minutes do
       description "Total work duration across all summaries"
-    end
-  end
-
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    policy action_type(:read) do
-      authorize_if always()
-    end
-
-    policy action_type([:create, :update, :destroy]) do
-      authorize_if always()  # Will be restricted based on user context in production
     end
   end
 end
