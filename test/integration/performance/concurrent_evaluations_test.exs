@@ -437,7 +437,7 @@ defmodule RubberDuck.Integration.Performance.ConcurrentEvaluationsTest do
 
               eval_type = Enum.random([:quality, :security, :performance])
 
-              RubberDuck.Verdict.Engine.evaluate_code(
+              Engine.evaluate_code(
                 code,
                 eval_type,
                 user_id: user.id,
