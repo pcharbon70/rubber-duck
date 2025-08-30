@@ -286,7 +286,7 @@ defmodule RubberDuck.Workflows.ReactorConfigTest do
         enable_telemetry: true,
         middleware: [:telemetry],
         extra_key: "should_be_ignored",
-        another_extra: 12345
+        another_extra: 12_345
       }
 
       # Should accept extra keys without error
