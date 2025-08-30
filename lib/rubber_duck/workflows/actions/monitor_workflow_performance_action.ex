@@ -658,8 +658,12 @@ defmodule RubberDuck.Workflows.Actions.MonitorWorkflowPerformanceAction do
     success_rate = Map.get(template_data, :success_rate, 0.0)
     effectiveness = Map.get(template_data, :effectiveness_score, 0.0)
 
-    metrics = %{usage_count: usage_count, success_rate: success_rate, effectiveness: effectiveness}
-    
+    metrics = %{
+      usage_count: usage_count,
+      success_rate: success_rate,
+      effectiveness: effectiveness
+    }
+
     cond do
       excellent_template?(metrics) -> :excellent
       good_template?(metrics) -> :good
