@@ -505,7 +505,6 @@ defmodule RubberDuck.Integration.Phase2.ComprehensivePhase2IntegrationTest do
     with {:ok, embedding_data} <- generate_test_embedding(query),
          {:ok, search_data} <- perform_test_semantic_search(embedding_data.embeddings),
          {:ok, reasoning_data} <- apply_test_reasoning_validation(query, search_data) do
-      
       %{
         success: true,
         rag_pipeline_complete: true,
@@ -517,48 +516,57 @@ defmodule RubberDuck.Integration.Phase2.ComprehensivePhase2IntegrationTest do
     else
       {:error, {:embedding_failed, error}} ->
         %{success: false, stage_failed: :embedding, error: error}
-      
+
       {:error, {:search_failed, error}} ->
         %{success: false, stage_failed: :search, error: error}
-      
+
       {:error, {:reasoning_failed, error}} ->
         %{success: false, stage_failed: :reasoning, error: error}
     end
   end
 
   defp generate_test_embedding(query) do
-    case GenerateEmbeddingAction.run(%{
-      input: query,
-      provider: :auto,
-      optimization_config: %{auto_provider_selection: true, cost_optimization: true}
-    }, %{}) do
+    case GenerateEmbeddingAction.run(
+           %{
+             input: query,
+             provider: :auto,
+             optimization_config: %{auto_provider_selection: true, cost_optimization: true}
+           },
+           %{}
+         ) do
       {:ok, embedding_data} -> {:ok, embedding_data}
       {:error, reason} -> {:error, {:embedding_failed, reason}}
     end
   end
 
   defp perform_test_semantic_search(embeddings) do
-    case SemanticSearchAction.run(%{
-      query_embedding: List.first(embeddings),
-      vector_store: :memory,
-      similarity_threshold: 0.6,
-      limit: 5
-    }, %{}) do
+    case SemanticSearchAction.run(
+           %{
+             query_embedding: List.first(embeddings),
+             vector_store: :memory,
+             similarity_threshold: 0.6,
+             limit: 5
+           },
+           %{}
+         ) do
       {:ok, search_data} -> {:ok, search_data}
       {:error, reason} -> {:error, {:search_failed, reason}}
     end
   end
 
   defp apply_test_reasoning_validation(query, search_data) do
-    case GenerateReasoningAction.run(%{
-      query: query,
-      reasoning_type: :zero_shot_cot,
-      context: %{
-        sources: Enum.map(search_data.results, &Map.get(&1, :source, "unknown")),
-        domain: :technical
-      },
-      quality_requirements: %{min_logical_consistency: 0.8}
-    }, %{}) do
+    case GenerateReasoningAction.run(
+           %{
+             query: query,
+             reasoning_type: :zero_shot_cot,
+             context: %{
+               sources: Enum.map(search_data.results, &Map.get(&1, :source, "unknown")),
+               domain: :technical
+             },
+             quality_requirements: %{min_logical_consistency: 0.8}
+           },
+           %{}
+         ) do
       {:ok, reasoning_data} -> {:ok, reasoning_data}
       {:error, reason} -> {:error, {:reasoning_failed, reason}}
     end
