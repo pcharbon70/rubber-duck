@@ -23,7 +23,7 @@ defmodule RubberDuck.Workflows.Dynamic.DynamicWorkflowComposer do
 
   require Logger
 
-  alias RubberDuck.Workflows.{WorkflowTemplates, SkillsComposition, OptionalWorkflowUtils}
+  alias RubberDuck.Workflows.{OptionalWorkflowUtils, SkillsComposition, WorkflowTemplates}
 
   @composition_strategies [
     :goal_driven,
