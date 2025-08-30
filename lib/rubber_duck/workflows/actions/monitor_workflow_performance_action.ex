@@ -168,7 +168,6 @@ defmodule RubberDuck.Workflows.Actions.MonitorWorkflowPerformanceAction do
     with {:ok, adoption_stats} <- WorkflowMonitor.get_adoption_statistics(),
          {:ok, performance_comparison} <- WorkflowMonitor.get_performance_comparison(:all),
          {:ok, template_effectiveness} <- WorkflowMonitor.get_template_effectiveness() do
-      
       monitoring_data = %{
         scope: :system_wide,
         period: period,
@@ -182,7 +181,7 @@ defmodule RubberDuck.Workflows.Actions.MonitorWorkflowPerformanceAction do
     else
       {:error, reason} when is_atom(reason) ->
         {:error, {:adoption_statistics_failed, reason}}
-      
+
       {:error, reason} ->
         {:error, {:monitoring_data_collection_failed, reason}}
     end
@@ -659,13 +658,31 @@ defmodule RubberDuck.Workflows.Actions.MonitorWorkflowPerformanceAction do
     success_rate = Map.get(template_data, :success_rate, 0.0)
     effectiveness = Map.get(template_data, :effectiveness_score, 0.0)
 
+    metrics = %{usage_count: usage_count, success_rate: success_rate, effectiveness: effectiveness}
+    
     cond do
-      usage_count > 10 and success_rate > 0.8 and effectiveness > 0.7 -> :excellent
-      usage_count > 5 and success_rate > 0.6 and effectiveness > 0.5 -> :good
-      usage_count > 0 and success_rate > 0.4 -> :fair
-      usage_count > 0 -> :poor
+      excellent_template?(metrics) -> :excellent
+      good_template?(metrics) -> :good
+      fair_template?(metrics) -> :fair
+      has_usage?(metrics) -> :poor
       true -> :no_usage
     end
+  end
+
+  defp excellent_template?(%{usage_count: usage, success_rate: success, effectiveness: eff}) do
+    usage > 10 and success > 0.8 and eff > 0.7
+  end
+
+  defp good_template?(%{usage_count: usage, success_rate: success, effectiveness: eff}) do
+    usage > 5 and success > 0.6 and eff > 0.5
+  end
+
+  defp fair_template?(%{usage_count: usage, success_rate: success}) do
+    usage > 0 and success > 0.4
+  end
+
+  defp has_usage?(%{usage_count: usage}) do
+    usage > 0
   end
 
   defp calculate_template_effectiveness_score(template_data) do
