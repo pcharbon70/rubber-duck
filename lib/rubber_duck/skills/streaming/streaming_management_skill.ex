@@ -33,8 +33,8 @@ defmodule RubberDuck.Skills.Streaming.StreamingManagementSkill do
 
   require Logger
 
-  alias RubberDuck.Skills.Streaming.Actions.ProcessStreamAction
   alias RubberDuck.Skills.Actions.CallAPIAction
+  alias RubberDuck.Skills.Streaming.Actions.ProcessStreamAction
 
   # Default skill state
   @default_state %{
@@ -546,32 +546,11 @@ defmodule RubberDuck.Skills.Streaming.StreamingManagementSkill do
   end
 
   defp assess_streaming_system_health(performance, active_stats) do
-    health_factors = []
-
-    # Error rate health
-    health_factors =
-      case performance.error_rate do
-        rate when rate < 0.05 -> [:error_rate_excellent | health_factors]
-        rate when rate < 0.1 -> [:error_rate_good | health_factors]
-        rate when rate < 0.2 -> [:error_rate_acceptable | health_factors]
-        _ -> [:error_rate_poor | health_factors]
-      end
-
-    # Active streams health
-    health_factors =
-      case active_stats.active_stream_count do
-        count when count < 50 -> [:load_normal | health_factors]
-        count when count < 80 -> [:load_high | health_factors]
-        _ -> [:load_critical | health_factors]
-      end
-
-    # Average stream age health
-    health_factors =
-      case active_stats.avg_stream_age do
-        age when age < 60 -> [:stream_age_normal | health_factors]
-        age when age < 300 -> [:stream_age_concerning | health_factors]
-        _ -> [:stream_age_critical | health_factors]
-      end
+    health_factors = [
+      assess_error_rate_health(performance.error_rate),
+      assess_active_streams_health(active_stats.active_stream_count),
+      assess_stream_age_health(active_stats.avg_stream_age)
+    ]
 
     # Overall health assessment
     health_score = calculate_health_score(health_factors)
@@ -582,6 +561,31 @@ defmodule RubberDuck.Skills.Streaming.StreamingManagementSkill do
       health_factors: Enum.reverse(health_factors),
       recommendations: generate_health_recommendations(health_factors)
     }
+  end
+
+  defp assess_error_rate_health(error_rate) do
+    case error_rate do
+      rate when rate < 0.05 -> :error_rate_excellent
+      rate when rate < 0.1 -> :error_rate_good
+      rate when rate < 0.2 -> :error_rate_acceptable
+      _ -> :error_rate_poor
+    end
+  end
+
+  defp assess_active_streams_health(active_stream_count) do
+    case active_stream_count do
+      count when count < 50 -> :load_normal
+      count when count < 80 -> :load_high
+      _ -> :load_critical
+    end
+  end
+
+  defp assess_stream_age_health(avg_stream_age) do
+    case avg_stream_age do
+      age when age < 60 -> :stream_age_normal
+      age when age < 300 -> :stream_age_concerning
+      _ -> :stream_age_critical
+    end
   end
 
   defp calculate_health_score(health_factors) do

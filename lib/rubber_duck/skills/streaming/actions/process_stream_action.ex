@@ -130,44 +130,44 @@ defmodule RubberDuck.Skills.Streaming.Actions.ProcessStreamAction do
         %{type: type} when type in [:data, :error, :done, :heartbeat, :metadata] ->
           type
 
-        %{event: "data"} ->
-          :data
+        # Generic event format
+        %{event: event_string} ->
+          parse_generic_event_string(event_string)
 
-        %{event: "error"} ->
-          :error
-
-        %{event: "done"} ->
-          :done
-
-        %{event: "heartbeat"} ->
-          :heartbeat
-
-        # OpenAI streaming format
-        %{data: data} when is_binary(data) ->
-          :data
-
-        # Anthropic streaming format
-        %{type: "content_block_delta"} ->
-          :data
-
-        %{type: "content_block_stop"} ->
-          :done
-
-        %{type: "message_stop"} ->
-          :done
-
-        # Error detection
-        %{error: _} ->
-          :error
-
-        _ ->
-          :unknown
+        # Provider-specific formats
+        event ->
+          identify_provider_specific_event(event)
       end
 
     if event_type == :unknown do
       {:error, {:unknown_event_type, event_data}}
     else
       {:ok, event_type}
+    end
+  end
+
+  defp parse_generic_event_string(event_string) do
+    case event_string do
+      "data" -> :data
+      "error" -> :error
+      "done" -> :done
+      "heartbeat" -> :heartbeat
+      _ -> :unknown
+    end
+  end
+
+  defp identify_provider_specific_event(event_data) do
+    cond do
+      # OpenAI streaming format
+      match?(%{data: data} when is_binary(data), event_data) -> :data
+      # Anthropic streaming formats
+      match?(%{type: "content_block_delta"}, event_data) -> :data
+      match?(%{type: "content_block_stop"}, event_data) -> :done
+      match?(%{type: "message_stop"}, event_data) -> :done
+      # Error detection
+      match?(%{error: _}, event_data) -> :error
+      # Unknown format
+      true -> :unknown
     end
   end
 
@@ -513,29 +513,31 @@ defmodule RubberDuck.Skills.Streaming.Actions.ProcessStreamAction do
   end
 
   defp execute_single_callback(callback, processed_result, context) do
-    try do
-      case callback do
-        {module, function, args} ->
-          apply(module, function, [processed_result | args])
+    safe_callback_execution(callback, processed_result, context)
+  end
 
-        {module, function} ->
-          apply(module, function, [processed_result])
+  defp safe_callback_execution(callback, processed_result, context) do
+    case callback do
+      {module, function, args} ->
+        apply(module, function, [processed_result | args])
 
-        callback_fun when is_function(callback_fun, 1) ->
-          callback_fun.(processed_result)
+      {module, function} ->
+        apply(module, function, [processed_result])
 
-        _ ->
-          {:error, {:invalid_callback_format, callback}}
-      end
-    rescue
-      error ->
-        Logger.error("ProcessStreamAction: Callback execution failed",
-          callback: callback,
-          error: error
-        )
+      callback_fun when is_function(callback_fun, 1) ->
+        callback_fun.(processed_result)
 
-        {:error, {:callback_execution_failed, error}}
+      _ ->
+        {:error, {:invalid_callback_format, callback}}
     end
+  rescue
+    error ->
+      Logger.error("ProcessStreamAction: Callback execution failed",
+        callback: callback,
+        error: error
+      )
+
+      {:error, {:callback_execution_failed, error}}
   end
 
   # Stream state management with ETS
@@ -612,58 +614,64 @@ defmodule RubberDuck.Skills.Streaming.Actions.ProcessStreamAction do
   Get stream statistics for monitoring and optimization.
   """
   def get_stream_statistics do
-    table_name = :stream_states
-
-    try do
-      all_streams = :ets.tab2list(table_name)
-      current_time = System.system_time(:second)
-
-      stats =
-        Enum.reduce(
-          all_streams,
-          %{
-            total_streams: 0,
-            active_streams: 0,
-            completed_streams: 0,
-            error_streams: 0,
-            total_chunks: 0,
-            total_content_length: 0,
-            avg_processing_time: 0.0
-          },
-          fn {_stream_id, state}, acc ->
-            processing_time = current_time - state.created_at
-
-            %{
-              acc
-              | total_streams: acc.total_streams + 1,
-                active_streams: acc.active_streams + if(state.stream_complete, do: 0, else: 1),
-                completed_streams:
-                  acc.completed_streams + if(state.stream_complete, do: 1, else: 0),
-                error_streams: acc.error_streams + if(Enum.empty?(state.errors), do: 0, else: 1),
-                total_chunks: acc.total_chunks + state.chunks_processed,
-                total_content_length:
-                  acc.total_content_length + String.length(state.aggregated_content),
-                avg_processing_time:
-                  (acc.avg_processing_time * (acc.total_streams - 1) + processing_time) /
-                    acc.total_streams
-            }
-          end
-        )
-
-      {:ok, stats}
-    rescue
-      ArgumentError ->
-        # Table doesn't exist
-        {:ok,
-         %{
-           total_streams: 0,
-           active_streams: 0,
-           completed_streams: 0,
-           error_streams: 0,
-           total_chunks: 0,
-           total_content_length: 0,
-           avg_processing_time: 0.0
-         }}
+    case get_ets_stream_statistics() do
+      {:ok, stats} -> {:ok, stats}
+      {:error, :table_not_found} -> {:ok, get_default_statistics()}
     end
+  end
+
+  defp get_ets_stream_statistics do
+    table_name = :stream_states
+    all_streams = :ets.tab2list(table_name)
+    current_time = System.system_time(:second)
+
+    stats =
+      Enum.reduce(
+        all_streams,
+        %{
+          total_streams: 0,
+          active_streams: 0,
+          completed_streams: 0,
+          error_streams: 0,
+          total_chunks: 0,
+          total_content_length: 0,
+          avg_processing_time: 0.0
+        },
+        fn {_stream_id, state}, acc ->
+          processing_time = current_time - state.created_at
+
+          %{
+            acc
+            | total_streams: acc.total_streams + 1,
+              active_streams: acc.active_streams + if(state.stream_complete, do: 0, else: 1),
+              completed_streams:
+                acc.completed_streams + if(state.stream_complete, do: 1, else: 0),
+              error_streams: acc.error_streams + if(Enum.empty?(state.errors), do: 0, else: 1),
+              total_chunks: acc.total_chunks + state.chunks_processed,
+              total_content_length:
+                acc.total_content_length + String.length(state.aggregated_content),
+              avg_processing_time:
+                (acc.avg_processing_time * (acc.total_streams - 1) + processing_time) /
+                  acc.total_streams
+          }
+        end
+      )
+
+    {:ok, stats}
+  rescue
+    ArgumentError ->
+      {:error, :table_not_found}
+  end
+
+  defp get_default_statistics do
+    %{
+      total_streams: 0,
+      active_streams: 0,
+      completed_streams: 0,
+      error_streams: 0,
+      total_chunks: 0,
+      total_content_length: 0,
+      avg_processing_time: 0.0
+    }
   end
 end
