@@ -210,7 +210,7 @@ defmodule RubberDuck.Workflows.ReactorConfig do
       {:error, reason} when reason != :error_reporting_failed ->
         Logger.error("ReactorConfig: Telemetry setup failed", error: reason)
         {:error, reason}
-      
+
       {:error, :error_reporting_failed} ->
         Logger.warning("ReactorConfig: Error reporting setup failed, continuing without")
         {:ok, :partial_initialization}
@@ -262,34 +262,38 @@ defmodule RubberDuck.Workflows.ReactorConfig do
   end
 
   defp setup_reactor_telemetry do
-    # Setup telemetry integration for Reactor workflows
-    try do
-      # Attach telemetry handlers for Reactor events
-      telemetry_events = [
-        [:reactor, :workflow, :start],
-        [:reactor, :workflow, :stop],
-        [:reactor, :workflow, :error],
-        [:reactor, :step, :start],
-        [:reactor, :step, :stop],
-        [:reactor, :step, :error]
-      ]
-
-      Enum.each(telemetry_events, fn event ->
-        :telemetry.attach(
-          "rubber_duck_reactor_#{Enum.join(event, "_")}",
-          event,
-          &handle_reactor_telemetry/4,
-          %{}
-        )
-      end)
-
-      Logger.debug("ReactorConfig: Telemetry handlers attached for Reactor")
-      :ok
-    rescue
-      error ->
-        Logger.error("ReactorConfig: Failed to setup telemetry", error: error)
-        {:error, {:telemetry_setup_failed, error}}
+    case safe_telemetry_setup() do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp safe_telemetry_setup do
+    # Attach telemetry handlers for Reactor events
+    telemetry_events = [
+      [:reactor, :workflow, :start],
+      [:reactor, :workflow, :stop],
+      [:reactor, :workflow, :error],
+      [:reactor, :step, :start],
+      [:reactor, :step, :stop],
+      [:reactor, :step, :error]
+    ]
+
+    Enum.each(telemetry_events, fn event ->
+      :telemetry.attach(
+        "rubber_duck_reactor_#{Enum.join(event, "_")}",
+        event,
+        &handle_reactor_telemetry/4,
+        %{}
+      )
+    end)
+
+    Logger.debug("ReactorConfig: Telemetry handlers attached for Reactor")
+    :ok
+  rescue
+    error ->
+      Logger.error("ReactorConfig: Failed to setup telemetry", error: error)
+      {:error, {:telemetry_setup_failed, error}}
   end
 
   defp setup_error_reporting do
@@ -301,7 +305,8 @@ defmodule RubberDuck.Workflows.ReactorConfig do
 
       {:error, _reason} ->
         Logger.debug("ReactorConfig: Tower not available, skipping error reporting setup")
-        :ok  # Continue without Tower
+        # Continue without Tower
+        :ok
     end
   end
 
