@@ -530,14 +530,14 @@ defmodule RubberDuck.Workflows.Adapters.AgentWorkflowAdapter do
             agent: agent_adapter.agent_module,
             template: benefit_analysis.template_recommendation.recommended_template
           )
-          
+
           {:use_workflow, workflow_config}
-        
+
         {:error, reason} ->
           Logger.warning("AgentWorkflowAdapter: Workflow creation failed, using autonomous",
             error: reason
           )
-          
+
           {:use_autonomous, :workflow_creation_failed}
       end
     else
