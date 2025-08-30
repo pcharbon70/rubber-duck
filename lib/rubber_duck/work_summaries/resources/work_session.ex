@@ -20,6 +20,86 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSession do
     end
   end
 
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      description "Create a new work session"
+
+      accept [
+        :name,
+        :description,
+        :session_type,
+        :started_at,
+        :session_metadata,
+        :coding_assistant_id
+      ]
+
+      validate present([:name, :coding_assistant_id])
+    end
+
+    update :update do
+      description "Update work session information"
+
+      accept [
+        :name,
+        :description,
+        :ended_at,
+        :is_active,
+        :session_metadata
+      ]
+    end
+
+    update :end_session do
+      description "End an active work session"
+
+      change set_attribute(:ended_at, &DateTime.utc_now/0)
+      change set_attribute(:is_active, false)
+    end
+
+    read :active_sessions do
+      description "Get only active work sessions"
+      filter expr(is_active == true)
+    end
+
+    read :by_assistant do
+      description "Get sessions by coding assistant"
+
+      argument :assistant_id, :uuid do
+        allow_nil? false
+      end
+
+      filter expr(coding_assistant_id == ^arg(:assistant_id))
+    end
+
+    read :recent_sessions do
+      description "Get recent work sessions"
+
+      argument :limit, :integer do
+        allow_nil? true
+        default 20
+      end
+
+      # Sort by started_at descending
+      pagination offset?: true, default_limit: 20
+    end
+  end
+
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    policy action_type([:create, :update, :destroy]) do
+      # Will be restricted based on user context in production
+      authorize_if always()
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -38,15 +118,17 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSession do
     attribute :session_type, :atom do
       description "Type of work session"
       allow_nil? false
+
       constraints one_of: [
-        :feature_development,
-        :bug_fixing_session,
-        :refactoring_session,
-        :testing_session,
-        :research_session,
-        :maintenance_session,
-        :general_session
-      ]
+                    :feature_development,
+                    :bug_fixing_session,
+                    :refactoring_session,
+                    :testing_session,
+                    :research_session,
+                    :maintenance_session,
+                    :general_session
+                  ]
+
       default :general_session
     end
 
@@ -88,85 +170,21 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSession do
     end
   end
 
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      description "Create a new work session"
-      
-      accept [
-        :name,
-        :description,
-        :session_type,
-        :started_at,
-        :session_metadata,
-        :coding_assistant_id
-      ]
-
-      validate present([:name, :coding_assistant_id])
-    end
-
-    update :update do
-      description "Update work session information"
-      
-      accept [
-        :name,
-        :description,
-        :ended_at,
-        :is_active,
-        :session_metadata
-      ]
-    end
-
-    update :end_session do
-      description "End an active work session"
-      
-      change set_attribute(:ended_at, &DateTime.utc_now/0)
-      change set_attribute(:is_active, false)
-    end
-
-    read :active_sessions do
-      description "Get only active work sessions"
-      filter expr(is_active == true)
-    end
-
-    read :by_assistant do
-      description "Get sessions by coding assistant"
-      
-      argument :assistant_id, :uuid do
-        allow_nil? false
-      end
-      
-      filter expr(coding_assistant_id == ^arg(:assistant_id))
-    end
-
-    read :recent_sessions do
-      description "Get recent work sessions"
-      
-      argument :limit, :integer do
-        allow_nil? true
-        default 20
-      end
-      
-      # Sort by started_at descending
-      pagination offset?: true, default_limit: 20
-    end
-  end
-
   calculations do
-    calculate :duration_minutes, :integer, expr(
-      case when is_nil(ended_at) do
-        date_part("minute", now() - started_at)
-      else
-        date_part("minute", ended_at - started_at)
-      end
-    ) do
+    calculate :duration_minutes,
+              :integer,
+              expr(
+                case
+                when is_nil(ended_at) do
+                       date_part("minute", now() - started_at)
+                     else
+                       date_part("minute", ended_at - started_at)
+                     end
+              ) do
       description "Session duration in minutes"
     end
 
-    calculate :summary_count, :integer, expr(
-      count(work_summaries, field: :id)
-    ) do
+    calculate :summary_count, :integer, expr(count(work_summaries, field: :id)) do
       description "Number of summaries in this session"
     end
   end
@@ -180,20 +198,6 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSession do
 
     sum :total_work_duration, :work_summaries, :work_duration_minutes do
       description "Total work duration for session"
-    end
-  end
-
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    policy action_type(:read) do
-      authorize_if always()
-    end
-
-    policy action_type([:create, :update, :destroy]) do
-      authorize_if always()  # Will be restricted based on user context in production
     end
   end
 end

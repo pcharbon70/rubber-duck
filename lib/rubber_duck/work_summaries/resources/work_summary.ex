@@ -30,6 +30,169 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSummary do
     end
   end
 
+  actions do
+    defaults [:read]
+
+    create :create do
+      description "Create a new work summary"
+
+      accept [
+        :content,
+        :summary_type,
+        :title,
+        :current_project,
+        :provider_used,
+        :model_used,
+        :work_duration_minutes,
+        :metadata,
+        :tags,
+        :quality_score,
+        :complexity_score,
+        :coding_assistant_id,
+        :work_session_id
+      ]
+
+      validate present([:content, :title, :coding_assistant_id])
+      validate match(:summary_type, ~r/^[a-z_]+$/)
+    end
+
+    update :update do
+      description "Update an existing work summary"
+
+      accept [
+        :content,
+        :title,
+        :metadata,
+        :tags,
+        :quality_score,
+        :complexity_score
+      ]
+    end
+
+    destroy :archive do
+      description "Archive (soft delete) a work summary"
+      soft? true
+    end
+
+    read :by_assistant do
+      description "Get summaries by coding assistant"
+
+      argument :assistant_id, :uuid do
+        allow_nil? false
+      end
+
+      filter expr(coding_assistant_id == ^arg(:assistant_id))
+    end
+
+    read :by_project do
+      description "Get summaries by project"
+
+      argument :project_name, :string do
+        allow_nil? false
+      end
+
+      filter expr(current_project == ^arg(:project_name))
+    end
+
+    read :by_date_range do
+      description "Get summaries within date range"
+
+      argument :start_date, :utc_datetime_usec do
+        allow_nil? false
+      end
+
+      argument :end_date, :utc_datetime_usec do
+        allow_nil? false
+      end
+
+      filter expr(generated_at >= ^arg(:start_date) and generated_at <= ^arg(:end_date))
+    end
+
+    read :by_type do
+      description "Get summaries by work type"
+
+      argument :summary_type, :atom do
+        allow_nil? false
+      end
+
+      filter expr(summary_type == ^arg(:summary_type))
+    end
+
+    read :search_content do
+      description "Search summaries by content"
+
+      argument :search_term, :string do
+        allow_nil? false
+      end
+
+      # Full-text search on content and title
+      filter expr(
+               ilike(content, ^arg(:search_term)) or
+                 ilike(title, ^arg(:search_term))
+             )
+    end
+
+    read :recent_summaries do
+      description "Get recent summaries with pagination"
+
+      argument :limit, :integer do
+        allow_nil? true
+        default 50
+      end
+
+      # Sort by generated_at descending
+      pagination offset?: true, default_limit: 50
+    end
+  end
+
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    policy action_type([:create, :update, :destroy]) do
+      # Will be restricted based on user context in production
+      authorize_if always()
+    end
+  end
+
+  preparations do
+    prepare build(sort: [generated_at: :desc])
+  end
+
+  validations do
+    validate present(:content, message: "Summary content is required")
+    validate present(:title, message: "Summary title is required")
+
+    validate string_length(:content,
+               min: 10,
+               max: 50_000,
+               message: "Content must be between 10 and 50,000 characters"
+             )
+
+    validate string_length(:title,
+               min: 5,
+               max: 200,
+               message: "Title must be between 5 and 200 characters"
+             )
+
+    validate numericality(:quality_score,
+               greater_than_or_equal_to: 0.0,
+               less_than_or_equal_to: 1.0,
+               message: "Quality score must be between 0.0 and 1.0"
+             )
+
+    validate numericality(:complexity_score,
+               greater_than_or_equal_to: 0.0,
+               less_than_or_equal_to: 1.0,
+               message: "Complexity score must be between 0.0 and 1.0"
+             )
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -42,17 +205,19 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSummary do
     attribute :summary_type, :atom do
       description "Type of work summarized"
       allow_nil? false
+
       constraints one_of: [
-        :feature_implementation,
-        :bug_fix, 
-        :refactoring,
-        :testing,
-        :documentation,
-        :performance_optimization,
-        :security_enhancement,
-        :integration,
-        :general
-      ]
+                    :feature_implementation,
+                    :bug_fix,
+                    :refactoring,
+                    :testing,
+                    :documentation,
+                    :performance_optimization,
+                    :security_enhancement,
+                    :integration,
+                    :general
+                  ]
+
       default :general
     end
 
@@ -89,7 +254,9 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSummary do
     attribute :work_duration_minutes, :integer do
       description "Duration of work session in minutes"
       allow_nil? true
-      constraints min: 0, max: 10_080  # Max 1 week
+
+      # Max 1 week
+      constraints min: 0, max: 10_080
     end
 
     attribute :metadata, :map do
@@ -133,178 +300,18 @@ defmodule RubberDuck.WorkSummaries.Resources.WorkSummary do
     end
   end
 
-  actions do
-    defaults [:read]
-
-    create :create do
-      description "Create a new work summary"
-      
-      accept [
-        :content,
-        :summary_type,
-        :title, 
-        :current_project,
-        :provider_used,
-        :model_used,
-        :work_duration_minutes,
-        :metadata,
-        :tags,
-        :quality_score,
-        :complexity_score,
-        :coding_assistant_id,
-        :work_session_id
-      ]
-
-      validate present([:content, :title, :coding_assistant_id])
-      validate match(:summary_type, ~r/^[a-z_]+$/)
-    end
-
-    update :update do
-      description "Update an existing work summary"
-      
-      accept [
-        :content,
-        :title,
-        :metadata,
-        :tags,
-        :quality_score,
-        :complexity_score
-      ]
-    end
-
-    destroy :archive do
-      description "Archive (soft delete) a work summary"
-      soft? true
-    end
-
-    read :by_assistant do
-      description "Get summaries by coding assistant"
-      
-      argument :assistant_id, :uuid do
-        allow_nil? false
-      end
-      
-      filter expr(coding_assistant_id == ^arg(:assistant_id))
-    end
-
-    read :by_project do
-      description "Get summaries by project"
-      
-      argument :project_name, :string do
-        allow_nil? false
-      end
-      
-      filter expr(current_project == ^arg(:project_name))
-    end
-
-    read :by_date_range do
-      description "Get summaries within date range"
-      
-      argument :start_date, :utc_datetime_usec do
-        allow_nil? false
-      end
-      
-      argument :end_date, :utc_datetime_usec do
-        allow_nil? false
-      end
-      
-      filter expr(generated_at >= ^arg(:start_date) and generated_at <= ^arg(:end_date))
-    end
-
-    read :by_type do
-      description "Get summaries by work type"
-      
-      argument :summary_type, :atom do
-        allow_nil? false
-      end
-      
-      filter expr(summary_type == ^arg(:summary_type))
-    end
-
-    read :search_content do
-      description "Search summaries by content"
-      
-      argument :search_term, :string do
-        allow_nil? false
-      end
-      
-      # Full-text search on content and title
-      filter expr(
-        ilike(content, ^arg(:search_term)) or 
-        ilike(title, ^arg(:search_term))
-      )
-    end
-
-    read :recent_summaries do
-      description "Get recent summaries with pagination"
-      
-      argument :limit, :integer do
-        allow_nil? true
-        default 50
-      end
-      
-      # Sort by generated_at descending
-      pagination offset?: true, default_limit: 50
-    end
-  end
-
   calculations do
-    calculate :content_word_count, :integer, expr(
-      length(string_to_array(content, ~c" "))
-    ) do
+    calculate :content_word_count, :integer, expr(length(string_to_array(content, ~c" "))) do
       description "Word count of summary content"
     end
 
-    calculate :days_since_generated, :integer, expr(
-      date_part("day", now() - generated_at)
-    ) do
+    calculate :days_since_generated, :integer, expr(date_part("day", now() - generated_at)) do
       description "Days since summary was generated"
     end
 
-    calculate :has_metadata, :boolean, expr(
-      jsonb_array_length(metadata) > 0
-    ) do
+    calculate :has_metadata, :boolean, expr(jsonb_array_length(metadata) > 0) do
       description "Whether summary has additional metadata"
     end
-  end
-
-  validations do
-    validate present(:content, message: "Summary content is required")
-    validate present(:title, message: "Summary title is required")
-    
-    validate string_length(:content, min: 10, max: 50_000, 
-      message: "Content must be between 10 and 50,000 characters")
-    
-    validate string_length(:title, min: 5, max: 200,
-      message: "Title must be between 5 and 200 characters")
-    
-    validate numericality(:quality_score, 
-      greater_than_or_equal_to: 0.0, 
-      less_than_or_equal_to: 1.0,
-      message: "Quality score must be between 0.0 and 1.0")
-    
-    validate numericality(:complexity_score,
-      greater_than_or_equal_to: 0.0,
-      less_than_or_equal_to: 1.0, 
-      message: "Complexity score must be between 0.0 and 1.0")
-  end
-
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    policy action_type(:read) do
-      authorize_if always()
-    end
-
-    policy action_type([:create, :update, :destroy]) do
-      authorize_if always()  # Will be restricted based on user context in production
-    end
-  end
-
-  preparations do
-    prepare build(sort: [generated_at: :desc])
   end
 
   # Aggregates will be defined on related resources
