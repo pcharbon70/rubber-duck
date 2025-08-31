@@ -52,9 +52,9 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
   require Logger
 
   alias RubberDuck.Workflows.{
+    Integration.WorkflowIntegrationValidator,
     Templates.ErrorHandlingTemplateManager,
-    Templates.PerformanceOptimizationTemplateManager,
-    Integration.WorkflowIntegrationValidator
+    Templates.PerformanceOptimizationTemplateManager
   }
 
   @supported_migration_strategies [:safe, :performance, :template_based, :adaptive]

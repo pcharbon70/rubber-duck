@@ -50,9 +50,9 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   require Logger
 
   alias RubberDuck.Workflows.{
-    Templates.ErrorHandlingTemplateManager,
     Advanced.AdvancedIntegrationManager,
-    Integration.WorkflowIntegrationValidator
+    Integration.WorkflowIntegrationValidator,
+    Templates.ErrorHandlingTemplateManager
   }
 
   @supported_lifecycle_operations [
