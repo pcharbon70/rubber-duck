@@ -209,7 +209,7 @@ defmodule RubberDuck.Agents.Workflow.ReactorMapReduceAgent do
   defp prepare_data_batches(agent_state) do
     data_source = agent_state.data_source
     batch_size = agent_state.batch_configuration.batch_size
-    
+
     case create_data_batches(data_source, batch_size) do
       {:ok, batches} -> {:ok, batches}
       {:error, reason} -> {:error, reason}
@@ -341,13 +341,18 @@ defmodule RubberDuck.Agents.Workflow.ReactorMapReduceAgent do
   end
 
   defp apply_reduction_function(batch_results, reduce_function) do
-    try do
-      flattened_results = flatten_batch_results(batch_results)
-      reduced_result = Enum.reduce(flattened_results, reduce_function)
-      {:ok, reduced_result}
-    rescue
-      error -> {:error, {:reduction_failed, error}}
+    case safe_reduction(batch_results, reduce_function) do
+      {:ok, result} -> {:ok, result}
+      {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp safe_reduction(batch_results, reduce_function) do
+    flattened_results = flatten_batch_results(batch_results)
+    reduced_result = Enum.reduce(flattened_results, reduce_function)
+    {:ok, reduced_result}
+  rescue
+    error -> {:error, {:reduction_failed, error}}
   end
 
   defp finalize_processing_results(processing_results, agent_state) do
