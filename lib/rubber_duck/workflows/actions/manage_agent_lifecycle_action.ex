@@ -263,17 +263,17 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
 
   defp validate_state_transition(current_state, operation) do
     cond do
-      is_universal_operation(operation) -> :valid
-      is_valid_specific_transition(current_state, operation) -> :valid
+      universal_operation?(operation) -> :valid
+      valid_specific_transition?(current_state, operation) -> :valid
       true -> :invalid
     end
   end
 
-  defp is_universal_operation(operation) do
+  defp universal_operation?(operation) do
     operation in [:shutdown, :maintenance]
   end
 
-  defp is_valid_specific_transition(current_state, operation) do
+  defp valid_specific_transition?(current_state, operation) do
     valid_transitions = [
       {:uninitialized, :initialize},
       {:ready, :start},
@@ -282,7 +282,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       {:active, :restart},
       {:paused, :restart}
     ]
-    
+
     {current_state, operation} in valid_transitions
   end
 
@@ -475,7 +475,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
     # Estimate duration based on operation type and agent complexity
     base_duration = get_operation_base_duration(operation)
     complexity_multiplier = get_agent_complexity_multiplier(agent_spec)
-    
+
     round(base_duration * complexity_multiplier)
   end
 
@@ -652,10 +652,10 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
     case categorize_step_type(step_name) do
       :core_step ->
         execute_core_lifecycle_step(step_name, lifecycle_plan, error_config, context)
-      
+
       :operation_specific_step ->
         execute_operation_specific_step(step_name, lifecycle_plan, context)
-      
+
       :generic_step ->
         execute_generic_lifecycle_step(step_name, lifecycle_plan, context)
     end
@@ -663,15 +663,23 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
 
   defp categorize_step_type(step_name) do
     core_steps = [
-      :validate_current_state, :prepare_lifecycle_environment, :execute_lifecycle_operation,
-      :validate_operation_success, :update_agent_state, :finalize_lifecycle_operation
+      :validate_current_state,
+      :prepare_lifecycle_environment,
+      :execute_lifecycle_operation,
+      :validate_operation_success,
+      :update_agent_state,
+      :finalize_lifecycle_operation
     ]
-    
+
     operation_specific_steps = [
-      :validate_initialization_requirements, :allocate_agent_resources, :save_agent_state,
-      :restore_agent_state, :shutdown_agent_safely, :enter_maintenance_mode
+      :validate_initialization_requirements,
+      :allocate_agent_resources,
+      :save_agent_state,
+      :restore_agent_state,
+      :shutdown_agent_safely,
+      :enter_maintenance_mode
     ]
-    
+
     cond do
       step_name in core_steps -> :core_step
       step_name in operation_specific_steps -> :operation_specific_step
@@ -683,19 +691,19 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
     case step_name do
       :validate_current_state ->
         validate_agent_current_state(lifecycle_plan, context)
-      
+
       :prepare_lifecycle_environment ->
         prepare_lifecycle_environment(lifecycle_plan, context)
-      
+
       :execute_lifecycle_operation ->
         execute_core_lifecycle_operation(lifecycle_plan, error_config, context)
-      
+
       :validate_operation_success ->
         validate_lifecycle_operation_success(lifecycle_plan, context)
-      
+
       :update_agent_state ->
         update_agent_lifecycle_state(lifecycle_plan, context)
-      
+
       :finalize_lifecycle_operation ->
         finalize_lifecycle_operation(lifecycle_plan, context)
     end
@@ -705,19 +713,19 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
     case step_name do
       :validate_initialization_requirements ->
         validate_agent_initialization_requirements(lifecycle_plan, context)
-      
+
       :allocate_agent_resources ->
         allocate_agent_resources(lifecycle_plan, context)
-      
+
       :save_agent_state ->
         save_agent_state_for_pause(lifecycle_plan, context)
-      
+
       :restore_agent_state ->
         restore_agent_state_from_pause(lifecycle_plan, context)
-      
+
       :shutdown_agent_safely ->
         execute_safe_agent_shutdown(lifecycle_plan, context)
-      
+
       :enter_maintenance_mode ->
         enter_agent_maintenance_mode(lifecycle_plan, context)
     end

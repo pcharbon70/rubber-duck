@@ -786,7 +786,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   defp determine_optimization_strategy(workload_characteristics, optimization_target) do
     base_strategy = get_base_optimization_strategy(optimization_target)
     workload_profile = classify_workload_profile(workload_characteristics)
-    
+
     build_strategy_with_focus(base_strategy, workload_profile)
   end
 

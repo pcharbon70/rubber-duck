@@ -485,7 +485,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
     base_duration = get_agent_type_base_duration(agent_spec.type)
     pattern_multiplier = get_pattern_complexity_multiplier(target_pattern)
     strategy_multiplier = get_strategy_overhead_multiplier(strategy)
-    
+
     round(base_duration * pattern_multiplier * strategy_multiplier)
   end
 
@@ -509,10 +509,14 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
   defp get_strategy_overhead_multiplier(strategy) do
     case strategy do
-      :safe -> 2.5          # More thorough, takes longer
-      :performance -> 2.0   # Performance analysis takes time
-      :template_based -> 1.2 # Templates make it faster
-      :adaptive -> 1.8      # Analysis overhead
+      # More thorough, takes longer
+      :safe -> 2.5
+      # Performance analysis takes time
+      :performance -> 2.0
+      # Templates make it faster
+      :template_based -> 1.2
+      # Analysis overhead
+      :adaptive -> 1.8
     end
   end
 
@@ -630,10 +634,10 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
     case categorize_migration_step(step_name) do
       :core_migration_step ->
         execute_core_migration_step(step_name, migration_plan, context)
-      
+
       :strategy_specific_step ->
         execute_strategy_specific_step(step_name, migration_plan, context)
-      
+
       :generic_step ->
         execute_generic_migration_step(step_name, migration_plan, context)
     end
@@ -641,16 +645,22 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
   defp categorize_migration_step(step_name) do
     core_steps = [
-      :validate_agent_state, :prepare_migration_environment, :execute_workflow_conversion,
-      :validate_converted_workflow, :integrate_enhanced_features, :validate_integration_success,
+      :validate_agent_state,
+      :prepare_migration_environment,
+      :execute_workflow_conversion,
+      :validate_converted_workflow,
+      :integrate_enhanced_features,
+      :validate_integration_success,
       :finalize_migration
     ]
-    
+
     strategy_steps = [
-      :create_detailed_backup, :baseline_performance_measurement, :retrieve_migration_templates,
+      :create_detailed_backup,
+      :baseline_performance_measurement,
+      :retrieve_migration_templates,
       :analyze_agent_characteristics
     ]
-    
+
     cond do
       step_name in core_steps -> :core_migration_step
       step_name in strategy_steps -> :strategy_specific_step
@@ -662,22 +672,22 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
     case step_name do
       :validate_agent_state ->
         validate_agent_current_state(migration_plan.agent_id, context)
-      
+
       :prepare_migration_environment ->
         prepare_migration_resources(migration_plan, context)
-      
+
       :execute_workflow_conversion ->
         convert_agent_workflow(migration_plan, context)
-      
+
       :validate_converted_workflow ->
         validate_workflow_conversion(migration_plan, context)
-      
+
       :integrate_enhanced_features ->
         integrate_workflow_enhancements(migration_plan, context)
-      
+
       :validate_integration_success ->
         validate_integration_results(migration_plan, context)
-      
+
       :finalize_migration ->
         finalize_agent_migration(migration_plan, context)
     end
@@ -687,13 +697,13 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
     case step_name do
       :create_detailed_backup ->
         create_comprehensive_backup(migration_plan, context)
-      
+
       :baseline_performance_measurement ->
         measure_baseline_performance(migration_plan, context)
-      
+
       :retrieve_migration_templates ->
         retrieve_applicable_templates(migration_plan, context)
-      
+
       :analyze_agent_characteristics ->
         analyze_agent_migration_profile(migration_plan, context)
     end
