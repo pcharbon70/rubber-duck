@@ -556,15 +556,20 @@ defmodule RubberDuck.Agents.Workflow.ReactorStreamingAgent do
   defp invoke_callback(nil, _data), do: :ok
 
   defp invoke_callback(callback, data) when is_function(callback, 1) do
-    try do
-      callback.(data)
-      :ok
-    rescue
-      _error -> :ok
+    case safe_callback_execution(callback, data) do
+      :ok -> :ok
+      {:error, _} -> :ok
     end
   end
 
   defp invoke_callback(_, _), do: :ok
+
+  defp safe_callback_execution(callback, data) do
+    callback.(data)
+    :ok
+  rescue
+    _error -> {:error, :callback_failed}
+  end
 
   defp generate_streaming_id do
     timestamp = System.system_time(:nanosecond)

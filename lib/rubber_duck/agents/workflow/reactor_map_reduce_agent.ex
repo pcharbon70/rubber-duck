@@ -209,25 +209,30 @@ defmodule RubberDuck.Agents.Workflow.ReactorMapReduceAgent do
   defp prepare_data_batches(agent_state) do
     data_source = agent_state.data_source
     batch_size = agent_state.batch_configuration.batch_size
-
-    try do
-      batches =
-        data_source
-        |> Enum.chunk_every(batch_size)
-        |> Enum.with_index()
-        |> Enum.map(fn {batch, index} ->
-          %{
-            batch_id: index,
-            data: batch,
-            size: length(batch),
-            created_at: System.monotonic_time(:microsecond)
-          }
-        end)
-
-      {:ok, batches}
-    rescue
-      error -> {:error, {:data_batching_error, error}}
+    
+    case create_data_batches(data_source, batch_size) do
+      {:ok, batches} -> {:ok, batches}
+      {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp create_data_batches(data_source, batch_size) do
+    batches =
+      data_source
+      |> Enum.chunk_every(batch_size)
+      |> Enum.with_index()
+      |> Enum.map(fn {batch, index} ->
+        %{
+          batch_id: index,
+          data: batch,
+          size: length(batch),
+          created_at: System.monotonic_time(:microsecond)
+        }
+      end)
+
+    {:ok, batches}
+  rescue
+    error -> {:error, {:data_batching_error, error}}
   end
 
   defp execute_batched_processing(data_batches, agent_state) do

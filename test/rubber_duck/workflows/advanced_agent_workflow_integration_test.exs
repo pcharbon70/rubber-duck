@@ -13,15 +13,15 @@ defmodule RubberDuck.Workflows.AdvancedAgentWorkflowIntegrationTest do
 
   alias RubberDuck.Agents.Workflow.{
     ReactorMapReduceAgent,
-    ReactorStreamingAgent,
-    ReactorPerformanceAgent
+    ReactorPerformanceAgent,
+    ReactorStreamingAgent
   }
 
   alias RubberDuck.Workflows.Actions.{
-    OptimizeConcurrencyAction,
     ExecuteParallelAction,
-    StreamWorkflowAction,
-    MonitorPerformanceAction
+    MonitorPerformanceAction,
+    OptimizeConcurrencyAction,
+    StreamWorkflowAction
   }
 
   describe "concurrent execution optimization (2.2.6)" do

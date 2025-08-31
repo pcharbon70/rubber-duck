@@ -335,13 +335,19 @@ defmodule RubberDuck.Workflows.Actions.MonitorPerformanceAction do
 
   defp generate_performance_recommendations(monitoring_results, monitoring_session) do
     recommendations = []
-    
+
     # Generate recommendations based on performance analysis
-    recommendations = add_workflow_performance_recommendations(recommendations, monitoring_results)
-    recommendations = add_resource_utilization_recommendations(recommendations, monitoring_results)
+    recommendations =
+      add_workflow_performance_recommendations(recommendations, monitoring_results)
+
+    recommendations =
+      add_resource_utilization_recommendations(recommendations, monitoring_results)
+
     recommendations = add_alert_based_recommendations(recommendations, monitoring_session)
-    recommendations = add_optimization_trigger_recommendations(recommendations, monitoring_session)
-    
+
+    recommendations =
+      add_optimization_trigger_recommendations(recommendations, monitoring_session)
+
     case recommendations do
       [] -> ["Performance monitoring completed successfully - no issues detected"]
       _ -> recommendations
@@ -350,7 +356,7 @@ defmodule RubberDuck.Workflows.Actions.MonitorPerformanceAction do
 
   defp add_workflow_performance_recommendations(recommendations, monitoring_results) do
     performance_data = monitoring_results.performance_analysis
-    
+
     if Map.has_key?(performance_data, :workflow_analysis) do
       generate_workflow_recommendations(recommendations, performance_data.workflow_analysis)
     else
@@ -359,16 +365,21 @@ defmodule RubberDuck.Workflows.Actions.MonitorPerformanceAction do
   end
 
   defp generate_workflow_recommendations(recommendations, workflow_analysis) do
-    poor_performing_workflows = Enum.filter(workflow_analysis, fn analysis ->
-      Map.get(analysis, :performance_score, 1.0) < 0.7
-    end)
-    
-    if length(poor_performing_workflows) > 0 do
-      workflow_names = Enum.map(poor_performing_workflows, fn analysis ->
-        Map.get(analysis, :workflow_id, "unknown")
+    poor_performing_workflows =
+      Enum.filter(workflow_analysis, fn analysis ->
+        Map.get(analysis, :performance_score, 1.0) < 0.7
       end)
-      
-      ["Poor performance detected in workflows: #{Enum.join(workflow_names, ", ")} - consider optimization" | recommendations]
+
+    if length(poor_performing_workflows) > 0 do
+      workflow_names =
+        Enum.map(poor_performing_workflows, fn analysis ->
+          Map.get(analysis, :workflow_id, "unknown")
+        end)
+
+      [
+        "Poor performance detected in workflows: #{Enum.join(workflow_names, ", ")} - consider optimization"
+        | recommendations
+      ]
     else
       recommendations
     end
@@ -393,14 +404,18 @@ defmodule RubberDuck.Workflows.Actions.MonitorPerformanceAction do
   end
 
   defp add_high_usage_recommendations(recommendations, baseline_comparison) do
-    high_usage_resources = Enum.filter(baseline_comparison, fn {_key, comparison} ->
-      Map.get(comparison, :change_percentage, 0) > 50
-    end)
-    
+    high_usage_resources =
+      Enum.filter(baseline_comparison, fn {_key, comparison} ->
+        Map.get(comparison, :change_percentage, 0) > 50
+      end)
+
     if length(high_usage_resources) > 0 do
       resource_names = Enum.map(high_usage_resources, fn {key, _} -> to_string(key) end)
-      
-      ["High resource usage detected in: #{Enum.join(resource_names, ", ")} - monitor for optimization opportunities" | recommendations]
+
+      [
+        "High resource usage detected in: #{Enum.join(resource_names, ", ")} - monitor for optimization opportunities"
+        | recommendations
+      ]
     else
       recommendations
     end
@@ -408,7 +423,10 @@ defmodule RubberDuck.Workflows.Actions.MonitorPerformanceAction do
 
   defp add_alert_based_recommendations(recommendations, monitoring_session) do
     if length(monitoring_session.alerts_generated) > 5 do
-      ["Multiple performance alerts generated - consider reviewing and optimizing workflow configurations" | recommendations]
+      [
+        "Multiple performance alerts generated - consider reviewing and optimizing workflow configurations"
+        | recommendations
+      ]
     else
       recommendations
     end
@@ -416,7 +434,10 @@ defmodule RubberDuck.Workflows.Actions.MonitorPerformanceAction do
 
   defp add_optimization_trigger_recommendations(recommendations, monitoring_session) do
     if length(monitoring_session.optimizations_triggered) > 0 do
-      ["Performance optimizations were triggered during monitoring - review optimization results" | recommendations]
+      [
+        "Performance optimizations were triggered during monitoring - review optimization results"
+        | recommendations
+      ]
     else
       recommendations
     end

@@ -427,12 +427,14 @@ defmodule RubberDuck.Workflows.Actions.StreamWorkflowAction do
 
   defp generate_streaming_recommendations(streaming_results, optimized_config) do
     recommendations = []
-    
+
     # Analyze streaming performance and generate recommendations
-    recommendations = add_streaming_performance_recommendations(recommendations, streaming_results)
+    recommendations =
+      add_streaming_performance_recommendations(recommendations, streaming_results)
+
     recommendations = add_buffer_utilization_recommendations(recommendations, streaming_results)
     recommendations = add_backpressure_recommendations(recommendations, streaming_results)
-    
+
     case recommendations do
       [] -> ["Current streaming configuration appears optimal for the workload"]
       _ -> recommendations
@@ -460,11 +462,17 @@ defmodule RubberDuck.Workflows.Actions.StreamWorkflowAction do
   defp generate_throughput_recommendations(recommendations, throughput) do
     cond do
       throughput < 50 ->
-        ["Consider increasing buffer size or optimizing workflow function for better throughput" | recommendations]
-      
+        [
+          "Consider increasing buffer size or optimizing workflow function for better throughput"
+          | recommendations
+        ]
+
       throughput > 1000 ->
-        ["Excellent streaming performance - current configuration is highly optimized" | recommendations]
-      
+        [
+          "Excellent streaming performance - current configuration is highly optimized"
+          | recommendations
+        ]
+
       true ->
         recommendations
     end
@@ -478,11 +486,17 @@ defmodule RubberDuck.Workflows.Actions.StreamWorkflowAction do
   defp generate_buffer_recommendations(recommendations, buffer_utilization) do
     cond do
       buffer_utilization > 0.95 ->
-        ["Buffer utilization is very high - consider increasing buffer size to prevent backpressure" | recommendations]
-      
+        [
+          "Buffer utilization is very high - consider increasing buffer size to prevent backpressure"
+          | recommendations
+        ]
+
       buffer_utilization < 0.2 ->
-        ["Buffer utilization is low - consider reducing buffer size for memory efficiency" | recommendations]
-      
+        [
+          "Buffer utilization is low - consider reducing buffer size for memory efficiency"
+          | recommendations
+        ]
+
       true ->
         recommendations
     end
@@ -490,9 +504,12 @@ defmodule RubberDuck.Workflows.Actions.StreamWorkflowAction do
 
   defp add_backpressure_recommendations(recommendations, streaming_results) do
     backpressure_events = get_backpressure_events(streaming_results)
-    
+
     if backpressure_events > 5 do
-      ["Frequent backpressure events detected - consider optimizing memory limits or processing function" | recommendations]
+      [
+        "Frequent backpressure events detected - consider optimizing memory limits or processing function"
+        | recommendations
+      ]
     else
       recommendations
     end

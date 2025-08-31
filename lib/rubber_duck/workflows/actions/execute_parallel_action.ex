@@ -210,7 +210,7 @@ defmodule RubberDuck.Workflows.Actions.ExecuteParallelAction do
       case item_count do
         count when count < 100 -> 10
         count when count < 1000 -> 50
-        count when count < 10000 -> 100
+        count when count < 10_000 -> 100
         _ -> 200
       end
 
@@ -360,12 +360,15 @@ defmodule RubberDuck.Workflows.Actions.ExecuteParallelAction do
 
   defp generate_optimization_recommendations(processing_results, optimized_config) do
     recommendations = []
-    
+
     # Analyze performance and generate recommendations
     recommendations = add_performance_recommendations(recommendations, processing_results)
-    recommendations = add_memory_recommendations(recommendations, processing_results, optimized_config)
+
+    recommendations =
+      add_memory_recommendations(recommendations, processing_results, optimized_config)
+
     recommendations = add_concurrency_recommendations(recommendations, optimized_config)
-    
+
     case recommendations do
       [] -> ["Current configuration appears optimal for the given workload"]
       _ -> recommendations
@@ -374,7 +377,7 @@ defmodule RubberDuck.Workflows.Actions.ExecuteParallelAction do
 
   defp add_performance_recommendations(recommendations, processing_results) do
     performance_metrics = processing_results.agent_metadata.performance_metrics
-    
+
     if Map.has_key?(performance_metrics, :items_per_second) do
       add_throughput_recommendations(recommendations, performance_metrics.items_per_second)
     else
@@ -386,10 +389,13 @@ defmodule RubberDuck.Workflows.Actions.ExecuteParallelAction do
     cond do
       throughput < 50 ->
         ["Consider increasing batch size or concurrency for better throughput" | recommendations]
-      
+
       throughput > 500 ->
-        ["Current configuration is highly efficient - consider maintaining settings" | recommendations]
-      
+        [
+          "Current configuration is highly efficient - consider maintaining settings"
+          | recommendations
+        ]
+
       true ->
         recommendations
     end
@@ -397,7 +403,7 @@ defmodule RubberDuck.Workflows.Actions.ExecuteParallelAction do
 
   defp add_memory_recommendations(recommendations, processing_results, optimized_config) do
     resource_usage = processing_results.resource_utilization
-    
+
     if Map.has_key?(resource_usage, :peak_memory_mb) do
       memory_usage = resource_usage.peak_memory_mb
       memory_limit = optimized_config.memory_limit_mb
@@ -410,11 +416,17 @@ defmodule RubberDuck.Workflows.Actions.ExecuteParallelAction do
   defp add_memory_usage_recommendations(recommendations, memory_usage, memory_limit) do
     cond do
       memory_usage > memory_limit * 0.9 ->
-        ["Consider increasing memory limits or reducing batch size to prevent memory pressure" | recommendations]
-      
+        [
+          "Consider increasing memory limits or reducing batch size to prevent memory pressure"
+          | recommendations
+        ]
+
       memory_usage < memory_limit * 0.3 ->
-        ["Memory usage is low - consider increasing batch size for better efficiency" | recommendations]
-      
+        [
+          "Memory usage is low - consider increasing batch size for better efficiency"
+          | recommendations
+        ]
+
       true ->
         recommendations
     end
@@ -422,7 +434,10 @@ defmodule RubberDuck.Workflows.Actions.ExecuteParallelAction do
 
   defp add_concurrency_recommendations(recommendations, optimized_config) do
     if optimized_config.max_concurrency == 1 do
-      ["Single-threaded execution detected - consider increasing concurrency for parallel processing" | recommendations]
+      [
+        "Single-threaded execution detected - consider increasing concurrency for parallel processing"
+        | recommendations
+      ]
     else
       recommendations
     end

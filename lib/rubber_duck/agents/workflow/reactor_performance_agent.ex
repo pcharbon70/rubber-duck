@@ -622,7 +622,7 @@ defmodule RubberDuck.Agents.Workflow.ReactorPerformanceAgent do
     # Adjust based on execution time (lower is better)
     time_penalty = min(metrics.execution_time_ms / 10_000, 0.5)
 
-    # Adjust based on error rate (lower is better)  
+    # Adjust based on error rate (lower is better)
     error_penalty = metrics.error_rate * 0.5
 
     # Adjust based on throughput (higher is better)
