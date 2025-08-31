@@ -10,9 +10,9 @@ defmodule RubberDuck.Workflows.DynamicWorkflowCompositionCompleteTest do
   use ExUnit.Case, async: true
 
   alias RubberDuck.Workflows.{
-    Dynamic.DynamicWorkflowComposer,
+    Actions.ComposeReactorWorkflowAction,
     Adaptation.WorkflowAdaptationEngine,
-    Actions.ComposeReactorWorkflowAction
+    Dynamic.DynamicWorkflowComposer
   }
 
   @moduletag :unit
