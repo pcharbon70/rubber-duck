@@ -1,11 +1,11 @@
 defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
   @moduledoc """
   Action for automated agent workflow conversion with comprehensive validation and rollback capabilities.
-  
+
   Provides intelligent migration of agent workflows to enhanced patterns while preserving agent
   autonomy and ensuring zero-disruption deployment. Integrates with template management systems
   and existing workflow infrastructure for safe and effective agent workflow evolution.
-  
+
   Features:
   - Automated agent workflow conversion with comprehensive validation and safety checks
   - Migration strategy selection based on agent type, workflow complexity, and risk assessment
@@ -13,7 +13,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
   - Integration with ErrorHandlingTemplateManager and PerformanceOptimizationTemplateManager
   - Performance impact assessment with before-and-after comparison and optimization validation
   - Comprehensive migration analytics with success tracking and improvement recommendations
-  
+
   Migration Types:
   - **Safe Migration**: Conservative migration with extensive validation and rollback preparation
   - **Performance Migration**: Migration focused on performance optimization with benchmarking
@@ -25,20 +25,32 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
     name: "migrate_agent_workflow",
     schema: [
       agent_specification: [type: :map, required: true, doc: "Agent specification for migration"],
-      target_workflow_pattern: [type: :atom, required: true, doc: "Target workflow pattern for migration"],
+      target_workflow_pattern: [
+        type: :atom,
+        required: true,
+        doc: "Target workflow pattern for migration"
+      ],
       migration_strategy: [
         type: :atom,
         default: :safe,
         doc: "Migration strategy (:safe, :performance, :template_based, :adaptive)"
       ],
       validation_config: [type: :map, default: %{}, doc: "Migration validation configuration"],
-      rollback_config: [type: :map, default: %{}, doc: "Rollback configuration and safety settings"],
-      performance_requirements: [type: :map, default: %{}, doc: "Performance requirements for migration"],
+      rollback_config: [
+        type: :map,
+        default: %{},
+        doc: "Rollback configuration and safety settings"
+      ],
+      performance_requirements: [
+        type: :map,
+        default: %{},
+        doc: "Performance requirements for migration"
+      ],
       migration_context: [type: :map, default: %{}, doc: "Migration context and metadata"]
     ]
 
   require Logger
-  
+
   alias RubberDuck.Workflows.{
     Templates.ErrorHandlingTemplateManager,
     Templates.PerformanceOptimizationTemplateManager,
@@ -73,9 +85,11 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
   @default_performance_requirements %{
     max_migration_time_ms: 60_000,
-    max_performance_degradation: 0.05,  # 5% max degradation
+    # 5% max degradation
+    max_performance_degradation: 0.05,
     min_success_rate: 0.95,
-    resource_overhead_limit: 0.1  # 10% max overhead
+    # 10% max overhead
+    resource_overhead_limit: 0.1
   }
 
   def run(params, context) do
@@ -91,7 +105,9 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
     merged_validation_config = Map.merge(@default_validation_config, validation_config)
     merged_rollback_config = Map.merge(@default_rollback_config, rollback_config)
-    merged_performance_requirements = Map.merge(@default_performance_requirements, perf_requirements)
+
+    merged_performance_requirements =
+      Map.merge(@default_performance_requirements, perf_requirements)
 
     Logger.info("MigrateAgentWorkflowAction: Starting agent workflow migration",
       agent_id: Map.get(agent_spec, :id, "unknown"),
@@ -101,28 +117,31 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
     migration_start_time = System.monotonic_time(:microsecond)
 
-    with {:ok, validated_params} <- validate_migration_params(
-           agent_spec,
-           target_pattern,
-           strategy,
-           merged_validation_config
-         ),
-         {:ok, migration_plan} <- create_migration_plan(
-           validated_params,
-           merged_performance_requirements,
-           migration_context,
-           context
-         ),
+    with {:ok, validated_params} <-
+           validate_migration_params(
+             agent_spec,
+             target_pattern,
+             strategy,
+             merged_validation_config
+           ),
+         {:ok, migration_plan} <-
+           create_migration_plan(
+             validated_params,
+             merged_performance_requirements,
+             migration_context,
+             context
+           ),
          {:ok, backup_state} <- create_agent_backup(agent_spec, merged_rollback_config, context),
-         {:ok, migration_results} <- execute_agent_migration(migration_plan, backup_state, context),
-         {:ok, validation_results} <- validate_migration_success(
-           migration_results,
-           merged_performance_requirements,
-           context
-         ) do
-      
+         {:ok, migration_results} <-
+           execute_agent_migration(migration_plan, backup_state, context),
+         {:ok, validation_results} <-
+           validate_migration_success(
+             migration_results,
+             merged_performance_requirements,
+             context
+           ) do
       migration_time = System.monotonic_time(:microsecond) - migration_start_time
-      
+
       Logger.info("MigrateAgentWorkflowAction: Agent workflow migration completed successfully",
         agent_id: validated_params.agent_id,
         target_pattern: target_pattern,
@@ -130,31 +149,33 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
         performance_improvement: get_performance_improvement(validation_results)
       )
 
-      {:ok, %{
-        migration_results: migration_results,
-        validation_results: validation_results,
-        backup_state: backup_state,
-        migration_metadata: %{
-          migration_time_microseconds: migration_time,
-          migration_strategy_used: strategy,
-          target_pattern_achieved: target_pattern,
-          performance_impact: calculate_performance_impact(migration_results, validation_results),
-          rollback_available: backup_state.rollback_available,
-          migration_success: true
-        }
-      }}
+      {:ok,
+       %{
+         migration_results: migration_results,
+         validation_results: validation_results,
+         backup_state: backup_state,
+         migration_metadata: %{
+           migration_time_microseconds: migration_time,
+           migration_strategy_used: strategy,
+           target_pattern_achieved: target_pattern,
+           performance_impact:
+             calculate_performance_impact(migration_results, validation_results),
+           rollback_available: backup_state.rollback_available,
+           migration_success: true
+         }
+       }}
     else
       {:error, reason} ->
-        Logger.error("MigrateAgentWorkflowAction: Agent workflow migration failed", 
+        Logger.error("MigrateAgentWorkflowAction: Agent workflow migration failed",
           agent_id: Map.get(agent_spec, :id, "unknown"),
           error: reason
         )
-        
+
         # Attempt automatic rollback if configured
         case attempt_automatic_rollback(agent_spec, merged_rollback_config, reason, context) do
           {:ok, _rollback_result} ->
             {:error, {:migration_failed_with_rollback, reason}}
-          
+
           {:error, rollback_error} ->
             {:error, {:migration_failed_rollback_failed, {reason, rollback_error}}}
         end
@@ -168,7 +189,6 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
          :ok <- validate_target_workflow_pattern(target_pattern),
          :ok <- validate_migration_strategy(strategy),
          :ok <- validate_migration_compatibility(agent_spec, target_pattern, validation_config) do
-      
       validated_params = %{
         agent_id: Map.get(agent_spec, :id, generate_migration_id()),
         agent_specification: agent_spec,
@@ -177,7 +197,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
         validation_timestamp: DateTime.utc_now(),
         compatibility_validated: true
       }
-      
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -187,18 +207,23 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
   defp validate_agent_specification(agent_spec) when is_map(agent_spec) do
     required_fields = [:id, :type, :current_workflow]
     missing_fields = required_fields -- Map.keys(agent_spec)
-    
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_agent_fields, fields}}
     end
   end
+
   defp validate_agent_specification(_), do: {:error, :invalid_agent_specification}
 
-  defp validate_target_workflow_pattern(pattern) when pattern in @supported_workflow_patterns, do: :ok
+  defp validate_target_workflow_pattern(pattern) when pattern in @supported_workflow_patterns,
+    do: :ok
+
   defp validate_target_workflow_pattern(_), do: {:error, :unsupported_workflow_pattern}
 
-  defp validate_migration_strategy(strategy) when strategy in @supported_migration_strategies, do: :ok
+  defp validate_migration_strategy(strategy) when strategy in @supported_migration_strategies,
+    do: :ok
+
   defp validate_migration_strategy(_), do: {:error, :unsupported_migration_strategy}
 
   defp validate_migration_compatibility(agent_spec, target_pattern, validation_config) do
@@ -218,11 +243,16 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
     :compatible
   end
 
-  defp create_migration_plan(validated_params, performance_requirements, migration_context, context) do
+  defp create_migration_plan(
+         validated_params,
+         performance_requirements,
+         migration_context,
+         context
+       ) do
     agent_spec = validated_params.agent_specification
     target_pattern = validated_params.target_pattern
     strategy = validated_params.migration_strategy
-    
+
     migration_plan = %{
       migration_id: generate_migration_id(),
       agent_id: validated_params.agent_id,
@@ -236,13 +266,13 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       context: migration_context,
       estimated_duration_ms: estimate_migration_duration(agent_spec, target_pattern, strategy)
     }
-    
+
     Logger.debug("MigrateAgentWorkflowAction: Migration plan created",
       migration_id: migration_plan.migration_id,
       estimated_duration_ms: migration_plan.estimated_duration_ms,
       migration_steps: length(migration_plan.migration_steps)
     )
-    
+
     {:ok, migration_plan}
   end
 
@@ -253,7 +283,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       enhanced: true,
       migration_target: true
     }
-    
+
     # Customize workflow spec based on target pattern
     case target_pattern do
       :reactor_workflow ->
@@ -262,21 +292,21 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
           async_execution: true,
           compensation_enabled: true
         })
-      
+
       :performance_optimized_workflow ->
         Map.merge(base_workflow, %{
           performance_monitoring: true,
           resource_optimization: true,
           bottleneck_detection: true
         })
-      
+
       :error_resilient_workflow ->
         Map.merge(base_workflow, %{
           error_handling_enhanced: true,
           recovery_patterns: true,
           fault_tolerance: :high
         })
-      
+
       _ ->
         base_workflow
     end
@@ -292,18 +322,18 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       {:validate_integration_success, "Validate integration and performance"},
       {:finalize_migration, "Finalize migration and cleanup temporary resources"}
     ]
-    
+
     # Customize steps based on strategy
     case strategy do
       :safe ->
         add_safety_steps(base_steps)
-      
+
       :performance ->
         add_performance_steps(base_steps)
-      
+
       :template_based ->
         add_template_steps(base_steps)
-      
+
       :adaptive ->
         add_adaptive_steps(base_steps)
     end
@@ -315,7 +345,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       {:validate_rollback_capability, "Validate rollback mechanisms"},
       {:test_migration_in_sandbox, "Test migration in isolated environment"}
     ]
-    
+
     insert_steps_after(base_steps, :validate_agent_state, safety_steps)
   end
 
@@ -325,7 +355,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       {:optimize_migration_process, "Optimize migration process for performance"},
       {:validate_performance_targets, "Validate performance improvement targets"}
     ]
-    
+
     insert_steps_after(base_steps, :prepare_migration_environment, performance_steps)
   end
 
@@ -335,7 +365,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       {:customize_templates_for_agent, "Customize templates for specific agent"},
       {:validate_template_compatibility, "Validate template compatibility and effectiveness"}
     ]
-    
+
     insert_steps_after(base_steps, :prepare_migration_environment, template_steps)
   end
 
@@ -345,15 +375,17 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       {:determine_optimal_strategy, "Determine optimal migration strategy adaptively"},
       {:customize_migration_approach, "Customize migration approach based on analysis"}
     ]
-    
+
     insert_steps_after(base_steps, :validate_agent_state, adaptive_steps)
   end
 
   defp insert_steps_after(base_steps, after_step, new_steps) do
-    {before_steps, after_steps} = Enum.split_with(base_steps, fn {step, _} -> step != after_step end)
-    
+    {before_steps, after_steps} =
+      Enum.split_with(base_steps, fn {step, _} -> step != after_step end)
+
     case after_steps do
-      [] -> base_steps ++ new_steps  # If step not found, append at end
+      # If step not found, append at end
+      [] -> base_steps ++ new_steps
       [target_step | rest] -> before_steps ++ [target_step] ++ new_steps ++ rest
     end
   end
@@ -365,22 +397,29 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       {:performance_impact_validation, "Validate performance impact"},
       {:integration_validation, "Validate system integration"}
     ]
-    
+
     # Add strategy-specific checkpoints
-    strategy_checkpoints = case strategy do
-      :safe ->
-        [{:comprehensive_safety_validation, "Comprehensive safety and rollback validation"}]
-      
-      :performance ->
-        [{:performance_benchmark_validation, "Performance benchmark and optimization validation"}]
-      
-      :template_based ->
-        [{:template_effectiveness_validation, "Template effectiveness and compatibility validation"}]
-      
-      :adaptive ->
-        [{:adaptive_strategy_validation, "Adaptive strategy effectiveness validation"}]
-    end
-    
+    strategy_checkpoints =
+      case strategy do
+        :safe ->
+          [{:comprehensive_safety_validation, "Comprehensive safety and rollback validation"}]
+
+        :performance ->
+          [
+            {:performance_benchmark_validation,
+             "Performance benchmark and optimization validation"}
+          ]
+
+        :template_based ->
+          [
+            {:template_effectiveness_validation,
+             "Template effectiveness and compatibility validation"}
+          ]
+
+        :adaptive ->
+          [{:adaptive_strategy_validation, "Adaptive strategy effectiveness validation"}]
+      end
+
     base_checkpoints ++ strategy_checkpoints
   end
 
@@ -443,30 +482,38 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
   defp estimate_migration_duration(agent_spec, target_pattern, strategy) do
     # Base duration estimation based on agent complexity and target pattern
-    base_duration = case agent_spec.type do
+    base_duration = get_agent_type_base_duration(agent_spec.type)
+    pattern_multiplier = get_pattern_complexity_multiplier(target_pattern)
+    strategy_multiplier = get_strategy_overhead_multiplier(strategy)
+    
+    round(base_duration * pattern_multiplier * strategy_multiplier)
+  end
+
+  defp get_agent_type_base_duration(agent_type) do
+    case agent_type do
       :simple_agent -> 5_000
       :complex_agent -> 15_000
       :stateful_agent -> 25_000
       _ -> 10_000
     end
-    
-    # Adjust based on target pattern complexity
-    pattern_multiplier = case target_pattern do
+  end
+
+  defp get_pattern_complexity_multiplier(target_pattern) do
+    case target_pattern do
       :reactor_workflow -> 1.5
       :performance_optimized_workflow -> 2.0
       :error_resilient_workflow -> 1.8
       _ -> 1.2
     end
-    
-    # Adjust based on migration strategy
-    strategy_multiplier = case strategy do
-      :safe -> 2.5  # More thorough, takes longer
-      :performance -> 2.0  # Performance analysis takes time
-      :template_based -> 1.2  # Templates make it faster
-      :adaptive -> 1.8  # Analysis overhead
+  end
+
+  defp get_strategy_overhead_multiplier(strategy) do
+    case strategy do
+      :safe -> 2.5          # More thorough, takes longer
+      :performance -> 2.0   # Performance analysis takes time
+      :template_based -> 1.2 # Templates make it faster
+      :adaptive -> 1.8      # Analysis overhead
     end
-    
-    round(base_duration * pattern_multiplier * strategy_multiplier)
   end
 
   defp create_agent_backup(agent_spec, rollback_config, context) do
@@ -480,12 +527,12 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
         backup_timestamp: DateTime.utc_now(),
         rollback_available: true
       }
-      
+
       Logger.debug("MigrateAgentWorkflowAction: Agent backup created",
         agent_id: agent_spec.id,
         backup_size: calculate_backup_size(backup_data)
       )
-      
+
       {:ok, backup_data}
     else
       {:ok, %{rollback_available: false}}
@@ -501,23 +548,24 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       performance_data: %{},
       integration_status: :pending
     }
-    
+
     case execute_migration_steps(migration_plan.migration_steps, migration_plan, context) do
       {:ok, step_results} ->
-        updated_results = %{migration_results |
-          steps_executed: step_results,
-          conversion_successful: true,
-          integration_status: :completed
+        updated_results = %{
+          migration_results
+          | steps_executed: step_results,
+            conversion_successful: true,
+            integration_status: :completed
         }
-        
+
         {:ok, updated_results}
-      
+
       {:error, {failed_step, reason}} ->
         Logger.error("MigrateAgentWorkflowAction: Migration step failed",
           failed_step: failed_step,
           reason: reason
         )
-        
+
         {:error, {:migration_step_failed, failed_step, reason}}
     end
   end
@@ -527,7 +575,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       case execute_single_migration_step(step_name, step_description, migration_plan, context) do
         {:ok, step_result} ->
           {:cont, {:ok, [step_result | acc]}}
-        
+
         {:error, reason} ->
           {:halt, {:error, {step_name, reason}}}
       end
@@ -540,16 +588,16 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
   defp execute_single_migration_step(step_name, step_description, migration_plan, context) do
     step_start_time = System.monotonic_time(:microsecond)
-    
+
     Logger.debug("MigrateAgentWorkflowAction: Executing migration step",
       step: step_name,
       description: step_description
     )
-    
+
     case perform_migration_step_operation(step_name, migration_plan, context) do
       {:ok, operation_result} ->
         step_duration = System.monotonic_time(:microsecond) - step_start_time
-        
+
         step_result = %{
           step_name: step_name,
           description: step_description,
@@ -558,12 +606,12 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
           success: true,
           timestamp: DateTime.utc_now()
         }
-        
+
         {:ok, step_result}
-      
+
       {:error, reason} ->
         step_duration = System.monotonic_time(:microsecond) - step_start_time
-        
+
         step_result = %{
           step_name: step_name,
           description: step_description,
@@ -572,13 +620,45 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
           success: false,
           timestamp: DateTime.utc_now()
         }
-        
+
         {:error, step_result}
     end
   end
 
   defp perform_migration_step_operation(step_name, migration_plan, context) do
     # Perform the actual migration step operation
+    case categorize_migration_step(step_name) do
+      :core_migration_step ->
+        execute_core_migration_step(step_name, migration_plan, context)
+      
+      :strategy_specific_step ->
+        execute_strategy_specific_step(step_name, migration_plan, context)
+      
+      :generic_step ->
+        execute_generic_migration_step(step_name, migration_plan, context)
+    end
+  end
+
+  defp categorize_migration_step(step_name) do
+    core_steps = [
+      :validate_agent_state, :prepare_migration_environment, :execute_workflow_conversion,
+      :validate_converted_workflow, :integrate_enhanced_features, :validate_integration_success,
+      :finalize_migration
+    ]
+    
+    strategy_steps = [
+      :create_detailed_backup, :baseline_performance_measurement, :retrieve_migration_templates,
+      :analyze_agent_characteristics
+    ]
+    
+    cond do
+      step_name in core_steps -> :core_migration_step
+      step_name in strategy_steps -> :strategy_specific_step
+      true -> :generic_step
+    end
+  end
+
+  defp execute_core_migration_step(step_name, migration_plan, context) do
     case step_name do
       :validate_agent_state ->
         validate_agent_current_state(migration_plan.agent_id, context)
@@ -600,8 +680,11 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       
       :finalize_migration ->
         finalize_agent_migration(migration_plan, context)
-      
-      # Strategy-specific steps
+    end
+  end
+
+  defp execute_strategy_specific_step(step_name, migration_plan, context) do
+    case step_name do
       :create_detailed_backup ->
         create_comprehensive_backup(migration_plan, context)
       
@@ -613,29 +696,27 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       
       :analyze_agent_characteristics ->
         analyze_agent_migration_profile(migration_plan, context)
-      
-      _ ->
-        # Generic step execution
-        execute_generic_migration_step(step_name, migration_plan, context)
     end
   end
 
   defp validate_migration_success(migration_results, performance_requirements, context) do
     validation_results = %{
       migration_successful: migration_results.conversion_successful,
-      performance_validation: validate_performance_impact(migration_results, performance_requirements),
+      performance_validation:
+        validate_performance_impact(migration_results, performance_requirements),
       functionality_validation: validate_agent_functionality(migration_results, context),
       integration_validation: validate_system_integration(migration_results, context),
       overall_success: false
     }
-    
-    overall_success = validation_results.migration_successful &&
-                     validation_results.performance_validation.passed &&
-                     validation_results.functionality_validation.passed &&
-                     validation_results.integration_validation.passed
-    
+
+    overall_success =
+      validation_results.migration_successful &&
+        validation_results.performance_validation.passed &&
+        validation_results.functionality_validation.passed &&
+        validation_results.integration_validation.passed
+
     final_validation = %{validation_results | overall_success: overall_success}
-    
+
     if overall_success do
       Logger.info("MigrateAgentWorkflowAction: Migration validation successful")
       {:ok, final_validation}
@@ -643,6 +724,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       Logger.warn("MigrateAgentWorkflowAction: Migration validation failed",
         validation_results: final_validation
       )
+
       {:error, {:validation_failed, final_validation}}
     end
   end
@@ -749,7 +831,8 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
   defp calculate_backup_size(_backup_data) do
     # Calculate approximate backup data size
-    "2.5MB"  # Placeholder
+    # Placeholder
+    "2.5MB"
   end
 
   defp get_performance_improvement(validation_results) do
@@ -773,7 +856,7 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
       Logger.info("MigrateAgentWorkflowAction: Attempting automatic rollback",
         agent_id: agent_spec.id
       )
-      
+
       # Simulate rollback execution
       {:ok, %{rollback_successful: true, agent_restored: true}}
     else
@@ -783,19 +866,23 @@ defmodule RubberDuck.Workflows.Actions.MigrateAgentWorkflowAction do
 
   defp estimate_rollback_duration(agent_spec, strategy) do
     # Estimate rollback duration based on agent complexity and strategy
-    base_duration = case Map.get(agent_spec, :complexity, :medium) do
-      :simple -> 2_000
-      :medium -> 5_000
-      :complex -> 10_000
-      :enterprise -> 15_000
-    end
-    
-    strategy_multiplier = case strategy do
-      :safe -> 1.5      # Safe strategy has more validation
-      :performance -> 1.2  # Performance strategy has metrics validation
-      _ -> 1.0
-    end
-    
+    base_duration =
+      case Map.get(agent_spec, :complexity, :medium) do
+        :simple -> 2_000
+        :medium -> 5_000
+        :complex -> 10_000
+        :enterprise -> 15_000
+      end
+
+    strategy_multiplier =
+      case strategy do
+        # Safe strategy has more validation
+        :safe -> 1.5
+        # Performance strategy has metrics validation
+        :performance -> 1.2
+        _ -> 1.0
+      end
+
     round(base_duration * strategy_multiplier)
   end
 

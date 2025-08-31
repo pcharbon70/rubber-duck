@@ -1,11 +1,11 @@
 defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   @moduledoc """
   Action for multi-agent coordination and orchestration with performance optimization.
-  
+
   Provides sophisticated multi-agent orchestration capabilities that maintain agent autonomy
   while enabling coordinated execution for complex multi-agent workflows. Integrates with
   existing agent infrastructure and performance optimization systems.
-  
+
   Features:
   - Multi-agent coordination with performance optimization and resource management
   - Agent autonomy preservation with optional coordination enhancement patterns
@@ -13,7 +13,7 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   - Integration with ReactorPerformanceAgent and AdvancedIntegrationManager for optimization
   - Comprehensive coordination analytics with success tracking and performance measurement
   - Error handling and recovery for multi-agent coordination failures and communication issues
-  
+
   Orchestration Patterns:
   - **Sequential Orchestration**: Coordinated sequential execution with dependency management
   - **Parallel Orchestration**: Concurrent agent execution with synchronization and result aggregation
@@ -24,20 +24,36 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   use Jido.Action,
     name: "orchestrate_agents",
     schema: [
-      agent_specifications: [type: {:list, :map}, required: true, doc: "Specifications for agents to orchestrate"],
+      agent_specifications: [
+        type: {:list, :map},
+        required: true,
+        doc: "Specifications for agents to orchestrate"
+      ],
       orchestration_strategy: [
         type: :atom,
         default: :adaptive,
         doc: "Orchestration strategy (:sequential, :parallel, :pipeline, :adaptive)"
       ],
       coordination_config: [type: :map, default: %{}, doc: "Agent coordination configuration"],
-      performance_targets: [type: :map, default: %{}, doc: "Performance targets for orchestration"],
-      error_handling_config: [type: :map, default: %{}, doc: "Error handling and recovery configuration"],
-      monitoring_enabled: [type: :boolean, default: true, doc: "Enable orchestration performance monitoring"]
+      performance_targets: [
+        type: :map,
+        default: %{},
+        doc: "Performance targets for orchestration"
+      ],
+      error_handling_config: [
+        type: :map,
+        default: %{},
+        doc: "Error handling and recovery configuration"
+      ],
+      monitoring_enabled: [
+        type: :boolean,
+        default: true,
+        doc: "Enable orchestration performance monitoring"
+      ]
     ]
 
   require Logger
-  
+
   alias RubberDuck.Workflows.{
     Advanced.AdvancedIntegrationManager,
     Templates.ErrorHandlingTemplateManager,
@@ -59,8 +75,10 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     target_coordination_overhead_ms: 100,
     min_orchestration_success_rate: 0.95,
     max_agent_startup_time_ms: 5_000,
-    target_throughput_multiplier: 1.0,  # No degradation
-    max_resource_overhead: 0.1  # 10% max overhead
+    # No degradation
+    target_throughput_multiplier: 1.0,
+    # 10% max overhead
+    max_resource_overhead: 0.1
   }
 
   @default_error_handling_config %{
@@ -93,66 +111,76 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
 
     orchestration_start_time = System.monotonic_time(:microsecond)
 
-    with {:ok, validated_params} <- validate_orchestration_params(
-           agent_specs,
-           strategy,
-           merged_coord_config
-         ),
-         {:ok, orchestration_plan} <- create_orchestration_plan(
-           validated_params,
-           strategy,
-           merged_perf_targets,
-           context
-         ),
-         {:ok, agent_coordination} <- initialize_agent_coordination(
-           orchestration_plan,
-           merged_coord_config,
-           context
-         ),
-         {:ok, orchestration_results} <- execute_multi_agent_orchestration(
-           agent_coordination,
-           merged_error_config,
-           context
-         ),
-         {:ok, coordination_validation} <- validate_orchestration_success(
-           orchestration_results,
-           merged_perf_targets,
-           context
-         ) do
-      
+    with {:ok, validated_params} <-
+           validate_orchestration_params(
+             agent_specs,
+             strategy,
+             merged_coord_config
+           ),
+         {:ok, orchestration_plan} <-
+           create_orchestration_plan(
+             validated_params,
+             strategy,
+             merged_perf_targets,
+             context
+           ),
+         {:ok, agent_coordination} <-
+           initialize_agent_coordination(
+             orchestration_plan,
+             merged_coord_config,
+             context
+           ),
+         {:ok, orchestration_results} <-
+           execute_multi_agent_orchestration(
+             agent_coordination,
+             merged_error_config,
+             context
+           ),
+         {:ok, coordination_validation} <-
+           validate_orchestration_success(
+             orchestration_results,
+             merged_perf_targets,
+             context
+           ) do
       orchestration_time = System.monotonic_time(:microsecond) - orchestration_start_time
-      
+
       Logger.info("OrchestrateAgentsAction: Multi-agent orchestration completed successfully",
         agents_coordinated: length(agent_specs),
         orchestration_time_ms: div(orchestration_time, 1000),
         coordination_success_rate: get_coordination_success_rate(orchestration_results),
-        performance_improvement: get_orchestration_performance_improvement(coordination_validation)
+        performance_improvement:
+          get_orchestration_performance_improvement(coordination_validation)
       )
 
-      {:ok, %{
-        orchestration_results: orchestration_results,
-        coordination_validation: coordination_validation,
-        orchestration_metadata: %{
-          orchestration_time_microseconds: orchestration_time,
-          agents_coordinated: length(agent_specs),
-          orchestration_strategy_used: strategy,
-          coordination_overhead_ms: calculate_coordination_overhead(orchestration_results),
-          performance_impact: calculate_orchestration_performance_impact(orchestration_results, coordination_validation),
-          coordination_success: true
-        }
-      }}
+      {:ok,
+       %{
+         orchestration_results: orchestration_results,
+         coordination_validation: coordination_validation,
+         orchestration_metadata: %{
+           orchestration_time_microseconds: orchestration_time,
+           agents_coordinated: length(agent_specs),
+           orchestration_strategy_used: strategy,
+           coordination_overhead_ms: calculate_coordination_overhead(orchestration_results),
+           performance_impact:
+             calculate_orchestration_performance_impact(
+               orchestration_results,
+               coordination_validation
+             ),
+           coordination_success: true
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("OrchestrateAgentsAction: Multi-agent orchestration failed",
           agent_count: length(agent_specs),
           error: reason
         )
-        
+
         # Attempt coordination recovery if configured
         case attempt_coordination_recovery(agent_specs, merged_error_config, reason, context) do
           {:ok, recovery_result} ->
             {:error, {:orchestration_failed_with_recovery, reason, recovery_result}}
-          
+
           {:error, recovery_error} ->
             {:error, {:orchestration_failed_recovery_failed, {reason, recovery_error}}}
         end
@@ -165,7 +193,6 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     with :ok <- validate_agent_specifications(agent_specs),
          :ok <- validate_orchestration_strategy(strategy),
          :ok <- validate_coordination_configuration(coord_config) do
-      
       validated_params = %{
         agent_specifications: agent_specs,
         orchestration_strategy: strategy,
@@ -173,19 +200,21 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
         validation_timestamp: DateTime.utc_now(),
         agent_count: length(agent_specs)
       }
-      
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
     end
   end
 
-  defp validate_agent_specifications(agent_specs) when is_list(agent_specs) and length(agent_specs) > 0 do
+  defp validate_agent_specifications(agent_specs)
+       when is_list(agent_specs) and length(agent_specs) > 0 do
     case validate_all_agent_specs(agent_specs) do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
     end
   end
+
   defp validate_agent_specifications(_), do: {:error, :invalid_agent_specifications}
 
   defp validate_all_agent_specs(agent_specs) do
@@ -200,15 +229,19 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp validate_single_agent_spec(agent_spec) when is_map(agent_spec) do
     required_fields = [:id, :type]
     missing_fields = required_fields -- Map.keys(agent_spec)
-    
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_agent_fields, fields}}
     end
   end
+
   defp validate_single_agent_spec(_), do: {:error, :invalid_agent_specification_format}
 
-  defp validate_orchestration_strategy(strategy) when strategy in @supported_orchestration_strategies, do: :ok
+  defp validate_orchestration_strategy(strategy)
+       when strategy in @supported_orchestration_strategies,
+       do: :ok
+
   defp validate_orchestration_strategy(_), do: {:error, :unsupported_orchestration_strategy}
 
   defp validate_coordination_configuration(config) when is_map(config) do
@@ -217,11 +250,12 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
       _ -> {:error, :invalid_coordination_configuration}
     end
   end
+
   defp validate_coordination_configuration(_), do: {:error, :invalid_coordination_configuration}
 
   defp create_orchestration_plan(validated_params, strategy, performance_targets, context) do
     agent_specs = validated_params.agent_specifications
-    
+
     orchestration_plan = %{
       orchestration_id: generate_orchestration_id(),
       agent_specifications: agent_specs,
@@ -234,19 +268,19 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
       error_recovery_plan: create_error_recovery_plan(agent_specs, strategy),
       estimated_coordination_time_ms: estimate_coordination_duration(agent_specs, strategy)
     }
-    
+
     Logger.debug("OrchestrateAgentsAction: Orchestration plan created",
       orchestration_id: orchestration_plan.orchestration_id,
       coordination_topology: orchestration_plan.coordination_topology,
       estimated_duration_ms: orchestration_plan.estimated_coordination_time_ms
     )
-    
+
     {:ok, orchestration_plan}
   end
 
   defp determine_coordination_topology(agent_specs, strategy) do
     agent_count = length(agent_specs)
-    
+
     case {strategy, agent_count} do
       {:sequential, _} -> :linear_chain
       {:parallel, count} when count <= 10 -> :star_topology
@@ -261,13 +295,13 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     case strategy do
       :sequential ->
         create_sequential_execution_sequence(agent_specs)
-      
+
       :parallel ->
         create_parallel_execution_sequence(agent_specs)
-      
+
       :pipeline ->
         create_pipeline_execution_sequence(agent_specs)
-      
+
       :adaptive ->
         create_adaptive_execution_sequence(agent_specs)
     end
@@ -291,7 +325,8 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp create_parallel_execution_sequence(agent_specs) do
     Enum.map(agent_specs, fn agent_spec ->
       %{
-        sequence_order: 0,  # All parallel
+        # All parallel
+        sequence_order: 0,
         agent_id: agent_spec.id,
         execution_type: :parallel,
         dependencies: [],
@@ -322,7 +357,7 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp create_adaptive_execution_sequence(agent_specs) do
     # Analyze agent characteristics and create optimal execution sequence
     agent_analysis = analyze_agent_characteristics(agent_specs)
-    
+
     case agent_analysis.optimal_strategy do
       :parallel_with_coordination -> create_parallel_execution_sequence(agent_specs)
       :sequential_with_optimization -> create_sequential_execution_sequence(agent_specs)
@@ -335,7 +370,7 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     # Create hybrid execution sequence based on agent analysis
     Enum.with_index(agent_specs, fn agent_spec, index ->
       execution_type = determine_agent_execution_type(agent_spec, analysis)
-      
+
       %{
         sequence_order: index,
         agent_id: agent_spec.id,
@@ -349,7 +384,7 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp analyze_agent_characteristics(agent_specs) do
     # Analyze agent characteristics to determine optimal orchestration
     agent_types = Enum.map(agent_specs, fn spec -> Map.get(spec, :type, :unknown) end)
-    
+
     %{
       agent_count: length(agent_specs),
       agent_types: agent_types,
@@ -362,23 +397,24 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp calculate_orchestration_complexity(agent_specs) do
     # Calculate complexity based on agent count, types, and dependencies
     base_complexity = length(agent_specs) * 0.1
-    
-    type_complexity = agent_specs
-                      |> Enum.map(fn spec -> Map.get(spec, :complexity, :medium) end)
-                      |> Enum.map(fn
-                        :simple -> 0.1
-                        :medium -> 0.2
-                        :complex -> 0.4
-                        _ -> 0.2
-                      end)
-                      |> Enum.sum()
-    
+
+    type_complexity =
+      agent_specs
+      |> Enum.map(fn spec -> Map.get(spec, :complexity, :medium) end)
+      |> Enum.map(fn
+        :simple -> 0.1
+        :medium -> 0.2
+        :complex -> 0.4
+        _ -> 0.2
+      end)
+      |> Enum.sum()
+
     Float.round(base_complexity + type_complexity, 2)
   end
 
   defp determine_optimal_strategy(agent_specs) do
     agent_count = length(agent_specs)
-    
+
     cond do
       agent_count <= 3 -> :parallel_with_coordination
       agent_count <= 10 -> :pipeline_with_adaptation
@@ -388,12 +424,14 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
 
   defp assess_coordination_requirements(agent_specs) do
     %{
-      requires_synchronization: Enum.any?(agent_specs, fn spec -> 
-        Map.get(spec, :requires_coordination, false) 
-      end),
-      requires_data_flow: Enum.any?(agent_specs, fn spec -> 
-        Map.get(spec, :data_dependencies, []) != [] 
-      end),
+      requires_synchronization:
+        Enum.any?(agent_specs, fn spec ->
+          Map.get(spec, :requires_coordination, false)
+        end),
+      requires_data_flow:
+        Enum.any?(agent_specs, fn spec ->
+          Map.get(spec, :data_dependencies, []) != []
+        end),
       requires_result_aggregation: length(agent_specs) > 1
     }
   end
@@ -411,21 +449,23 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
             sync_timeout_ms: 10_000
           }
         end)
-      
+
       :parallel ->
         # Single synchronization point at the end
-        [%{
-          sync_point_id: "parallel_completion_sync",
-          agent_id: :all,
-          sync_type: :completion_aggregation,
-          required_agents: Enum.map(agent_specs, fn spec -> spec.id end),
-          sync_timeout_ms: 30_000
-        }]
-      
+        [
+          %{
+            sync_point_id: "parallel_completion_sync",
+            agent_id: :all,
+            sync_type: :completion_aggregation,
+            required_agents: Enum.map(agent_specs, fn spec -> spec.id end),
+            sync_timeout_ms: 30_000
+          }
+        ]
+
       :pipeline ->
         # Synchronization between pipeline stages
         create_pipeline_sync_points(agent_specs)
-      
+
       :adaptive ->
         # Dynamic synchronization based on agent characteristics
         create_adaptive_sync_points(agent_specs)
@@ -450,7 +490,7 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp create_adaptive_sync_points(agent_specs) do
     # Create dynamic sync points based on agent analysis
     coordination_groups = group_agents_by_coordination_needs(agent_specs)
-    
+
     Enum.flat_map(coordination_groups, fn {group_type, group_agents} ->
       create_group_sync_points(group_type, group_agents)
     end)
@@ -474,29 +514,35 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp create_group_sync_points(group_type, group_agents) do
     case group_type do
       :high_coordination ->
-        [%{
-          sync_point_id: "high_coord_sync",
-          sync_type: :comprehensive_coordination,
-          required_agents: Enum.map(group_agents, fn agent -> agent.id end),
-          sync_timeout_ms: 20_000
-        }]
-      
+        [
+          %{
+            sync_point_id: "high_coord_sync",
+            sync_type: :comprehensive_coordination,
+            required_agents: Enum.map(group_agents, fn agent -> agent.id end),
+            sync_timeout_ms: 20_000
+          }
+        ]
+
       :medium_coordination ->
-        [%{
-          sync_point_id: "medium_coord_sync",
-          sync_type: :coordination_checkpoint,
-          required_agents: Enum.map(group_agents, fn agent -> agent.id end),
-          sync_timeout_ms: 10_000
-        }]
-      
+        [
+          %{
+            sync_point_id: "medium_coord_sync",
+            sync_type: :coordination_checkpoint,
+            required_agents: Enum.map(group_agents, fn agent -> agent.id end),
+            sync_timeout_ms: 10_000
+          }
+        ]
+
       :data_dependent ->
-        [%{
-          sync_point_id: "data_flow_sync",
-          sync_type: :data_synchronization,
-          required_agents: Enum.map(group_agents, fn agent -> agent.id end),
-          sync_timeout_ms: 15_000
-        }]
-      
+        [
+          %{
+            sync_point_id: "data_flow_sync",
+            sync_type: :data_synchronization,
+            required_agents: Enum.map(group_agents, fn agent -> agent.id end),
+            sync_timeout_ms: 15_000
+          }
+        ]
+
       :independent ->
         # Independent agents don't need synchronization
         []
@@ -516,12 +562,12 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
       error_recovery_plan: orchestration_plan.error_recovery_plan,
       context: context
     }
-    
+
     Logger.debug("OrchestrateAgentsAction: Agent coordination initialized",
       session_id: coordination_session.session_id,
       coordination_topology: coordination_session.coordination_topology
     )
-    
+
     {:ok, coordination_session}
   end
 
@@ -551,19 +597,19 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     case coordination_session.coordination_topology do
       :linear_chain ->
         execute_sequential_coordination(coordination_session, error_config, context)
-      
+
       :star_topology ->
         execute_star_coordination(coordination_session, error_config, context)
-      
+
       :hierarchical_coordination ->
         execute_hierarchical_coordination(coordination_session, error_config, context)
-      
+
       :pipeline_topology ->
         execute_pipeline_coordination(coordination_session, error_config, context)
-      
+
       :mesh_topology ->
         execute_mesh_coordination(coordination_session, error_config, context)
-      
+
       :hybrid_topology ->
         execute_hybrid_coordination(coordination_session, error_config, context)
     end
@@ -571,16 +617,22 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
 
   defp execute_sequential_coordination(coordination_session, error_config, context) do
     execution_sequence = coordination_session.execution_sequence
-    
-    case execute_agents_sequentially(execution_sequence, coordination_session, error_config, context) do
+
+    case execute_agents_sequentially(
+           execution_sequence,
+           coordination_session,
+           error_config,
+           context
+         ) do
       {:ok, execution_results} ->
-        {:ok, %{
-          coordination_type: :sequential,
-          execution_results: execution_results,
-          coordination_successful: true,
-          agents_coordinated: length(execution_sequence)
-        }}
-      
+        {:ok,
+         %{
+           coordination_type: :sequential,
+           execution_results: execution_results,
+           coordination_successful: true,
+           agents_coordinated: length(execution_sequence)
+         }}
+
       {:error, reason} ->
         {:error, {:sequential_coordination_failed, reason}}
     end
@@ -589,22 +641,23 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp execute_star_coordination(coordination_session, error_config, context) do
     # Execute all agents in parallel with central coordination
     agent_specs = coordination_session.agent_specifications
-    
+
     case execute_agents_in_parallel(agent_specs, coordination_session, error_config, context) do
       {:ok, parallel_results} ->
         case aggregate_parallel_results(parallel_results, coordination_session) do
           {:ok, aggregated_results} ->
-            {:ok, %{
-              coordination_type: :star,
-              execution_results: parallel_results,
-              aggregated_results: aggregated_results,
-              coordination_successful: true
-            }}
-          
+            {:ok,
+             %{
+               coordination_type: :star,
+               execution_results: parallel_results,
+               aggregated_results: aggregated_results,
+               coordination_successful: true
+             }}
+
           {:error, reason} ->
             {:error, {:result_aggregation_failed, reason}}
         end
-      
+
       {:error, reason} ->
         {:error, {:parallel_coordination_failed, reason}}
     end
@@ -613,16 +666,22 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp execute_hierarchical_coordination(coordination_session, error_config, context) do
     # Execute agents in hierarchical groups
     agent_groups = create_coordination_hierarchy(coordination_session.agent_specifications)
-    
-    case execute_agent_groups_hierarchically(agent_groups, coordination_session, error_config, context) do
+
+    case execute_agent_groups_hierarchically(
+           agent_groups,
+           coordination_session,
+           error_config,
+           context
+         ) do
       {:ok, hierarchical_results} ->
-        {:ok, %{
-          coordination_type: :hierarchical,
-          execution_results: hierarchical_results,
-          coordination_successful: true,
-          hierarchy_levels: length(agent_groups)
-        }}
-      
+        {:ok,
+         %{
+           coordination_type: :hierarchical,
+           execution_results: hierarchical_results,
+           coordination_successful: true,
+           hierarchy_levels: length(agent_groups)
+         }}
+
       {:error, reason} ->
         {:error, {:hierarchical_coordination_failed, reason}}
     end
@@ -631,16 +690,17 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp execute_pipeline_coordination(coordination_session, error_config, context) do
     # Execute agents as pipeline stages with data flow
     pipeline_stages = coordination_session.execution_sequence
-    
+
     case execute_pipeline_stages(pipeline_stages, coordination_session, error_config, context) do
       {:ok, pipeline_results} ->
-        {:ok, %{
-          coordination_type: :pipeline,
-          execution_results: pipeline_results,
-          coordination_successful: true,
-          pipeline_stages: length(pipeline_stages)
-        }}
-      
+        {:ok,
+         %{
+           coordination_type: :pipeline,
+           execution_results: pipeline_results,
+           coordination_successful: true,
+           pipeline_stages: length(pipeline_stages)
+         }}
+
       {:error, reason} ->
         {:error, {:pipeline_coordination_failed, reason}}
     end
@@ -650,12 +710,13 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     # Execute agents with full mesh connectivity and coordination
     case execute_mesh_coordinated_agents(coordination_session, error_config, context) do
       {:ok, mesh_results} ->
-        {:ok, %{
-          coordination_type: :mesh,
-          execution_results: mesh_results,
-          coordination_successful: true
-        }}
-      
+        {:ok,
+         %{
+           coordination_type: :mesh,
+           execution_results: mesh_results,
+           coordination_successful: true
+         }}
+
       {:error, reason} ->
         {:error, {:mesh_coordination_failed, reason}}
     end
@@ -665,12 +726,13 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     # Execute agents with hybrid coordination strategy
     case execute_adaptive_hybrid_coordination(coordination_session, error_config, context) do
       {:ok, hybrid_results} ->
-        {:ok, %{
-          coordination_type: :hybrid,
-          execution_results: hybrid_results,
-          coordination_successful: true
-        }}
-      
+        {:ok,
+         %{
+           coordination_type: :hybrid,
+           execution_results: hybrid_results,
+           coordination_successful: true
+         }}
+
       {:error, reason} ->
         {:error, {:hybrid_coordination_failed, reason}}
     end
@@ -678,42 +740,51 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
 
   # Execution implementation functions (simplified for core functionality)
 
-  defp execute_agents_sequentially(execution_sequence, _coordination_session, _error_config, _context) do
+  defp execute_agents_sequentially(
+         execution_sequence,
+         _coordination_session,
+         _error_config,
+         _context
+       ) do
     # Simulate sequential agent execution
-    results = Enum.map(execution_sequence, fn sequence_item ->
-      %{
-        agent_id: sequence_item.agent_id,
-        execution_result: :success,
-        execution_time_ms: :rand.uniform(1000),
-        coordination_overhead_ms: :rand.uniform(100)
-      }
-    end)
-    
+    results =
+      Enum.map(execution_sequence, fn sequence_item ->
+        %{
+          agent_id: sequence_item.agent_id,
+          execution_result: :success,
+          execution_time_ms: :rand.uniform(1000),
+          coordination_overhead_ms: :rand.uniform(100)
+        }
+      end)
+
     {:ok, results}
   end
 
   defp execute_agents_in_parallel(agent_specs, _coordination_session, _error_config, _context) do
     # Simulate parallel agent execution
-    results = Enum.map(agent_specs, fn agent_spec ->
-      %{
-        agent_id: agent_spec.id,
-        execution_result: :success,
-        execution_time_ms: :rand.uniform(2000),
-        coordination_overhead_ms: :rand.uniform(50)
-      }
-    end)
-    
+    results =
+      Enum.map(agent_specs, fn agent_spec ->
+        %{
+          agent_id: agent_spec.id,
+          execution_result: :success,
+          execution_time_ms: :rand.uniform(2000),
+          coordination_overhead_ms: :rand.uniform(50)
+        }
+      end)
+
     {:ok, results}
   end
 
   defp aggregate_parallel_results(parallel_results, _coordination_session) do
     aggregated_data = %{
       total_agents: length(parallel_results),
-      successful_agents: Enum.count(parallel_results, fn result -> result.execution_result == :success end),
-      total_execution_time_ms: Enum.map(parallel_results, fn result -> result.execution_time_ms end) |> Enum.max(),
+      successful_agents:
+        Enum.count(parallel_results, fn result -> result.execution_result == :success end),
+      total_execution_time_ms:
+        Enum.map(parallel_results, fn result -> result.execution_time_ms end) |> Enum.max(),
       average_coordination_overhead_ms: calculate_average_coordination_overhead(parallel_results)
     }
-    
+
     {:ok, aggregated_data}
   end
 
@@ -723,69 +794,81 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
     Enum.chunk_every(agent_specs, chunk_size)
   end
 
-  defp execute_agent_groups_hierarchically(agent_groups, _coordination_session, _error_config, _context) do
+  defp execute_agent_groups_hierarchically(
+         agent_groups,
+         _coordination_session,
+         _error_config,
+         _context
+       ) do
     # Execute agent groups in hierarchical order
-    results = Enum.with_index(agent_groups, fn group, level ->
-      %{
-        hierarchy_level: level,
-        agents_in_group: length(group),
-        group_execution_result: :success,
-        execution_time_ms: :rand.uniform(3000)
-      }
-    end)
-    
+    results =
+      Enum.with_index(agent_groups, fn group, level ->
+        %{
+          hierarchy_level: level,
+          agents_in_group: length(group),
+          group_execution_result: :success,
+          execution_time_ms: :rand.uniform(3000)
+        }
+      end)
+
     {:ok, results}
   end
 
   defp execute_pipeline_stages(pipeline_stages, _coordination_session, _error_config, _context) do
     # Execute pipeline stages with data flow
-    results = Enum.map(pipeline_stages, fn stage ->
-      %{
-        agent_id: stage.agent_id,
-        pipeline_stage: stage.sequence_order,
-        execution_result: :success,
-        data_processed: true,
-        execution_time_ms: :rand.uniform(1500)
-      }
-    end)
-    
+    results =
+      Enum.map(pipeline_stages, fn stage ->
+        %{
+          agent_id: stage.agent_id,
+          pipeline_stage: stage.sequence_order,
+          execution_result: :success,
+          data_processed: true,
+          execution_time_ms: :rand.uniform(1500)
+        }
+      end)
+
     {:ok, results}
   end
 
   defp execute_mesh_coordinated_agents(_coordination_session, _error_config, _context) do
     # Execute agents with mesh coordination
-    {:ok, %{
-      coordination_method: :mesh,
-      execution_successful: true,
-      coordination_overhead_low: true
-    }}
+    {:ok,
+     %{
+       coordination_method: :mesh,
+       execution_successful: true,
+       coordination_overhead_low: true
+     }}
   end
 
   defp execute_adaptive_hybrid_coordination(_coordination_session, _error_config, _context) do
     # Execute agents with adaptive hybrid coordination
-    {:ok, %{
-      coordination_method: :adaptive_hybrid,
-      execution_successful: true,
-      adaptation_effective: true
-    }}
+    {:ok,
+     %{
+       coordination_method: :adaptive_hybrid,
+       execution_successful: true,
+       adaptation_effective: true
+     }}
   end
 
   defp validate_orchestration_success(orchestration_results, performance_targets, context) do
     validation_results = %{
       orchestration_successful: orchestration_results.coordination_successful,
-      performance_validation: validate_coordination_performance(orchestration_results, performance_targets),
+      performance_validation:
+        validate_coordination_performance(orchestration_results, performance_targets),
       coordination_validation: validate_coordination_quality(orchestration_results, context),
-      agent_health_validation: validate_agent_health_post_coordination(orchestration_results, context),
+      agent_health_validation:
+        validate_agent_health_post_coordination(orchestration_results, context),
       overall_success: false
     }
-    
-    overall_success = validation_results.orchestration_successful &&
-                     validation_results.performance_validation.passed &&
-                     validation_results.coordination_validation.passed &&
-                     validation_results.agent_health_validation.passed
-    
+
+    overall_success =
+      validation_results.orchestration_successful &&
+        validation_results.performance_validation.passed &&
+        validation_results.coordination_validation.passed &&
+        validation_results.agent_health_validation.passed
+
     final_validation = %{validation_results | overall_success: overall_success}
-    
+
     if overall_success do
       Logger.info("OrchestrateAgentsAction: Orchestration validation successful")
       {:ok, final_validation}
@@ -793,6 +876,7 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
       Logger.warn("OrchestrateAgentsAction: Orchestration validation failed",
         validation_results: final_validation
       )
+
       {:error, {:validation_failed, final_validation}}
     end
   end
@@ -853,14 +937,14 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
       health_monitoring: true,
       performance_tracking: true
     }
-    
+
     case execution_type do
       :prioritized_execution ->
         Map.merge(base_requirements, %{priority: :high, resource_allocation: :guaranteed})
-      
+
       :coordinated_parallel ->
         Map.merge(base_requirements, %{synchronization: true, result_sharing: true})
-      
+
       _ ->
         base_requirements
     end
@@ -955,8 +1039,9 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
         successful = Enum.count(results, fn result -> result.execution_result == :success end)
         total = length(results)
         if total > 0, do: Float.round(successful / total, 3), else: 0.0
-      
-      _ -> 1.0
+
+      _ ->
+        1.0
     end
   end
 
@@ -970,24 +1055,27 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
   defp calculate_coordination_overhead(orchestration_results) do
     case orchestration_results do
       %{execution_results: results} when is_list(results) ->
-        overhead_times = Enum.map(results, fn result -> 
-          Map.get(result, :coordination_overhead_ms, 0) 
-        end)
-        
+        overhead_times =
+          Enum.map(results, fn result ->
+            Map.get(result, :coordination_overhead_ms, 0)
+          end)
+
         case overhead_times do
           [] -> 0
           times -> Enum.sum(times)
         end
-      
-      _ -> 0
+
+      _ ->
+        0
     end
   end
 
   defp calculate_average_coordination_overhead(results) do
-    overhead_times = Enum.map(results, fn result -> 
-      Map.get(result, :coordination_overhead_ms, 0) 
-    end)
-    
+    overhead_times =
+      Enum.map(results, fn result ->
+        Map.get(result, :coordination_overhead_ms, 0)
+      end)
+
     case overhead_times do
       [] -> 0.0
       times -> Float.round(Enum.sum(times) / length(times), 2)
@@ -1008,7 +1096,7 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
       Logger.info("OrchestrateAgentsAction: Attempting coordination recovery",
         agent_count: length(agent_specs)
       )
-      
+
       # Simulate coordination recovery
       {:ok, %{recovery_successful: true, agents_recovered: length(agent_specs)}}
     else
@@ -1018,15 +1106,21 @@ defmodule RubberDuck.Workflows.Actions.OrchestrateAgentsAction do
 
   defp estimate_coordination_duration(agent_specs, strategy) do
     # Estimate coordination duration based on agent count and strategy
-    base_duration = length(agent_specs) * 500  # 500ms per agent base
-    
-    strategy_multiplier = case strategy do
-      :sequential -> 2.0  # Sequential takes longer
-      :parallel -> 0.8    # Parallel is faster
-      :pipeline -> 1.5    # Pipeline has moderate overhead
-      :adaptive -> 1.2    # Adaptive has analysis overhead
-    end
-    
+    # 500ms per agent base
+    base_duration = length(agent_specs) * 500
+
+    strategy_multiplier =
+      case strategy do
+        # Sequential takes longer
+        :sequential -> 2.0
+        # Parallel is faster
+        :parallel -> 0.8
+        # Pipeline has moderate overhead
+        :pipeline -> 1.5
+        # Adaptive has analysis overhead
+        :adaptive -> 1.2
+      end
+
     round(base_duration * strategy_multiplier)
   end
 

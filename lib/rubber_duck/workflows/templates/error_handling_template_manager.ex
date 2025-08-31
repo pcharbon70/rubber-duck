@@ -1,11 +1,11 @@
 defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
   @moduledoc """
   Comprehensive error handling template management system for agent failure scenarios.
-  
+
   Provides standardized error handling templates with classification, recovery patterns,
   and learning capabilities for consistent agent behavior across enterprise deployments.
   Integrates with existing WorkflowErrorManager and agent infrastructure.
-  
+
   Features:
   - Comprehensive error template management with classification and recovery patterns
   - Template versioning and lifecycle management with deprecation and migration support
@@ -13,7 +13,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
   - Integration with WorkflowErrorManager for seamless error handling coordination
   - Template validation and compliance checking for production deployment safety
   - Performance optimization for template retrieval and application in production workflows
-  
+
   Template Categories:
   - **Agent Failure Templates**: Standardized responses for agent initialization, processing, and coordination failures
   - **Workflow Error Templates**: Templates for workflow execution errors, timeouts, and resource exhaustion
@@ -24,7 +24,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
   use GenServer
 
   require Logger
-  
+
   alias RubberDuck.Workflows.{
     ErrorHandling.WorkflowErrorManager,
     Integration.WorkflowIntegrationValidator
@@ -32,7 +32,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   @error_template_categories [
     :agent_failure,
-    :workflow_error, 
+    :workflow_error,
     :integration_error,
     :recovery_pattern,
     :compensation_strategy,
@@ -65,7 +65,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   def init(opts) do
     template_config = Keyword.get(opts, :template_config, @default_template_config)
-    
+
     state = %__MODULE__{
       template_registry: initialize_template_registry(),
       template_cache: initialize_template_cache(template_config),
@@ -118,22 +118,22 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   def handle_call({:get_error_template, category, error_type, severity, opts}, _from, state) do
     retrieval_start_time = System.monotonic_time(:microsecond)
-    
+
     case retrieve_error_template(category, error_type, severity, state, opts) do
       {:ok, template} ->
         track_template_usage(template, retrieval_start_time, state)
         {:reply, {:ok, template}, state}
-      
+
       {:error, :template_not_found} ->
         case generate_fallback_template(category, error_type, severity, state) do
           {:ok, fallback_template} ->
             track_fallback_usage(fallback_template, state)
             {:reply, {:ok, fallback_template}, state}
-          
+
           {:error, reason} ->
             {:reply, {:error, {:template_retrieval_failed, reason}}, state}
         end
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -141,27 +141,27 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   def handle_call({:create_error_template, category, template_spec, opts}, _from, state) do
     creation_start_time = System.monotonic_time(:microsecond)
-    
+
     with {:ok, validated_spec} <- validate_template_specification(template_spec, category, state),
-         {:ok, created_template} <- create_template_with_metadata(validated_spec, category, opts, state),
+         {:ok, created_template} <-
+           create_template_with_metadata(validated_spec, category, opts, state),
          {:ok, updated_state} <- register_template(created_template, state) do
-      
       creation_time = System.monotonic_time(:microsecond) - creation_start_time
-      
+
       Logger.info("ErrorHandlingTemplateManager: Template created successfully",
         template_id: created_template.id,
         category: category,
         creation_time_us: creation_time
       )
-      
+
       {:reply, {:ok, created_template}, updated_state}
     else
       {:error, reason} ->
-        Logger.error("ErrorHandlingTemplateManager: Template creation failed", 
-          category: category, 
+        Logger.error("ErrorHandlingTemplateManager: Template creation failed",
+          category: category,
           error: reason
         )
-        
+
         {:reply, {:error, {:template_creation_failed, reason}}, state}
     end
   end
@@ -170,7 +170,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
     case update_template_with_learning(template_id, outcome_data, state, opts) do
       {:ok, updated_template, updated_state} ->
         {:reply, {:ok, updated_template}, updated_state}
-      
+
       {:error, reason} ->
         {:reply, {:error, {:template_update_failed, reason}}, state}
     end
@@ -180,7 +180,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
     case perform_template_validation(template_spec, validation_level, state) do
       {:ok, validation_result} ->
         {:reply, {:ok, validation_result}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -190,7 +190,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
     case generate_template_analytics(category, time_window, state) do
       {:ok, analytics} ->
         {:reply, {:ok, analytics}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -200,7 +200,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
     case schedule_template_deprecation(template_id, deprecation_schedule, state, opts) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -279,17 +279,18 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
   defp load_existing_templates(state) do
     # Load existing templates from storage (would integrate with Ash resources)
     default_templates = create_default_error_templates()
-    
-    updated_registry = Enum.reduce(default_templates, state.template_registry, fn template, registry ->
-      register_template_in_registry(template, registry)
-    end)
-    
+
+    updated_registry =
+      Enum.reduce(default_templates, state.template_registry, fn template, registry ->
+        register_template_in_registry(template, registry)
+      end)
+
     updated_state = %{state | template_registry: updated_registry}
-    
+
     Logger.info("ErrorHandlingTemplateManager: Loaded default templates",
       template_count: length(default_templates)
     )
-    
+
     {:ok, updated_state}
   end
 
@@ -298,7 +299,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
     case check_template_cache(category, error_type, severity, state.template_cache) do
       {:ok, cached_template} ->
         {:ok, cached_template}
-      
+
       {:error, :cache_miss} ->
         retrieve_from_registry(category, error_type, severity, state, opts)
     end
@@ -307,7 +308,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
   defp check_template_cache(category, error_type, severity, cache) do
     if cache.enabled do
       cache_key = generate_cache_key(category, error_type, severity)
-      
+
       case Map.get(cache.cache_data, cache_key) do
         nil -> {:error, :cache_miss}
         template -> {:ok, template}
@@ -319,7 +320,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   defp retrieve_from_registry(category, error_type, severity, state, _opts) do
     registry = state.template_registry
-    
+
     case get_best_matching_template(category, error_type, severity, registry) do
       {:ok, template} -> {:ok, template}
       {:error, reason} -> {:error, reason}
@@ -328,14 +329,15 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   defp get_best_matching_template(category, error_type, severity, registry) do
     category_templates = Map.get(registry.categories, category, %{})
-    
+
     # Try exact match first
     exact_key = {error_type, severity}
+
     case Map.get(category_templates, exact_key) do
       nil ->
         # Try fuzzy matching or fallback
         find_closest_template(category, error_type, severity, category_templates)
-      
+
       template ->
         {:ok, template}
     end
@@ -344,12 +346,12 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
   defp find_closest_template(category, error_type, severity, category_templates) do
     # Implement template matching logic based on error type similarity and severity
     available_templates = Map.keys(category_templates)
-    
+
     case find_similar_error_type(error_type, available_templates) do
       {:ok, similar_key} ->
         template = Map.get(category_templates, similar_key)
         {:ok, adapt_template_for_error(template, error_type, severity)}
-      
+
       {:error, :no_match} ->
         {:error, :template_not_found}
     end
@@ -371,24 +373,23 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
         requires_review: true
       }
     }
-    
+
     Logger.warn("ErrorHandlingTemplateManager: Generated fallback template",
       category: category,
       error_type: error_type,
       template_id: fallback_template.id
     )
-    
+
     {:ok, fallback_template}
   end
 
   defp validate_template_specification(template_spec, category, state) do
     validation_config = state.validation_config
-    
+
     with :ok <- validate_required_fields(template_spec, validation_config.required_fields),
          :ok <- validate_template_category(category),
          :ok <- validate_template_structure(template_spec),
          :ok <- validate_recovery_strategy(Map.get(template_spec, :recovery_strategy)) do
-      
       enhanced_spec = enhance_template_specification(template_spec, category)
       {:ok, enhanced_spec}
     else
@@ -410,43 +411,38 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
       metadata: build_template_metadata(validated_spec, category, opts),
       performance_metrics: initialize_template_performance_metrics()
     }
-    
+
     {:ok, template}
   end
 
   defp register_template(template, state) do
     updated_registry = register_template_in_registry(template, state.template_registry)
     updated_cache = update_template_cache(template, state.template_cache)
-    
-    updated_state = %{state | 
-      template_registry: updated_registry,
-      template_cache: updated_cache
-    }
-    
+
+    updated_state = %{state | template_registry: updated_registry, template_cache: updated_cache}
+
     {:ok, updated_state}
   end
 
   defp register_template_in_registry(template, registry) do
     category_key = template.category
     template_key = {template.error_type, template.severity}
-    
-    updated_categories = Map.update(registry.categories, category_key, %{}, fn category_templates ->
-      Map.put(category_templates, template_key, template)
-    end)
-    
+
+    updated_categories =
+      Map.update(registry.categories, category_key, %{}, fn category_templates ->
+        Map.put(category_templates, template_key, template)
+      end)
+
     updated_templates = Map.put(registry.templates, template.id, template)
-    
-    %{registry | 
-      categories: updated_categories,
-      templates: updated_templates
-    }
+
+    %{registry | categories: updated_categories, templates: updated_templates}
   end
 
   defp update_template_cache(template, cache) do
     if cache.enabled do
       cache_key = generate_cache_key(template.category, template.error_type, template.severity)
       updated_cache_data = Map.put(cache.cache_data, cache_key, template)
-      
+
       %{cache | cache_data: updated_cache_data}
     else
       cache
@@ -539,7 +535,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   defp create_integration_error_template do
     %{
-      id: "integration_error_default", 
+      id: "integration_error_default",
       category: :integration_error,
       error_type: :agent_communication_failure,
       severity: :medium,
@@ -553,11 +549,15 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
         error_classification: "Inter-agent communication or coordination failure",
         recovery_steps: [
           "Verify agent connectivity and health status",
-          "Attempt communication retry with exponential backoff", 
+          "Attempt communication retry with exponential backoff",
           "Switch to direct coordination bypass if retries fail",
           "Update agent coordination strategy for future interactions"
         ],
-        fallback_strategies: ["Direct agent coordination", "Workflow decomposition", "Manual intervention"]
+        fallback_strategies: [
+          "Direct agent coordination",
+          "Workflow decomposition",
+          "Manual intervention"
+        ]
       },
       version: 1,
       created_at: DateTime.utc_now(),
@@ -585,10 +585,14 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
         recovery_phases: %{
           immediate: "Stop error propagation and stabilize system state",
           analysis: "Analyze error context and determine root cause",
-          correction: "Apply targeted recovery strategy based on error analysis", 
+          correction: "Apply targeted recovery strategy based on error analysis",
           validation: "Verify recovery success and update recovery patterns"
         },
-        success_criteria: ["System stability restored", "Error no longer occurring", "Performance within acceptable range"]
+        success_criteria: [
+          "System stability restored",
+          "Error no longer occurring",
+          "Performance within acceptable range"
+        ]
       },
       version: 1,
       created_at: DateTime.utc_now()
@@ -639,7 +643,12 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
           "Execute comprehensive rollback to last known good state",
           "Verify state restoration and system stability"
         ],
-        safety_checks: ["Backup integrity", "State consistency", "Resource cleanup", "Agent stability"]
+        safety_checks: [
+          "Backup integrity",
+          "State consistency",
+          "Resource cleanup",
+          "Agent stability"
+        ]
       },
       version: 1,
       created_at: DateTime.utc_now()
@@ -650,7 +659,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   defp validate_required_fields(template_spec, required_fields) do
     missing_fields = required_fields -- Map.keys(template_spec)
-    
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_required_fields, fields}}
@@ -672,6 +681,7 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
       false -> {:error, :missing_recovery_type}
     end
   end
+
   defp validate_recovery_strategy(_), do: {:error, :invalid_recovery_strategy}
 
   defp validate_template_structure(template_spec) when is_map(template_spec), do: :ok
@@ -738,17 +748,19 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
   end
 
   defp find_similar_error_type(_error_type, []), do: {:error, :no_match}
+
   defp find_similar_error_type(error_type, [template_key | _rest]) do
     # Simplified similarity matching - would implement more sophisticated matching
     {:ok, template_key}
   end
 
   defp adapt_template_for_error(template, error_type, severity) do
-    %{template | 
-      error_type: error_type,
-      severity: severity,
-      adapted: true,
-      adaptation_timestamp: DateTime.utc_now()
+    %{
+      template
+      | error_type: error_type,
+        severity: severity,
+        adapted: true,
+        adaptation_timestamp: DateTime.utc_now()
     }
   end
 
@@ -774,11 +786,12 @@ defmodule RubberDuck.Workflows.Templates.ErrorHandlingTemplateManager do
 
   defp generate_template_analytics(_category, _time_window, _state) do
     # Generate comprehensive template analytics
-    {:ok, %{
-      usage_statistics: %{},
-      effectiveness_metrics: %{},
-      improvement_recommendations: []
-    }}
+    {:ok,
+     %{
+       usage_statistics: %{},
+       effectiveness_metrics: %{},
+       improvement_recommendations: []
+     }}
   end
 
   defp schedule_template_deprecation(_template_id, _schedule, state, _opts) do

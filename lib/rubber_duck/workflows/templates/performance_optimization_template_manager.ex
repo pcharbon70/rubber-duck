@@ -1,11 +1,11 @@
 defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager do
   @moduledoc """
   Dynamic performance optimization template management system for agent workflow enhancement.
-  
+
   Provides adaptive performance optimization templates with benchmarking, pattern recognition,
   and continuous improvement capabilities. Integrates with agent performance monitoring
   and optimization systems for enterprise-scale performance management.
-  
+
   Features:
   - Dynamic performance optimization templates with benchmarking and adaptation capabilities
   - Template learning from successful optimization outcomes and performance patterns
@@ -13,7 +13,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   - Integration with ReactorPerformanceAgent and performance monitoring infrastructure
   - Template effectiveness tracking with success metrics and optimization impact analysis
   - Enterprise-scale performance template management with versioning and deployment validation
-  
+
   Template Categories:
   - **Concurrency Templates**: Optimal concurrency patterns for different workload types and system configurations
   - **Resource Optimization Templates**: Memory, CPU, and I/O optimization patterns with resource management strategies
@@ -24,12 +24,12 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   use GenServer
 
   require Logger
-  
+
   alias RubberDuck.Workflows.{
     Advanced.AdvancedIntegrationManager,
     Integration.WorkflowIntegrationValidator
   }
-  
+
   alias RubberDuck.Agents.Workflow.ReactorPerformanceAgent
 
   @performance_template_categories [
@@ -45,7 +45,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
 
   @performance_metrics_types [
     :throughput_optimization,
-    :latency_reduction, 
+    :latency_reduction,
     :resource_efficiency,
     :error_rate_improvement,
     :scalability_enhancement
@@ -76,7 +76,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
 
   def init(opts) do
     template_config = Keyword.get(opts, :template_config, @default_template_config)
-    
+
     state = %__MODULE__{
       template_registry: initialize_template_registry(),
       template_cache: initialize_template_cache(template_config),
@@ -87,7 +87,8 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       template_effectiveness: %{}
     }
 
-    Logger.info("PerformanceOptimizationTemplateManager: Initializing performance template system",
+    Logger.info(
+      "PerformanceOptimizationTemplateManager: Initializing performance template system",
       template_categories: length(@performance_template_categories),
       learning_enabled: template_config.enable_learning,
       benchmarking_enabled: template_config.benchmarking_enabled
@@ -101,20 +102,43 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
 
   # Public API
 
-  def get_optimization_template(category, workload_characteristics, optimization_target \\ :balanced, opts \\ []) do
-    GenServer.call(__MODULE__, {:get_optimization_template, category, workload_characteristics, optimization_target, opts})
+  def get_optimization_template(
+        category,
+        workload_characteristics,
+        optimization_target \\ :balanced,
+        opts \\ []
+      ) do
+    GenServer.call(
+      __MODULE__,
+      {:get_optimization_template, category, workload_characteristics, optimization_target, opts}
+    )
   end
 
   def create_optimization_template(category, template_spec, benchmarking_data \\ %{}, opts \\ []) do
-    GenServer.call(__MODULE__, {:create_optimization_template, category, template_spec, benchmarking_data, opts})
+    GenServer.call(
+      __MODULE__,
+      {:create_optimization_template, category, template_spec, benchmarking_data, opts}
+    )
   end
 
-  def update_template_from_performance(template_id, performance_data, optimization_outcome, opts \\ []) do
-    GenServer.call(__MODULE__, {:update_template_from_performance, template_id, performance_data, optimization_outcome, opts})
+  def update_template_from_performance(
+        template_id,
+        performance_data,
+        optimization_outcome,
+        opts \\ []
+      ) do
+    GenServer.call(
+      __MODULE__,
+      {:update_template_from_performance, template_id, performance_data, optimization_outcome,
+       opts}
+    )
   end
 
   def benchmark_template_effectiveness(template_id, workload_data, opts \\ []) do
-    GenServer.call(__MODULE__, {:benchmark_template_effectiveness, template_id, workload_data, opts})
+    GenServer.call(
+      __MODULE__,
+      {:benchmark_template_effectiveness, template_id, workload_data, opts}
+    )
   end
 
   def analyze_performance_patterns(category \\ :all, analysis_window \\ {30, :days}) do
@@ -122,51 +146,76 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   end
 
   def generate_adaptive_template(performance_history, optimization_goals, opts \\ []) do
-    GenServer.call(__MODULE__, {:generate_adaptive_template, performance_history, optimization_goals, opts})
+    GenServer.call(
+      __MODULE__,
+      {:generate_adaptive_template, performance_history, optimization_goals, opts}
+    )
   end
 
   # GenServer callbacks
 
-  def handle_call({:get_optimization_template, category, workload_characteristics, optimization_target, opts}, _from, state) do
+  def handle_call(
+        {:get_optimization_template, category, workload_characteristics, optimization_target,
+         opts},
+        _from,
+        state
+      ) do
     retrieval_start_time = System.monotonic_time(:microsecond)
-    
-    case retrieve_optimization_template(category, workload_characteristics, optimization_target, state, opts) do
+
+    case retrieve_optimization_template(
+           category,
+           workload_characteristics,
+           optimization_target,
+           state,
+           opts
+         ) do
       {:ok, template} ->
         track_template_retrieval(template, retrieval_start_time, state)
         {:reply, {:ok, template}, state}
-      
+
       {:error, :template_not_found} ->
-        case generate_adaptive_optimization_template(category, workload_characteristics, optimization_target, state) do
+        case generate_adaptive_optimization_template(
+               category,
+               workload_characteristics,
+               optimization_target,
+               state
+             ) do
           {:ok, adaptive_template} ->
             track_adaptive_generation(adaptive_template, state)
             {:reply, {:ok, adaptive_template}, state}
-          
+
           {:error, reason} ->
             {:reply, {:error, {:template_retrieval_failed, reason}}, state}
         end
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
-  def handle_call({:create_optimization_template, category, template_spec, benchmarking_data, opts}, _from, state) do
+  def handle_call(
+        {:create_optimization_template, category, template_spec, benchmarking_data, opts},
+        _from,
+        state
+      ) do
     creation_start_time = System.monotonic_time(:microsecond)
-    
-    with {:ok, validated_spec} <- validate_performance_template_spec(template_spec, category, state),
-         {:ok, benchmarked_template} <- enhance_template_with_benchmarking(validated_spec, benchmarking_data, state),
-         {:ok, created_template} <- create_performance_template_with_metadata(benchmarked_template, category, opts),
+
+    with {:ok, validated_spec} <-
+           validate_performance_template_spec(template_spec, category, state),
+         {:ok, benchmarked_template} <-
+           enhance_template_with_benchmarking(validated_spec, benchmarking_data, state),
+         {:ok, created_template} <-
+           create_performance_template_with_metadata(benchmarked_template, category, opts),
          {:ok, updated_state} <- register_performance_template(created_template, state) do
-      
       creation_time = System.monotonic_time(:microsecond) - creation_start_time
-      
+
       Logger.info("PerformanceOptimizationTemplateManager: Performance template created",
         template_id: created_template.id,
         category: category,
         optimization_target: created_template.optimization_target,
         creation_time_us: creation_time
       )
-      
+
       {:reply, {:ok, created_template}, updated_state}
     else
       {:error, reason} ->
@@ -174,26 +223,41 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
           category: category,
           error: reason
         )
-        
+
         {:reply, {:error, {:template_creation_failed, reason}}, state}
     end
   end
 
-  def handle_call({:update_template_from_performance, template_id, performance_data, optimization_outcome, opts}, _from, state) do
-    case update_template_with_performance_learning(template_id, performance_data, optimization_outcome, state, opts) do
+  def handle_call(
+        {:update_template_from_performance, template_id, performance_data, optimization_outcome,
+         opts},
+        _from,
+        state
+      ) do
+    case update_template_with_performance_learning(
+           template_id,
+           performance_data,
+           optimization_outcome,
+           state,
+           opts
+         ) do
       {:ok, updated_template, updated_state} ->
         {:reply, {:ok, updated_template}, updated_state}
-      
+
       {:error, reason} ->
         {:reply, {:error, {:template_update_failed, reason}}, state}
     end
   end
 
-  def handle_call({:benchmark_template_effectiveness, template_id, workload_data, opts}, _from, state) do
+  def handle_call(
+        {:benchmark_template_effectiveness, template_id, workload_data, opts},
+        _from,
+        state
+      ) do
     case execute_template_benchmarking(template_id, workload_data, state, opts) do
       {:ok, benchmarking_results} ->
         {:reply, {:ok, benchmarking_results}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, {:benchmarking_failed, reason}}, state}
     end
@@ -203,17 +267,26 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
     case analyze_optimization_patterns(category, analysis_window, state) do
       {:ok, pattern_analysis} ->
         {:reply, {:ok, pattern_analysis}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, {:pattern_analysis_failed, reason}}, state}
     end
   end
 
-  def handle_call({:generate_adaptive_template, performance_history, optimization_goals, opts}, _from, state) do
-    case create_adaptive_optimization_template(performance_history, optimization_goals, state, opts) do
+  def handle_call(
+        {:generate_adaptive_template, performance_history, optimization_goals, opts},
+        _from,
+        state
+      ) do
+    case create_adaptive_optimization_template(
+           performance_history,
+           optimization_goals,
+           state,
+           opts
+         ) do
       {:ok, adaptive_template, updated_state} ->
         {:reply, {:ok, adaptive_template}, updated_state}
-      
+
       {:error, reason} ->
         {:reply, {:error, {:adaptive_generation_failed, reason}}, state}
     end
@@ -278,23 +351,35 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   defp load_performance_templates(state) do
     # Load default performance optimization templates
     default_templates = create_default_performance_templates()
-    
-    updated_registry = Enum.reduce(default_templates, state.template_registry, fn template, registry ->
-      register_performance_template_in_registry(template, registry)
-    end)
-    
+
+    updated_registry =
+      Enum.reduce(default_templates, state.template_registry, fn template, registry ->
+        register_performance_template_in_registry(template, registry)
+      end)
+
     updated_state = %{state | template_registry: updated_registry}
-    
+
     Logger.info("PerformanceOptimizationTemplateManager: Loaded default performance templates",
       template_count: length(default_templates)
     )
-    
+
     {:ok, updated_state}
   end
 
-  defp retrieve_optimization_template(category, workload_characteristics, optimization_target, state, _opts) do
+  defp retrieve_optimization_template(
+         category,
+         workload_characteristics,
+         optimization_target,
+         state,
+         _opts
+       ) do
     # Retrieve best matching performance optimization template
-    case find_optimal_template(category, workload_characteristics, optimization_target, state.template_registry) do
+    case find_optimal_template(
+           category,
+           workload_characteristics,
+           optimization_target,
+           state.template_registry
+         ) do
       {:ok, template} -> {:ok, template}
       {:error, reason} -> {:error, reason}
     end
@@ -302,8 +387,12 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
 
   defp find_optimal_template(category, workload_characteristics, optimization_target, registry) do
     category_templates = Map.get(registry.categories, category, %{})
-    
-    case select_best_matching_template(category_templates, workload_characteristics, optimization_target) do
+
+    case select_best_matching_template(
+           category_templates,
+           workload_characteristics,
+           optimization_target
+         ) do
       {:ok, template} -> {:ok, template}
       {:error, _} -> {:error, :template_not_found}
     end
@@ -317,14 +406,20 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
     end
   end
 
-  defp generate_adaptive_optimization_template(category, workload_characteristics, optimization_target, state) do
+  defp generate_adaptive_optimization_template(
+         category,
+         workload_characteristics,
+         optimization_target,
+         state
+       ) do
     # Generate adaptive template based on performance patterns and system characteristics
     adaptive_template = %{
       id: generate_performance_template_id(),
       category: category,
       optimization_target: optimization_target,
       workload_profile: classify_workload_profile(workload_characteristics),
-      optimization_strategy: determine_optimization_strategy(workload_characteristics, optimization_target),
+      optimization_strategy:
+        determine_optimization_strategy(workload_characteristics, optimization_target),
       adaptive: true,
       created_at: DateTime.utc_now(),
       template_data: build_adaptive_template_data(workload_characteristics, optimization_target),
@@ -334,13 +429,13 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
         requires_benchmarking: true
       }
     }
-    
+
     Logger.info("PerformanceOptimizationTemplateManager: Generated adaptive template",
       category: category,
       optimization_target: optimization_target,
       template_id: adaptive_template.id
     )
-    
+
     {:ok, adaptive_template}
   end
 
@@ -379,9 +474,12 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       },
       template_data: %{
         optimization_parameters: %{
-          initial_concurrency_assessment: "Analyze current system utilization and workload characteristics",
-          scaling_decision_logic: "Increase concurrency if CPU < 70% and memory < 80%, decrease if resource pressure > 85%",
-          performance_validation: "Monitor throughput improvement and resource efficiency after adjustment",
+          initial_concurrency_assessment:
+            "Analyze current system utilization and workload characteristics",
+          scaling_decision_logic:
+            "Increase concurrency if CPU < 70% and memory < 80%, decrease if resource pressure > 85%",
+          performance_validation:
+            "Monitor throughput improvement and resource efficiency after adjustment",
           rollback_criteria: "Rollback if performance degrades > 10% or resource pressure > 95%"
         },
         benchmarking_criteria: %{
@@ -424,7 +522,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       template_data: %{
         optimization_steps: [
           "Analyze current resource utilization patterns and identify optimization opportunities",
-          "Apply memory optimization through garbage collection tuning and pooling strategies", 
+          "Apply memory optimization through garbage collection tuning and pooling strategies",
           "Optimize CPU utilization through workload distribution and affinity settings",
           "Implement I/O optimization through batching and caching strategies"
         ],
@@ -433,7 +531,11 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
           cpu_utilization_target: 0.75,
           io_optimization_target: 0.8
         },
-        validation_metrics: ["Resource efficiency improvement", "System stability maintenance", "Performance impact assessment"]
+        validation_metrics: [
+          "Resource efficiency improvement",
+          "System stability maintenance",
+          "Performance impact assessment"
+        ]
       },
       version: 1,
       created_at: DateTime.utc_now(),
@@ -459,13 +561,20 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
           :step_optimization,
           :compensation_efficiency
         ],
-        analysis_techniques: [:dag_optimization, :critical_path_analysis, :bottleneck_identification]
+        analysis_techniques: [
+          :dag_optimization,
+          :critical_path_analysis,
+          :bottleneck_identification
+        ]
       },
       template_data: %{
         optimization_approach: %{
-          dependency_optimization: "Analyze and optimize workflow step dependencies for maximum parallelization",
-          execution_optimization: "Optimize individual step execution through resource allocation and caching",
-          compensation_optimization: "Streamline compensation and rollback strategies for efficiency",
+          dependency_optimization:
+            "Analyze and optimize workflow step dependencies for maximum parallelization",
+          execution_optimization:
+            "Optimize individual step execution through resource allocation and caching",
+          compensation_optimization:
+            "Streamline compensation and rollback strategies for efficiency",
           monitoring_integration: "Integrate comprehensive monitoring for continuous optimization"
         },
         performance_metrics: %{
@@ -508,13 +617,18 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       template_data: %{
         monitoring_strategy: %{
           baseline_establishment: "Establish performance baselines for accurate trend analysis",
-          adaptive_monitoring: "Adjust monitoring frequency based on system activity and risk levels",
-          predictive_analysis: "Use historical patterns to predict performance issues before they occur",
-          optimization_triggering: "Automatically trigger optimization when patterns indicate improvement opportunities"
+          adaptive_monitoring:
+            "Adjust monitoring frequency based on system activity and risk levels",
+          predictive_analysis:
+            "Use historical patterns to predict performance issues before they occur",
+          optimization_triggering:
+            "Automatically trigger optimization when patterns indicate improvement opportunities"
         },
         alert_optimization: %{
-          intelligent_thresholds: "Dynamic alert thresholds based on historical performance patterns",
-          noise_reduction: "Filter false positives through pattern recognition and context analysis",
+          intelligent_thresholds:
+            "Dynamic alert thresholds based on historical performance patterns",
+          noise_reduction:
+            "Filter false positives through pattern recognition and context analysis",
           priority_classification: "Classify alerts by business impact and resolution urgency"
         }
       },
@@ -542,7 +656,8 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       },
       template_data: %{
         bottleneck_identification: %{
-          dependency_bottlenecks: "Identify workflow steps creating dependency chains and execution delays",
+          dependency_bottlenecks:
+            "Identify workflow steps creating dependency chains and execution delays",
           resource_bottlenecks: "Analyze resource contention points causing execution slowdowns",
           coordination_bottlenecks: "Detect agent coordination overhead and communication delays"
         },
@@ -577,7 +692,11 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       optimization_strategy: %{
         type: :continuous_adaptive_optimization,
         adaptation_triggers: [:performance_degradation, :workload_change, :resource_availability],
-        learning_algorithms: [:performance_correlation, :pattern_recognition, :optimization_effectiveness],
+        learning_algorithms: [
+          :performance_correlation,
+          :pattern_recognition,
+          :optimization_effectiveness
+        ],
         tuning_parameters: %{
           adaptation_sensitivity: 0.15,
           learning_rate: 0.1,
@@ -586,15 +705,21 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       },
       template_data: %{
         adaptive_mechanisms: %{
-          workload_adaptation: "Continuously adapt optimization strategies based on changing workload characteristics",
-          resource_adaptation: "Adjust resource allocation and utilization based on system capacity changes",
-          performance_adaptation: "Modify optimization targets based on achieved performance outcomes",
-          pattern_adaptation: "Learn from successful optimization patterns and apply to similar scenarios"
+          workload_adaptation:
+            "Continuously adapt optimization strategies based on changing workload characteristics",
+          resource_adaptation:
+            "Adjust resource allocation and utilization based on system capacity changes",
+          performance_adaptation:
+            "Modify optimization targets based on achieved performance outcomes",
+          pattern_adaptation:
+            "Learn from successful optimization patterns and apply to similar scenarios"
         },
         continuous_improvement: %{
-          effectiveness_tracking: "Track optimization effectiveness over time and across different scenarios",
+          effectiveness_tracking:
+            "Track optimization effectiveness over time and across different scenarios",
           pattern_learning: "Learn from successful optimization patterns and failure modes",
-          strategy_evolution: "Evolve optimization strategies based on accumulated learning and outcomes"
+          strategy_evolution:
+            "Evolve optimization strategies based on accumulated learning and outcomes"
         }
       },
       version: 1,
@@ -659,16 +784,24 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   end
 
   defp determine_optimization_strategy(workload_characteristics, optimization_target) do
-    base_strategy = case optimization_target do
+    base_strategy = get_base_optimization_strategy(optimization_target)
+    workload_profile = classify_workload_profile(workload_characteristics)
+    
+    build_strategy_with_focus(base_strategy, workload_profile)
+  end
+
+  defp get_base_optimization_strategy(optimization_target) do
+    case optimization_target do
       :performance -> :aggressive_optimization
       :efficiency -> :resource_optimization
       :balanced -> :adaptive_optimization
       :stability -> :conservative_optimization
       _ -> :adaptive_optimization
     end
-    
-    # Adjust strategy based on workload characteristics
-    case classify_workload_profile(workload_characteristics) do
+  end
+
+  defp build_strategy_with_focus(base_strategy, workload_profile) do
+    case workload_profile do
       :high_performance -> %{strategy: base_strategy, focus: :throughput_latency}
       :resource_intensive -> %{strategy: base_strategy, focus: :resource_efficiency}
       :variable -> %{strategy: :adaptive_optimization, focus: :flexibility}
@@ -680,10 +813,16 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
     %{
       workload_analysis: workload_characteristics,
       optimization_focus: optimization_target,
-      adaptation_strategy: "Template dynamically adapts based on workload patterns and performance outcomes",
-      monitoring_requirements: ["Continuous performance monitoring", "Resource utilization tracking", "Optimization effectiveness measurement"],
+      adaptation_strategy:
+        "Template dynamically adapts based on workload patterns and performance outcomes",
+      monitoring_requirements: [
+        "Continuous performance monitoring",
+        "Resource utilization tracking",
+        "Optimization effectiveness measurement"
+      ],
       success_criteria: build_success_criteria(optimization_target),
-      learning_integration: "Template learns from performance outcomes and adapts optimization strategies"
+      learning_integration:
+        "Template learns from performance outcomes and adapts optimization strategies"
     }
   end
 
@@ -701,7 +840,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
 
   defp validate_performance_template_spec(template_spec, category, _state) do
     required_fields = [:optimization_target, :optimization_strategy, :template_data]
-    
+
     case validate_required_fields(template_spec, required_fields) do
       :ok -> {:ok, template_spec}
       {:error, reason} -> {:error, reason}
@@ -710,7 +849,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
 
   defp validate_required_fields(template_spec, required_fields) do
     missing_fields = required_fields -- Map.keys(template_spec)
-    
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_required_fields, fields}}
@@ -718,13 +857,14 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   end
 
   defp enhance_template_with_benchmarking(template_spec, benchmarking_data, state) do
-    enhanced_template = Map.merge(template_spec, %{
-      benchmarking_data: benchmarking_data,
-      benchmarking_enabled: state.benchmarking_system.enabled,
-      benchmark_baselines: extract_benchmark_baselines(benchmarking_data),
-      performance_targets: calculate_performance_targets(benchmarking_data, template_spec)
-    })
-    
+    enhanced_template =
+      Map.merge(template_spec, %{
+        benchmarking_data: benchmarking_data,
+        benchmarking_enabled: state.benchmarking_system.enabled,
+        benchmark_baselines: extract_benchmark_baselines(benchmarking_data),
+        performance_targets: calculate_performance_targets(benchmarking_data, template_spec)
+      })
+
     {:ok, enhanced_template}
   end
 
@@ -733,23 +873,24 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
     %{
       baseline_throughput: Map.get(benchmarking_data, :baseline_throughput, 100),
       baseline_latency_ms: Map.get(benchmarking_data, :baseline_latency_ms, 1000),
-      baseline_resource_usage: Map.get(benchmarking_data, :baseline_resource_usage, %{cpu: 0.6, memory: 0.7})
+      baseline_resource_usage:
+        Map.get(benchmarking_data, :baseline_resource_usage, %{cpu: 0.6, memory: 0.7})
     }
   end
 
   defp calculate_performance_targets(benchmarking_data, template_spec) do
     optimization_target = Map.get(template_spec, :optimization_target, :balanced)
-    
+
     case optimization_target do
       :performance ->
         %{throughput_multiplier: 1.5, latency_reduction: 0.6}
-      
+
       :efficiency ->
         %{resource_efficiency_gain: 1.3, cost_reduction: 0.8}
-      
+
       :balanced ->
         %{overall_improvement: 1.2, stability_maintenance: true}
-      
+
       _ ->
         %{general_improvement: 1.1, adaptability_focus: true}
     end
@@ -770,7 +911,7 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
       metadata: build_performance_template_metadata(template_spec, category, opts),
       effectiveness_metrics: initialize_template_effectiveness_metrics()
     }
-    
+
     {:ok, template}
   end
 
@@ -797,37 +938,34 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
   end
 
   defp register_performance_template(template, state) do
-    updated_registry = register_performance_template_in_registry(template, state.template_registry)
+    updated_registry =
+      register_performance_template_in_registry(template, state.template_registry)
+
     updated_cache = update_performance_template_cache(template, state.template_cache)
-    
-    updated_state = %{state | 
-      template_registry: updated_registry,
-      template_cache: updated_cache
-    }
-    
+
+    updated_state = %{state | template_registry: updated_registry, template_cache: updated_cache}
+
     {:ok, updated_state}
   end
 
   defp register_performance_template_in_registry(template, registry) do
     category_key = template.category
     template_key = {template.workload_profile, template.optimization_target}
-    
-    updated_categories = Map.update(registry.categories, category_key, %{}, fn category_templates ->
-      Map.put(category_templates, template_key, template)
-    end)
-    
+
+    updated_categories =
+      Map.update(registry.categories, category_key, %{}, fn category_templates ->
+        Map.put(category_templates, template_key, template)
+      end)
+
     updated_templates = Map.put(registry.templates, template.id, template)
-    
-    %{registry | 
-      categories: updated_categories,
-      templates: updated_templates
-    }
+
+    %{registry | categories: updated_categories, templates: updated_templates}
   end
 
   defp update_performance_template_cache(template, cache) do
     cache_key = generate_performance_cache_key(template)
     updated_cache_data = Map.put(cache.cache_data, cache_key, template)
-    
+
     %{cache | cache_data: updated_cache_data}
   end
 
@@ -841,37 +979,50 @@ defmodule RubberDuck.Workflows.Templates.PerformanceOptimizationTemplateManager 
     :ok
   end
 
-  defp update_template_with_performance_learning(_template_id, _performance_data, _outcome, state, _opts) do
+  defp update_template_with_performance_learning(
+         _template_id,
+         _performance_data,
+         _outcome,
+         state,
+         _opts
+       ) do
     # Implement performance-based template learning
     {:ok, %{}, state}
   end
 
   defp execute_template_benchmarking(_template_id, _workload_data, _state, _opts) do
     # Implement template effectiveness benchmarking
-    {:ok, %{
-      benchmarking_successful: true,
-      performance_improvement: 15.5,
-      effectiveness_score: 0.85
-    }}
+    {:ok,
+     %{
+       benchmarking_successful: true,
+       performance_improvement: 15.5,
+       effectiveness_score: 0.85
+     }}
   end
 
   defp analyze_optimization_patterns(_category, _analysis_window, _state) do
     # Implement performance pattern analysis
-    {:ok, %{
-      patterns_identified: [],
-      optimization_opportunities: [],
-      effectiveness_trends: %{}
-    }}
+    {:ok,
+     %{
+       patterns_identified: [],
+       optimization_opportunities: [],
+       effectiveness_trends: %{}
+     }}
   end
 
-  defp create_adaptive_optimization_template(_performance_history, _optimization_goals, state, _opts) do
+  defp create_adaptive_optimization_template(
+         _performance_history,
+         _optimization_goals,
+         state,
+         _opts
+       ) do
     # Implement adaptive template generation
     adaptive_template = %{
       id: generate_performance_template_id(),
       adaptive: true,
       created_at: DateTime.utc_now()
     }
-    
+
     {:ok, adaptive_template, state}
   end
 

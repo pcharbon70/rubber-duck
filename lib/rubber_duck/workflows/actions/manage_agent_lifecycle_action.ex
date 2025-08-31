@@ -1,11 +1,11 @@
 defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   @moduledoc """
   Action for comprehensive agent lifecycle management with state transition and error recovery.
-  
+
   Provides sophisticated agent lifecycle management capabilities that handle agent initialization,
   state transitions, error recovery, and graceful shutdown while preserving agent autonomy
   and ensuring system stability throughout the agent lifecycle.
-  
+
   Features:
   - Comprehensive agent lifecycle management with state transition validation and monitoring
   - Agent state preservation and recovery with comprehensive backup and restoration capabilities
@@ -13,7 +13,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   - Integration with ErrorHandlingTemplateManager for standardized error handling patterns
   - Performance monitoring throughout agent lifecycle with resource utilization tracking
   - Graceful shutdown and cleanup with resource deallocation and state persistence
-  
+
   Lifecycle Stages:
   - **Initialization**: Agent startup with configuration validation and resource allocation
   - **Active Operation**: Ongoing agent execution with performance monitoring and health checks
@@ -26,20 +26,29 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   use Jido.Action,
     name: "manage_agent_lifecycle",
     schema: [
-      agent_specification: [type: :map, required: true, doc: "Agent specification for lifecycle management"],
+      agent_specification: [
+        type: :map,
+        required: true,
+        doc: "Agent specification for lifecycle management"
+      ],
       lifecycle_operation: [
         type: :atom,
         required: true,
-        doc: "Lifecycle operation (:initialize, :start, :pause, :resume, :restart, :shutdown, :maintenance)"
+        doc:
+          "Lifecycle operation (:initialize, :start, :pause, :resume, :restart, :shutdown, :maintenance)"
       ],
       lifecycle_config: [type: :map, default: %{}, doc: "Lifecycle management configuration"],
       state_management: [type: :map, default: %{}, doc: "Agent state management configuration"],
       monitoring_config: [type: :map, default: %{}, doc: "Lifecycle monitoring configuration"],
-      error_recovery_config: [type: :map, default: %{}, doc: "Error recovery and template configuration"]
+      error_recovery_config: [
+        type: :map,
+        default: %{},
+        doc: "Error recovery and template configuration"
+      ]
     ]
 
   require Logger
-  
+
   alias RubberDuck.Workflows.{
     Templates.ErrorHandlingTemplateManager,
     Advanced.AdvancedIntegrationManager,
@@ -47,11 +56,25 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   }
 
   @supported_lifecycle_operations [
-    :initialize, :start, :pause, :resume, :restart, :shutdown, :maintenance
+    :initialize,
+    :start,
+    :pause,
+    :resume,
+    :restart,
+    :shutdown,
+    :maintenance
   ]
 
   @agent_lifecycle_states [
-    :uninitialized, :initializing, :ready, :active, :paused, :restarting, :maintenance, :shutting_down, :terminated
+    :uninitialized,
+    :initializing,
+    :ready,
+    :active,
+    :paused,
+    :restarting,
+    :maintenance,
+    :shutting_down,
+    :terminated
   ]
 
   @default_lifecycle_config %{
@@ -110,36 +133,40 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
 
     lifecycle_start_time = System.monotonic_time(:microsecond)
 
-    with {:ok, validated_params} <- validate_lifecycle_params(
-           agent_spec,
-           operation,
-           merged_lifecycle_config
-         ),
-         {:ok, lifecycle_plan} <- create_lifecycle_management_plan(
-           validated_params,
-           operation,
-           merged_state_config,
-           merged_monitoring_config,
-           context
-         ),
-         {:ok, state_backup} <- create_agent_state_backup(
-           agent_spec,
-           merged_state_config,
-           context
-         ),
-         {:ok, lifecycle_results} <- execute_lifecycle_operation(
-           lifecycle_plan,
-           merged_error_config,
-           context
-         ),
-         {:ok, lifecycle_validation} <- validate_lifecycle_operation_success(
-           lifecycle_results,
-           lifecycle_plan,
-           context
-         ) do
-      
+    with {:ok, validated_params} <-
+           validate_lifecycle_params(
+             agent_spec,
+             operation,
+             merged_lifecycle_config
+           ),
+         {:ok, lifecycle_plan} <-
+           create_lifecycle_management_plan(
+             validated_params,
+             operation,
+             merged_state_config,
+             merged_monitoring_config,
+             context
+           ),
+         {:ok, state_backup} <-
+           create_agent_state_backup(
+             agent_spec,
+             merged_state_config,
+             context
+           ),
+         {:ok, lifecycle_results} <-
+           execute_lifecycle_operation(
+             lifecycle_plan,
+             merged_error_config,
+             context
+           ),
+         {:ok, lifecycle_validation} <-
+           validate_lifecycle_operation_success(
+             lifecycle_results,
+             lifecycle_plan,
+             context
+           ) do
       lifecycle_time = System.monotonic_time(:microsecond) - lifecycle_start_time
-      
+
       Logger.info("ManageAgentLifecycleAction: Agent lifecycle management completed successfully",
         agent_id: validated_params.agent_id,
         lifecycle_operation: operation,
@@ -147,19 +174,20 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
         lifecycle_time_ms: div(lifecycle_time, 1000)
       )
 
-      {:ok, %{
-        lifecycle_results: lifecycle_results,
-        lifecycle_validation: lifecycle_validation,
-        state_backup: state_backup,
-        lifecycle_metadata: %{
-          lifecycle_time_microseconds: lifecycle_time,
-          lifecycle_operation_executed: operation,
-          agent_id: validated_params.agent_id,
-          state_transition: build_state_transition_info(agent_spec, lifecycle_results),
-          performance_impact: calculate_lifecycle_performance_impact(lifecycle_results),
-          lifecycle_success: true
-        }
-      }}
+      {:ok,
+       %{
+         lifecycle_results: lifecycle_results,
+         lifecycle_validation: lifecycle_validation,
+         state_backup: state_backup,
+         lifecycle_metadata: %{
+           lifecycle_time_microseconds: lifecycle_time,
+           lifecycle_operation_executed: operation,
+           agent_id: validated_params.agent_id,
+           state_transition: build_state_transition_info(agent_spec, lifecycle_results),
+           performance_impact: calculate_lifecycle_performance_impact(lifecycle_results),
+           lifecycle_success: true
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("ManageAgentLifecycleAction: Agent lifecycle management failed",
@@ -167,12 +195,18 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
           lifecycle_operation: operation,
           error: reason
         )
-        
+
         # Attempt lifecycle recovery if configured
-        case attempt_lifecycle_recovery(agent_spec, operation, merged_error_config, reason, context) do
+        case attempt_lifecycle_recovery(
+               agent_spec,
+               operation,
+               merged_error_config,
+               reason,
+               context
+             ) do
           {:ok, recovery_result} ->
             {:error, {:lifecycle_failed_with_recovery, reason, recovery_result}}
-          
+
           {:error, recovery_error} ->
             {:error, {:lifecycle_failed_recovery_failed, {reason, recovery_error}}}
         end
@@ -186,7 +220,6 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
          :ok <- validate_lifecycle_operation(operation),
          :ok <- validate_operation_compatibility(agent_spec, operation),
          :ok <- validate_lifecycle_configuration(lifecycle_config) do
-      
       validated_params = %{
         agent_id: agent_spec.id,
         agent_specification: agent_spec,
@@ -195,7 +228,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
         validation_timestamp: DateTime.utc_now(),
         operation_compatible: true
       }
-      
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -205,20 +238,23 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   defp validate_agent_specification(agent_spec) when is_map(agent_spec) do
     required_fields = [:id, :type]
     missing_fields = required_fields -- Map.keys(agent_spec)
-    
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_agent_fields, fields}}
     end
   end
+
   defp validate_agent_specification(_), do: {:error, :invalid_agent_specification}
 
-  defp validate_lifecycle_operation(operation) when operation in @supported_lifecycle_operations, do: :ok
+  defp validate_lifecycle_operation(operation) when operation in @supported_lifecycle_operations,
+    do: :ok
+
   defp validate_lifecycle_operation(_), do: {:error, :unsupported_lifecycle_operation}
 
   defp validate_operation_compatibility(agent_spec, operation) do
     current_state = Map.get(agent_spec, :current_state, :uninitialized)
-    
+
     case validate_state_transition(current_state, operation) do
       :valid -> :ok
       :invalid -> {:error, {:invalid_state_transition, current_state, operation}}
@@ -226,23 +262,40 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   end
 
   defp validate_state_transition(current_state, operation) do
-    case {current_state, operation} do
-      {:uninitialized, :initialize} -> :valid
-      {:ready, :start} -> :valid
-      {:active, :pause} -> :valid
-      {:paused, :resume} -> :valid
-      {:active, :restart} -> :valid
-      {:paused, :restart} -> :valid
-      {_, :shutdown} -> :valid  # Can shutdown from any state
-      {_, :maintenance} -> :valid  # Can enter maintenance from any state
-      _ -> :invalid
+    cond do
+      is_universal_operation(operation) -> :valid
+      is_valid_specific_transition(current_state, operation) -> :valid
+      true -> :invalid
     end
+  end
+
+  defp is_universal_operation(operation) do
+    operation in [:shutdown, :maintenance]
+  end
+
+  defp is_valid_specific_transition(current_state, operation) do
+    valid_transitions = [
+      {:uninitialized, :initialize},
+      {:ready, :start},
+      {:active, :pause},
+      {:paused, :resume},
+      {:active, :restart},
+      {:paused, :restart}
+    ]
+    
+    {current_state, operation} in valid_transitions
   end
 
   defp validate_lifecycle_configuration(config) when is_map(config), do: :ok
   defp validate_lifecycle_configuration(_), do: {:error, :invalid_lifecycle_configuration}
 
-  defp create_lifecycle_management_plan(validated_params, operation, state_config, monitoring_config, context) do
+  defp create_lifecycle_management_plan(
+         validated_params,
+         operation,
+         state_config,
+         monitoring_config,
+         context
+       ) do
     lifecycle_plan = %{
       lifecycle_id: generate_lifecycle_id(),
       agent_id: validated_params.agent_id,
@@ -254,16 +307,17 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       state_management_plan: create_state_management_plan(operation, state_config),
       monitoring_plan: create_monitoring_plan(operation, monitoring_config),
       validation_checkpoints: create_lifecycle_validation_checkpoints(operation),
-      estimated_duration_ms: estimate_lifecycle_operation_duration(operation, validated_params.agent_specification)
+      estimated_duration_ms:
+        estimate_lifecycle_operation_duration(operation, validated_params.agent_specification)
     }
-    
+
     Logger.debug("ManageAgentLifecycleAction: Lifecycle management plan created",
       lifecycle_id: lifecycle_plan.lifecycle_id,
       operation: operation,
       target_state: lifecycle_plan.target_state,
       estimated_duration_ms: lifecycle_plan.estimated_duration_ms
     )
-    
+
     {:ok, lifecycle_plan}
   end
 
@@ -288,71 +342,73 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       {:update_agent_state, "Update agent state and configuration"},
       {:finalize_lifecycle_operation, "Finalize operation and cleanup resources"}
     ]
-    
+
     # Add operation-specific steps
-    operation_steps = case operation do
-      :initialize ->
-        [
-          {:validate_initialization_requirements, "Validate agent initialization requirements"},
-          {:allocate_agent_resources, "Allocate necessary resources for agent"},
-          {:configure_agent_settings, "Configure agent settings and parameters"}
-        ]
-      
-      :start ->
-        [
-          {:validate_startup_conditions, "Validate conditions for agent startup"},
-          {:initialize_agent_monitoring, "Initialize agent performance monitoring"},
-          {:activate_agent_workflows, "Activate agent workflows and processing"}
-        ]
-      
-      :pause ->
-        [
-          {:save_agent_state, "Save current agent state for resumption"},
-          {:suspend_agent_workflows, "Suspend active workflows safely"},
-          {:reduce_resource_usage, "Reduce resource usage during pause"}
-        ]
-      
-      :resume ->
-        [
-          {:restore_agent_state, "Restore agent state from pause"},
-          {:reactivate_agent_workflows, "Reactivate suspended workflows"},
-          {:validate_resume_success, "Validate successful resumption"}
-        ]
-      
-      :restart ->
-        [
-          {:save_state_for_restart, "Save state before restart"},
-          {:shutdown_agent_safely, "Shutdown agent safely"},
-          {:reinitialize_agent, "Reinitialize agent with saved state"},
-          {:validate_restart_success, "Validate successful restart"}
-        ]
-      
-      :shutdown ->
-        [
-          {:save_final_state, "Save final agent state"},
-          {:complete_active_workflows, "Complete or safely terminate active workflows"},
-          {:deallocate_agent_resources, "Deallocate agent resources"},
-          {:cleanup_agent_artifacts, "Clean up agent artifacts and temporary data"}
-        ]
-      
-      :maintenance ->
-        [
-          {:enter_maintenance_mode, "Enter maintenance mode with minimal disruption"},
-          {:perform_maintenance_operations, "Perform required maintenance operations"},
-          {:validate_maintenance_success, "Validate maintenance operation success"},
-          {:exit_maintenance_mode, "Exit maintenance mode and resume normal operation"}
-        ]
-    end
-    
+    operation_steps =
+      case operation do
+        :initialize ->
+          [
+            {:validate_initialization_requirements, "Validate agent initialization requirements"},
+            {:allocate_agent_resources, "Allocate necessary resources for agent"},
+            {:configure_agent_settings, "Configure agent settings and parameters"}
+          ]
+
+        :start ->
+          [
+            {:validate_startup_conditions, "Validate conditions for agent startup"},
+            {:initialize_agent_monitoring, "Initialize agent performance monitoring"},
+            {:activate_agent_workflows, "Activate agent workflows and processing"}
+          ]
+
+        :pause ->
+          [
+            {:save_agent_state, "Save current agent state for resumption"},
+            {:suspend_agent_workflows, "Suspend active workflows safely"},
+            {:reduce_resource_usage, "Reduce resource usage during pause"}
+          ]
+
+        :resume ->
+          [
+            {:restore_agent_state, "Restore agent state from pause"},
+            {:reactivate_agent_workflows, "Reactivate suspended workflows"},
+            {:validate_resume_success, "Validate successful resumption"}
+          ]
+
+        :restart ->
+          [
+            {:save_state_for_restart, "Save state before restart"},
+            {:shutdown_agent_safely, "Shutdown agent safely"},
+            {:reinitialize_agent, "Reinitialize agent with saved state"},
+            {:validate_restart_success, "Validate successful restart"}
+          ]
+
+        :shutdown ->
+          [
+            {:save_final_state, "Save final agent state"},
+            {:complete_active_workflows, "Complete or safely terminate active workflows"},
+            {:deallocate_agent_resources, "Deallocate agent resources"},
+            {:cleanup_agent_artifacts, "Clean up agent artifacts and temporary data"}
+          ]
+
+        :maintenance ->
+          [
+            {:enter_maintenance_mode, "Enter maintenance mode with minimal disruption"},
+            {:perform_maintenance_operations, "Perform required maintenance operations"},
+            {:validate_maintenance_success, "Validate maintenance operation success"},
+            {:exit_maintenance_mode, "Exit maintenance mode and resume normal operation"}
+          ]
+      end
+
     insert_operation_steps(base_steps, operation_steps)
   end
 
   defp insert_operation_steps(base_steps, operation_steps) do
     # Insert operation-specific steps after "prepare_lifecycle_environment"
-    {before_steps, after_steps} = Enum.split_with(base_steps, fn {step, _} -> 
-      step != :execute_lifecycle_operation 
-    end)
-    
+    {before_steps, after_steps} =
+      Enum.split_with(base_steps, fn {step, _} ->
+        step != :execute_lifecycle_operation
+      end)
+
     case after_steps do
       [] -> base_steps ++ operation_steps
       [target_step | rest] -> before_steps ++ operation_steps ++ [target_step] ++ rest
@@ -386,37 +442,45 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       {:resource_utilization_validation, "Validate resource utilization"},
       {:integration_validation, "Validate system integration integrity"}
     ]
-    
+
     # Add operation-specific checkpoints
-    operation_checkpoints = case operation do
-      :initialize ->
-        [{:initialization_validation, "Validate successful agent initialization"}]
-      
-      :start ->
-        [{:startup_validation, "Validate successful agent startup and activation"}]
-      
-      :pause ->
-        [{:pause_validation, "Validate successful agent pause and state preservation"}]
-      
-      :resume ->
-        [{:resume_validation, "Validate successful agent resume and workflow reactivation"}]
-      
-      :restart ->
-        [{:restart_validation, "Validate successful agent restart and state restoration"}]
-      
-      :shutdown ->
-        [{:shutdown_validation, "Validate successful agent shutdown and resource cleanup"}]
-      
-      :maintenance ->
-        [{:maintenance_validation, "Validate successful maintenance operation completion"}]
-    end
-    
+    operation_checkpoints =
+      case operation do
+        :initialize ->
+          [{:initialization_validation, "Validate successful agent initialization"}]
+
+        :start ->
+          [{:startup_validation, "Validate successful agent startup and activation"}]
+
+        :pause ->
+          [{:pause_validation, "Validate successful agent pause and state preservation"}]
+
+        :resume ->
+          [{:resume_validation, "Validate successful agent resume and workflow reactivation"}]
+
+        :restart ->
+          [{:restart_validation, "Validate successful agent restart and state restoration"}]
+
+        :shutdown ->
+          [{:shutdown_validation, "Validate successful agent shutdown and resource cleanup"}]
+
+        :maintenance ->
+          [{:maintenance_validation, "Validate successful maintenance operation completion"}]
+      end
+
     base_checkpoints ++ operation_checkpoints
   end
 
   defp estimate_lifecycle_operation_duration(operation, agent_spec) do
     # Estimate duration based on operation type and agent complexity
-    base_duration = case operation do
+    base_duration = get_operation_base_duration(operation)
+    complexity_multiplier = get_agent_complexity_multiplier(agent_spec)
+    
+    round(base_duration * complexity_multiplier)
+  end
+
+  defp get_operation_base_duration(operation) do
+    case operation do
       :initialize -> 5_000
       :start -> 3_000
       :pause -> 2_000
@@ -425,16 +489,15 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       :shutdown -> 5_000
       :maintenance -> 10_000
     end
-    
-    # Adjust based on agent complexity
-    complexity_multiplier = case Map.get(agent_spec, :complexity, :medium) do
+  end
+
+  defp get_agent_complexity_multiplier(agent_spec) do
+    case Map.get(agent_spec, :complexity, :medium) do
       :simple -> 0.5
       :medium -> 1.0
       :complex -> 2.0
       :enterprise -> 3.0
     end
-    
-    round(base_duration * complexity_multiplier)
   end
 
   defp create_agent_state_backup(agent_spec, state_config, context) do
@@ -449,12 +512,12 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
         backup_timestamp: DateTime.utc_now(),
         backup_valid: true
       }
-      
+
       Logger.debug("ManageAgentLifecycleAction: Agent state backup created",
         agent_id: agent_spec.id,
         backup_size: calculate_backup_size(backup_data)
       )
-      
+
       {:ok, backup_data}
     else
       {:ok, %{backup_disabled: true}}
@@ -463,7 +526,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
 
   defp execute_lifecycle_operation(lifecycle_plan, error_config, context) do
     operation = lifecycle_plan.lifecycle_operation
-    
+
     lifecycle_results = %{
       lifecycle_id: lifecycle_plan.lifecycle_id,
       agent_id: lifecycle_plan.agent_id,
@@ -477,38 +540,57 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       performance_data: %{},
       monitoring_data: %{}
     }
-    
-    case execute_lifecycle_steps(lifecycle_plan.lifecycle_steps, lifecycle_plan, error_config, context) do
+
+    case execute_lifecycle_steps(
+           lifecycle_plan.lifecycle_steps,
+           lifecycle_plan,
+           error_config,
+           context
+         ) do
       {:ok, step_results} ->
-        updated_results = %{lifecycle_results |
-          steps_executed: step_results,
-          state_transition: %{lifecycle_results.state_transition | transition_successful: true}
+        updated_results = %{
+          lifecycle_results
+          | steps_executed: step_results,
+            state_transition: %{lifecycle_results.state_transition | transition_successful: true}
         }
-        
+
         {:ok, updated_results}
-      
+
       {:error, {failed_step, reason}} ->
         Logger.error("ManageAgentLifecycleAction: Lifecycle step failed",
           failed_step: failed_step,
           reason: reason
         )
-        
-        case handle_lifecycle_step_failure(failed_step, reason, lifecycle_plan, error_config, context) do
+
+        case handle_lifecycle_step_failure(
+               failed_step,
+               reason,
+               lifecycle_plan,
+               error_config,
+               context
+             ) do
           {:ok, recovery_result} ->
             {:error, {:lifecycle_step_failed_with_recovery, failed_step, reason, recovery_result}}
-          
+
           {:error, recovery_error} ->
-            {:error, {:lifecycle_step_failed_recovery_failed, failed_step, {reason, recovery_error}}}
+            {:error,
+             {:lifecycle_step_failed_recovery_failed, failed_step, {reason, recovery_error}}}
         end
     end
   end
 
   defp execute_lifecycle_steps(lifecycle_steps, lifecycle_plan, error_config, context) do
     Enum.reduce_while(lifecycle_steps, {:ok, []}, fn {step_name, step_description}, {:ok, acc} ->
-      case execute_single_lifecycle_step(step_name, step_description, lifecycle_plan, error_config, context) do
+      case execute_single_lifecycle_step(
+             step_name,
+             step_description,
+             lifecycle_plan,
+             error_config,
+             context
+           ) do
         {:ok, step_result} ->
           {:cont, {:ok, [step_result | acc]}}
-        
+
         {:error, reason} ->
           {:halt, {:error, {step_name, reason}}}
       end
@@ -519,19 +601,25 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
     end
   end
 
-  defp execute_single_lifecycle_step(step_name, step_description, lifecycle_plan, error_config, context) do
+  defp execute_single_lifecycle_step(
+         step_name,
+         step_description,
+         lifecycle_plan,
+         error_config,
+         context
+       ) do
     step_start_time = System.monotonic_time(:microsecond)
-    
+
     Logger.debug("ManageAgentLifecycleAction: Executing lifecycle step",
       step: step_name,
       description: step_description,
       agent_id: lifecycle_plan.agent_id
     )
-    
+
     case perform_lifecycle_step_operation(step_name, lifecycle_plan, error_config, context) do
       {:ok, operation_result} ->
         step_duration = System.monotonic_time(:microsecond) - step_start_time
-        
+
         step_result = %{
           step_name: step_name,
           description: step_description,
@@ -540,12 +628,12 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
           success: true,
           timestamp: DateTime.utc_now()
         }
-        
+
         {:ok, step_result}
-      
+
       {:error, reason} ->
         step_duration = System.monotonic_time(:microsecond) - step_start_time
-        
+
         step_result = %{
           step_name: step_name,
           description: step_description,
@@ -554,13 +642,44 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
           success: false,
           timestamp: DateTime.utc_now()
         }
-        
+
         {:error, step_result}
     end
   end
 
   defp perform_lifecycle_step_operation(step_name, lifecycle_plan, error_config, context) do
     # Perform the actual lifecycle step operation
+    case categorize_step_type(step_name) do
+      :core_step ->
+        execute_core_lifecycle_step(step_name, lifecycle_plan, error_config, context)
+      
+      :operation_specific_step ->
+        execute_operation_specific_step(step_name, lifecycle_plan, context)
+      
+      :generic_step ->
+        execute_generic_lifecycle_step(step_name, lifecycle_plan, context)
+    end
+  end
+
+  defp categorize_step_type(step_name) do
+    core_steps = [
+      :validate_current_state, :prepare_lifecycle_environment, :execute_lifecycle_operation,
+      :validate_operation_success, :update_agent_state, :finalize_lifecycle_operation
+    ]
+    
+    operation_specific_steps = [
+      :validate_initialization_requirements, :allocate_agent_resources, :save_agent_state,
+      :restore_agent_state, :shutdown_agent_safely, :enter_maintenance_mode
+    ]
+    
+    cond do
+      step_name in core_steps -> :core_step
+      step_name in operation_specific_steps -> :operation_specific_step
+      true -> :generic_step
+    end
+  end
+
+  defp execute_core_lifecycle_step(step_name, lifecycle_plan, error_config, context) do
     case step_name do
       :validate_current_state ->
         validate_agent_current_state(lifecycle_plan, context)
@@ -579,8 +698,11 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       
       :finalize_lifecycle_operation ->
         finalize_lifecycle_operation(lifecycle_plan, context)
-      
-      # Operation-specific steps
+    end
+  end
+
+  defp execute_operation_specific_step(step_name, lifecycle_plan, context) do
+    case step_name do
       :validate_initialization_requirements ->
         validate_agent_initialization_requirements(lifecycle_plan, context)
       
@@ -598,31 +720,31 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       
       :enter_maintenance_mode ->
         enter_agent_maintenance_mode(lifecycle_plan, context)
-      
-      _ ->
-        # Generic step execution
-        execute_generic_lifecycle_step(step_name, lifecycle_plan, context)
     end
   end
 
   defp validate_lifecycle_operation_success(lifecycle_results, lifecycle_plan, context) do
     validation_results = %{
       operation_successful: lifecycle_results.state_transition.transition_successful,
-      state_validation: validate_agent_state_integrity(lifecycle_results, lifecycle_plan, context),
-      performance_validation: validate_lifecycle_performance_impact(lifecycle_results, lifecycle_plan),
-      resource_validation: validate_resource_management(lifecycle_results, lifecycle_plan, context),
+      state_validation:
+        validate_agent_state_integrity(lifecycle_results, lifecycle_plan, context),
+      performance_validation:
+        validate_lifecycle_performance_impact(lifecycle_results, lifecycle_plan),
+      resource_validation:
+        validate_resource_management(lifecycle_results, lifecycle_plan, context),
       integration_validation: validate_system_integration_integrity(lifecycle_results, context),
       overall_success: false
     }
-    
-    overall_success = validation_results.operation_successful &&
-                     validation_results.state_validation.passed &&
-                     validation_results.performance_validation.passed &&
-                     validation_results.resource_validation.passed &&
-                     validation_results.integration_validation.passed
-    
+
+    overall_success =
+      validation_results.operation_successful &&
+        validation_results.state_validation.passed &&
+        validation_results.performance_validation.passed &&
+        validation_results.resource_validation.passed &&
+        validation_results.integration_validation.passed
+
     final_validation = %{validation_results | overall_success: overall_success}
-    
+
     if overall_success do
       Logger.info("ManageAgentLifecycleAction: Lifecycle operation validation successful")
       {:ok, final_validation}
@@ -630,6 +752,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       Logger.warn("ManageAgentLifecycleAction: Lifecycle operation validation failed",
         validation_results: final_validation
       )
+
       {:error, {:validation_failed, final_validation}}
     end
   end
@@ -646,12 +769,13 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
 
   defp execute_core_lifecycle_operation(lifecycle_plan, _error_config, _context) do
     operation = lifecycle_plan.lifecycle_operation
-    
-    {:ok, %{
-      operation_executed: operation,
-      target_state_achieved: lifecycle_plan.target_state,
-      operation_successful: true
-    }}
+
+    {:ok,
+     %{
+       operation_executed: operation,
+       target_state_achieved: lifecycle_plan.target_state,
+       operation_successful: true
+     }}
   end
 
   defp validate_lifecycle_operation_success(_lifecycle_plan, _context) do
@@ -659,11 +783,12 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   end
 
   defp update_agent_lifecycle_state(lifecycle_plan, _context) do
-    {:ok, %{
-      state_updated: true,
-      new_state: lifecycle_plan.target_state,
-      state_consistent: true
-    }}
+    {:ok,
+     %{
+       state_updated: true,
+       new_state: lifecycle_plan.target_state,
+       state_consistent: true
+     }}
   end
 
   defp finalize_lifecycle_operation(_lifecycle_plan, _context) do
@@ -742,7 +867,8 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   # Helper functions
 
   defp should_backup_state(operation, state_config) do
-    state_config.backup_state_on_transitions && operation in [:pause, :restart, :maintenance, :shutdown]
+    state_config.backup_state_on_transitions &&
+      operation in [:pause, :restart, :maintenance, :shutdown]
   end
 
   defp should_validate_state(operation, state_config) do
@@ -820,7 +946,8 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
 
   defp calculate_backup_size(_backup_data) do
     # Calculate approximate backup size
-    "1.8MB"  # Placeholder
+    # Placeholder
+    "1.8MB"
   end
 
   defp get_agent_new_state(lifecycle_results) do
@@ -852,7 +979,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
       case retrieve_error_template_for_step(failed_step, reason, error_config) do
         {:ok, error_template} ->
           apply_error_template_recovery(error_template, lifecycle_plan, context)
-        
+
         {:error, _template_error} ->
           apply_generic_lifecycle_recovery(failed_step, reason, lifecycle_plan, context)
       end
@@ -864,10 +991,10 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
   defp retrieve_error_template_for_step(failed_step, reason, _error_config) do
     # Retrieve appropriate error template for the failed step
     case ErrorHandlingTemplateManager.get_error_template(
-      :agent_failure,
-      map_step_to_error_type(failed_step),
-      classify_error_severity(reason)
-    ) do
+           :agent_failure,
+           map_step_to_error_type(failed_step),
+           classify_error_severity(reason)
+         ) do
       {:ok, template} -> {:ok, template}
       error -> error
     end
@@ -894,21 +1021,23 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
 
   defp apply_error_template_recovery(_error_template, _lifecycle_plan, _context) do
     # Apply error template-based recovery
-    {:ok, %{
-      recovery_applied: true,
-      template_based: true,
-      recovery_successful: true
-    }}
+    {:ok,
+     %{
+       recovery_applied: true,
+       template_based: true,
+       recovery_successful: true
+     }}
   end
 
   defp apply_generic_lifecycle_recovery(failed_step, _reason, _lifecycle_plan, _context) do
     Logger.info("ManageAgentLifecycleAction: Applying generic recovery", failed_step: failed_step)
-    
-    {:ok, %{
-      recovery_applied: true,
-      generic_recovery: true,
-      recovery_successful: true
-    }}
+
+    {:ok,
+     %{
+       recovery_applied: true,
+       generic_recovery: true,
+       recovery_successful: true
+     }}
   end
 
   defp attempt_lifecycle_recovery(agent_spec, operation, error_config, _failure_reason, context) do
@@ -917,7 +1046,7 @@ defmodule RubberDuck.Workflows.Actions.ManageAgentLifecycleAction do
         agent_id: agent_spec.id,
         operation: operation
       )
-      
+
       # Simulate lifecycle recovery
       {:ok, %{recovery_successful: true, agent_restored: true}}
     else
