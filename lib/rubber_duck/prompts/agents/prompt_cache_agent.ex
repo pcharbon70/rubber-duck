@@ -559,41 +559,51 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     recommendations = []
 
     # Operation-specific recommendations
-    recommendations =
-      case operation_results.cache_operation do
-        :warm ->
-          if operation_results.optimization_applied do
-            recommendations
-          else
-            ["Consider enabling optimization during warming operations" | recommendations]
-          end
-
-        :evict ->
-          memory_freed = Map.get(operation_results.performance_impact, :memory_freed, 0)
-
-          if memory_freed < 5 do
-            ["Increase eviction aggressiveness for better memory management" | recommendations]
-          else
-            recommendations
-          end
-
-        :optimize ->
-          performance_improvement =
-            Map.get(operation_results.performance_impact, :performance_improvement, 0)
-
-          if performance_improvement < 0.05 do
-            ["Review optimization strategies for better performance gains" | recommendations]
-          else
-            recommendations
-          end
-
-        _ ->
-          recommendations
-      end
+    recommendations = case operation_results.cache_operation do
+      :warm ->
+        generate_warming_recommendations(operation_results, recommendations)
+      
+      :evict ->
+        generate_eviction_recommendations(operation_results, recommendations)
+      
+      :optimize ->
+        generate_optimization_recommendations(operation_results, recommendations)
+      
+      _ ->
+        recommendations
+    end
 
     case recommendations do
       [] -> ["Cache operation completed successfully - no additional recommendations"]
       _ -> recommendations
+    end
+  end
+
+  defp generate_warming_recommendations(operation_results, recommendations) do
+    if operation_results.optimization_applied do
+      recommendations
+    else
+      ["Consider enabling optimization during warming operations" | recommendations]
+    end
+  end
+
+  defp generate_eviction_recommendations(operation_results, recommendations) do
+    memory_freed = Map.get(operation_results.performance_impact, :memory_freed, 0)
+
+    if memory_freed < 5 do
+      ["Increase eviction aggressiveness for better memory management" | recommendations]
+    else
+      recommendations
+    end
+  end
+
+  defp generate_optimization_recommendations(operation_results, recommendations) do
+    performance_improvement = Map.get(operation_results.performance_impact, :performance_improvement, 0)
+
+    if performance_improvement < 0.05 do
+      ["Review optimization strategies for better performance gains" | recommendations]
+    else
+      recommendations
     end
   end
 
