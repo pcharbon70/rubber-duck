@@ -559,19 +559,20 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     recommendations = []
 
     # Operation-specific recommendations
-    recommendations = case operation_results.cache_operation do
-      :warm ->
-        generate_warming_recommendations(operation_results, recommendations)
-      
-      :evict ->
-        generate_eviction_recommendations(operation_results, recommendations)
-      
-      :optimize ->
-        generate_optimization_recommendations(operation_results, recommendations)
-      
-      _ ->
-        recommendations
-    end
+    recommendations =
+      case operation_results.cache_operation do
+        :warm ->
+          generate_warming_recommendations(operation_results, recommendations)
+
+        :evict ->
+          generate_eviction_recommendations(operation_results, recommendations)
+
+        :optimize ->
+          generate_optimization_recommendations(operation_results, recommendations)
+
+        _ ->
+          recommendations
+      end
 
     case recommendations do
       [] -> ["Cache operation completed successfully - no additional recommendations"]
@@ -598,7 +599,8 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   end
 
   defp generate_optimization_recommendations(operation_results, recommendations) do
-    performance_improvement = Map.get(operation_results.performance_impact, :performance_improvement, 0)
+    performance_improvement =
+      Map.get(operation_results.performance_impact, :performance_improvement, 0)
 
     if performance_improvement < 0.05 do
       ["Review optimization strategies for better performance gains" | recommendations]
