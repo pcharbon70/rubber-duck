@@ -1,7 +1,7 @@
 defmodule RubberDuck.Prompts.Resources.Prompt do
   @moduledoc """
   Core Prompt resource with three-tier hierarchical architecture.
-  
+
   Supports System prompts (immutable base instructions), Project prompts
   (team customization), and User prompts (personal preferences) with
   comprehensive versioning, multi-tenancy, and security validation.
@@ -17,34 +17,6 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
     repo RubberDuck.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    
-    attribute :name, :string, allow_nil?: false
-    attribute :content, :string, allow_nil?: false
-    attribute :prompt_type, :atom, constraints: [one_of: [:system, :project, :user]]
-    attribute :tenant_id, :uuid, allow_nil?: false
-    attribute :project_id, :uuid
-    attribute :user_id, :uuid
-    attribute :status, :atom, default: :draft, constraints: [one_of: [:draft, :pending, :approved, :archived]]
-    attribute :priority, :integer, default: 0
-    attribute :variables, {:array, :string}, default: []
-    attribute :metadata, :map, default: %{}
-    attribute :tags, {:array, :string}, default: []
-    attribute :is_template, :boolean, default: false
-    attribute :effectiveness_score, :decimal
-    
-    timestamps()
-  end
-
-  relationships do
-    belongs_to :category, RubberDuck.Prompts.Resources.PromptCategory
-    belongs_to :parent, __MODULE__
-    has_many :children, __MODULE__, destination_attribute: :parent_id
-    has_many :versions, RubberDuck.Prompts.Resources.PromptVersion
-    has_many :usages, RubberDuck.Prompts.Resources.PromptUsage
-  end
-
   actions do
     defaults [:create, :read, :update, :destroy]
 
@@ -52,7 +24,7 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
       argument :content, :string, allow_nil?: false
       argument :name, :string, allow_nil?: false
       argument :tenant_id, :uuid, allow_nil?: false
-      
+
       change set_attribute(:prompt_type, :system)
       change set_attribute(:status, :approved)
       change set_attribute(:priority, 100)
@@ -66,7 +38,7 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
       argument :name, :string, allow_nil?: false
       argument :tenant_id, :uuid, allow_nil?: false
       argument :project_id, :uuid, allow_nil?: false
-      
+
       change set_attribute(:prompt_type, :project)
       change set_attribute(:status, :draft)
       change set_attribute(:priority, 50)
@@ -81,7 +53,7 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
       argument :name, :string, allow_nil?: false
       argument :tenant_id, :uuid, allow_nil?: false
       argument :user_id, :uuid, allow_nil?: false
-      
+
       change set_attribute(:prompt_type, :user)
       change set_attribute(:status, :approved)
       change set_attribute(:priority, 10)
@@ -126,6 +98,38 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
     validate match(:name, ~r/^[a-zA-Z0-9_.-]+$/)
     validate string_length(:content, min: 10, max: 50_000)
     validate string_length(:name, min: 2, max: 100)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string, allow_nil?: false
+    attribute :content, :string, allow_nil?: false
+    attribute :prompt_type, :atom, constraints: [one_of: [:system, :project, :user]]
+    attribute :tenant_id, :uuid, allow_nil?: false
+    attribute :project_id, :uuid
+    attribute :user_id, :uuid
+
+    attribute :status, :atom,
+      default: :draft,
+      constraints: [one_of: [:draft, :pending, :approved, :archived]]
+
+    attribute :priority, :integer, default: 0
+    attribute :variables, {:array, :string}, default: []
+    attribute :metadata, :map, default: %{}
+    attribute :tags, {:array, :string}, default: []
+    attribute :is_template, :boolean, default: false
+    attribute :effectiveness_score, :decimal
+
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :category, RubberDuck.Prompts.Resources.PromptCategory
+    belongs_to :parent, __MODULE__
+    has_many :children, __MODULE__, destination_attribute: :parent_id
+    has_many :versions, RubberDuck.Prompts.Resources.PromptVersion
+    has_many :usages, RubberDuck.Prompts.Resources.PromptUsage
   end
 
   identities do

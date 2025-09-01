@@ -1,7 +1,7 @@
 defmodule RubberDuck.Prompts.Resources.PromptUsage do
   @moduledoc """
   Usage analytics resource for comprehensive prompt performance tracking.
-  
+
   Tracks prompt usage analytics per tenant/user with performance metrics,
   success/failure rates, and usage pattern analysis for optimization.
   """
@@ -16,30 +16,6 @@ defmodule RubberDuck.Prompts.Resources.PromptUsage do
     repo RubberDuck.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    
-    attribute :used_by_id, :uuid, allow_nil?: false
-    attribute :context_type, :atom, allow_nil?: false, constraints: [one_of: [:llm_request, :workflow_step, :rag_query, :template_expansion, :test_execution]]
-    attribute :request_id, :uuid
-    attribute :response_time_ms, :integer
-    attribute :tokens_used, :integer
-    attribute :success, :boolean, allow_nil?: false, default: true
-    attribute :error_type, :atom, constraints: [one_of: [:timeout, :validation_error, :security_violation, :provider_error, :content_error]]
-    attribute :error_message, :string
-    attribute :effectiveness_score, :decimal
-    attribute :user_satisfaction, :integer
-    attribute :performance_metrics, :map, default: %{}
-    attribute :usage_metadata, :map, default: %{}
-    attribute :variables_used, :map, default: %{}
-    
-    timestamps()
-  end
-
-  relationships do
-    belongs_to :prompt, RubberDuck.Prompts.Resources.Prompt, allow_nil?: false
-  end
-
   actions do
     defaults [:create, :read]
 
@@ -49,7 +25,7 @@ defmodule RubberDuck.Prompts.Resources.PromptUsage do
       argument :context_type, :atom, allow_nil?: false
       argument :response_time_ms, :integer, allow_nil?: false
       argument :tokens_used, :integer, allow_nil?: false
-      
+
       change set_attribute(:success, true)
       change manage_relationship(:prompt_id, :prompt, type: :append_and_remove)
       change set_attribute(:used_by_id, arg(:used_by_id))
@@ -64,7 +40,7 @@ defmodule RubberDuck.Prompts.Resources.PromptUsage do
       argument :context_type, :atom, allow_nil?: false
       argument :error_type, :atom, allow_nil?: false
       argument :error_message, :string, allow_nil?: false
-      
+
       change set_attribute(:success, false)
       change manage_relationship(:prompt_id, :prompt, type: :append_and_remove)
       change set_attribute(:used_by_id, arg(:used_by_id))
@@ -103,5 +79,46 @@ defmodule RubberDuck.Prompts.Resources.PromptUsage do
     validate compare(:tokens_used, greater_than_or_equal_to: 0)
     validate compare(:user_satisfaction, greater_than_or_equal_to: 1)
     validate compare(:user_satisfaction, less_than_or_equal_to: 5)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :used_by_id, :uuid, allow_nil?: false
+
+    attribute :context_type, :atom,
+      allow_nil?: false,
+      constraints: [
+        one_of: [:llm_request, :workflow_step, :rag_query, :template_expansion, :test_execution]
+      ]
+
+    attribute :request_id, :uuid
+    attribute :response_time_ms, :integer
+    attribute :tokens_used, :integer
+    attribute :success, :boolean, allow_nil?: false, default: true
+
+    attribute :error_type, :atom,
+      constraints: [
+        one_of: [
+          :timeout,
+          :validation_error,
+          :security_violation,
+          :provider_error,
+          :content_error
+        ]
+      ]
+
+    attribute :error_message, :string
+    attribute :effectiveness_score, :decimal
+    attribute :user_satisfaction, :integer
+    attribute :performance_metrics, :map, default: %{}
+    attribute :usage_metadata, :map, default: %{}
+    attribute :variables_used, :map, default: %{}
+
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :prompt, RubberDuck.Prompts.Resources.Prompt, allow_nil?: false
   end
 end

@@ -1,7 +1,7 @@
 defmodule RubberDuck.Prompts.Resources.PromptVersion do
   @moduledoc """
   Version tracking resource for comprehensive prompt history management.
-  
+
   Stores complete version history with content snapshots, metadata,
   and diff generation capabilities for audit trails and rollback support.
   """
@@ -14,26 +14,6 @@ defmodule RubberDuck.Prompts.Resources.PromptVersion do
   postgres do
     table "prompt_versions"
     repo RubberDuck.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-    
-    attribute :version_number, :integer, allow_nil?: false
-    attribute :content_snapshot, :string, allow_nil?: false
-    attribute :change_summary, :string
-    attribute :diff_data, :map, default: %{}
-    attribute :created_by_id, :uuid, allow_nil?: false
-    attribute :metadata, :map, default: %{}
-    attribute :content_hash, :string
-    attribute :size_bytes, :integer
-    attribute :change_type, :atom, constraints: [one_of: [:create, :update, :approve, :archive, :restore]]
-    
-    timestamps()
-  end
-
-  relationships do
-    belongs_to :prompt, RubberDuck.Prompts.Resources.Prompt, allow_nil?: false
   end
 
   actions do
@@ -62,6 +42,28 @@ defmodule RubberDuck.Prompts.Resources.PromptVersion do
   validations do
     validate present([:prompt_id, :version_number, :content_snapshot, :created_by_id])
     validate compare(:version_number, greater_than: 0)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :version_number, :integer, allow_nil?: false
+    attribute :content_snapshot, :string, allow_nil?: false
+    attribute :change_summary, :string
+    attribute :diff_data, :map, default: %{}
+    attribute :created_by_id, :uuid, allow_nil?: false
+    attribute :metadata, :map, default: %{}
+    attribute :content_hash, :string
+    attribute :size_bytes, :integer
+
+    attribute :change_type, :atom,
+      constraints: [one_of: [:create, :update, :approve, :archive, :restore]]
+
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :prompt, RubberDuck.Prompts.Resources.Prompt, allow_nil?: false
   end
 
   identities do
