@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   @moduledoc """
   Specialized Jido agent for hierarchical prompt composition execution.
-  
+
   Provides autonomous prompt composition with System → Project → User resolution,
   context-aware variable interpolation, intelligent token optimization, and
   provider-specific formatting. Designed for enterprise-scale composition operations.
-  
+
   Features:
   - Hierarchical prompt composition with System → Project → User deterministic resolution
   - Variable interpolation with context awareness and comprehensive security validation
@@ -18,16 +18,33 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   use Jido.Agent,
     name: "prompt_composer",
     schema: [
-      composition_request: [type: :map, required: true, doc: "Prompt composition request with name and context"],
+      composition_request: [
+        type: :map,
+        required: true,
+        doc: "Prompt composition request with name and context"
+      ],
       composition_strategy: [
         type: :atom,
         default: :hierarchical_merge,
-        doc: "Composition strategy (:hierarchical_merge, :priority_override, :template_inheritance, :adaptive)"
+        doc:
+          "Composition strategy (:hierarchical_merge, :priority_override, :template_inheritance, :adaptive)"
       ],
-      provider_target: [type: :string, default: "gpt-4", doc: "Target LLM provider for optimization"],
-      performance_targets: [type: :map, default: %{}, doc: "Performance targets and optimization goals"],
+      provider_target: [
+        type: :string,
+        default: "gpt-4",
+        doc: "Target LLM provider for optimization"
+      ],
+      performance_targets: [
+        type: :map,
+        default: %{},
+        doc: "Performance targets and optimization goals"
+      ],
       security_requirements: [type: :map, default: %{}, doc: "Security validation requirements"],
-      analytics_tracking: [type: :boolean, default: true, doc: "Enable composition analytics tracking"]
+      analytics_tracking: [
+        type: :boolean,
+        default: true,
+        doc: "Enable composition analytics tracking"
+      ]
     ]
 
   require Logger
@@ -54,8 +71,13 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   }
 
   @supported_providers [
-    "gpt-4", "gpt-3.5-turbo", "claude-3-opus", "claude-3-sonnet", 
-    "claude-3-haiku", "claude-2", "gemini-pro"
+    "gpt-4",
+    "gpt-3.5-turbo",
+    "claude-3-opus",
+    "claude-3-sonnet",
+    "claude-3-haiku",
+    "claude-2",
+    "gemini-pro"
   ]
 
   def start_agent(params, context \\ %{}) do
@@ -70,11 +92,12 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
     with {:ok, validated_params} <- validate_composition_params(params),
          {:ok, composition_plan} <- create_composition_plan(validated_params, context),
          {:ok, composition_result} <- execute_composition_pipeline(composition_plan),
-         {:ok, formatted_result} <- format_for_provider(composition_result, validated_params.provider_target),
-         {:ok, validated_result} <- validate_composition_result(formatted_result, composition_plan) do
-      
+         {:ok, formatted_result} <-
+           format_for_provider(composition_result, validated_params.provider_target),
+         {:ok, validated_result} <-
+           validate_composition_result(formatted_result, composition_plan) do
       composition_time = System.monotonic_time(:microsecond) - composition_start_time
-      
+
       Logger.info("PromptComposerAgent: Composition execution completed successfully",
         composition_time_us: composition_time,
         final_token_count: get_token_count(validated_result),
@@ -82,17 +105,19 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
         cache_hit: get_cache_hit_status(validated_result)
       )
 
-      {:ok, %{
-        composition_result: validated_result,
-        composition_metadata: %{
-          composition_time_microseconds: composition_time,
-          strategy_used: params.composition_strategy,
-          provider_target: params.provider_target,
-          performance_metrics: calculate_composition_performance(validated_result, composition_time),
-          security_validated: composition_plan.security_requirements.validate_security,
-          analytics_recorded: params.analytics_tracking
-        }
-      }}
+      {:ok,
+       %{
+         composition_result: validated_result,
+         composition_metadata: %{
+           composition_time_microseconds: composition_time,
+           strategy_used: params.composition_strategy,
+           provider_target: params.provider_target,
+           performance_metrics:
+             calculate_composition_performance(validated_result, composition_time),
+           security_validated: composition_plan.security_requirements.validate_security,
+           analytics_recorded: params.analytics_tracking
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("PromptComposerAgent: Composition execution failed", error: reason)
@@ -106,13 +131,15 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
     with :ok <- validate_composition_request(params.composition_request),
          :ok <- validate_composition_strategy(params.composition_strategy),
          :ok <- validate_provider_target(params.provider_target) do
-      
-      validated_params = Map.merge(params, %{
-        performance_targets: Map.merge(@default_performance_targets, params.performance_targets),
-        security_requirements: Map.merge(@default_security_requirements, params.security_requirements),
-        validation_timestamp: DateTime.utc_now()
-      })
-      
+      validated_params =
+        Map.merge(params, %{
+          performance_targets:
+            Map.merge(@default_performance_targets, params.performance_targets),
+          security_requirements:
+            Map.merge(@default_security_requirements, params.security_requirements),
+          validation_timestamp: DateTime.utc_now()
+        })
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -122,15 +149,24 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   defp validate_composition_request(request) when is_map(request) do
     required_fields = [:prompt_name, :context]
     missing_fields = required_fields -- Map.keys(request)
-    
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_required_fields, fields}}
     end
   end
+
   defp validate_composition_request(_), do: {:error, :invalid_composition_request}
 
-  defp validate_composition_strategy(strategy) when strategy in [:hierarchical_merge, :priority_override, :template_inheritance, :adaptive], do: :ok
+  defp validate_composition_strategy(strategy)
+       when strategy in [
+              :hierarchical_merge,
+              :priority_override,
+              :template_inheritance,
+              :adaptive
+            ],
+       do: :ok
+
   defp validate_composition_strategy(_), do: {:error, :invalid_composition_strategy}
 
   defp validate_provider_target(provider) when provider in @supported_providers, do: :ok
@@ -148,19 +184,19 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
       execution_steps: create_execution_steps(validated_params),
       context: context
     }
-    
+
     Logger.debug("PromptComposerAgent: Composition plan created",
       composition_id: composition_plan.composition_id,
       strategy: composition_plan.strategy,
       execution_steps: length(composition_plan.execution_steps)
     )
-    
+
     {:ok, composition_plan}
   end
 
   defp execute_composition_pipeline(composition_plan) do
     request = composition_plan.request
-    
+
     # Execute hierarchical composition
     composition_options = %{
       strategy: composition_plan.strategy,
@@ -169,21 +205,22 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
       optimize_tokens: true,
       performance_tracking: true
     }
-    
+
     case CompositionEngine.compose_prompt(
-      request.prompt_name,
-      request.context,
-      composition_options
-    ) do
+           request.prompt_name,
+           request.context,
+           composition_options
+         ) do
       {:ok, composition_result} ->
-        enhanced_result = Map.merge(composition_result, %{
-          composition_id: composition_plan.composition_id,
-          provider_target: composition_plan.provider_target,
-          pipeline_executed: true
-        })
-        
+        enhanced_result =
+          Map.merge(composition_result, %{
+            composition_id: composition_plan.composition_id,
+            provider_target: composition_plan.provider_target,
+            pipeline_executed: true
+          })
+
         {:ok, enhanced_result}
-      
+
       {:error, reason} ->
         {:error, {:composition_pipeline_failed, reason}}
     end
@@ -192,28 +229,31 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   defp format_for_provider(composition_result, provider_target) do
     # Format composed prompt for specific LLM provider
     content = composition_result.content
-    
-    formatted_content = case provider_target do
-      provider when provider in ["gpt-4", "gpt-3.5-turbo"] ->
-        format_for_openai(content)
-      
-      provider when provider in ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku", "claude-2"] ->
-        format_for_anthropic(content)
-      
-      "gemini-pro" ->
-        format_for_gemini(content)
-      
-      _ ->
-        format_for_generic_provider(content)
-    end
-    
-    formatted_result = Map.merge(composition_result, %{
-      content: formatted_content,
-      provider_formatted: true,
-      original_content: content,
-      provider_target: provider_target
-    })
-    
+
+    formatted_content =
+      case provider_target do
+        provider when provider in ["gpt-4", "gpt-3.5-turbo"] ->
+          format_for_openai(content)
+
+        provider
+        when provider in ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku", "claude-2"] ->
+          format_for_anthropic(content)
+
+        "gemini-pro" ->
+          format_for_gemini(content)
+
+        _ ->
+          format_for_generic_provider(content)
+      end
+
+    formatted_result =
+      Map.merge(composition_result, %{
+        content: formatted_content,
+        provider_formatted: true,
+        original_content: content,
+        provider_target: provider_target
+      })
+
     {:ok, formatted_result}
   end
 
@@ -225,16 +265,17 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
       security_validation: validate_security_compliance(composition_result, composition_plan),
       provider_validation: validate_provider_compatibility(composition_result, composition_plan)
     }
-    
+
     overall_valid = all_validations_passed?(validation_results)
-    
+
     if overall_valid do
-      validated_result = Map.merge(composition_result, %{
-        validation_results: validation_results,
-        validation_passed: true,
-        ready_for_use: true
-      })
-      
+      validated_result =
+        Map.merge(composition_result, %{
+          validation_results: validation_results,
+          validation_passed: true,
+          ready_for_use: true
+        })
+
       {:ok, validated_result}
     else
       {:error, {:composition_validation_failed, validation_results}}
@@ -351,22 +392,25 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   defp validate_performance_targets(composition_result, composition_plan) do
     targets = composition_plan.performance_targets
     metadata = composition_result.composition_metadata
-    
+
     composition_time_ms = div(metadata.composition_time_microseconds, 1_000)
-    
+
     %{
       valid: composition_time_ms <= targets.max_composition_time_ms,
       composition_time_ms: composition_time_ms,
       target_time_ms: targets.max_composition_time_ms,
-      performance_score: calculate_performance_score(composition_time_ms, targets.max_composition_time_ms)
+      performance_score:
+        calculate_performance_score(composition_time_ms, targets.max_composition_time_ms)
     }
   end
 
   defp validate_security_compliance(composition_result, composition_plan) do
     requirements = composition_plan.security_requirements
-    
+
     %{
-      valid: Map.get(composition_result, :security_validated, false) || not requirements.validate_security,
+      valid:
+        Map.get(composition_result, :security_validated, false) ||
+          not requirements.validate_security,
       security_validated: Map.get(composition_result, :security_validated, false),
       injection_checked: requirements.check_injection,
       content_sanitized: requirements.sanitize_content
@@ -384,9 +428,9 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
 
   defp all_validations_passed?(validation_results) do
     validation_results.content_validation.valid &&
-    validation_results.performance_validation.valid &&
-    validation_results.security_validation.valid &&
-    validation_results.provider_validation.valid
+      validation_results.performance_validation.valid &&
+      validation_results.security_validation.valid &&
+      validation_results.provider_validation.valid
   end
 
   # Utility functions
@@ -427,7 +471,7 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
       ~r/(please|help|explain|generate|create|analyze)/i,
       ~r/(how to|what is|why does|when should)/i
     ]
-    
+
     Enum.any?(instruction_patterns, fn pattern ->
       Regex.match?(pattern, content)
     end)
@@ -445,9 +489,12 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   defp assess_provider_compatibility(content) do
     # Assess compatibility with different providers
     %{
-      openai_compatible: true,  # Most content is OpenAI compatible
-      anthropic_compatible: not String.contains?(content, "<thinking>"),  # Avoid internal thinking tags
-      gemini_compatible: true   # Gemini is generally flexible
+      # Most content is OpenAI compatible
+      openai_compatible: true,
+      # Avoid internal thinking tags
+      anthropic_compatible: not String.contains?(content, "<thinking>"),
+      # Gemini is generally flexible
+      gemini_compatible: true
     }
   end
 
@@ -469,11 +516,13 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
 
   defp calculate_token_efficiency(composition_result) do
     case Map.get(composition_result, :optimization_metadata) do
-      nil -> 1.0
-      metadata -> 
+      nil ->
+        1.0
+
+      metadata ->
         original = metadata.original_token_count
         final = metadata.final_token_count
-        
+
         case original do
           0 -> 1.0
           _ -> (original - final) / original
@@ -484,7 +533,8 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
   defp calculate_cache_performance(composition_result) do
     %{
       cache_hit: get_cache_hit_status(composition_result),
-      cache_efficiency: 0.85  # Would calculate based on actual cache metrics
+      # Would calculate based on actual cache metrics
+      cache_efficiency: 0.85
     }
   end
 
@@ -492,7 +542,8 @@ defmodule RubberDuck.Prompts.Agents.PromptComposerAgent do
     # Calculate security validation overhead
     case Map.get(composition_result, :validation_results) do
       nil -> 0.0
-      _ -> 5.0  # Approximate 5ms security overhead
+      # Approximate 5ms security overhead
+      _ -> 5.0
     end
   end
 

@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
   @moduledoc """
   Specialized Jido agent for comprehensive prompt validation and reporting.
-  
+
   Provides autonomous validation orchestration including security validation,
   budget constraint checking, semantic integrity validation, and comprehensive
   reporting. Designed for enterprise governance and compliance requirements.
-  
+
   Features:
   - Prompt security and content safety validation with multi-layered detection
   - Token limits and budget constraint checking with enterprise governance
@@ -18,13 +18,21 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
   use Jido.Agent,
     name: "prompt_validator",
     schema: [
-      validation_request: [type: :map, required: true, doc: "Validation request with content and context"],
+      validation_request: [
+        type: :map,
+        required: true,
+        doc: "Validation request with content and context"
+      ],
       validation_scope: [
         type: :atom,
         default: :comprehensive,
         doc: "Validation scope (:security_only, :budget_only, :comprehensive, :compliance)"
       ],
-      governance_requirements: [type: :map, default: %{}, doc: "Enterprise governance and compliance requirements"],
+      governance_requirements: [
+        type: :map,
+        default: %{},
+        doc: "Enterprise governance and compliance requirements"
+      ],
       reporting_config: [type: :map, default: %{}, doc: "Validation reporting configuration"],
       performance_targets: [type: :map, default: %{}, doc: "Validation performance targets"]
     ]
@@ -70,10 +78,10 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
     with {:ok, validated_params} <- validate_validation_params(params),
          {:ok, validation_plan} <- create_validation_plan(validated_params, context),
          {:ok, validation_results} <- execute_validation_pipeline(validation_plan),
-         {:ok, validation_report} <- generate_validation_report(validation_results, validation_plan) do
-      
+         {:ok, validation_report} <-
+           generate_validation_report(validation_results, validation_plan) do
       validation_time = System.monotonic_time(:microsecond) - validation_start_time
-      
+
       Logger.info("PromptValidatorAgent: Validation orchestration completed",
         validation_time_us: validation_time,
         validation_passed: validation_results.overall_validation_passed,
@@ -81,17 +89,19 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
         report_generated: validation_plan.reporting_config.generate_detailed_report
       )
 
-      {:ok, %{
-        validation_results: validation_results,
-        validation_report: validation_report,
-        validation_metadata: %{
-          validation_time_microseconds: validation_time,
-          validation_scope: params.validation_scope,
-          governance_compliance: validation_results.governance_compliance,
-          performance_metrics: calculate_validation_performance(validation_results, validation_time),
-          report_generated: validation_plan.reporting_config.generate_detailed_report
-        }
-      }}
+      {:ok,
+       %{
+         validation_results: validation_results,
+         validation_report: validation_report,
+         validation_metadata: %{
+           validation_time_microseconds: validation_time,
+           validation_scope: params.validation_scope,
+           governance_compliance: validation_results.governance_compliance,
+           performance_metrics:
+             calculate_validation_performance(validation_results, validation_time),
+           report_generated: validation_plan.reporting_config.generate_detailed_report
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("PromptValidatorAgent: Validation orchestration failed", error: reason)
@@ -104,14 +114,16 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
   defp validate_validation_params(params) do
     with :ok <- validate_validation_request(params.validation_request),
          :ok <- validate_validation_scope(params.validation_scope) do
-      
-      validated_params = Map.merge(params, %{
-        governance_requirements: Map.merge(@default_governance_requirements, params.governance_requirements),
-        reporting_config: Map.merge(@default_reporting_config, params.reporting_config),
-        performance_targets: Map.merge(@default_performance_targets, params.performance_targets),
-        validation_timestamp: DateTime.utc_now()
-      })
-      
+      validated_params =
+        Map.merge(params, %{
+          governance_requirements:
+            Map.merge(@default_governance_requirements, params.governance_requirements),
+          reporting_config: Map.merge(@default_reporting_config, params.reporting_config),
+          performance_targets:
+            Map.merge(@default_performance_targets, params.performance_targets),
+          validation_timestamp: DateTime.utc_now()
+        })
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -121,12 +133,13 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
   defp validate_validation_request(request) when is_map(request) do
     required_fields = [:content, :context]
     missing_fields = required_fields -- Map.keys(request)
-    
+
     case missing_fields do
       [] -> :ok
       fields -> {:error, {:missing_required_fields, fields}}
     end
   end
+
   defp validate_validation_request(_), do: {:error, :invalid_validation_request}
 
   defp validate_validation_scope(scope) when scope in @validation_scopes, do: :ok
@@ -143,20 +156,20 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
       validation_steps: create_validation_steps(validated_params.validation_scope),
       context: context
     }
-    
+
     Logger.debug("PromptValidatorAgent: Validation plan created",
       validation_id: validation_plan.validation_id,
       scope: validation_plan.scope,
       validation_steps: length(validation_plan.validation_steps)
     )
-    
+
     {:ok, validation_plan}
   end
 
   defp execute_validation_pipeline(validation_plan) do
     request = validation_plan.request
     scope = validation_plan.scope
-    
+
     validation_results = %{
       validation_id: validation_plan.validation_id,
       security_validation: nil,
@@ -166,37 +179,40 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
       overall_validation_passed: false,
       governance_compliance: false
     }
-    
+
     # Execute validations based on scope
-    enhanced_results = case scope do
-      :security_only ->
-        execute_security_validation(request, validation_plan, validation_results)
-      
-      :budget_only ->
-        execute_budget_validation(request, validation_plan, validation_results)
-      
-      :comprehensive ->
-        execute_comprehensive_validation(request, validation_plan, validation_results)
-      
-      :compliance ->
-        execute_compliance_validation(request, validation_plan, validation_results)
-    end
-    
+    enhanced_results =
+      case scope do
+        :security_only ->
+          execute_security_validation(request, validation_plan, validation_results)
+
+        :budget_only ->
+          execute_budget_validation(request, validation_plan, validation_results)
+
+        :comprehensive ->
+          execute_comprehensive_validation(request, validation_plan, validation_results)
+
+        :compliance ->
+          execute_compliance_validation(request, validation_plan, validation_results)
+      end
+
     {:ok, enhanced_results}
   end
 
   defp execute_security_validation(request, validation_plan, results) do
     case PromptValidator.validate_prompt_content(request.content, request.context) do
       {:ok, security_result} ->
-        %{results |
-          security_validation: security_result,
-          overall_validation_passed: security_result.overall_security_score > 0.7
+        %{
+          results
+          | security_validation: security_result,
+            overall_validation_passed: security_result.overall_security_score > 0.7
         }
-      
+
       {:error, _reason} ->
-        %{results |
-          security_validation: %{validation_failed: true},
-          overall_validation_passed: false
+        %{
+          results
+          | security_validation: %{validation_failed: true},
+            overall_validation_passed: false
         }
     end
   end
@@ -204,10 +220,11 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
   defp execute_budget_validation(request, validation_plan, results) do
     # Execute budget constraint validation
     budget_validation = validate_budget_constraints(request, validation_plan)
-    
-    %{results |
-      budget_validation: budget_validation,
-      overall_validation_passed: budget_validation.within_limits
+
+    %{
+      results
+      | budget_validation: budget_validation,
+        overall_validation_passed: budget_validation.within_limits
     }
   end
 
@@ -216,33 +233,37 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
     security_results = execute_security_validation(request, validation_plan, results)
     budget_results = execute_budget_validation(request, validation_plan, security_results)
     semantic_results = execute_semantic_validation(request, validation_plan, budget_results)
-    
+
     # Overall validation passes if all components pass
-    overall_passed = security_results.overall_validation_passed &&
-                    budget_results.overall_validation_passed &&
-                    semantic_results.semantic_validation.quality_preserved
-    
+    overall_passed =
+      security_results.overall_validation_passed &&
+        budget_results.overall_validation_passed &&
+        semantic_results.semantic_validation.quality_preserved
+
     %{semantic_results | overall_validation_passed: overall_passed}
   end
 
   defp execute_compliance_validation(request, validation_plan, results) do
     # Execute enterprise compliance validation
     compliance_validation = validate_enterprise_compliance(request, validation_plan)
-    
-    %{results |
-      compliance_validation: compliance_validation,
-      governance_compliance: compliance_validation.compliant,
-      overall_validation_passed: compliance_validation.compliant
+
+    %{
+      results
+      | compliance_validation: compliance_validation,
+        governance_compliance: compliance_validation.compliant,
+        overall_validation_passed: compliance_validation.compliant
     }
   end
 
   defp execute_semantic_validation(request, validation_plan, results) do
     # Execute semantic integrity validation
     semantic_validation = validate_semantic_integrity(request.content, request.context)
-    
-    %{results |
-      semantic_validation: semantic_validation,
-      overall_validation_passed: results.overall_validation_passed && semantic_validation.quality_preserved
+
+    %{
+      results
+      | semantic_validation: semantic_validation,
+        overall_validation_passed:
+          results.overall_validation_passed && semantic_validation.quality_preserved
     }
   end
 
@@ -252,9 +273,10 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
     # Validate budget constraints for prompt usage
     estimated_tokens = estimate_prompt_tokens(request.content)
     estimated_cost = estimate_prompt_cost(estimated_tokens, validation_plan)
-    
+
     %{
-      within_limits: estimated_cost < 1.0,  # $1.00 limit for example
+      # $1.00 limit for example
+      within_limits: estimated_cost < 1.0,
       estimated_tokens: estimated_tokens,
       estimated_cost: estimated_cost,
       budget_status: determine_budget_status(estimated_cost)
@@ -265,24 +287,27 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
     # Validate enterprise governance compliance
     governance = validation_plan.governance_requirements
     compliance_score = 0.0
-    
+
     # Check security compliance
-    compliance_score = if governance.require_security_validation do
-      compliance_score + 0.3
-    else
-      compliance_score
-    end
-    
+    compliance_score =
+      if governance.require_security_validation do
+        compliance_score + 0.3
+      else
+        compliance_score
+      end
+
     # Check audit trail compliance
-    compliance_score = if governance.require_audit_trail do
-      compliance_score + 0.2
-    else
-      compliance_score
-    end
-    
+    compliance_score =
+      if governance.require_audit_trail do
+        compliance_score + 0.2
+      else
+        compliance_score
+      end
+
     # Add other compliance checks
-    compliance_score = compliance_score + 0.5  # Base compliance
-    
+    # Base compliance
+    compliance_score = compliance_score + 0.5
+
     %{
       compliant: compliance_score >= 0.8,
       compliance_score: compliance_score,
@@ -313,9 +338,9 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
           compliance_status: extract_compliance_status(validation_results),
           report_generated_at: DateTime.utc_now()
         }
-        
+
         {:ok, report}
-      
+
       false ->
         {:ok, %{report_disabled: true}}
     end
@@ -328,38 +353,48 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
       {:validate_request_parameters, "Validate validation request parameters"},
       {:prepare_validation_environment, "Prepare validation environment and resources"}
     ]
-    
-    scope_steps = case scope do
-      :security_only -> [{:execute_security_validation, "Execute security validation"}]
-      :budget_only -> [{:execute_budget_validation, "Execute budget validation"}]
-      :comprehensive -> [
-        {:execute_security_validation, "Execute security validation"},
-        {:execute_budget_validation, "Execute budget validation"},
-        {:execute_semantic_validation, "Execute semantic validation"}
-      ]
-      :compliance -> [
-        {:execute_security_validation, "Execute security validation"},
-        {:execute_compliance_validation, "Execute compliance validation"}
-      ]
-    end
-    
+
+    scope_steps =
+      case scope do
+        :security_only ->
+          [{:execute_security_validation, "Execute security validation"}]
+
+        :budget_only ->
+          [{:execute_budget_validation, "Execute budget validation"}]
+
+        :comprehensive ->
+          [
+            {:execute_security_validation, "Execute security validation"},
+            {:execute_budget_validation, "Execute budget validation"},
+            {:execute_semantic_validation, "Execute semantic validation"}
+          ]
+
+        :compliance ->
+          [
+            {:execute_security_validation, "Execute security validation"},
+            {:execute_compliance_validation, "Execute compliance validation"}
+          ]
+      end
+
     final_steps = [
       {:generate_validation_report, "Generate validation report"},
       {:record_validation_metrics, "Record validation metrics"}
     ]
-    
+
     base_steps ++ scope_steps ++ final_steps
   end
 
   defp estimate_prompt_tokens(content) do
     # Estimate token count for budget validation
     words = String.split(content, ~r/\s+/)
-    round(length(words) / 0.75)  # Approximate token estimation
+    # Approximate token estimation
+    round(length(words) / 0.75)
   end
 
   defp estimate_prompt_cost(tokens, validation_plan) do
     # Estimate cost based on token count
-    cost_per_token = 0.00002  # Example: $0.02 per 1K tokens
+    # Example: $0.02 per 1K tokens
+    cost_per_token = 0.00002
     tokens * cost_per_token
   end
 
@@ -375,16 +410,16 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
   defp calculate_semantic_score(content) do
     # Calculate semantic coherence score
     base_score = 0.5
-    
+
     # Boost for clear structure
     structure_boost = if has_clear_instructions?(content), do: 0.2, else: 0.0
-    
+
     # Boost for appropriate length
     length_boost = if has_appropriate_length?(content), do: 0.2, else: 0.0
-    
+
     # Boost for template variables
     template_boost = if has_template_structure?(content), do: 0.1, else: 0.0
-    
+
     min(1.0, base_score + structure_boost + length_boost + template_boost)
   end
 
@@ -400,11 +435,13 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
   defp validate_template_integrity(content) do
     # Validate template variable integrity
     variables = Regex.scan(~r/\{\{([^}]+)\}\}/, content)
-    
+
     %{
       variable_count: length(variables),
-      variables_valid: length(variables) < 20,  # Reasonable limit
-      template_syntax_valid: true  # Would validate syntax
+      # Reasonable limit
+      variables_valid: length(variables) < 20,
+      # Would validate syntax
+      template_syntax_valid: true
     }
   end
 
@@ -422,57 +459,76 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
 
   defp extract_security_analysis(validation_results) do
     case validation_results.security_validation do
-      nil -> %{analysis_skipped: true}
-      security -> %{
-        security_score: Map.get(security, :overall_security_score, 0.0),
-        threats_detected: length(Map.get(security, :threats_detected, [])),
-        validation_layers_passed: Map.get(security, :validation_layers_passed, [])
-      }
+      nil ->
+        %{analysis_skipped: true}
+
+      security ->
+        %{
+          security_score: Map.get(security, :overall_security_score, 0.0),
+          threats_detected: length(Map.get(security, :threats_detected, [])),
+          validation_layers_passed: Map.get(security, :validation_layers_passed, [])
+        }
     end
   end
 
   defp extract_budget_analysis(validation_results) do
     case validation_results.budget_validation do
-      nil -> %{analysis_skipped: true}
-      budget -> %{
-        within_limits: budget.within_limits,
-        estimated_cost: budget.estimated_cost,
-        estimated_tokens: budget.estimated_tokens,
-        budget_status: budget.budget_status
-      }
+      nil ->
+        %{analysis_skipped: true}
+
+      budget ->
+        %{
+          within_limits: budget.within_limits,
+          estimated_cost: budget.estimated_cost,
+          estimated_tokens: budget.estimated_tokens,
+          budget_status: budget.budget_status
+        }
     end
   end
 
   defp generate_validation_recommendations(validation_results) do
     recommendations = []
-    
+
     # Security recommendations
-    recommendations = if validation_results.security_validation do
-      security = validation_results.security_validation
-      threats = Map.get(security, :threats_detected, [])
-      
-      if length(threats) > 0 do
-        ["Address detected security threats", "Review prompt content for injection risks" | recommendations]
+    recommendations =
+      if validation_results.security_validation do
+        security = validation_results.security_validation
+        threats = Map.get(security, :threats_detected, [])
+
+        if length(threats) > 0 do
+          [
+            "Address detected security threats",
+            "Review prompt content for injection risks" | recommendations
+          ]
+        else
+          recommendations
+        end
       else
         recommendations
       end
-    else
-      recommendations
-    end
-    
+
     # Budget recommendations
-    recommendations = if validation_results.budget_validation do
-      budget = validation_results.budget_validation
-      
-      case budget.budget_status do
-        :over_budget -> ["Reduce prompt complexity to lower costs", "Consider token optimization" | recommendations]
-        :high_cost -> ["Monitor usage costs", "Consider optimization opportunities" | recommendations]
-        _ -> recommendations
+    recommendations =
+      if validation_results.budget_validation do
+        budget = validation_results.budget_validation
+
+        case budget.budget_status do
+          :over_budget ->
+            [
+              "Reduce prompt complexity to lower costs",
+              "Consider token optimization" | recommendations
+            ]
+
+          :high_cost ->
+            ["Monitor usage costs", "Consider optimization opportunities" | recommendations]
+
+          _ ->
+            recommendations
+        end
+      else
+        recommendations
       end
-    else
-      recommendations
-    end
-    
+
     case recommendations do
       [] -> ["Validation completed successfully - no issues found"]
       _ -> recommendations
@@ -481,19 +537,24 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
 
   defp extract_compliance_status(validation_results) do
     case validation_results.compliance_validation do
-      nil -> %{compliance_checked: false}
-      compliance -> %{
-        compliant: compliance.compliant,
-        compliance_score: compliance.compliance_score,
-        requirements_met: compliance.requirements_met
-      }
+      nil ->
+        %{compliance_checked: false}
+
+      compliance ->
+        %{
+          compliant: compliance.compliant,
+          compliance_score: compliance.compliance_score,
+          requirements_met: compliance.requirements_met
+        }
     end
   end
 
   defp extract_security_status(validation_results) do
     case validation_results.security_validation do
-      nil -> :not_validated
-      security -> 
+      nil ->
+        :not_validated
+
+      security ->
         case Map.get(security, :overall_security_score, 0.0) do
           score when score > 0.8 -> :secure
           score when score > 0.6 -> :low_risk
@@ -512,8 +573,10 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
 
   defp extract_semantic_status(validation_results) do
     case validation_results.semantic_validation do
-      nil -> :not_validated
-      semantic -> 
+      nil ->
+        :not_validated
+
+      semantic ->
         if semantic.quality_preserved do
           :quality_preserved
         else
@@ -534,25 +597,34 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
 
   defp calculate_validation_efficiency(validation_results, validation_time_us) do
     # Calculate validation efficiency score
-    base_efficiency = case validation_time_us do
-      time when time < 50_000 -> 1.0   # Sub-50ms excellent
-      time when time < 100_000 -> 0.8  # Sub-100ms good
-      time when time < 200_000 -> 0.6  # Sub-200ms acceptable
-      _ -> 0.4                         # Over 200ms needs optimization
-    end
-    
+    base_efficiency =
+      case validation_time_us do
+        # Sub-50ms excellent
+        time when time < 50_000 -> 1.0
+        # Sub-100ms good
+        time when time < 100_000 -> 0.8
+        # Sub-200ms acceptable
+        time when time < 200_000 -> 0.6
+        # Over 200ms needs optimization
+        _ -> 0.4
+      end
+
     # Adjust for validation accuracy
     accuracy_factor = if validation_results.overall_validation_passed, do: 1.0, else: 0.8
-    
+
     base_efficiency * accuracy_factor
   end
 
   defp analyze_validation_overhead(validation_results) do
     %{
-      security_overhead_ms: 45.0,  # Estimated security validation overhead
-      budget_overhead_ms: 5.0,     # Estimated budget validation overhead  
-      semantic_overhead_ms: 10.0,  # Estimated semantic validation overhead
-      total_overhead_ms: 60.0      # Total validation overhead
+      # Estimated security validation overhead
+      security_overhead_ms: 45.0,
+      # Estimated budget validation overhead
+      budget_overhead_ms: 5.0,
+      # Estimated semantic validation overhead
+      semantic_overhead_ms: 10.0,
+      # Total validation overhead
+      total_overhead_ms: 60.0
     }
   end
 
@@ -578,7 +650,7 @@ defmodule RubberDuck.Prompts.Agents.PromptValidatorAgent do
       ~r/(please|help|explain|generate|create|analyze)/i,
       ~r/(how to|what is|why does|when should)/i
     ]
-    
+
     Enum.any?(instruction_patterns, fn pattern ->
       Regex.match?(pattern, content)
     end)

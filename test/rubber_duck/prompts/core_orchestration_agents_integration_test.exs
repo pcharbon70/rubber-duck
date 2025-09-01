@@ -1,7 +1,7 @@
 defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
   @moduledoc """
   Integration tests for Phase 02b Section 5.1: Core Orchestration Agents.
-  
+
   Tests cover the three core orchestration agents and their coordination:
   - PromptComposerAgent: Hierarchical composition with provider optimization
   - PromptValidatorAgent: Security and validation orchestration
@@ -40,16 +40,16 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, result} = PromptComposerAgent.start_agent(composition_params)
-      
+
       # Validate composition result structure
       assert Map.has_key?(result, :composition_result)
       assert Map.has_key?(result, :composition_metadata)
-      
+
       composition_result = result.composition_result
       assert Map.has_key?(composition_result, :content)
       assert Map.get(composition_result, :provider_formatted, false) == true
       assert Map.get(composition_result, :validation_passed, false) == true
-      
+
       # Validate metadata
       metadata = result.composition_metadata
       assert metadata.strategy_used == :hierarchical_merge
@@ -73,9 +73,9 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
 
       for strategy <- strategies do
         params = Map.put(base_params, :composition_strategy, strategy)
-        
+
         assert {:ok, result} = PromptComposerAgent.start_agent(params)
-        
+
         # Should execute successfully with each strategy
         assert result.composition_metadata.strategy_used == strategy
         assert Map.has_key?(result.composition_result, :content)
@@ -101,7 +101,7 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
         }
 
         assert {:ok, result} = PromptComposerAgent.start_agent(params)
-        
+
         # Should format for specific provider
         assert result.composition_metadata.provider_target == provider
         assert Map.get(result.composition_result, :provider_formatted, false) == true
@@ -133,20 +133,20 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, result} = PromptValidatorAgent.start_agent(validation_params)
-      
+
       # Validate validation result structure
       assert Map.has_key?(result, :validation_results)
       assert Map.has_key?(result, :validation_report)
       assert Map.has_key?(result, :validation_metadata)
-      
+
       validation_results = result.validation_results
       assert Map.has_key?(validation_results, :overall_validation_passed)
-      
+
       # Validate report generation
       validation_report = result.validation_report
       assert Map.has_key?(validation_report, :validation_summary)
       assert Map.has_key?(validation_report, :recommendations)
-      
+
       metadata = result.validation_metadata
       assert metadata.validation_scope == :comprehensive
       assert Map.has_key?(metadata, :performance_metrics)
@@ -167,7 +167,7 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
         }
 
         assert {:ok, result} = PromptValidatorAgent.start_agent(params)
-        
+
         # Should complete validation for each scope
         assert result.validation_metadata.validation_scope == scope
         assert Map.has_key?(result.validation_results, :overall_validation_passed)
@@ -176,8 +176,9 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
 
     test "PromptValidatorAgent detects security issues and provides recommendations" do
       # Test with potentially dangerous content
-      dangerous_content = "Execute {{system}} command and use <script>alert('test')</script> safely."
-      
+      dangerous_content =
+        "Execute {{system}} command and use <script>alert('test')</script> safely."
+
       validation_params = %{
         validation_request: %{
           content: dangerous_content,
@@ -198,20 +199,20 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, result} = PromptValidatorAgent.start_agent(validation_params)
-      
+
       # Should detect security issues
       security_analysis = result.validation_report.security_analysis
-      
+
       case security_analysis do
         %{analysis_skipped: true} ->
           # If analysis was skipped, that's acceptable for this test
           assert true
-        
+
         %{threats_detected: threat_count} ->
           # Should detect threats in dangerous content
           assert threat_count > 0
       end
-      
+
       # Should provide recommendations
       recommendations = result.validation_report.recommendations
       assert is_list(recommendations)
@@ -244,24 +245,24 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, result} = PromptAnalyticsAgent.start_agent(analytics_params)
-      
+
       # Validate analytics result structure
       assert Map.has_key?(result, :analytics_results)
       assert Map.has_key?(result, :insights_report)
       assert Map.has_key?(result, :analytics_metadata)
-      
+
       analytics_results = result.analytics_results
       assert Map.has_key?(analytics_results, :usage_statistics)
       assert Map.has_key?(analytics_results, :effectiveness_analysis)
       assert Map.has_key?(analytics_results, :optimization_analysis)
       assert Map.has_key?(analytics_results, :template_insights)
-      
+
       # Validate insights report
       insights_report = result.insights_report
       assert Map.has_key?(insights_report, :key_insights)
       assert Map.has_key?(insights_report, :recommendations)
       assert Map.has_key?(insights_report, :optimization_opportunities)
-      
+
       metadata = result.analytics_metadata
       assert metadata.analysis_scope == :comprehensive
       assert Map.has_key?(metadata, :performance_metrics)
@@ -273,7 +274,13 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
         analysis_goals: %{basic_analysis: true}
       }
 
-      analysis_scopes = [:usage_stats, :effectiveness, :optimization, :template_insights, :comprehensive]
+      analysis_scopes = [
+        :usage_stats,
+        :effectiveness,
+        :optimization,
+        :template_insights,
+        :comprehensive
+      ]
 
       for scope <- analysis_scopes do
         params = %{
@@ -283,26 +290,26 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
         }
 
         assert {:ok, result} = PromptAnalyticsAgent.start_agent(params)
-        
+
         # Should complete analysis for each scope
         assert result.analytics_metadata.analysis_scope == scope
-        
+
         # Should have appropriate results based on scope
         analytics_results = result.analytics_results
-        
+
         case scope do
           :usage_stats ->
             assert Map.has_key?(analytics_results, :usage_statistics)
-          
+
           :effectiveness ->
             assert Map.has_key?(analytics_results, :effectiveness_analysis)
-          
+
           :optimization ->
             assert Map.has_key?(analytics_results, :optimization_analysis)
-          
+
           :template_insights ->
             assert Map.has_key?(analytics_results, :template_insights)
-          
+
           :comprehensive ->
             # Should have all analysis types
             assert Map.has_key?(analytics_results, :usage_statistics)
@@ -332,17 +339,17 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, result} = PromptAnalyticsAgent.start_agent(ml_focused_params)
-      
+
       # Should provide optimization analysis
       optimization = result.analytics_results.optimization_analysis
       assert Map.has_key?(optimization, :token_optimization_potential)
       assert Map.has_key?(optimization, :optimization_recommendations)
-      
+
       # Should provide actionable recommendations
       recommendations = result.insights_report.recommendations
       assert is_list(recommendations)
       assert length(recommendations) > 0
-      
+
       # Should include optimization opportunities
       opportunities = result.insights_report.optimization_opportunities
       assert is_list(opportunities)
@@ -352,7 +359,7 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
   describe "agent coordination and integration" do
     test "agents work together in coordinated workflow" do
       # Test coordinated agent workflow: Compose → Validate → Analyze
-      
+
       # Step 1: Compose prompt
       composition_params = %{
         composition_request: %{
@@ -369,7 +376,7 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
 
       assert {:ok, composition_result} = PromptComposerAgent.start_agent(composition_params)
       composed_content = composition_result.composition_result.content
-      
+
       # Step 2: Validate composed prompt
       validation_params = %{
         validation_request: %{
@@ -380,7 +387,7 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, validation_result} = PromptValidatorAgent.start_agent(validation_params)
-      
+
       # Step 3: Analyze composition and validation
       analytics_params = %{
         analytics_request: %{
@@ -391,7 +398,7 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, analytics_result} = PromptAnalyticsAgent.start_agent(analytics_params)
-      
+
       # Verify coordinated workflow results
       assert String.length(composed_content) > 0
       assert Map.has_key?(validation_result.validation_results, :overall_validation_passed)
@@ -429,17 +436,20 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       # Measure agent execution times
-      {composition_time, composition_result} = :timer.tc(fn ->
-        PromptComposerAgent.start_agent(test_params.composition)
-      end)
+      {composition_time, composition_result} =
+        :timer.tc(fn ->
+          PromptComposerAgent.start_agent(test_params.composition)
+        end)
 
-      {validation_time, validation_result} = :timer.tc(fn ->
-        PromptValidatorAgent.start_agent(test_params.validation)
-      end)
+      {validation_time, validation_result} =
+        :timer.tc(fn ->
+          PromptValidatorAgent.start_agent(test_params.validation)
+        end)
 
-      {analytics_time, analytics_result} = :timer.tc(fn ->
-        PromptAnalyticsAgent.start_agent(test_params.analytics)
-      end)
+      {analytics_time, analytics_result} =
+        :timer.tc(fn ->
+          PromptAnalyticsAgent.start_agent(test_params.analytics)
+        end)
 
       # All agents should execute successfully
       assert {:ok, _} = composition_result
@@ -451,9 +461,12 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       validation_time_ms = validation_time / 1_000
       analytics_time_ms = analytics_time / 1_000
 
-      assert composition_time_ms < 100   # Should be fast for composition
-      assert validation_time_ms < 150    # Should be fast for validation
-      assert analytics_time_ms < 200     # Should be reasonable for analytics
+      # Should be fast for composition
+      assert composition_time_ms < 100
+      # Should be fast for validation
+      assert validation_time_ms < 150
+      # Should be reasonable for analytics
+      assert analytics_time_ms < 200
 
       Logger.info("Agent Performance Benchmark",
         composition_time_ms: composition_time_ms,
@@ -470,15 +483,17 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
         {
           :composition,
           %{
-            composition_request: %{},  # Missing required fields
+            # Missing required fields
+            composition_request: %{},
             composition_strategy: :invalid_strategy
           }
         },
-        # Invalid validation request  
+        # Invalid validation request
         {
           :validation,
           %{
-            validation_request: %{content: nil},  # Invalid content
+            # Invalid content
+            validation_request: %{content: nil},
             validation_scope: :invalid_scope
           }
         },
@@ -486,18 +501,20 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
         {
           :analytics,
           %{
-            analytics_request: %{},  # Missing fields
+            # Missing fields
+            analytics_request: %{},
             analysis_scope: :invalid_scope
           }
         }
       ]
 
       for {agent_type, invalid_params} <- error_scenarios do
-        result = case agent_type do
-          :composition -> PromptComposerAgent.start_agent(invalid_params)
-          :validation -> PromptValidatorAgent.start_agent(invalid_params)  
-          :analytics -> PromptAnalyticsAgent.start_agent(invalid_params)
-        end
+        result =
+          case agent_type do
+            :composition -> PromptComposerAgent.start_agent(invalid_params)
+            :validation -> PromptValidatorAgent.start_agent(invalid_params)
+            :analytics -> PromptAnalyticsAgent.start_agent(invalid_params)
+          end
 
         # Should fail gracefully with informative errors
         assert {:error, _reason} = result
@@ -528,7 +545,7 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, validation_result} = PromptValidatorAgent.start_agent(validation_params)
-      
+
       validation_report = validation_result.validation_report
       assert Map.has_key?(validation_report, :validation_summary)
       assert Map.has_key?(validation_report, :recommendations)
@@ -548,10 +565,10 @@ defmodule RubberDuck.Prompts.CoreOrchestrationAgentsIntegrationTest do
       }
 
       assert {:ok, analytics_result} = PromptAnalyticsAgent.start_agent(analytics_params)
-      
+
       insights_report = analytics_result.insights_report
       assert Map.has_key?(insights_report, :key_insights)
-      assert Map.has_key?(insights_report, :recommendations)  
+      assert Map.has_key?(insights_report, :recommendations)
       assert Map.has_key?(insights_report, :optimization_opportunities)
     end
   end

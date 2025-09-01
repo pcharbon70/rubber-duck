@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   @moduledoc """
   ML-driven analytics agent for prompt effectiveness analysis and optimization.
-  
+
   Provides autonomous analytics collection with usage statistics, effectiveness
   analysis, optimization recommendations, and template creation insights.
   Designed for enterprise-scale analytics with ML-driven optimization.
-  
+
   Features:
   - Usage statistics and performance metrics collection with comprehensive tracking
   - Effectiveness analysis with ML insights and optimization opportunity identification
@@ -18,15 +18,28 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   use Jido.Agent,
     name: "prompt_analytics",
     schema: [
-      analytics_request: [type: :map, required: true, doc: "Analytics request with scope and targets"],
+      analytics_request: [
+        type: :map,
+        required: true,
+        doc: "Analytics request with scope and targets"
+      ],
       analysis_scope: [
         type: :atom,
         default: :effectiveness,
-        doc: "Analysis scope (:usage_stats, :effectiveness, :optimization, :template_insights, :comprehensive)"
+        doc:
+          "Analysis scope (:usage_stats, :effectiveness, :optimization, :template_insights, :comprehensive)"
       ],
-      time_window: [type: :map, default: %{amount: 7, unit: :days}, doc: "Time window for analytics analysis"],
+      time_window: [
+        type: :map,
+        default: %{amount: 7, unit: :days},
+        doc: "Time window for analytics analysis"
+      ],
       ml_config: [type: :map, default: %{}, doc: "ML analysis configuration and parameters"],
-      reporting_options: [type: :map, default: %{}, doc: "Analytics reporting options and formats"]
+      reporting_options: [
+        type: :map,
+        default: %{},
+        doc: "Analytics reporting options and formats"
+      ]
     ]
 
   require Logger
@@ -36,7 +49,13 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     PromptUsage
   }
 
-  @analysis_scopes [:usage_stats, :effectiveness, :optimization, :template_insights, :comprehensive]
+  @analysis_scopes [
+    :usage_stats,
+    :effectiveness,
+    :optimization,
+    :template_insights,
+    :comprehensive
+  ]
 
   @default_ml_config %{
     enable_ml_analysis: true,
@@ -66,9 +85,8 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
          {:ok, analytics_plan} <- create_analytics_plan(validated_params, context),
          {:ok, analytics_results} <- execute_analytics_pipeline(analytics_plan),
          {:ok, insights_report} <- generate_insights_report(analytics_results, analytics_plan) do
-      
       analytics_time = System.monotonic_time(:microsecond) - analytics_start_time
-      
+
       Logger.info("PromptAnalyticsAgent: Analytics analysis completed",
         analytics_time_us: analytics_time,
         prompts_analyzed: get_prompts_analyzed_count(analytics_results),
@@ -76,18 +94,20 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
         recommendations_count: get_recommendations_count(insights_report)
       )
 
-      {:ok, %{
-        analytics_results: analytics_results,
-        insights_report: insights_report,
-        analytics_metadata: %{
-          analytics_time_microseconds: analytics_time,
-          analysis_scope: params.analysis_scope,
-          time_window: params.time_window,
-          performance_metrics: calculate_analytics_performance(analytics_results, analytics_time),
-          ml_insights_generated: analytics_plan.ml_config.enable_ml_analysis,
-          data_quality_score: assess_data_quality(analytics_results)
-        }
-      }}
+      {:ok,
+       %{
+         analytics_results: analytics_results,
+         insights_report: insights_report,
+         analytics_metadata: %{
+           analytics_time_microseconds: analytics_time,
+           analysis_scope: params.analysis_scope,
+           time_window: params.time_window,
+           performance_metrics:
+             calculate_analytics_performance(analytics_results, analytics_time),
+           ml_insights_generated: analytics_plan.ml_config.enable_ml_analysis,
+           data_quality_score: assess_data_quality(analytics_results)
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("PromptAnalyticsAgent: Analytics analysis failed", error: reason)
@@ -101,13 +121,13 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     with :ok <- validate_analytics_request(params.analytics_request),
          :ok <- validate_analysis_scope(params.analysis_scope),
          :ok <- validate_time_window(params.time_window) do
-      
-      validated_params = Map.merge(params, %{
-        ml_config: Map.merge(@default_ml_config, params.ml_config),
-        reporting_options: Map.merge(@default_reporting_options, params.reporting_options),
-        validation_timestamp: DateTime.utc_now()
-      })
-      
+      validated_params =
+        Map.merge(params, %{
+          ml_config: Map.merge(@default_ml_config, params.ml_config),
+          reporting_options: Map.merge(@default_reporting_options, params.reporting_options),
+          validation_timestamp: DateTime.utc_now()
+        })
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -120,8 +140,10 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   defp validate_analysis_scope(scope) when scope in @analysis_scopes, do: :ok
   defp validate_analysis_scope(_), do: {:error, :invalid_analysis_scope}
 
-  defp validate_time_window(%{amount: amount, unit: unit}) 
-    when is_integer(amount) and amount > 0 and unit in [:hours, :days, :weeks], do: :ok
+  defp validate_time_window(%{amount: amount, unit: unit})
+       when is_integer(amount) and amount > 0 and unit in [:hours, :days, :weeks],
+       do: :ok
+
   defp validate_time_window(_), do: {:error, :invalid_time_window}
 
   defp create_analytics_plan(validated_params, context) do
@@ -136,19 +158,19 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
       data_sources: identify_data_sources(validated_params.analysis_scope),
       context: context
     }
-    
+
     Logger.debug("PromptAnalyticsAgent: Analytics plan created",
       analytics_id: analytics_plan.analytics_id,
       scope: analytics_plan.scope,
       analysis_steps: length(analytics_plan.analysis_steps)
     )
-    
+
     {:ok, analytics_plan}
   end
 
   defp execute_analytics_pipeline(analytics_plan) do
     scope = analytics_plan.scope
-    
+
     analytics_results = %{
       analytics_id: analytics_plan.analytics_id,
       usage_statistics: nil,
@@ -158,21 +180,21 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
       ml_insights: nil,
       data_quality: %{}
     }
-    
+
     # Execute analytics based on scope
     case scope do
       :usage_stats ->
         execute_usage_statistics_analysis(analytics_plan, analytics_results)
-      
+
       :effectiveness ->
         execute_effectiveness_analysis(analytics_plan, analytics_results)
-      
+
       :optimization ->
         execute_optimization_analysis(analytics_plan, analytics_results)
-      
+
       :template_insights ->
         execute_template_insights_analysis(analytics_plan, analytics_results)
-      
+
       :comprehensive ->
         execute_comprehensive_analysis(analytics_plan, analytics_results)
     end
@@ -181,12 +203,13 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   defp execute_usage_statistics_analysis(analytics_plan, results) do
     # Collect and analyze usage statistics
     usage_stats = %{
-      total_prompts_analyzed: 100,  # Would query actual usage data
+      # Would query actual usage data
+      total_prompts_analyzed: 100,
       usage_frequency: %{daily: 50, weekly: 300, monthly: 1200},
       user_engagement: %{active_users: 25, power_users: 5},
       performance_metrics: %{avg_response_time_ms: 45, success_rate: 0.98}
     }
-    
+
     {:ok, %{results | usage_statistics: usage_stats}}
   end
 
@@ -199,19 +222,20 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
       effectiveness_trends: analyze_effectiveness_trends(),
       improvement_opportunities: identify_improvement_opportunities()
     }
-    
+
     {:ok, %{results | effectiveness_analysis: effectiveness_analysis}}
   end
 
   defp execute_optimization_analysis(analytics_plan, results) do
     # Analyze optimization opportunities
     optimization_analysis = %{
-      token_optimization_potential: 0.20,  # 20% potential reduction
+      # 20% potential reduction
+      token_optimization_potential: 0.20,
       cache_optimization_score: 0.90,
       composition_efficiency: 0.85,
       optimization_recommendations: generate_optimization_recommendations()
     }
-    
+
     {:ok, %{results | optimization_analysis: optimization_analysis}}
   end
 
@@ -223,25 +247,28 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
       reusability_analysis: assess_prompt_reusability(),
       template_recommendations: generate_template_recommendations()
     }
-    
+
     {:ok, %{results | template_insights: template_insights}}
   end
 
   defp execute_comprehensive_analysis(analytics_plan, results) do
     # Execute all analysis types
     with {:ok, usage_results} <- execute_usage_statistics_analysis(analytics_plan, results),
-         {:ok, effectiveness_results} <- execute_effectiveness_analysis(analytics_plan, usage_results),
-         {:ok, optimization_results} <- execute_optimization_analysis(analytics_plan, effectiveness_results),
-         {:ok, template_results} <- execute_template_insights_analysis(analytics_plan, optimization_results) do
-      
+         {:ok, effectiveness_results} <-
+           execute_effectiveness_analysis(analytics_plan, usage_results),
+         {:ok, optimization_results} <-
+           execute_optimization_analysis(analytics_plan, effectiveness_results),
+         {:ok, template_results} <-
+           execute_template_insights_analysis(analytics_plan, optimization_results) do
       # Add ML insights if enabled
-      final_results = if analytics_plan.ml_config.enable_ml_analysis do
-        ml_insights = generate_ml_insights(template_results, analytics_plan)
-        %{template_results | ml_insights: ml_insights}
-      else
-        template_results
-      end
-      
+      final_results =
+        if analytics_plan.ml_config.enable_ml_analysis do
+          ml_insights = generate_ml_insights(template_results, analytics_plan)
+          %{template_results | ml_insights: ml_insights}
+        else
+          template_results
+        end
+
       {:ok, final_results}
     else
       {:error, reason} -> {:error, reason}
@@ -260,9 +287,9 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
           template_suggestions: extract_template_suggestions(analytics_results),
           report_metadata: build_report_metadata(analytics_plan)
         }
-        
+
         {:ok, report}
-      
+
       false ->
         {:ok, %{report_generation_disabled: true}}
     end
@@ -372,31 +399,42 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp extract_key_insights(analytics_results) do
     insights = []
-    
+
     # Usage insights
-    insights = if analytics_results.usage_statistics do
-      usage = analytics_results.usage_statistics
-      ["High user engagement with #{usage.user_engagement.active_users} active users" | insights]
-    else
-      insights
-    end
-    
+    insights =
+      if analytics_results.usage_statistics do
+        usage = analytics_results.usage_statistics
+
+        [
+          "High user engagement with #{usage.user_engagement.active_users} active users"
+          | insights
+        ]
+      else
+        insights
+      end
+
     # Effectiveness insights
-    insights = if analytics_results.effectiveness_analysis do
-      effectiveness = analytics_results.effectiveness_analysis
-      ["Overall effectiveness score: #{effectiveness.overall_effectiveness_score}" | insights]
-    else
-      insights
-    end
-    
+    insights =
+      if analytics_results.effectiveness_analysis do
+        effectiveness = analytics_results.effectiveness_analysis
+        ["Overall effectiveness score: #{effectiveness.overall_effectiveness_score}" | insights]
+      else
+        insights
+      end
+
     # Optimization insights
-    insights = if analytics_results.optimization_analysis do
-      optimization = analytics_results.optimization_analysis
-      ["Token optimization potential: #{trunc(optimization.token_optimization_potential * 100)}%" | insights]
-    else
-      insights
-    end
-    
+    insights =
+      if analytics_results.optimization_analysis do
+        optimization = analytics_results.optimization_analysis
+
+        [
+          "Token optimization potential: #{trunc(optimization.token_optimization_potential * 100)}%"
+          | insights
+        ]
+      else
+        insights
+      end
+
     case insights do
       [] -> ["No significant insights identified in current analysis"]
       _ -> insights
@@ -405,28 +443,32 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp compile_all_recommendations(analytics_results) do
     all_recommendations = []
-    
+
     # Effectiveness recommendations
-    all_recommendations = if analytics_results.effectiveness_analysis do
-      analytics_results.effectiveness_analysis.improvement_opportunities ++ all_recommendations
-    else
-      all_recommendations
-    end
-    
+    all_recommendations =
+      if analytics_results.effectiveness_analysis do
+        analytics_results.effectiveness_analysis.improvement_opportunities ++ all_recommendations
+      else
+        all_recommendations
+      end
+
     # Optimization recommendations
-    all_recommendations = if analytics_results.optimization_analysis do
-      analytics_results.optimization_analysis.optimization_recommendations ++ all_recommendations
-    else
-      all_recommendations
-    end
-    
+    all_recommendations =
+      if analytics_results.optimization_analysis do
+        analytics_results.optimization_analysis.optimization_recommendations ++
+          all_recommendations
+      else
+        all_recommendations
+      end
+
     # Template recommendations
-    all_recommendations = if analytics_results.template_insights do
-      analytics_results.template_insights.template_recommendations ++ all_recommendations
-    else
-      all_recommendations
-    end
-    
+    all_recommendations =
+      if analytics_results.template_insights do
+        analytics_results.template_insights.template_recommendations ++ all_recommendations
+      else
+        all_recommendations
+      end
+
     Enum.uniq(all_recommendations)
   end
 
@@ -439,19 +481,22 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp extract_optimization_opportunities(analytics_results) do
     case analytics_results.optimization_analysis do
-      nil -> []
-      optimization -> [
-        %{
-          type: :token_optimization,
-          potential: optimization.token_optimization_potential,
-          impact: :cost_reduction
-        },
-        %{
-          type: :cache_optimization,
-          potential: 1.0 - optimization.cache_optimization_score,
-          impact: :performance_improvement
-        }
-      ]
+      nil ->
+        []
+
+      optimization ->
+        [
+          %{
+            type: :token_optimization,
+            potential: optimization.token_optimization_potential,
+            impact: :cost_reduction
+          },
+          %{
+            type: :cache_optimization,
+            potential: 1.0 - optimization.cache_optimization_score,
+            impact: :performance_improvement
+          }
+        ]
     end
   end
 
@@ -477,74 +522,86 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   defp calculate_data_points_analyzed(analytics_results) do
     # Calculate total data points analyzed
     base_count = 0
-    
-    base_count = if analytics_results.usage_statistics do
-      base_count + 100  # Example usage data points
-    else
-      base_count
-    end
-    
-    base_count = if analytics_results.effectiveness_analysis do
-      base_count + 50   # Example effectiveness data points
-    else
-      base_count
-    end
-    
+
+    base_count =
+      if analytics_results.usage_statistics do
+        # Example usage data points
+        base_count + 100
+      else
+        base_count
+      end
+
+    base_count =
+      if analytics_results.effectiveness_analysis do
+        # Example effectiveness data points
+        base_count + 50
+      else
+        base_count
+      end
+
     base_count
   end
 
   defp extract_key_metrics(analytics_results) do
     metrics = %{}
-    
-    metrics = if analytics_results.usage_statistics do
-      usage = analytics_results.usage_statistics
-      Map.merge(metrics, %{
-        total_usage: usage.total_prompts_analyzed,
-        success_rate: usage.performance_metrics.success_rate
-      })
-    else
-      metrics
-    end
-    
-    metrics = if analytics_results.effectiveness_analysis do
-      effectiveness = analytics_results.effectiveness_analysis
-      Map.merge(metrics, %{
-        effectiveness_score: effectiveness.overall_effectiveness_score
-      })
-    else
-      metrics
-    end
-    
+
+    metrics =
+      if analytics_results.usage_statistics do
+        usage = analytics_results.usage_statistics
+
+        Map.merge(metrics, %{
+          total_usage: usage.total_prompts_analyzed,
+          success_rate: usage.performance_metrics.success_rate
+        })
+      else
+        metrics
+      end
+
+    metrics =
+      if analytics_results.effectiveness_analysis do
+        effectiveness = analytics_results.effectiveness_analysis
+
+        Map.merge(metrics, %{
+          effectiveness_score: effectiveness.overall_effectiveness_score
+        })
+      else
+        metrics
+      end
+
     metrics
   end
 
   defp calculate_overall_health_score(analytics_results) do
     # Calculate overall prompt system health score
     scores = []
-    
-    scores = if analytics_results.usage_statistics do
-      usage = analytics_results.usage_statistics
-      [usage.performance_metrics.success_rate | scores]
-    else
-      scores
-    end
-    
-    scores = if analytics_results.effectiveness_analysis do
-      effectiveness = analytics_results.effectiveness_analysis
-      [effectiveness.overall_effectiveness_score | scores]
-    else
-      scores
-    end
-    
-    scores = if analytics_results.optimization_analysis do
-      optimization = analytics_results.optimization_analysis
-      [optimization.composition_efficiency | scores]
-    else
-      scores
-    end
-    
+
+    scores =
+      if analytics_results.usage_statistics do
+        usage = analytics_results.usage_statistics
+        [usage.performance_metrics.success_rate | scores]
+      else
+        scores
+      end
+
+    scores =
+      if analytics_results.effectiveness_analysis do
+        effectiveness = analytics_results.effectiveness_analysis
+        [effectiveness.overall_effectiveness_score | scores]
+      else
+        scores
+      end
+
+    scores =
+      if analytics_results.optimization_analysis do
+        optimization = analytics_results.optimization_analysis
+        [optimization.composition_efficiency | scores]
+      else
+        scores
+      end
+
     case scores do
-      [] -> 0.75  # Default health score
+      # Default health score
+      [] -> 0.75
       _ -> Enum.sum(scores) / length(scores)
     end
   end
@@ -552,7 +609,8 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   defp calculate_analytics_performance(analytics_results, analytics_time_us) do
     %{
       analytics_time_ms: div(analytics_time_us, 1_000),
-      data_processing_efficiency: calculate_processing_efficiency(analytics_results, analytics_time_us),
+      data_processing_efficiency:
+        calculate_processing_efficiency(analytics_results, analytics_time_us),
       insight_generation_rate: calculate_insight_generation_rate(analytics_results),
       analytics_overhead: calculate_analytics_overhead(analytics_time_us)
     }
@@ -560,17 +618,18 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp calculate_processing_efficiency(analytics_results, analytics_time_us) do
     data_points = calculate_data_points_analyzed(analytics_results)
-    
+
     case analytics_time_us do
       0 -> 1.0
-      time -> min(1.0, data_points / (time / 1_000_000))  # Data points per second
+      # Data points per second
+      time -> min(1.0, data_points / (time / 1_000_000))
     end
   end
 
   defp calculate_insight_generation_rate(analytics_results) do
     # Calculate rate of insight generation
     insight_count = get_insights_count(analytics_results)
-    
+
     case insight_count do
       count when count > 10 -> :high
       count when count > 5 -> :medium
@@ -580,7 +639,7 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp calculate_analytics_overhead(analytics_time_us) do
     analytics_time_ms = div(analytics_time_us, 1_000)
-    
+
     case analytics_time_ms do
       time when time < 5 -> :minimal
       time when time < 20 -> :low
@@ -597,14 +656,13 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
       data_freshness: 0.95,
       sample_size_adequacy: 0.80
     }
-    
-    overall_quality = (
-      quality_factors.data_completeness +
-      quality_factors.data_accuracy +
-      quality_factors.data_freshness +
-      quality_factors.sample_size_adequacy
-    ) / 4
-    
+
+    overall_quality =
+      (quality_factors.data_completeness +
+         quality_factors.data_accuracy +
+         quality_factors.data_freshness +
+         quality_factors.sample_size_adequacy) / 4
+
     %{
       overall_quality_score: Float.round(overall_quality, 3),
       quality_factors: quality_factors,
@@ -619,36 +677,61 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
       {:validate_analytics_request, "Validate analytics request parameters"},
       {:collect_source_data, "Collect data from configured sources"}
     ]
-    
-    scope_steps = case scope do
-      :usage_stats -> [{:analyze_usage_patterns, "Analyze usage patterns and statistics"}]
-      :effectiveness -> [{:analyze_effectiveness, "Analyze prompt effectiveness"}]
-      :optimization -> [{:analyze_optimization, "Analyze optimization opportunities"}]
-      :template_insights -> [{:analyze_template_patterns, "Analyze template creation patterns"}]
-      :comprehensive -> [
-        {:analyze_usage_patterns, "Analyze usage patterns and statistics"},
-        {:analyze_effectiveness, "Analyze prompt effectiveness"},
-        {:analyze_optimization, "Analyze optimization opportunities"},
-        {:analyze_template_patterns, "Analyze template creation patterns"},
-        {:generate_ml_insights, "Generate ML-driven insights"}
-      ]
-    end
-    
+
+    scope_steps =
+      case scope do
+        :usage_stats ->
+          [{:analyze_usage_patterns, "Analyze usage patterns and statistics"}]
+
+        :effectiveness ->
+          [{:analyze_effectiveness, "Analyze prompt effectiveness"}]
+
+        :optimization ->
+          [{:analyze_optimization, "Analyze optimization opportunities"}]
+
+        :template_insights ->
+          [{:analyze_template_patterns, "Analyze template creation patterns"}]
+
+        :comprehensive ->
+          [
+            {:analyze_usage_patterns, "Analyze usage patterns and statistics"},
+            {:analyze_effectiveness, "Analyze prompt effectiveness"},
+            {:analyze_optimization, "Analyze optimization opportunities"},
+            {:analyze_template_patterns, "Analyze template creation patterns"},
+            {:generate_ml_insights, "Generate ML-driven insights"}
+          ]
+      end
+
     final_steps = [
       {:generate_recommendations, "Generate actionable recommendations"},
       {:create_insights_report, "Create comprehensive insights report"}
     ]
-    
+
     base_steps ++ scope_steps ++ final_steps
   end
 
   defp identify_data_sources(scope) do
     case scope do
-      :usage_stats -> [:prompt_usage, :performance_metrics]
-      :effectiveness -> [:prompt_usage, :user_feedback, :performance_metrics]
-      :optimization -> [:performance_metrics, :cache_statistics, :token_usage]
-      :template_insights -> [:prompt_usage, :composition_patterns, :user_preferences]
-      :comprehensive -> [:prompt_usage, :performance_metrics, :user_feedback, :cache_statistics, :composition_patterns]
+      :usage_stats ->
+        [:prompt_usage, :performance_metrics]
+
+      :effectiveness ->
+        [:prompt_usage, :user_feedback, :performance_metrics]
+
+      :optimization ->
+        [:performance_metrics, :cache_statistics, :token_usage]
+
+      :template_insights ->
+        [:prompt_usage, :composition_patterns, :user_preferences]
+
+      :comprehensive ->
+        [
+          :prompt_usage,
+          :performance_metrics,
+          :user_feedback,
+          :cache_statistics,
+          :composition_patterns
+        ]
     end
   end
 
@@ -662,19 +745,21 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   defp get_insights_count(analytics_results) do
     # Count total insights generated
     insight_count = 0
-    
-    insight_count = if analytics_results.effectiveness_analysis do
-      insight_count + length(analytics_results.effectiveness_analysis.improvement_opportunities)
-    else
-      insight_count
-    end
-    
-    insight_count = if analytics_results.template_insights do
-      insight_count + length(analytics_results.template_insights.template_recommendations)
-    else
-      insight_count
-    end
-    
+
+    insight_count =
+      if analytics_results.effectiveness_analysis do
+        insight_count + length(analytics_results.effectiveness_analysis.improvement_opportunities)
+      else
+        insight_count
+      end
+
+    insight_count =
+      if analytics_results.template_insights do
+        insight_count + length(analytics_results.template_insights.template_recommendations)
+      else
+        insight_count
+      end
+
     insight_count
   end
 
