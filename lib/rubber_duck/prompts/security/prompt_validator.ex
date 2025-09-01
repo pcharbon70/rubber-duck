@@ -306,10 +306,10 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
     # Check encoding
     issues =
-      if not String.valid?(content) do
-        [{:invalid_encoding, "Content contains invalid UTF-8"} | issues]
-      else
+      if String.valid?(content) do
         issues
+      else
+        [{:invalid_encoding, "Content contains invalid UTF-8"} | issues]
       end
 
     # Check for suspicious repetition
@@ -553,7 +553,7 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp calculate_context_risk_score(content, security_factors) do
     base_risk = 0.1
-    
+
     # Calculate individual risk components
     type_risk = calculate_prompt_type_risk(security_factors.prompt_type)
     trust_risk = calculate_user_trust_risk(security_factors.user_trust_level)
@@ -565,9 +565,12 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp calculate_prompt_type_risk(prompt_type) do
     case prompt_type do
-      :system -> 0.0   # System prompts are pre-validated
-      :project -> 0.2  # Project prompts have moderate risk
-      :user -> 0.4     # User prompts have higher risk
+      # System prompts are pre-validated
+      :system -> 0.0
+      # Project prompts have moderate risk
+      :project -> 0.2
+      # User prompts have higher risk
+      :user -> 0.4
     end
   end
 
@@ -585,15 +588,22 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
     has_variables = String.contains?(content, "{{")
     is_long = String.length(content) > 1000
     has_special_chars = Regex.match?(~r/[<>{}]/, content)
-    
+
     case {has_variables, is_long, has_special_chars} do
-      {true, true, true} -> 0.4   # High risk: variables + long + special chars
-      {true, _, true} -> 0.3      # Medium-high risk
-      {true, _, _} -> 0.2         # Medium risk: has variables
-      {_, true, true} -> 0.3      # Medium-high risk: long + special chars
-      {_, _, true} -> 0.2         # Medium risk: special chars
-      {_, true, _} -> 0.1         # Low risk: just long
-      _ -> 0.0                    # Minimal risk
+      # High risk: variables + long + special chars
+      {true, true, true} -> 0.4
+      # Medium-high risk
+      {true, _, true} -> 0.3
+      # Medium risk: has variables
+      {true, _, _} -> 0.2
+      # Medium-high risk: long + special chars
+      {_, true, true} -> 0.3
+      # Medium risk: special chars
+      {_, _, true} -> 0.2
+      # Low risk: just long
+      {_, true, _} -> 0.1
+      # Minimal risk
+      _ -> 0.0
     end
   end
 
