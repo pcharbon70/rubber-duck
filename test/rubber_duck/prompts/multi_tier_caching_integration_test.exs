@@ -1,7 +1,7 @@
 defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
   @moduledoc """
   Integration tests for Phase 02b Section 3: Multi-Tier Caching System.
-  
+
   Tests cover:
   - Task 2B.3.3: Multi-tier cache performance with load testing and benchmarking
   - Task 2B.3.4: Cache invalidation strategies with coordination and broadcasting
@@ -44,12 +44,13 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
       assert :ok = EtsCacheLayer.put(cache_key, test_data, 60)
 
       # Measure get performance
-      {time_us, result} = :timer.tc(fn ->
-        EtsCacheLayer.get(cache_key)
-      end)
+      {time_us, result} =
+        :timer.tc(fn ->
+          EtsCacheLayer.get(cache_key)
+        end)
 
       assert {:ok, ^test_data} = result
-      
+
       # Should be very fast (sub-10ms = 10,000 microseconds)
       assert time_us < 10_000
 
@@ -66,7 +67,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
       # Test distributed cache operations
       assert :ok = DistributedCacheLayer.put(cache_key, test_data, 3600)
       assert {:ok, retrieved_data} = DistributedCacheLayer.get(cache_key)
-      
+
       assert retrieved_data.distributed == true
       assert retrieved_data.content == "Multi-node test"
 
@@ -83,7 +84,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
       # Test persistent storage
       assert :ok = PersistentCacheLayer.put(cache_key, test_data, 86_400)
       assert {:ok, retrieved_data} = PersistentCacheLayer.get(cache_key)
-      
+
       assert retrieved_data.persistent == true
       assert String.contains?(retrieved_data.large_content, "test ")
 
@@ -132,7 +133,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
 
     test "persistent cache handles pattern-based invalidation efficiently" do
       base_pattern = "pattern_invalidation"
-      
+
       # Put multiple entries with pattern
       entries = [
         {"#{base_pattern}_entry_1", "data 1"},
@@ -163,7 +164,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
     test "CacheManager executes intelligent cache warming strategies" do
       warming_keys = [
         "warm_key_1",
-        "warm_key_2", 
+        "warm_key_2",
         "warm_key_3"
       ]
 
@@ -192,7 +193,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
     test "cache optimization improves performance over time" do
       # Create cache load to test optimization
       test_keys = Enum.map(1..50, fn i -> "optimization_test_#{i}" end)
-      
+
       for key <- test_keys do
         test_data = %{key: key, data: "optimization test data"}
         assert :ok = CacheManager.put(key, test_data, :auto, 60)
@@ -210,14 +211,15 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
     test "memory pressure management prevents cache overflow" do
       # Test memory pressure handling
       large_data = String.duplicate("large cache data ", 1000)
-      
+
       # Fill cache beyond normal capacity
       overflow_keys = Enum.map(1..20, fn i -> "memory_pressure_#{i}" end)
-      
+
       for key <- overflow_keys do
         case CacheManager.put(key, large_data, :ets, 60) do
           :ok -> :ok
-          {:error, _reason} -> :ok  # Acceptable if capacity management kicks in
+          # Acceptable if capacity management kicks in
+          {:error, _reason} -> :ok
         end
       end
 
@@ -273,30 +275,32 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
     test "cache system handles concurrent access safely" do
       # Test concurrent cache operations
       concurrent_keys = Enum.map(1..10, fn i -> "concurrent_test_#{i}" end)
-      
+
       # Execute concurrent puts
-      put_tasks = Enum.map(concurrent_keys, fn key ->
-        Task.async(fn ->
-          CacheManager.put(key, "concurrent data #{key}", :auto, 60)
+      put_tasks =
+        Enum.map(concurrent_keys, fn key ->
+          Task.async(fn ->
+            CacheManager.put(key, "concurrent data #{key}", :auto, 60)
+          end)
         end)
-      end)
 
       put_results = Task.await_many(put_tasks, 5000)
-      
+
       # All puts should succeed
       for result <- put_results do
         assert result == :ok
       end
 
       # Execute concurrent gets
-      get_tasks = Enum.map(concurrent_keys, fn key ->
-        Task.async(fn ->
-          CacheManager.get(key, :auto)
+      get_tasks =
+        Enum.map(concurrent_keys, fn key ->
+          Task.async(fn ->
+            CacheManager.get(key, :auto)
+          end)
         end)
-      end)
 
       get_results = Task.await_many(get_tasks, 5000)
-      
+
       # All gets should succeed
       for result <- get_results do
         assert {:ok, _data} = result
@@ -309,10 +313,10 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
 
       # Test cluster coordination
       assert :ok = DistributedCacheLayer.put(cluster_key, test_data, 3600)
-      
+
       # Test cluster synchronization
       assert :ok = DistributedCacheLayer.sync_with_cluster()
-      
+
       # Verify cluster status
       assert {:ok, status} = DistributedCacheLayer.get_cluster_status()
       assert Map.has_key?(status, :node_id)
@@ -321,6 +325,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
 
     test "persistent cache maintains data integrity across restarts" do
       persistence_key = "restart_persistence_test"
+
       persistent_data = %{
         content: "Persistent across restarts",
         metadata: %{important: true, timestamp: System.system_time()}
@@ -328,7 +333,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
 
       # Store data
       assert :ok = PersistentCacheLayer.put(persistence_key, persistent_data, 86_400)
-      
+
       # Verify data exists
       assert {:ok, retrieved_data} = PersistentCacheLayer.get(persistence_key)
       assert retrieved_data.content == persistent_data.content
@@ -343,7 +348,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
   describe "performance benchmarking and optimization (2B.3.3-2B.3.6)" do
     test "cache performance meets sub-50ms resolution targets" do
       performance_keys = Enum.map(1..100, fn i -> "performance_benchmark_#{i}" end)
-      
+
       # Fill cache with test data
       for key <- performance_keys do
         test_data = %{key: key, benchmark: true}
@@ -351,13 +356,15 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
       end
 
       # Benchmark get operations
-      benchmark_results = Enum.map(performance_keys, fn key ->
-        {time_us, _result} = :timer.tc(fn ->
-          CacheManager.get(key, :auto)
+      benchmark_results =
+        Enum.map(performance_keys, fn key ->
+          {time_us, _result} =
+            :timer.tc(fn ->
+              CacheManager.get(key, :auto)
+            end)
+
+          time_us
         end)
-        
-        time_us
-      end)
 
       # Calculate average response time
       average_time_us = Enum.sum(benchmark_results) / length(benchmark_results)
@@ -374,7 +381,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
 
     test "cache hit rates exceed 95% with proper warming" do
       warming_test_keys = Enum.map(1..20, fn i -> "hit_rate_test_#{i}" end)
-      
+
       # Pre-warm cache
       for key <- warming_test_keys do
         test_data = "Hit rate test data #{key}"
@@ -385,25 +392,27 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
       assert :ok = CacheManager.warm_cache(warming_test_keys, :default)
 
       # Test hit rates
-      hit_results = Enum.map(warming_test_keys, fn key ->
-        case CacheManager.get(key, :auto) do
-          {:ok, _data} -> :hit
-          {:error, :cache_miss} -> :miss
-        end
-      end)
+      hit_results =
+        Enum.map(warming_test_keys, fn key ->
+          case CacheManager.get(key, :auto) do
+            {:ok, _data} -> :hit
+            {:error, :cache_miss} -> :miss
+          end
+        end)
 
       hits = Enum.count(hit_results, fn result -> result == :hit end)
       hit_rate = hits / length(hit_results)
 
       # Should achieve high hit rate with warming
-      assert hit_rate >= 0.8  # At least 80% hit rate
+      # At least 80% hit rate
+      assert hit_rate >= 0.8
     end
 
     test "cache optimization reduces memory usage and improves efficiency" do
       # Create memory pressure scenario
       memory_test_keys = Enum.map(1..100, fn i -> "memory_optimization_#{i}" end)
       large_data = String.duplicate("optimization test data ", 50)
-      
+
       # Fill cache
       for key <- memory_test_keys do
         assert :ok = CacheManager.put(key, large_data, :auto, 300)
@@ -411,7 +420,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
 
       # Get initial performance metrics
       {:ok, initial_metrics} = CacheManager.get_performance_metrics()
-      
+
       # Execute optimization
       assert :ok = CacheManager.optimize_cache()
 
@@ -425,7 +434,7 @@ defmodule RubberDuck.Prompts.MultiTierCachingIntegrationTest do
     test "intelligent warming improves cache effectiveness" do
       warming_candidates = [
         "intelligent_warm_1",
-        "intelligent_warm_2", 
+        "intelligent_warm_2",
         "intelligent_warm_3"
       ]
 

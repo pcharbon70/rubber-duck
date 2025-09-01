@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
   @moduledoc """
   Level 3 DETS-based persistent cache layer with background maintenance.
-  
+
   Provides long-term cache persistence using DETS with crash recovery,
   background maintenance tasks, and compact storage optimization.
   Designed for 24-hour cache retention with restart recovery capabilities.
-  
+
   Features:
   - DETS-based persistence for restart recovery and long-term cache retention
   - 24-hour TTL with background expiration and maintenance tasks
@@ -19,9 +19,12 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
   require Logger
 
   @dets_table_name :prompt_persistent_cache
-  @default_ttl_seconds 86_400  # 24 hours
-  @maintenance_interval_ms 3_600_000  # 1 hour
-  @compact_threshold 10_000  # Compact after 10k operations
+  # 24 hours
+  @default_ttl_seconds 86_400
+  # 1 hour
+  @maintenance_interval_ms 3_600_000
+  # Compact after 10k operations
+  @compact_threshold 10_000
 
   defstruct [
     :dets_table,
@@ -36,10 +39,10 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
 
   def init(opts) do
     config = build_persistent_config(opts)
-    
+
     # Initialize DETS table
     dets_path = build_dets_path(config)
-    
+
     case open_dets_table(dets_path) do
       {:ok, dets_table} ->
         state = %__MODULE__{
@@ -48,17 +51,17 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
           maintenance_state: initialize_maintenance_state(),
           storage_stats: initialize_storage_stats()
         }
-        
+
         # Schedule background maintenance
         schedule_maintenance_task()
-        
+
         Logger.info("PersistentCacheLayer: DETS persistent cache initialized",
           dets_file: dets_path,
           maintenance_interval: @maintenance_interval_ms
         )
-        
+
         {:ok, state}
-      
+
       {:error, reason} ->
         Logger.error("PersistentCacheLayer: Failed to initialize DETS", error: reason)
         {:stop, {:dets_initialization_failed, reason}}
@@ -95,33 +98,33 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
 
   def handle_call({:get, cache_key, _config}, _from, state) do
     get_start_time = System.monotonic_time(:microsecond)
-    
+
     case :dets.lookup(state.dets_table, cache_key) do
       [{^cache_key, data, expiry_time, metadata}] ->
         current_time = System.system_time(:second)
-        
+
         if current_time < expiry_time do
           # Update access metadata
           updated_metadata = Map.update(metadata, :access_count, 1, &(&1 + 1))
           :dets.insert(state.dets_table, {cache_key, data, expiry_time, updated_metadata})
-          
+
           get_time = System.monotonic_time(:microsecond) - get_start_time
-          
+
           Logger.debug("PersistentCacheLayer: Cache hit",
             cache_key: cache_key,
             get_time_us: get_time
           )
-          
+
           {:reply, {:ok, data}, state}
         else
           # Expired entry
           :dets.delete(state.dets_table, cache_key)
-          
+
           Logger.debug("PersistentCacheLayer: Expired entry removed", cache_key: cache_key)
-          
+
           {:reply, {:error, :cache_miss}, state}
         end
-      
+
       [] ->
         {:reply, {:error, :cache_miss}, state}
     end
@@ -129,48 +132,48 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
 
   def handle_call({:put, cache_key, data, ttl_seconds, _config}, _from, state) do
     put_start_time = System.monotonic_time(:microsecond)
-    
+
     ttl = ttl_seconds || @default_ttl_seconds
     expiry_time = System.system_time(:second) + ttl
-    
+
     metadata = %{
       created_at: System.system_time(:second),
       access_count: 0,
       data_size: estimate_data_size(data)
     }
-    
+
     case :dets.insert(state.dets_table, {cache_key, data, expiry_time, metadata}) do
       :ok ->
         put_time = System.monotonic_time(:microsecond) - put_start_time
-        
+
         # Update operation count for compaction trigger
         updated_maintenance_state = increment_operation_count(state.maintenance_state)
         updated_state = %{state | maintenance_state: updated_maintenance_state}
-        
+
         # Check if compaction is needed
         maybe_trigger_compaction(updated_state)
-        
+
         Logger.debug("PersistentCacheLayer: Entry persisted",
           cache_key: cache_key,
           ttl_seconds: ttl,
           put_time_us: put_time
         )
-        
+
         {:reply, :ok, updated_state}
-      
+
       {:error, reason} ->
         Logger.error("PersistentCacheLayer: Failed to persist entry",
           cache_key: cache_key,
           error: reason
         )
-        
+
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call(:get_storage_stats, _from, state) do
     dets_info = :dets.info(state.dets_table)
-    
+
     storage_stats = %{
       total_entries: Keyword.get(dets_info, :size, 0),
       file_size_bytes: Keyword.get(dets_info, :file_size, 0),
@@ -179,7 +182,7 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
       compaction_count: state.maintenance_state.compaction_count,
       repair_count: state.maintenance_state.repair_count
     }
-    
+
     {:reply, {:ok, storage_stats}, state}
   end
 
@@ -187,17 +190,17 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
     case :dets.info(state.dets_table, :repair) do
       false ->
         {:reply, {:ok, :no_repair_needed}, state}
-      
+
       true ->
         Logger.info("PersistentCacheLayer: Attempting DETS repair")
-        
+
         case repair_dets_table(state) do
           :ok ->
             updated_maintenance_state = increment_repair_count(state.maintenance_state)
             updated_state = %{state | maintenance_state: updated_maintenance_state}
-            
+
             {:reply, {:ok, :repair_completed}, updated_state}
-          
+
           {:error, reason} ->
             {:reply, {:error, {:repair_failed, reason}}, state}
         end
@@ -206,33 +209,34 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
 
   def handle_cast({:invalidate, cache_key_pattern, _config}, state) do
     invalidation_start_time = System.monotonic_time(:microsecond)
-    
+
     # Find matching entries
     matching_entries = find_matching_entries(cache_key_pattern, state)
-    
+
     # Delete matching entries
-    deleted_count = Enum.reduce(matching_entries, 0, fn {key, _data, _expiry, _metadata}, acc ->
-      case :dets.delete(state.dets_table, key) do
-        :ok -> acc + 1
-        {:error, _} -> acc
-      end
-    end)
-    
+    deleted_count =
+      Enum.reduce(matching_entries, 0, fn {key, _data, _expiry, _metadata}, acc ->
+        case :dets.delete(state.dets_table, key) do
+          :ok -> acc + 1
+          {:error, _} -> acc
+        end
+      end)
+
     invalidation_time = System.monotonic_time(:microsecond) - invalidation_start_time
-    
+
     Logger.info("PersistentCacheLayer: Cache invalidation completed",
       pattern: cache_key_pattern,
       deleted_count: deleted_count,
       invalidation_time_us: invalidation_time
     )
-    
+
     {:noreply, state}
   end
 
   def handle_cast(:compact_storage, state) do
     # Execute storage compaction
     execute_storage_compaction(state)
-    
+
     {:noreply, state}
   end
 
@@ -240,7 +244,7 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
     # Execute periodic maintenance
     updated_state = execute_maintenance_tasks(state)
     schedule_maintenance_task()
-    
+
     {:noreply, updated_state}
   end
 
@@ -248,44 +252,45 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
 
   defp execute_maintenance_tasks(state) do
     maintenance_start_time = System.monotonic_time(:microsecond)
-    
+
     # Execute various maintenance tasks
     cleanup_expired_entries(state)
     update_storage_statistics(state)
     maybe_execute_compaction(state)
-    
+
     maintenance_time = System.monotonic_time(:microsecond) - maintenance_start_time
-    
-    updated_maintenance_state = %{state.maintenance_state |
-      last_maintenance: System.system_time(:second),
-      maintenance_count: state.maintenance_state.maintenance_count + 1,
-      last_maintenance_time_us: maintenance_time
+
+    updated_maintenance_state = %{
+      state.maintenance_state
+      | last_maintenance: System.system_time(:second),
+        maintenance_count: state.maintenance_state.maintenance_count + 1,
+        last_maintenance_time_us: maintenance_time
     }
-    
+
     Logger.debug("PersistentCacheLayer: Maintenance completed",
       maintenance_time_us: maintenance_time
     )
-    
+
     %{state | maintenance_state: updated_maintenance_state}
   end
 
   defp cleanup_expired_entries(state) do
     # Remove expired entries
     current_time = System.system_time(:second)
-    
-    expired_keys = :dets.select(state.dets_table, [
-      {{:"$1", :"$2", :"$3", :"$4"},
-       [{:<, :"$3", current_time}],
-       [:"$1"]}
-    ])
-    
-    deleted_count = Enum.reduce(expired_keys, 0, fn key, acc ->
-      case :dets.delete(state.dets_table, key) do
-        :ok -> acc + 1
-        {:error, _} -> acc
-      end
-    end)
-    
+
+    expired_keys =
+      :dets.select(state.dets_table, [
+        {{:"$1", :"$2", :"$3", :"$4"}, [{:<, :"$3", current_time}], [:"$1"]}
+      ])
+
+    deleted_count =
+      Enum.reduce(expired_keys, 0, fn key, acc ->
+        case :dets.delete(state.dets_table, key) do
+          :ok -> acc + 1
+          {:error, _} -> acc
+        end
+      end)
+
     if deleted_count > 0 do
       Logger.debug("PersistentCacheLayer: Expired entries cleaned up",
         deleted_count: deleted_count
@@ -296,13 +301,14 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
   defp update_storage_statistics(state) do
     # Update storage statistics
     dets_info = :dets.info(state.dets_table)
-    
-    updated_stats = %{state.storage_stats |
-      total_entries: Keyword.get(dets_info, :size, 0),
-      file_size_bytes: Keyword.get(dets_info, :file_size, 0),
-      last_stats_update: System.system_time(:second)
+
+    updated_stats = %{
+      state.storage_stats
+      | total_entries: Keyword.get(dets_info, :size, 0),
+        file_size_bytes: Keyword.get(dets_info, :file_size, 0),
+        last_stats_update: System.system_time(:second)
     }
-    
+
     %{state | storage_stats: updated_stats}
   end
 
@@ -314,35 +320,36 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
 
   defp execute_storage_compaction(state) do
     compaction_start_time = System.monotonic_time(:microsecond)
-    
+
     Logger.info("PersistentCacheLayer: Starting storage compaction")
-    
+
     case :dets.close(state.dets_table) do
       :ok ->
         # Reopen table to trigger compaction
         dets_path = build_dets_path(state.config)
-        
+
         case :dets.open_file(state.dets_table, [{:file, String.to_charlist(dets_path)}]) do
           {:ok, _table} ->
             compaction_time = System.monotonic_time(:microsecond) - compaction_start_time
-            
+
             Logger.info("PersistentCacheLayer: Storage compaction completed",
               compaction_time_us: compaction_time
             )
-            
+
             # Reset operation count
-            updated_maintenance_state = %{state.maintenance_state |
-              operation_count: 0,
-              compaction_count: state.maintenance_state.compaction_count + 1
+            updated_maintenance_state = %{
+              state.maintenance_state
+              | operation_count: 0,
+                compaction_count: state.maintenance_state.compaction_count + 1
             }
-            
+
             %{state | maintenance_state: updated_maintenance_state}
-          
+
           {:error, reason} ->
             Logger.error("PersistentCacheLayer: Compaction failed", error: reason)
             state
         end
-      
+
       {:error, reason} ->
         Logger.error("PersistentCacheLayer: Failed to close DETS for compaction", error: reason)
         state
@@ -396,7 +403,7 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
   defp find_matching_entries(cache_key_pattern, state) do
     # Find entries matching pattern
     all_entries = :dets.match_object(state.dets_table, {:"$1", :"$2", :"$3", :"$4"})
-    
+
     Enum.filter(all_entries, fn {key, _data, _expiry, _metadata} ->
       String.contains?(to_string(key), cache_key_pattern)
     end)
@@ -412,7 +419,7 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
 
   defp should_compact?(state) do
     state.config.compaction_enabled and
-    state.maintenance_state.operation_count >= @compact_threshold
+      state.maintenance_state.operation_count >= @compact_threshold
   end
 
   defp maybe_trigger_compaction(state) do
@@ -426,12 +433,15 @@ defmodule RubberDuck.Prompts.Caching.PersistentCacheLayer do
     case :dets.close(state.dets_table) do
       :ok ->
         dets_path = build_dets_path(state.config)
-        
-        case :dets.open_file(state.dets_table, [{:file, String.to_charlist(dets_path)}, {:repair, true}]) do
+
+        case :dets.open_file(state.dets_table, [
+               {:file, String.to_charlist(dets_path)},
+               {:repair, true}
+             ]) do
           {:ok, _table} -> :ok
           {:error, reason} -> {:error, reason}
         end
-      
+
       {:error, reason} ->
         {:error, reason}
     end

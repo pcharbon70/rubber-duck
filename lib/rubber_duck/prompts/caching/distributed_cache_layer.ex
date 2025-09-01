@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
   @moduledoc """
   Level 2 distributed cache layer using GenServer and Registry coordination.
-  
+
   Provides cross-node cache sharing using pure BEAM technologies with Registry-based
   node coordination, Phoenix PubSub invalidation broadcasting, and cluster synchronization.
   Optimized for collaborative editing and distributed prompt access.
-  
+
   Features:
   - Cross-node prompt sharing using GenServer coordination and Registry discovery
   - 1-hour TTL for collaborative editing with automatic refresh and synchronization
@@ -20,8 +20,10 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
 
   @registry_name RubberDuck.Prompts.CacheRegistry
   @pubsub_topic "prompt_distributed_cache"
-  @default_ttl_seconds 3600  # 1 hour
-  @sync_interval_ms 300_000  # 5 minutes
+  # 1 hour
+  @default_ttl_seconds 3600
+  # 5 minutes
+  @sync_interval_ms 300_000
 
   defstruct [
     :node_id,
@@ -89,36 +91,36 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
 
   def handle_call({:get, cache_key, _config}, _from, state) do
     get_start_time = System.monotonic_time(:microsecond)
-    
+
     case lookup_in_local_store(cache_key, state) do
       {:ok, data} ->
         get_time = System.monotonic_time(:microsecond) - get_start_time
-        
+
         Logger.debug("DistributedCacheLayer: Local cache hit",
           cache_key: cache_key,
           node_id: state.node_id,
           get_time_us: get_time
         )
-        
+
         {:reply, {:ok, data}, state}
-      
+
       {:error, :cache_miss} ->
         # Try cluster nodes
         case lookup_in_cluster(cache_key, state) do
           {:ok, data, source_node} ->
             # Cache locally for future access
             store_in_local_cache(cache_key, data, @default_ttl_seconds, state)
-            
+
             get_time = System.monotonic_time(:microsecond) - get_start_time
-            
+
             Logger.debug("DistributedCacheLayer: Cluster cache hit",
               cache_key: cache_key,
               source_node: source_node,
               get_time_us: get_time
             )
-            
+
             {:reply, {:ok, data}, state}
-          
+
           {:error, :cache_miss} ->
             {:reply, {:error, :cache_miss}, state}
         end
@@ -127,26 +129,26 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
 
   def handle_call({:put, cache_key, data, ttl_seconds, _config}, _from, state) do
     put_start_time = System.monotonic_time(:microsecond)
-    
+
     ttl = ttl_seconds || @default_ttl_seconds
-    
+
     case store_in_local_cache(cache_key, data, ttl, state) do
       :ok ->
         # Broadcast to cluster if coordination enabled
         if state.coordination_config.broadcast_puts do
           broadcast_cache_update(cache_key, data, ttl, state)
         end
-        
+
         put_time = System.monotonic_time(:microsecond) - put_start_time
-        
+
         Logger.debug("DistributedCacheLayer: Entry cached and broadcasted",
           cache_key: cache_key,
           ttl_seconds: ttl,
           put_time_us: put_time
         )
-        
+
         {:reply, :ok, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -160,29 +162,29 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
       last_sync: state.sync_state.last_sync,
       coordination_enabled: state.coordination_config.enabled
     }
-    
+
     {:reply, {:ok, cluster_status}, state}
   end
 
   def handle_cast({:invalidate, cache_key_pattern, _config}, state) do
     # Invalidate local cache
     execute_local_invalidation(cache_key_pattern, state)
-    
+
     # Broadcast invalidation to cluster
     broadcast_cache_invalidation(cache_key_pattern, state)
-    
+
     Logger.info("DistributedCacheLayer: Cache invalidation broadcasted",
       pattern: cache_key_pattern,
       node_id: state.node_id
     )
-    
+
     {:noreply, state}
   end
 
   def handle_cast(:sync_with_cluster, state) do
     # Execute cluster synchronization
     updated_state = execute_cluster_synchronization(state)
-    
+
     {:noreply, updated_state}
   end
 
@@ -191,27 +193,30 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
     if source_node != Node.self() do
       # Process invalidation from other nodes
       execute_local_invalidation(pattern, state)
-      
+
       Logger.debug("DistributedCacheLayer: Processed cluster invalidation",
         pattern: pattern,
         source_node: source_node
       )
     end
-    
+
     {:noreply, state}
   end
 
-  def handle_info(%{type: :cache_update, key: cache_key, data: data, ttl: ttl, node: source_node}, state) do
+  def handle_info(
+        %{type: :cache_update, key: cache_key, data: data, ttl: ttl, node: source_node},
+        state
+      ) do
     if source_node != Node.self() do
       # Process cache update from other nodes
       store_in_local_cache(cache_key, data, ttl, state)
-      
+
       Logger.debug("DistributedCacheLayer: Processed cluster cache update",
         cache_key: cache_key,
         source_node: source_node
       )
     end
-    
+
     {:noreply, state}
   end
 
@@ -219,7 +224,7 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
     # Execute periodic cluster synchronization
     updated_state = execute_cluster_synchronization(state)
     schedule_cluster_sync()
-    
+
     {:noreply, updated_state}
   end
 
@@ -237,14 +242,14 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
     case :ets.lookup(state.cache_store, cache_key) do
       [{^cache_key, data, expiry_time}] ->
         current_time = System.system_time(:second)
-        
+
         if current_time < expiry_time do
           {:ok, data}
         else
           :ets.delete(state.cache_store, cache_key)
           {:error, :cache_miss}
         end
-      
+
       [] ->
         {:error, :cache_miss}
     end
@@ -252,22 +257,23 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
 
   defp lookup_in_cluster(cache_key, state) do
     # Try to find cache entry in cluster nodes
-    cluster_results = Enum.map(state.cluster_nodes, fn {pid, node_id} ->
-      try do
-        case GenServer.call(pid, {:cluster_lookup, cache_key}, 5000) do
-          {:ok, data} -> {:ok, data, node_id}
-          {:error, :cache_miss} -> {:error, :cache_miss}
+    cluster_results =
+      Enum.map(state.cluster_nodes, fn {pid, node_id} ->
+        try do
+          case GenServer.call(pid, {:cluster_lookup, cache_key}, 5000) do
+            {:ok, data} -> {:ok, data, node_id}
+            {:error, :cache_miss} -> {:error, :cache_miss}
+          end
+        rescue
+          _ -> {:error, :node_unavailable}
         end
-      rescue
-        _ -> {:error, :node_unavailable}
-      end
-    end)
-    
+      end)
+
     # Return first successful result
     case Enum.find(cluster_results, fn
-      {:ok, _data, _node} -> true
-      _ -> false
-    end) do
+           {:ok, _data, _node} -> true
+           _ -> false
+         end) do
       {:ok, data, source_node} -> {:ok, data, source_node}
       nil -> {:error, :cache_miss}
     end
@@ -282,16 +288,17 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
   defp execute_local_invalidation(cache_key_pattern, state) do
     # Find and delete matching local entries
     matching_entries = :ets.match(state.cache_store, {:"$1", :"$2", :"$3"})
-    
-    deleted_count = Enum.reduce(matching_entries, 0, fn [key, _data, _expiry], acc ->
-      if String.contains?(to_string(key), cache_key_pattern) do
-        :ets.delete(state.cache_store, key)
-        acc + 1
-      else
-        acc
-      end
-    end)
-    
+
+    deleted_count =
+      Enum.reduce(matching_entries, 0, fn [key, _data, _expiry], acc ->
+        if String.contains?(to_string(key), cache_key_pattern) do
+          :ets.delete(state.cache_store, key)
+          acc + 1
+        else
+          acc
+        end
+      end)
+
     Logger.debug("DistributedCacheLayer: Local invalidation completed",
       pattern: cache_key_pattern,
       deleted_count: deleted_count
@@ -305,7 +312,7 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
       node: Node.self(),
       timestamp: System.system_time(:second)
     }
-    
+
     Phoenix.PubSub.broadcast(RubberDuck.PubSub, @pubsub_topic, message)
   end
 
@@ -318,23 +325,21 @@ defmodule RubberDuck.Prompts.Caching.DistributedCacheLayer do
       node: Node.self(),
       timestamp: System.system_time(:second)
     }
-    
+
     Phoenix.PubSub.broadcast(RubberDuck.PubSub, @pubsub_topic, message)
   end
 
   defp execute_cluster_synchronization(state) do
     # Update cluster node list
     updated_cluster_nodes = discover_cluster_nodes()
-    
-    updated_sync_state = %{state.sync_state |
-      last_sync: System.system_time(:second),
-      sync_count: state.sync_state.sync_count + 1
+
+    updated_sync_state = %{
+      state.sync_state
+      | last_sync: System.system_time(:second),
+        sync_count: state.sync_state.sync_count + 1
     }
-    
-    %{state |
-      cluster_nodes: updated_cluster_nodes,
-      sync_state: updated_sync_state
-    }
+
+    %{state | cluster_nodes: updated_cluster_nodes, sync_state: updated_sync_state}
   end
 
   # Utility functions
