@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
   @moduledoc """
   Intelligent token optimization service for model-specific prompt compression.
-  
+
   Provides intelligent prompt compression for token limits with priority-based content
   reduction strategies and semantic integrity preservation. Supports model-specific
   optimization for different LLM providers with quality validation.
-  
+
   Features:
   - Intelligent prompt compression for model-specific token limits with semantic preservation
   - Priority-based content reduction strategies with importance scoring and selective compression
@@ -39,14 +39,16 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     target_model: "gpt-4",
     compression_strategy: :priority_reduction,
     preserve_semantic_integrity: true,
-    max_compression_ratio: 0.3,  # Maximum 30% reduction
-    quality_threshold: 0.8,      # Minimum quality score
+    # Maximum 30% reduction
+    max_compression_ratio: 0.3,
+    # Minimum quality score
+    quality_threshold: 0.8,
     enable_performance_tracking: true
   }
 
   def optimize(content, options \\ %{}) do
     merged_options = Map.merge(@default_optimization_options, options)
-    
+
     Logger.debug("TokenOptimizer: Starting token optimization",
       content_length: String.length(content),
       target_model: merged_options.target_model,
@@ -57,13 +59,15 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
 
     with {:ok, current_token_count} <- estimate_token_count(content, merged_options.target_model),
          {:ok, token_limit} <- get_model_token_limit(merged_options.target_model),
-         {:ok, optimization_needed} <- assess_optimization_necessity(current_token_count, token_limit, merged_options),
-         {:ok, optimized_content} <- execute_optimization_if_needed(content, optimization_needed, merged_options),
-         {:ok, validated_content} <- validate_optimization_quality(content, optimized_content, merged_options) do
-      
+         {:ok, optimization_needed} <-
+           assess_optimization_necessity(current_token_count, token_limit, merged_options),
+         {:ok, optimized_content} <-
+           execute_optimization_if_needed(content, optimization_needed, merged_options),
+         {:ok, validated_content} <-
+           validate_optimization_quality(content, optimized_content, merged_options) do
       optimization_time = System.monotonic_time(:microsecond) - optimization_start_time
       final_token_count = estimate_token_count(validated_content, merged_options.target_model)
-      
+
       Logger.info("TokenOptimizer: Token optimization completed",
         original_tokens: current_token_count,
         final_tokens: final_token_count,
@@ -71,18 +75,19 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
         optimization_time_us: optimization_time
       )
 
-      {:ok, %{
-        content: validated_content,
-        optimization_metadata: %{
-          optimization_time_microseconds: optimization_time,
-          original_token_count: current_token_count,
-          final_token_count: final_token_count,
-          compression_ratio: calculate_compression_ratio(current_token_count, final_token_count),
-          strategy_used: merged_options.compression_strategy,
-          quality_preserved: true,
-          model_optimized: merged_options.target_model
-        }
-      }}
+      {:ok,
+       %{
+         content: validated_content,
+         optimization_metadata: %{
+           optimization_time_microseconds: optimization_time,
+           original_token_count: current_token_count,
+           final_token_count: final_token_count,
+           compression_ratio: calculate_compression_ratio(current_token_count, final_token_count),
+           strategy_used: merged_options.compression_strategy,
+           quality_preserved: true,
+           model_optimized: merged_options.target_model
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("TokenOptimizer: Token optimization failed", error: reason)
@@ -102,9 +107,9 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     # Get recommendations for content compression
     current_tokens = estimate_tokens_for_model(content, target_model)
     target_tokens = round(current_tokens * (1 - target_reduction))
-    
+
     recommendations = analyze_compression_opportunities(content, current_tokens, target_tokens)
-    
+
     %{
       current_tokens: current_tokens,
       target_tokens: target_tokens,
@@ -121,10 +126,17 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     case model_name do
       model when model in ["gpt-4", "gpt-3.5-turbo"] ->
         {:ok, estimate_openai_tokens(content)}
-      
-      model when model in ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku", "claude-2.1", "claude-2"] ->
+
+      model
+      when model in [
+             "claude-3-opus",
+             "claude-3-sonnet",
+             "claude-3-haiku",
+             "claude-2.1",
+             "claude-2"
+           ] ->
         {:ok, estimate_anthropic_tokens(content)}
-      
+
       _ ->
         {:ok, estimate_generic_token_count(content)}
     end
@@ -147,7 +159,8 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
   defp estimate_generic_token_count(content) do
     # Generic token estimation
     words = String.split(content, ~r/\s+/)
-    round(length(words) / 0.75)  # Conservative estimate
+    # Conservative estimate
+    round(length(words) / 0.75)
   end
 
   defp get_model_token_limit(model_name) do
@@ -160,21 +173,22 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
   defp assess_optimization_necessity(current_tokens, token_limit, options) do
     # Assess whether optimization is needed
     utilization_ratio = current_tokens / token_limit
-    
-    optimization_needed = cond do
-      current_tokens > token_limit ->
-        %{required: true, reason: :exceeds_limit, severity: :critical}
-      
-      utilization_ratio > 0.9 ->
-        %{required: true, reason: :approaching_limit, severity: :high}
-      
-      utilization_ratio > 0.7 ->
-        %{required: false, reason: :preventive_optimization, severity: :medium}
-      
-      true ->
-        %{required: false, reason: :within_limits, severity: :low}
-    end
-    
+
+    optimization_needed =
+      cond do
+        current_tokens > token_limit ->
+          %{required: true, reason: :exceeds_limit, severity: :critical}
+
+        utilization_ratio > 0.9 ->
+          %{required: true, reason: :approaching_limit, severity: :high}
+
+        utilization_ratio > 0.7 ->
+          %{required: false, reason: :preventive_optimization, severity: :medium}
+
+        true ->
+          %{required: false, reason: :within_limits, severity: :low}
+      end
+
     {:ok, optimization_needed}
   end
 
@@ -190,13 +204,13 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     case options.compression_strategy do
       :priority_reduction ->
         execute_priority_reduction(content, assessment, options)
-      
+
       :semantic_compression ->
         execute_semantic_compression(content, assessment, options)
-      
+
       :redundancy_elimination ->
         execute_redundancy_elimination(content, assessment, options)
-      
+
       :model_specific_optimization ->
         execute_model_specific_optimization(content, assessment, options)
     end
@@ -209,12 +223,12 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
         # Aggressive reduction needed
         compressed = apply_aggressive_compression(content, options)
         {:ok, compressed}
-      
+
       :high ->
         # Moderate reduction needed
         compressed = apply_moderate_compression(content, options)
         {:ok, compressed}
-      
+
       _ ->
         # Light optimization
         compressed = apply_light_optimization(content, options)
@@ -224,21 +238,23 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
 
   defp execute_semantic_compression(content, _assessment, _options) do
     # Semantic-aware compression preserving meaning
-    compressed = content
-    |> remove_redundant_phrases()
-    |> compress_verbose_expressions()
-    |> optimize_sentence_structure()
-    
+    compressed =
+      content
+      |> remove_redundant_phrases()
+      |> compress_verbose_expressions()
+      |> optimize_sentence_structure()
+
     {:ok, compressed}
   end
 
   defp execute_redundancy_elimination(content, _assessment, _options) do
     # Remove redundant content and repetitive patterns
-    compressed = content
-    |> remove_duplicate_sentences()
-    |> eliminate_filler_words()
-    |> compress_repetitive_patterns()
-    
+    compressed =
+      content
+      |> remove_duplicate_sentences()
+      |> eliminate_filler_words()
+      |> compress_repetitive_patterns()
+
     {:ok, compressed}
   end
 
@@ -247,10 +263,10 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     case options.target_model do
       model when model in ["gpt-4", "gpt-3.5-turbo"] ->
         {:ok, optimize_for_openai(content)}
-      
+
       model when model in ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku"] ->
         {:ok, optimize_for_anthropic(content)}
-      
+
       _ ->
         {:ok, apply_generic_optimization(content)}
     end
@@ -259,7 +275,7 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
   defp validate_optimization_quality(original_content, optimized_content, options) do
     if options.preserve_semantic_integrity do
       quality_score = calculate_semantic_quality_score(original_content, optimized_content)
-      
+
       if quality_score >= options.quality_threshold do
         {:ok, optimized_content}
       else
@@ -267,6 +283,7 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
           quality_score: quality_score,
           threshold: options.quality_threshold
         )
+
         {:error, {:quality_threshold_not_met, quality_score}}
       end
     else
@@ -280,7 +297,8 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     # Aggressive compression for critical token limit situations
     content
     |> String.split(~r/\.\s+/)
-    |> Enum.take_every(2)  # Keep every other sentence
+    # Keep every other sentence
+    |> Enum.take_every(2)
     |> Enum.join(". ")
     |> eliminate_filler_words()
   end
@@ -309,7 +327,7 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
       ~r/\bin\s+order\s+to\b/i,
       ~r/\bfor\s+the\s+purpose\s+of\b/i
     ]
-    
+
     Enum.reduce(redundant_patterns, content, fn pattern, acc ->
       String.replace(acc, pattern, "")
     end)
@@ -323,7 +341,7 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
       {~r/\bfor\s+the\s+reason\s+that\b/i, "because"},
       {~r/\bin\s+spite\s+of\s+the\s+fact\s+that\b/i, "although"}
     ]
-    
+
     Enum.reduce(compression_map, content, fn {pattern, replacement}, acc ->
       String.replace(acc, pattern, replacement)
     end)
@@ -339,21 +357,31 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
 
   defp remove_duplicate_sentences(content) do
     # Remove duplicate sentences
-    sentences = String.split(content, ~r/[.!?]+\s*/)
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.uniq()
-    
+    sentences =
+      String.split(content, ~r/[.!?]+\s*/)
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.uniq()
+
     Enum.join(sentences, ". ")
   end
 
   defp eliminate_filler_words(content) do
     # Remove common filler words
     filler_words = [
-      "basically", "actually", "literally", "really", "very", "quite", 
-      "rather", "pretty", "somewhat", "kind of", "sort of"
+      "basically",
+      "actually",
+      "literally",
+      "really",
+      "very",
+      "quite",
+      "rather",
+      "pretty",
+      "somewhat",
+      "kind of",
+      "sort of"
     ]
-    
+
     filler_pattern = ~r/\b(#{Enum.join(filler_words, "|")})\s+/i
     String.replace(content, filler_pattern, "")
   end
@@ -361,8 +389,10 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
   defp compress_repetitive_patterns(content) do
     # Compress repetitive patterns and structures
     content
-    |> String.replace(~r/(\w+)\s+\1\b/i, "\\1")  # Remove repeated words
-    |> String.replace(~r/\s{2,}/, " ")           # Multiple spaces to single
+    # Remove repeated words
+    |> String.replace(~r/(\w+)\s+\1\b/i, "\\1")
+    # Multiple spaces to single
+    |> String.replace(~r/\s{2,}/, " ")
     |> String.trim()
   end
 
@@ -407,17 +437,20 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
 
   defp preserve_reasoning_structure(content) do
     # Preserve logical reasoning structure
-    content  # Placeholder - would implement sophisticated reasoning preservation
+    # Placeholder - would implement sophisticated reasoning preservation
+    content
   end
 
   defp enhance_helpfulness_cues(content) do
     # Enhance cues for helpful responses
-    content  # Placeholder - would implement helpfulness enhancement
+    # Placeholder - would implement helpfulness enhancement
+    content
   end
 
   defp ensure_helpful_harmless_honest_structure(content) do
     # Ensure content follows HHH principles
-    content  # Placeholder - would implement HHH optimization
+    # Placeholder - would implement HHH optimization
+    content
   end
 
   # Quality and validation functions
@@ -426,11 +459,11 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     # Calculate semantic similarity score between original and optimized content
     original_words = extract_important_words(original_content)
     optimized_words = extract_important_words(optimized_content)
-    
+
     # Simple overlap-based similarity
     common_words = MapSet.intersection(original_words, optimized_words)
     union_words = MapSet.union(original_words, optimized_words)
-    
+
     case MapSet.size(union_words) do
       0 -> 1.0
       _ -> MapSet.size(common_words) / MapSet.size(union_words)
@@ -439,11 +472,32 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
 
   defp extract_important_words(content) do
     # Extract semantically important words (excluding stop words)
-    stop_words = MapSet.new([
-      "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", 
-      "of", "with", "by", "is", "are", "was", "were", "be", "been", "have", "has"
-    ])
-    
+    stop_words =
+      MapSet.new([
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "have",
+        "has"
+      ])
+
     content
     |> String.downcase()
     |> String.split(~r/\W+/)
@@ -454,7 +508,7 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
   defp analyze_compression_opportunities(content, current_tokens, target_tokens) do
     # Analyze compression opportunities in the content
     reduction_needed = current_tokens - target_tokens
-    
+
     %{
       redundancy_elimination: analyze_redundancy_potential(content),
       verbose_expression_compression: analyze_verbosity_potential(content),
@@ -468,9 +522,9 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     # Analyze potential for redundancy elimination
     sentences = String.split(content, ~r/[.!?]+/)
     unique_sentences = Enum.uniq(sentences)
-    
+
     redundancy_ratio = (length(sentences) - length(unique_sentences)) / max(length(sentences), 1)
-    
+
     %{
       redundancy_ratio: redundancy_ratio,
       estimated_reduction: redundancy_ratio * 0.8,
@@ -485,14 +539,17 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
       ~r/\bdue\s+to\s+the\s+fact\s+that\b/i,
       ~r/\bfor\s+the\s+purpose\s+of\b/i
     ]
-    
-    verbose_matches = Enum.map(verbose_patterns, fn pattern ->
-      length(Regex.scan(pattern, content))
-    end) |> Enum.sum()
-    
+
+    verbose_matches =
+      Enum.map(verbose_patterns, fn pattern ->
+        length(Regex.scan(pattern, content))
+      end)
+      |> Enum.sum()
+
     %{
       verbose_expressions_found: verbose_matches,
-      estimated_reduction: verbose_matches * 3,  # Roughly 3 tokens saved per expression
+      # Roughly 3 tokens saved per expression
+      estimated_reduction: verbose_matches * 3,
       confidence: :high
     }
   end
@@ -501,41 +558,45 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
     # Analyze potential for filler word removal
     filler_pattern = ~r/\b(very|really|quite|rather|pretty|somewhat)\s+/i
     filler_matches = length(Regex.scan(filler_pattern, content))
-    
+
     %{
       filler_words_found: filler_matches,
-      estimated_reduction: filler_matches,  # 1 token saved per filler word
+      # 1 token saved per filler word
+      estimated_reduction: filler_matches,
       confidence: :high
     }
   end
 
   defp analyze_structure_optimization_potential(content) do
     # Analyze potential for sentence structure optimization
-    long_sentences = content
-    |> String.split(~r/[.!?]+/)
-    |> Enum.count(fn sentence -> 
-      word_count = length(String.split(sentence, ~r/\s+/))
-      word_count > 20
-    end)
-    
+    long_sentences =
+      content
+      |> String.split(~r/[.!?]+/)
+      |> Enum.count(fn sentence ->
+        word_count = length(String.split(sentence, ~r/\s+/))
+        word_count > 20
+      end)
+
     %{
       long_sentences_found: long_sentences,
-      estimated_reduction: long_sentences * 5,  # Roughly 5 tokens saved per long sentence
+      # Roughly 5 tokens saved per long sentence
+      estimated_reduction: long_sentences * 5,
       confidence: :medium
     }
   end
 
   defp estimate_quality_impact(recommendations) do
     # Estimate overall quality impact of compression recommendations
-    total_reduction = recommendations.redundancy_elimination.estimated_reduction +
-                     recommendations.verbose_expression_compression.estimated_reduction +
-                     recommendations.filler_word_removal.estimated_reduction +
-                     recommendations.sentence_structure_optimization.estimated_reduction
-    
+    total_reduction =
+      recommendations.redundancy_elimination.estimated_reduction +
+        recommendations.verbose_expression_compression.estimated_reduction +
+        recommendations.filler_word_removal.estimated_reduction +
+        recommendations.sentence_structure_optimization.estimated_reduction
+
     # Quality impact increases with compression amount
     case total_reduction do
       reduction when reduction < 50 -> :minimal_impact
-      reduction when reduction < 150 -> :low_impact  
+      reduction when reduction < 150 -> :low_impact
       reduction when reduction < 300 -> :medium_impact
       _ -> :high_impact
     end

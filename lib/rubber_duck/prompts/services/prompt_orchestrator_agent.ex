@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
   @moduledoc """
   Prompt composition coordination agent with comprehensive management capabilities.
-  
+
   Coordinates complete prompt composition pipeline including retrieval, composition,
   validation, caching management, and usage analytics. Provides centralized orchestration
   for all prompt-related operations with performance monitoring and optimization.
-  
+
   Features:
   - Complete prompt composition pipeline coordination with hierarchical resolution and optimization
   - Prompt caching management with intelligent warming, eviction, and coherence strategies
@@ -20,8 +20,16 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
     schema: [
       prompt_name: [type: :string, required: true, doc: "Name of prompt to orchestrate"],
       composition_context: [type: :map, required: true, doc: "Context for prompt composition"],
-      orchestration_options: [type: :map, default: %{}, doc: "Orchestration configuration options"],
-      performance_targets: [type: :map, default: %{}, doc: "Performance targets and optimization goals"],
+      orchestration_options: [
+        type: :map,
+        default: %{},
+        doc: "Orchestration configuration options"
+      ],
+      performance_targets: [
+        type: :map,
+        default: %{},
+        doc: "Performance targets and optimization goals"
+      ],
       security_requirements: [type: :map, default: %{}, doc: "Security validation requirements"],
       caching_strategy: [
         type: :atom,
@@ -31,7 +39,7 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
     ]
 
   require Logger
-  
+
   alias RubberDuck.Prompts.{
     Composition.CompositionEngine,
     Services.CompositionCache,
@@ -73,11 +81,11 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
     with {:ok, validated_params} <- validate_orchestration_params(params),
          {:ok, orchestration_plan} <- create_orchestration_plan(validated_params, context),
          {:ok, composition_result} <- execute_prompt_composition(orchestration_plan),
-         {:ok, validated_result} <- validate_composition_result(composition_result, orchestration_plan),
+         {:ok, validated_result} <-
+           validate_composition_result(composition_result, orchestration_plan),
          {:ok, analytics_result} <- record_usage_analytics(validated_result, orchestration_plan) do
-      
       orchestration_time = System.monotonic_time(:microsecond) - orchestration_start_time
-      
+
       Logger.info("PromptOrchestratorAgent: Orchestration completed successfully",
         prompt_name: params.prompt_name,
         orchestration_time_us: orchestration_time,
@@ -85,29 +93,31 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
         cache_hit: Map.get(validated_result, :cache_hit, false)
       )
 
-      {:ok, %{
-        orchestration_result: validated_result,
-        orchestration_metadata: %{
-          orchestration_time_microseconds: orchestration_time,
-          prompt_name: params.prompt_name,
-          composition_successful: true,
-          caching_strategy_used: params.caching_strategy,
-          performance_targets_met: validate_performance_targets(validated_result, orchestration_plan),
-          security_validation_passed: Map.get(validated_result, :security_validated, false),
-          usage_analytics_recorded: analytics_result.analytics_recorded
-        }
-      }}
+      {:ok,
+       %{
+         orchestration_result: validated_result,
+         orchestration_metadata: %{
+           orchestration_time_microseconds: orchestration_time,
+           prompt_name: params.prompt_name,
+           composition_successful: true,
+           caching_strategy_used: params.caching_strategy,
+           performance_targets_met:
+             validate_performance_targets(validated_result, orchestration_plan),
+           security_validation_passed: Map.get(validated_result, :security_validated, false),
+           usage_analytics_recorded: analytics_result.analytics_recorded
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("PromptOrchestratorAgent: Orchestration failed",
           prompt_name: params.prompt_name,
           error: reason
         )
-        
+
         case attempt_fallback_orchestration(params, reason, context) do
           {:ok, fallback_result} ->
             {:error, {:orchestration_failed_with_fallback, reason, fallback_result}}
-          
+
           {:error, fallback_error} ->
             {:error, {:orchestration_failed, reason, fallback_error}}
         end
@@ -120,14 +130,17 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
     with :ok <- validate_prompt_name(params.prompt_name),
          :ok <- validate_composition_context(params.composition_context),
          :ok <- validate_caching_strategy(params.caching_strategy) do
-      
-      validated_params = Map.merge(params, %{
-        orchestration_options: Map.merge(@default_orchestration_options, params.orchestration_options),
-        performance_targets: Map.merge(@default_performance_targets, params.performance_targets),
-        security_requirements: Map.merge(@default_security_requirements, params.security_requirements),
-        validation_timestamp: DateTime.utc_now()
-      })
-      
+      validated_params =
+        Map.merge(params, %{
+          orchestration_options:
+            Map.merge(@default_orchestration_options, params.orchestration_options),
+          performance_targets:
+            Map.merge(@default_performance_targets, params.performance_targets),
+          security_requirements:
+            Map.merge(@default_security_requirements, params.security_requirements),
+          validation_timestamp: DateTime.utc_now()
+        })
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -140,7 +153,10 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
   defp validate_composition_context(context) when is_map(context), do: :ok
   defp validate_composition_context(_), do: {:error, :invalid_composition_context}
 
-  defp validate_caching_strategy(strategy) when strategy in [:intelligent, :aggressive, :conservative, :disabled], do: :ok
+  defp validate_caching_strategy(strategy)
+       when strategy in [:intelligent, :aggressive, :conservative, :disabled],
+       do: :ok
+
   defp validate_caching_strategy(_), do: {:error, :invalid_caching_strategy}
 
   defp create_orchestration_plan(validated_params, context) do
@@ -156,12 +172,12 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
       monitoring_config: create_monitoring_configuration(validated_params),
       context: context
     }
-    
+
     Logger.debug("PromptOrchestratorAgent: Orchestration plan created",
       orchestration_id: orchestration_plan.orchestration_id,
       execution_steps: length(orchestration_plan.execution_steps)
     )
-    
+
     {:ok, orchestration_plan}
   end
 
@@ -173,19 +189,20 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
       optimize_tokens: true,
       performance_tracking: orchestration_plan.orchestration_options.performance_monitoring
     }
-    
+
     case CompositionEngine.compose_prompt(
-      orchestration_plan.prompt_name,
-      orchestration_plan.composition_context,
-      composition_options
-    ) do
+           orchestration_plan.prompt_name,
+           orchestration_plan.composition_context,
+           composition_options
+         ) do
       {:ok, composition_result} ->
-        {:ok, Map.merge(composition_result, %{
-          orchestration_id: orchestration_plan.orchestration_id,
-          cache_hit: determine_cache_hit_status(composition_result),
-          security_validated: composition_options.validate_security
-        })}
-      
+        {:ok,
+         Map.merge(composition_result, %{
+           orchestration_id: orchestration_plan.orchestration_id,
+           cache_hit: determine_cache_hit_status(composition_result),
+           security_validated: composition_options.validate_security
+         })}
+
       {:error, reason} ->
         {:error, {:composition_execution_failed, reason}}
     end
@@ -194,21 +211,24 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
   defp validate_composition_result(composition_result, orchestration_plan) do
     validation_results = %{
       content_validation: validate_content_quality(composition_result.content),
-      performance_validation: validate_performance_targets(composition_result, orchestration_plan),
+      performance_validation:
+        validate_performance_targets(composition_result, orchestration_plan),
       security_validation: validate_security_requirements(composition_result, orchestration_plan),
       token_validation: validate_token_limits(composition_result, orchestration_plan)
     }
-    
-    overall_valid = validation_results.content_validation.valid &&
-                   validation_results.performance_validation.valid &&
-                   validation_results.security_validation.valid &&
-                   validation_results.token_validation.valid
-    
+
+    overall_valid =
+      validation_results.content_validation.valid &&
+        validation_results.performance_validation.valid &&
+        validation_results.security_validation.valid &&
+        validation_results.token_validation.valid
+
     if overall_valid do
-      {:ok, Map.merge(composition_result, %{
-        validation_results: validation_results,
-        validation_passed: true
-      })}
+      {:ok,
+       Map.merge(composition_result, %{
+         validation_results: validation_results,
+         validation_passed: true
+       })}
     else
       {:error, {:validation_failed, validation_results}}
     end
@@ -221,7 +241,8 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
         prompt_id: get_primary_prompt_id(composition_result),
         used_by_id: Map.get(orchestration_plan.context, :user_id),
         context_type: :template_expansion,
-        response_time_ms: div(composition_result.composition_metadata.composition_time_microseconds, 1_000),
+        response_time_ms:
+          div(composition_result.composition_metadata.composition_time_microseconds, 1_000),
         tokens_used: composition_result.composition_metadata.final_token_count,
         success: true,
         performance_metrics: %{
@@ -230,11 +251,11 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
           security_validated: Map.get(composition_result, :security_validated, false)
         }
       }
-      
+
       case record_composition_usage(usage_data) do
         {:ok, _usage_record} ->
           {:ok, %{analytics_recorded: true}}
-        
+
         {:error, reason} ->
           Logger.warn("PromptOrchestratorAgent: Failed to record analytics", error: reason)
           {:ok, %{analytics_recorded: false, analytics_error: reason}}
@@ -250,18 +271,26 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
     %{
       enabled: caching_strategy != :disabled,
       strategy: caching_strategy,
-      ets_ttl: case caching_strategy do
-        :aggressive -> 300   # 5 minutes
-        :intelligent -> 60   # 1 minute
-        :conservative -> 30  # 30 seconds
-        :disabled -> 0
-      end,
-      redis_ttl: case caching_strategy do
-        :aggressive -> 7200  # 2 hours
-        :intelligent -> 3600 # 1 hour
-        :conservative -> 1800 # 30 minutes
-        :disabled -> 0
-      end
+      ets_ttl:
+        case caching_strategy do
+          # 5 minutes
+          :aggressive -> 300
+          # 1 minute
+          :intelligent -> 60
+          # 30 seconds
+          :conservative -> 30
+          :disabled -> 0
+        end,
+      redis_ttl:
+        case caching_strategy do
+          # 2 hours
+          :aggressive -> 7200
+          # 1 hour
+          :intelligent -> 3600
+          # 30 minutes
+          :conservative -> 1800
+          :disabled -> 0
+        end
     }
   end
 
@@ -274,16 +303,17 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
       {:optimize_token_usage, "Optimize token usage and compression"},
       {:record_usage_analytics, "Record usage analytics and performance metrics"}
     ]
-    
+
     # Add optional steps based on configuration
     optional_steps = []
-    
-    optional_steps = if validated_params.orchestration_options.enable_caching do
-      [{:manage_cache_operations, "Manage caching operations and coherence"} | optional_steps]
-    else
-      optional_steps
-    end
-    
+
+    optional_steps =
+      if validated_params.orchestration_options.enable_caching do
+        [{:manage_cache_operations, "Manage caching operations and coherence"} | optional_steps]
+      else
+        optional_steps
+      end
+
     base_steps ++ optional_steps
   end
 
@@ -299,10 +329,11 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
   defp determine_cache_hit_status(composition_result) do
     # Determine if composition used cached data
     metadata = composition_result.composition_metadata
-    
+
     # Check if composition time was very fast (likely cached)
     composition_time_ms = div(metadata.composition_time_microseconds, 1_000)
-    composition_time_ms < 10  # Sub-10ms likely indicates cache hit
+    # Sub-10ms likely indicates cache hit
+    composition_time_ms < 10
   end
 
   defp validate_content_quality(content) do
@@ -316,22 +347,25 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
   defp validate_performance_targets(composition_result, orchestration_plan) do
     targets = orchestration_plan.performance_targets
     metadata = composition_result.composition_metadata
-    
+
     composition_time_ms = div(metadata.composition_time_microseconds, 1_000)
-    
+
     %{
       valid: composition_time_ms <= targets.max_composition_time_ms,
       composition_time_ms: composition_time_ms,
       target_time_ms: targets.max_composition_time_ms,
-      performance_score: calculate_performance_score(composition_time_ms, targets.max_composition_time_ms)
+      performance_score:
+        calculate_performance_score(composition_time_ms, targets.max_composition_time_ms)
     }
   end
 
   defp validate_security_requirements(composition_result, orchestration_plan) do
     requirements = orchestration_plan.security_requirements
-    
+
     %{
-      valid: Map.get(composition_result, :security_validated, false) || not requirements.validate_variables,
+      valid:
+        Map.get(composition_result, :security_validated, false) ||
+          not requirements.validate_variables,
       security_validated: Map.get(composition_result, :security_validated, false),
       injection_prevention_active: requirements.prevent_injection,
       content_sanitization_active: requirements.sanitize_content
@@ -341,12 +375,13 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
   defp validate_token_limits(composition_result, orchestration_plan) do
     targets = orchestration_plan.performance_targets
     metadata = composition_result.composition_metadata
-    
+
     %{
       valid: metadata.final_token_count <= targets.max_token_count,
       final_token_count: metadata.final_token_count,
       token_limit: targets.max_token_count,
-      token_efficiency: calculate_token_efficiency(metadata.final_token_count, targets.max_token_count)
+      token_efficiency:
+        calculate_token_efficiency(metadata.final_token_count, targets.max_token_count)
     }
   end
 
@@ -368,14 +403,14 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
     Logger.info("PromptOrchestratorAgent: Attempting fallback orchestration",
       prompt_name: params.prompt_name
     )
-    
+
     # Simple fallback to basic system prompt
     fallback_result = %{
       content: "System fallback: Please {{instruction}}.",
       fallback_used: true,
       original_prompt_name: params.prompt_name
     }
-    
+
     {:ok, fallback_result}
   end
 
@@ -384,29 +419,32 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
   defp calculate_content_quality_score(content) do
     # Calculate content quality based on various factors
     base_score = 0.5
-    
+
     # Length factor (neither too short nor too long)
-    length_factor = case String.length(content) do
-      len when len < 50 -> 0.6
-      len when len < 200 -> 1.0
-      len when len < 1000 -> 0.9
-      _ -> 0.7
-    end
-    
+    length_factor =
+      case String.length(content) do
+        len when len < 50 -> 0.6
+        len when len < 200 -> 1.0
+        len when len < 1000 -> 0.9
+        _ -> 0.7
+      end
+
     # Variable factor (has template variables)
-    variable_factor = if String.contains?(content, "{{") do
-      1.2
-    else
-      1.0
-    end
-    
+    variable_factor =
+      if String.contains?(content, "{{") do
+        1.2
+      else
+        1.0
+      end
+
     # Structure factor (has clear instructions)
-    structure_factor = if Regex.match?(~r/(please|help|assist|provide)/i, content) do
-      1.1
-    else
-      1.0
-    end
-    
+    structure_factor =
+      if Regex.match?(~r/(please|help|assist|provide)/i, content) do
+        1.1
+      else
+        1.0
+      end
+
     final_score = base_score * length_factor * variable_factor * structure_factor
     min(1.0, final_score)
   end
