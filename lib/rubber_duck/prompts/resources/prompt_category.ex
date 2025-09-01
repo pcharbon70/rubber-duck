@@ -1,7 +1,7 @@
 defmodule RubberDuck.Prompts.Resources.PromptCategory do
   @moduledoc """
   Category organization resource for hierarchical prompt management.
-  
+
   Organizes prompts by functional categories with nested hierarchy support,
   category-based access control, and usage tracking.
   """
@@ -14,33 +14,6 @@ defmodule RubberDuck.Prompts.Resources.PromptCategory do
   postgres do
     table "prompt_categories"
     repo RubberDuck.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-    
-    attribute :name, :string, allow_nil?: false
-    attribute :description, :string
-    attribute :slug, :string, allow_nil?: false
-    attribute :tenant_id, :uuid, allow_nil?: false
-    attribute :category_type, :atom, allow_nil?: false, default: :general, constraints: [one_of: [:system, :project, :user, :general, :template]]
-    attribute :access_level, :atom, allow_nil?: false, default: :public, constraints: [one_of: [:public, :private, :restricted, :admin_only]]
-    attribute :sort_order, :integer, default: 0
-    attribute :color_code, :string
-    attribute :icon, :string
-    attribute :metadata, :map, default: %{}
-    attribute :usage_count, :integer, default: 0
-    attribute :popularity_score, :decimal
-    attribute :is_template_category, :boolean, default: false
-    attribute :tags, {:array, :string}, default: []
-    
-    timestamps()
-  end
-
-  relationships do
-    belongs_to :parent, __MODULE__
-    has_many :children, __MODULE__, destination_attribute: :parent_id
-    has_many :prompts, RubberDuck.Prompts.Resources.Prompt, destination_attribute: :category_id
   end
 
   actions do
@@ -81,6 +54,42 @@ defmodule RubberDuck.Prompts.Resources.PromptCategory do
     validate match(:slug, ~r/^[a-z0-9-]+$/)
     validate string_length(:name, min: 2, max: 100)
     validate string_length(:slug, min: 2, max: 100)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string, allow_nil?: false
+    attribute :description, :string
+    attribute :slug, :string, allow_nil?: false
+    attribute :tenant_id, :uuid, allow_nil?: false
+
+    attribute :category_type, :atom,
+      allow_nil?: false,
+      default: :general,
+      constraints: [one_of: [:system, :project, :user, :general, :template]]
+
+    attribute :access_level, :atom,
+      allow_nil?: false,
+      default: :public,
+      constraints: [one_of: [:public, :private, :restricted, :admin_only]]
+
+    attribute :sort_order, :integer, default: 0
+    attribute :color_code, :string
+    attribute :icon, :string
+    attribute :metadata, :map, default: %{}
+    attribute :usage_count, :integer, default: 0
+    attribute :popularity_score, :decimal
+    attribute :is_template_category, :boolean, default: false
+    attribute :tags, {:array, :string}, default: []
+
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :parent, __MODULE__
+    has_many :children, __MODULE__, destination_attribute: :parent_id
+    has_many :prompts, RubberDuck.Prompts.Resources.Prompt, destination_attribute: :category_id
   end
 
   identities do
