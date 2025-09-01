@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
   @moduledoc """
   Specialized Jido agent for automated prompt discovery and migration.
-  
+
   Provides autonomous migration of existing hardcoded prompts to the hierarchical
   prompt management system with validation, rollback capabilities, and schema evolution
   handling. Designed for enterprise-scale migration with minimal disruption.
-  
+
   Features:
   - Automated prompt discovery and migration from existing codebase with intelligent scanning
   - Schema evolution and version upgrade handling with backward compatibility
@@ -29,8 +29,16 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
         doc: "Migration scope (:specific_files, :module_scope, :full_codebase, :selective)"
       ],
       migration_config: [type: :map, default: %{}, doc: "Migration configuration and options"],
-      validation_requirements: [type: :map, default: %{}, doc: "Migration validation requirements"],
-      rollback_config: [type: :map, default: %{}, doc: "Rollback configuration and safety settings"]
+      validation_requirements: [
+        type: :map,
+        default: %{},
+        doc: "Migration validation requirements"
+      ],
+      rollback_config: [
+        type: :map,
+        default: %{},
+        doc: "Rollback configuration and safety settings"
+      ]
     ]
 
   require Logger
@@ -77,10 +85,10 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
     with {:ok, validated_params} <- validate_migration_params(params),
          {:ok, migration_plan} <- create_migration_plan(validated_params, context),
          {:ok, migration_results} <- execute_migration_operation(migration_plan),
-         {:ok, validation_results} <- validate_migration_results(migration_results, migration_plan) do
-      
+         {:ok, validation_results} <-
+           validate_migration_results(migration_results, migration_plan) do
       migration_time = System.monotonic_time(:microsecond) - migration_start_time
-      
+
       Logger.info("PromptMigrationAgent: Migration operation completed",
         migration_time_us: migration_time,
         migration_operation: params.migration_operation,
@@ -88,18 +96,19 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
         migration_success: migration_results.operation_successful
       )
 
-      {:ok, %{
-        migration_results: migration_results,
-        validation_results: validation_results,
-        migration_metadata: %{
-          migration_time_microseconds: migration_time,
-          migration_operation: params.migration_operation,
-          migration_scope: params.migration_scope,
-          prompts_processed: get_prompts_processed_count(migration_results),
-          validation_passed: validation_results.validation_passed,
-          rollback_available: migration_plan.rollback_config.enable_rollback
-        }
-      }}
+      {:ok,
+       %{
+         migration_results: migration_results,
+         validation_results: validation_results,
+         migration_metadata: %{
+           migration_time_microseconds: migration_time,
+           migration_operation: params.migration_operation,
+           migration_scope: params.migration_scope,
+           prompts_processed: get_prompts_processed_count(migration_results),
+           validation_passed: validation_results.validation_passed,
+           rollback_available: migration_plan.rollback_config.enable_rollback
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("PromptMigrationAgent: Migration operation failed", error: reason)
@@ -112,14 +121,15 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
   defp validate_migration_params(params) do
     with :ok <- validate_migration_operation(params.migration_operation),
          :ok <- validate_migration_scope(params.migration_scope) do
-      
-      validated_params = Map.merge(params, %{
-        migration_config: Map.merge(@default_migration_config, params.migration_config),
-        validation_requirements: Map.merge(@default_validation_requirements, params.validation_requirements),
-        rollback_config: Map.merge(@default_rollback_config, params.rollback_config),
-        validation_timestamp: DateTime.utc_now()
-      })
-      
+      validated_params =
+        Map.merge(params, %{
+          migration_config: Map.merge(@default_migration_config, params.migration_config),
+          validation_requirements:
+            Map.merge(@default_validation_requirements, params.validation_requirements),
+          rollback_config: Map.merge(@default_rollback_config, params.rollback_config),
+          validation_timestamp: DateTime.utc_now()
+        })
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -144,19 +154,19 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
       target_locations: determine_target_locations(validated_params.migration_scope),
       context: context
     }
-    
+
     Logger.debug("PromptMigrationAgent: Migration plan created",
       migration_id: migration_plan.migration_id,
       operation: migration_plan.migration_operation,
       target_locations: length(migration_plan.target_locations)
     )
-    
+
     {:ok, migration_plan}
   end
 
   defp execute_migration_operation(migration_plan) do
     operation = migration_plan.migration_operation
-    
+
     migration_results = %{
       migration_id: migration_plan.migration_id,
       migration_operation: operation,
@@ -167,20 +177,20 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
       migration_summary: %{},
       backup_state: %{}
     }
-    
+
     case operation do
       :scan ->
         execute_prompt_scanning_operation(migration_plan, migration_results)
-      
+
       :migrate ->
         execute_prompt_migration_operation(migration_plan, migration_results)
-      
+
       :validate ->
         execute_migration_validation_operation(migration_plan, migration_results)
-      
+
       :rollback ->
         execute_migration_rollback_operation(migration_plan, migration_results)
-      
+
       :upgrade_schema ->
         execute_schema_upgrade_operation(migration_plan, migration_results)
     end
@@ -189,83 +199,94 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
   defp execute_prompt_scanning_operation(migration_plan, results) do
     # Scan codebase for existing prompts
     scanning_results = scan_for_existing_prompts(migration_plan)
-    
-    {:ok, %{results |
-      operation_successful: true,
-      prompts_discovered: scanning_results.discovered_count,
-      migration_summary: %{
-        scan_locations: scanning_results.locations_scanned,
-        prompt_patterns_found: scanning_results.patterns_identified,
-        migration_candidates: scanning_results.migration_candidates
-      }
-    }}
+
+    {:ok,
+     %{
+       results
+       | operation_successful: true,
+         prompts_discovered: scanning_results.discovered_count,
+         migration_summary: %{
+           scan_locations: scanning_results.locations_scanned,
+           prompt_patterns_found: scanning_results.patterns_identified,
+           migration_candidates: scanning_results.migration_candidates
+         }
+     }}
   end
 
   defp execute_prompt_migration_operation(migration_plan, results) do
     # Execute automated prompt migration
     migration_results = migrate_discovered_prompts(migration_plan)
-    
-    {:ok, %{results |
-      operation_successful: migration_results.success,
-      prompts_migrated: migration_results.migrated_count,
-      prompts_failed: migration_results.failed_count,
-      migration_summary: %{
-        migration_strategy: migration_results.strategy_used,
-        categories_created: migration_results.categories_created,
-        validation_results: migration_results.validation_summary
-      },
-      backup_state: migration_results.backup_state
-    }}
+
+    {:ok,
+     %{
+       results
+       | operation_successful: migration_results.success,
+         prompts_migrated: migration_results.migrated_count,
+         prompts_failed: migration_results.failed_count,
+         migration_summary: %{
+           migration_strategy: migration_results.strategy_used,
+           categories_created: migration_results.categories_created,
+           validation_results: migration_results.validation_summary
+         },
+         backup_state: migration_results.backup_state
+     }}
   end
 
   defp execute_migration_validation_operation(migration_plan, results) do
     # Validate migration completeness and correctness
     validation_results = validate_migration_completeness(migration_plan)
-    
-    {:ok, %{results |
-      operation_successful: validation_results.validation_passed,
-      migration_summary: %{
-        validation_score: validation_results.completeness_score,
-        issues_found: validation_results.issues_identified,
-        recommendations: validation_results.recommendations
-      }
-    }}
+
+    {:ok,
+     %{
+       results
+       | operation_successful: validation_results.validation_passed,
+         migration_summary: %{
+           validation_score: validation_results.completeness_score,
+           issues_found: validation_results.issues_identified,
+           recommendations: validation_results.recommendations
+         }
+     }}
   end
 
   defp execute_migration_rollback_operation(migration_plan, results) do
     # Execute migration rollback
     rollback_results = execute_migration_rollback(migration_plan)
-    
-    {:ok, %{results |
-      operation_successful: rollback_results.success,
-      migration_summary: %{
-        rollback_strategy: rollback_results.strategy,
-        prompts_restored: rollback_results.restored_count,
-        rollback_time_ms: rollback_results.rollback_time_ms
-      }
-    }}
+
+    {:ok,
+     %{
+       results
+       | operation_successful: rollback_results.success,
+         migration_summary: %{
+           rollback_strategy: rollback_results.strategy,
+           prompts_restored: rollback_results.restored_count,
+           rollback_time_ms: rollback_results.rollback_time_ms
+         }
+     }}
   end
 
   defp execute_schema_upgrade_operation(migration_plan, results) do
     # Execute schema evolution and upgrades
     upgrade_results = handle_schema_evolution(migration_plan)
-    
-    {:ok, %{results |
-      operation_successful: upgrade_results.success,
-      migration_summary: %{
-        schema_version_from: upgrade_results.from_version,
-        schema_version_to: upgrade_results.to_version,
-        compatibility_maintained: upgrade_results.backward_compatible
-      }
-    }}
+
+    {:ok,
+     %{
+       results
+       | operation_successful: upgrade_results.success,
+         migration_summary: %{
+           schema_version_from: upgrade_results.from_version,
+           schema_version_to: upgrade_results.to_version,
+           compatibility_maintained: upgrade_results.backward_compatible
+         }
+     }}
   end
 
   defp validate_migration_results(migration_results, migration_plan) do
     validation_requirements = migration_plan.validation_requirements
-    
-    validation_passed = migration_results.operation_successful &&
-                       validate_migration_requirements(migration_results, validation_requirements)
-    
+
+    validation_passed =
+      migration_results.operation_successful &&
+        validate_migration_requirements(migration_results, validation_requirements)
+
     validation_results = %{
       validation_passed: validation_passed,
       completeness_check: check_migration_completeness(migration_results),
@@ -273,7 +294,7 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
       security_validation: validate_migrated_content_security(migration_results),
       performance_validation: validate_migration_performance(migration_results)
     }
-    
+
     {:ok, validation_results}
   end
 
@@ -282,9 +303,14 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
   defp scan_for_existing_prompts(migration_plan) do
     # Scan codebase for existing hardcoded prompts
     %{
-      discovered_count: 25,  # Would scan actual codebase
+      # Would scan actual codebase
+      discovered_count: 25,
       locations_scanned: ["lib/", "test/", "config/"],
-      patterns_identified: ["string literals with 'Please'", "template strings", "instruction text"],
+      patterns_identified: [
+        "string literals with 'Please'",
+        "template strings",
+        "instruction text"
+      ],
       migration_candidates: [
         %{location: "lib/some_module.ex", content: "Please help with...", confidence: 0.9},
         %{location: "lib/other_module.ex", content: "Generate code for...", confidence: 0.8}
@@ -325,10 +351,10 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
   defp execute_migration_rollback(migration_plan) do
     # Execute migration rollback
     rollback_start_time = System.monotonic_time(:microsecond)
-    
+
     # Simulate rollback process
     rollback_time = System.monotonic_time(:microsecond) - rollback_start_time
-    
+
     %{
       success: true,
       strategy: :backup_restoration,
@@ -352,25 +378,28 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
 
   defp validate_migration_requirements(migration_results, requirements) do
     # Validate migration meets requirements
-    syntax_valid = if requirements.validate_syntax do
-      migration_results.prompts_failed == 0
-    else
-      true
-    end
-    
-    security_valid = if requirements.validate_security do
-      # Would validate security of migrated prompts
-      true
-    else
-      true
-    end
-    
+    syntax_valid =
+      if requirements.validate_syntax do
+        migration_results.prompts_failed == 0
+      else
+        true
+      end
+
+    security_valid =
+      if requirements.validate_security do
+        # Would validate security of migrated prompts
+        true
+      else
+        true
+      end
+
     syntax_valid && security_valid
   end
 
   defp check_migration_completeness(migration_results) do
     %{
-      all_prompts_processed: migration_results.prompts_migrated + migration_results.prompts_failed > 0,
+      all_prompts_processed:
+        migration_results.prompts_migrated + migration_results.prompts_failed > 0,
       success_rate: calculate_migration_success_rate(migration_results),
       completeness_score: 0.85
     }
@@ -410,45 +439,51 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
       {:validate_migration_environment, "Validate migration environment and prerequisites"},
       {:prepare_migration_workspace, "Prepare migration workspace and backup systems"}
     ]
-    
-    operation_steps = case operation do
-      :scan -> [
-        {:scan_codebase_for_prompts, "Scan codebase for existing prompt patterns"},
-        {:analyze_prompt_candidates, "Analyze discovered prompt candidates"},
-        {:categorize_migration_targets, "Categorize prompts for migration strategy"}
-      ]
-      
-      :migrate -> [
-        {:create_backup_state, "Create comprehensive backup of current state"},
-        {:execute_prompt_migration, "Execute automated prompt migration"},
-        {:validate_migrated_prompts, "Validate migrated prompt correctness"},
-        {:update_codebase_references, "Update codebase references to use new prompts"}
-      ]
-      
-      :validate -> [
-        {:validate_migration_completeness, "Validate migration completeness"},
-        {:verify_prompt_functionality, "Verify migrated prompt functionality"},
-        {:check_security_compliance, "Check security compliance of migrated prompts"}
-      ]
-      
-      :rollback -> [
-        {:prepare_rollback_environment, "Prepare rollback environment"},
-        {:restore_backup_state, "Restore from backup state"},
-        {:validate_rollback_success, "Validate rollback success"}
-      ]
-      
-      :upgrade_schema -> [
-        {:analyze_schema_changes, "Analyze required schema changes"},
-        {:execute_schema_migration, "Execute schema migration"},
-        {:validate_backward_compatibility, "Validate backward compatibility"}
-      ]
-    end
-    
+
+    operation_steps =
+      case operation do
+        :scan ->
+          [
+            {:scan_codebase_for_prompts, "Scan codebase for existing prompt patterns"},
+            {:analyze_prompt_candidates, "Analyze discovered prompt candidates"},
+            {:categorize_migration_targets, "Categorize prompts for migration strategy"}
+          ]
+
+        :migrate ->
+          [
+            {:create_backup_state, "Create comprehensive backup of current state"},
+            {:execute_prompt_migration, "Execute automated prompt migration"},
+            {:validate_migrated_prompts, "Validate migrated prompt correctness"},
+            {:update_codebase_references, "Update codebase references to use new prompts"}
+          ]
+
+        :validate ->
+          [
+            {:validate_migration_completeness, "Validate migration completeness"},
+            {:verify_prompt_functionality, "Verify migrated prompt functionality"},
+            {:check_security_compliance, "Check security compliance of migrated prompts"}
+          ]
+
+        :rollback ->
+          [
+            {:prepare_rollback_environment, "Prepare rollback environment"},
+            {:restore_backup_state, "Restore from backup state"},
+            {:validate_rollback_success, "Validate rollback success"}
+          ]
+
+        :upgrade_schema ->
+          [
+            {:analyze_schema_changes, "Analyze required schema changes"},
+            {:execute_schema_migration, "Execute schema migration"},
+            {:validate_backward_compatibility, "Validate backward compatibility"}
+          ]
+      end
+
     final_steps = [
       {:record_migration_metrics, "Record migration metrics and analytics"},
       {:cleanup_migration_artifacts, "Clean up temporary migration artifacts"}
     ]
-    
+
     base_steps ++ operation_steps ++ final_steps
   end
 
@@ -463,7 +498,7 @@ defmodule RubberDuck.Prompts.Agents.PromptMigrationAgent do
 
   defp calculate_migration_success_rate(migration_results) do
     total_prompts = migration_results.prompts_migrated + migration_results.prompts_failed
-    
+
     case total_prompts do
       0 -> 1.0
       _ -> migration_results.prompts_migrated / total_prompts

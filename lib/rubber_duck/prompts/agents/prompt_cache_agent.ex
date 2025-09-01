@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   @moduledoc """
   Specialized Jido agent for autonomous multi-tier cache management and coordination.
-  
+
   Provides intelligent cache coordination across ETS, GenServer, and DETS layers
   with autonomous warming, eviction, and optimization based on usage patterns.
   Designed for enterprise-scale cache performance with minimal overhead.
-  
+
   Features:
   - Multi-tier cache operations management with ETS/GenServer/DETS coordination
   - Intelligent cache warming and eviction coordination with performance optimization
@@ -81,10 +81,10 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     with {:ok, validated_params} <- validate_cache_params(params),
          {:ok, cache_operation_plan} <- create_cache_operation_plan(validated_params, context),
          {:ok, operation_results} <- execute_cache_operation(cache_operation_plan),
-         {:ok, monitoring_results} <- execute_cache_monitoring(operation_results, cache_operation_plan) do
-      
+         {:ok, monitoring_results} <-
+           execute_cache_monitoring(operation_results, cache_operation_plan) do
       operation_time = System.monotonic_time(:microsecond) - cache_operation_start_time
-      
+
       Logger.info("PromptCacheAgent: Cache management operation completed",
         operation_time_us: operation_time,
         cache_operation: params.cache_operation,
@@ -92,18 +92,20 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
         performance_improved: get_performance_improvement(monitoring_results)
       )
 
-      {:ok, %{
-        operation_results: operation_results,
-        monitoring_results: monitoring_results,
-        cache_metadata: %{
-          operation_time_microseconds: operation_time,
-          cache_operation: params.cache_operation,
-          cache_scope: params.cache_scope,
-          performance_metrics: calculate_cache_performance_metrics(operation_results, monitoring_results),
-          coordination_overhead_ms: calculate_coordination_overhead(operation_time),
-          optimization_applied: operation_results.optimization_applied
-        }
-      }}
+      {:ok,
+       %{
+         operation_results: operation_results,
+         monitoring_results: monitoring_results,
+         cache_metadata: %{
+           operation_time_microseconds: operation_time,
+           cache_operation: params.cache_operation,
+           cache_scope: params.cache_scope,
+           performance_metrics:
+             calculate_cache_performance_metrics(operation_results, monitoring_results),
+           coordination_overhead_ms: calculate_coordination_overhead(operation_time),
+           optimization_applied: operation_results.optimization_applied
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("PromptCacheAgent: Cache management operation failed", error: reason)
@@ -116,14 +118,16 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp validate_cache_params(params) do
     with :ok <- validate_cache_operation(params.cache_operation),
          :ok <- validate_cache_scope(params.cache_scope) do
-      
-      validated_params = Map.merge(params, %{
-        optimization_config: Map.merge(@default_optimization_config, params.optimization_config),
-        performance_targets: Map.merge(@default_performance_targets, params.performance_targets),
-        monitoring_config: Map.merge(@default_monitoring_config, params.monitoring_config),
-        validation_timestamp: DateTime.utc_now()
-      })
-      
+      validated_params =
+        Map.merge(params, %{
+          optimization_config:
+            Map.merge(@default_optimization_config, params.optimization_config),
+          performance_targets:
+            Map.merge(@default_performance_targets, params.performance_targets),
+          monitoring_config: Map.merge(@default_monitoring_config, params.monitoring_config),
+          validation_timestamp: DateTime.utc_now()
+        })
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -144,23 +148,24 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
       optimization_config: validated_params.optimization_config,
       performance_targets: validated_params.performance_targets,
       monitoring_config: validated_params.monitoring_config,
-      operation_steps: create_operation_steps(validated_params.cache_operation, validated_params.cache_scope),
+      operation_steps:
+        create_operation_steps(validated_params.cache_operation, validated_params.cache_scope),
       target_cache_tiers: determine_target_cache_tiers(validated_params.cache_scope),
       context: context
     }
-    
+
     Logger.debug("PromptCacheAgent: Cache operation plan created",
       operation_id: cache_plan.operation_id,
       cache_operation: cache_plan.cache_operation,
       target_tiers: cache_plan.target_cache_tiers
     )
-    
+
     {:ok, cache_plan}
   end
 
   defp execute_cache_operation(cache_plan) do
     operation = cache_plan.cache_operation
-    
+
     operation_results = %{
       operation_id: cache_plan.operation_id,
       cache_operation: operation,
@@ -169,24 +174,25 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
       performance_impact: %{},
       cache_statistics: %{}
     }
-    
-    enhanced_results = case operation do
-      :warm ->
-        execute_cache_warming_operation(cache_plan, operation_results)
-      
-      :evict ->
-        execute_cache_eviction_operation(cache_plan, operation_results)
-      
-      :optimize ->
-        execute_cache_optimization_operation(cache_plan, operation_results)
-      
-      :monitor ->
-        execute_cache_monitoring_operation(cache_plan, operation_results)
-      
-      :coordinate ->
-        execute_cache_coordination_operation(cache_plan, operation_results)
-    end
-    
+
+    enhanced_results =
+      case operation do
+        :warm ->
+          execute_cache_warming_operation(cache_plan, operation_results)
+
+        :evict ->
+          execute_cache_eviction_operation(cache_plan, operation_results)
+
+        :optimize ->
+          execute_cache_optimization_operation(cache_plan, operation_results)
+
+        :monitor ->
+          execute_cache_monitoring_operation(cache_plan, operation_results)
+
+        :coordinate ->
+          execute_cache_coordination_operation(cache_plan, operation_results)
+      end
+
     {:ok, enhanced_results}
   end
 
@@ -194,15 +200,16 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     # Execute intelligent cache warming
     warming_keys = identify_warming_candidates(cache_plan)
     warming_success = execute_warming_strategy(warming_keys, cache_plan)
-    
-    %{results |
-      operation_successful: warming_success.success,
-      optimization_applied: true,
-      performance_impact: %{
-        keys_warmed: warming_success.keys_processed,
-        warming_time_ms: warming_success.warming_time_ms,
-        hit_rate_improvement: warming_success.estimated_improvement
-      }
+
+    %{
+      results
+      | operation_successful: warming_success.success,
+        optimization_applied: true,
+        performance_impact: %{
+          keys_warmed: warming_success.keys_processed,
+          warming_time_ms: warming_success.warming_time_ms,
+          hit_rate_improvement: warming_success.estimated_improvement
+        }
     }
   end
 
@@ -210,15 +217,16 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     # Execute intelligent cache eviction
     eviction_strategy = determine_eviction_strategy(cache_plan)
     eviction_result = execute_eviction_strategy(eviction_strategy, cache_plan)
-    
-    %{results |
-      operation_successful: eviction_result.success,
-      optimization_applied: true,
-      performance_impact: %{
-        entries_evicted: eviction_result.evicted_count,
-        memory_freed_mb: eviction_result.memory_freed,
-        performance_improvement: eviction_result.performance_gain
-      }
+
+    %{
+      results
+      | operation_successful: eviction_result.success,
+        optimization_applied: true,
+        performance_impact: %{
+          entries_evicted: eviction_result.evicted_count,
+          memory_freed_mb: eviction_result.memory_freed,
+          performance_improvement: eviction_result.performance_gain
+        }
     }
   end
 
@@ -226,15 +234,16 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     # Execute comprehensive cache optimization
     optimization_analysis = analyze_cache_optimization_opportunities(cache_plan)
     optimization_result = apply_cache_optimizations(optimization_analysis, cache_plan)
-    
-    %{results |
-      operation_successful: optimization_result.success,
-      optimization_applied: true,
-      performance_impact: %{
-        optimizations_applied: optimization_result.optimizations_count,
-        performance_improvement: optimization_result.performance_gain,
-        memory_efficiency_gain: optimization_result.memory_efficiency
-      }
+
+    %{
+      results
+      | operation_successful: optimization_result.success,
+        optimization_applied: true,
+        performance_impact: %{
+          optimizations_applied: optimization_result.optimizations_count,
+          performance_improvement: optimization_result.performance_gain,
+          memory_efficiency_gain: optimization_result.memory_efficiency
+        }
     }
   end
 
@@ -242,30 +251,32 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     # Execute real-time cache monitoring
     monitoring_data = collect_cache_performance_data(cache_plan)
     monitoring_analysis = analyze_cache_performance(monitoring_data, cache_plan)
-    
-    %{results |
-      operation_successful: true,
-      cache_statistics: monitoring_data,
-      performance_impact: %{
-        current_hit_rate: monitoring_analysis.overall_hit_rate,
-        performance_score: monitoring_analysis.performance_score,
-        optimization_recommendations: monitoring_analysis.recommendations
-      }
+
+    %{
+      results
+      | operation_successful: true,
+        cache_statistics: monitoring_data,
+        performance_impact: %{
+          current_hit_rate: monitoring_analysis.overall_hit_rate,
+          performance_score: monitoring_analysis.performance_score,
+          optimization_recommendations: monitoring_analysis.recommendations
+        }
     }
   end
 
   defp execute_cache_coordination_operation(cache_plan, results) do
     # Execute cache tier coordination
     coordination_result = coordinate_cache_tiers(cache_plan)
-    
-    %{results |
-      operation_successful: coordination_result.success,
-      optimization_applied: coordination_result.coordination_improved,
-      performance_impact: %{
-        coordination_efficiency: coordination_result.efficiency_score,
-        tier_synchronization: coordination_result.synchronization_status,
-        coordination_overhead_ms: coordination_result.overhead_ms
-      }
+
+    %{
+      results
+      | operation_successful: coordination_result.success,
+        optimization_applied: coordination_result.coordination_improved,
+        performance_impact: %{
+          coordination_efficiency: coordination_result.efficiency_score,
+          tier_synchronization: coordination_result.synchronization_status,
+          coordination_overhead_ms: coordination_result.overhead_ms
+        }
     }
   end
 
@@ -274,10 +285,12 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
       monitoring_data = %{
         cache_health_score: calculate_cache_health_score(operation_results),
         performance_metrics: extract_performance_metrics(operation_results),
-        optimization_recommendations: generate_cache_recommendations(operation_results, cache_plan),
-        monitoring_overhead_ms: 2.0  # Minimal monitoring overhead
+        optimization_recommendations:
+          generate_cache_recommendations(operation_results, cache_plan),
+        # Minimal monitoring overhead
+        monitoring_overhead_ms: 2.0
       }
-      
+
       {:ok, monitoring_data}
     else
       {:ok, %{monitoring_disabled: true}}
@@ -293,17 +306,18 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
 
   defp execute_warming_strategy(warming_keys, cache_plan) do
     warming_start_time = System.monotonic_time(:microsecond)
-    
+
     # Simulate cache warming
     warmed_count = length(warming_keys)
-    
+
     warming_time = System.monotonic_time(:microsecond) - warming_start_time
-    
+
     %{
       success: true,
       keys_processed: warmed_count,
       warming_time_ms: div(warming_time, 1_000),
-      estimated_improvement: 0.15  # 15% hit rate improvement
+      # 15% hit rate improvement
+      estimated_improvement: 0.15
     }
   end
 
@@ -319,8 +333,10 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
     %{
       success: true,
       evicted_count: 25,
-      memory_freed: 10.5,  # MB
-      performance_gain: 0.05  # 5% performance improvement
+      # MB
+      memory_freed: 10.5,
+      # 5% performance improvement
+      performance_gain: 0.05
     }
   end
 
@@ -336,12 +352,14 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp apply_cache_optimizations(optimization_analysis, cache_plan) do
     # Apply identified cache optimizations
     optimizations_count = map_size(optimization_analysis)
-    
+
     %{
       success: true,
       optimizations_count: optimizations_count,
-      performance_gain: 0.12,  # 12% performance improvement
-      memory_efficiency: 0.85   # 85% memory efficiency achieved
+      # 12% performance improvement
+      performance_gain: 0.12,
+      # 85% memory efficiency achieved
+      memory_efficiency: 0.85
     }
   end
 
@@ -359,7 +377,7 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp analyze_cache_performance(monitoring_data, cache_plan) do
     # Analyze cache performance and generate insights
     performance_score = calculate_performance_score(monitoring_data)
-    
+
     %{
       overall_hit_rate: monitoring_data.overall_hit_rate,
       performance_score: performance_score,
@@ -371,10 +389,10 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp coordinate_cache_tiers(cache_plan) do
     # Coordinate operations across cache tiers
     coordination_start_time = System.monotonic_time(:microsecond)
-    
+
     # Simulate tier coordination
     coordination_time = System.monotonic_time(:microsecond) - coordination_start_time
-    
+
     %{
       success: true,
       coordination_improved: true,
@@ -391,20 +409,21 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
       {:validate_cache_operation_params, "Validate cache operation parameters"},
       {:analyze_cache_state, "Analyze current cache state and performance"}
     ]
-    
-    operation_steps = case operation do
-      :warm -> [{:execute_intelligent_warming, "Execute intelligent cache warming"}]
-      :evict -> [{:execute_adaptive_eviction, "Execute adaptive cache eviction"}]
-      :optimize -> [{:execute_optimization_analysis, "Execute cache optimization analysis"}]
-      :monitor -> [{:collect_performance_metrics, "Collect real-time performance metrics"}]
-      :coordinate -> [{:coordinate_tier_operations, "Coordinate multi-tier cache operations"}]
-    end
-    
+
+    operation_steps =
+      case operation do
+        :warm -> [{:execute_intelligent_warming, "Execute intelligent cache warming"}]
+        :evict -> [{:execute_adaptive_eviction, "Execute adaptive cache eviction"}]
+        :optimize -> [{:execute_optimization_analysis, "Execute cache optimization analysis"}]
+        :monitor -> [{:collect_performance_metrics, "Collect real-time performance metrics"}]
+        :coordinate -> [{:coordinate_tier_operations, "Coordinate multi-tier cache operations"}]
+      end
+
     final_steps = [
       {:validate_operation_success, "Validate operation success and impact"},
       {:update_cache_analytics, "Update cache analytics and performance data"}
     ]
-    
+
     base_steps ++ operation_steps ++ final_steps
   end
 
@@ -420,50 +439,63 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp calculate_performance_score(monitoring_data) do
     # Calculate overall cache performance score
     hit_rate_score = monitoring_data.overall_hit_rate
-    
-    memory_efficiency_score = case monitoring_data.total_memory_usage_mb do
-      usage when usage < 100 -> 1.0
-      usage when usage < 200 -> 0.8
-      usage when usage < 500 -> 0.6
-      _ -> 0.4
-    end
-    
-    coordination_score = case monitoring_data.distributed_stats.coordination_overhead_ms do
-      overhead when overhead < 5 -> 1.0
-      overhead when overhead < 10 -> 0.8
-      overhead when overhead < 20 -> 0.6
-      _ -> 0.4
-    end
-    
+
+    memory_efficiency_score =
+      case monitoring_data.total_memory_usage_mb do
+        usage when usage < 100 -> 1.0
+        usage when usage < 200 -> 0.8
+        usage when usage < 500 -> 0.6
+        _ -> 0.4
+      end
+
+    coordination_score =
+      case monitoring_data.distributed_stats.coordination_overhead_ms do
+        overhead when overhead < 5 -> 1.0
+        overhead when overhead < 10 -> 0.8
+        overhead when overhead < 20 -> 0.6
+        _ -> 0.4
+      end
+
     # Weighted performance score
-    overall_score = (hit_rate_score * 0.5) + (memory_efficiency_score * 0.3) + (coordination_score * 0.2)
+    overall_score =
+      hit_rate_score * 0.5 + memory_efficiency_score * 0.3 + coordination_score * 0.2
+
     Float.round(overall_score, 3)
   end
 
   defp generate_performance_recommendations(monitoring_data, performance_score) do
     recommendations = []
-    
+
     # Hit rate recommendations
-    recommendations = if monitoring_data.overall_hit_rate < 0.90 do
-      ["Consider increasing cache warming frequency", "Optimize cache key strategies" | recommendations]
-    else
-      recommendations
-    end
-    
+    recommendations =
+      if monitoring_data.overall_hit_rate < 0.90 do
+        [
+          "Consider increasing cache warming frequency",
+          "Optimize cache key strategies" | recommendations
+        ]
+      else
+        recommendations
+      end
+
     # Memory usage recommendations
-    recommendations = if monitoring_data.total_memory_usage_mb > 200 do
-      ["Execute memory optimization", "Consider cache size limits" | recommendations]
-    else
-      recommendations
-    end
-    
+    recommendations =
+      if monitoring_data.total_memory_usage_mb > 200 do
+        ["Execute memory optimization", "Consider cache size limits" | recommendations]
+      else
+        recommendations
+      end
+
     # Performance recommendations
-    recommendations = if performance_score < 0.8 do
-      ["Execute comprehensive cache optimization", "Review cache coordination strategies" | recommendations]
-    else
-      recommendations
-    end
-    
+    recommendations =
+      if performance_score < 0.8 do
+        [
+          "Execute comprehensive cache optimization",
+          "Review cache coordination strategies" | recommendations
+        ]
+      else
+        recommendations
+      end
+
     case recommendations do
       [] -> ["Cache performance is optimal - no recommendations"]
       _ -> recommendations
@@ -473,13 +505,15 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp assess_optimization_potential(monitoring_data) do
     # Assess potential for cache optimization
     hit_rate_potential = max(0.0, 0.98 - monitoring_data.overall_hit_rate)
-    memory_potential = case monitoring_data.total_memory_usage_mb do
-      usage when usage > 300 -> 0.3
-      usage when usage > 200 -> 0.2
-      usage when usage > 100 -> 0.1
-      _ -> 0.0
-    end
-    
+
+    memory_potential =
+      case monitoring_data.total_memory_usage_mb do
+        usage when usage > 300 -> 0.3
+        usage when usage > 200 -> 0.2
+        usage when usage > 100 -> 0.1
+        _ -> 0.0
+      end
+
     %{
       hit_rate_improvement_potential: hit_rate_potential,
       memory_optimization_potential: memory_potential,
@@ -490,15 +524,16 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp calculate_cache_health_score(operation_results) do
     # Calculate overall cache health score
     base_score = if operation_results.operation_successful, do: 0.8, else: 0.4
-    
+
     optimization_bonus = if operation_results.optimization_applied, do: 0.15, else: 0.0
-    
-    performance_bonus = case Map.get(operation_results, :performance_impact, %{}) do
-      %{performance_improvement: improvement} when improvement > 0.1 -> 0.15
-      %{performance_improvement: improvement} when improvement > 0.05 -> 0.10
-      _ -> 0.05
-    end
-    
+
+    performance_bonus =
+      case Map.get(operation_results, :performance_impact, %{}) do
+        %{performance_improvement: improvement} when improvement > 0.1 -> 0.15
+        %{performance_improvement: improvement} when improvement > 0.05 -> 0.10
+        _ -> 0.05
+      end
+
     total_score = base_score + optimization_bonus + performance_bonus
     min(1.0, total_score)
   end
@@ -511,7 +546,7 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
           operation_type: operation_results.cache_operation,
           success_rate: if(operation_results.operation_successful, do: 1.0, else: 0.0)
         }
-      
+
       _ ->
         %{
           operation_type: operation_results.cache_operation,
@@ -522,36 +557,40 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
 
   defp generate_cache_recommendations(operation_results, cache_plan) do
     recommendations = []
-    
+
     # Operation-specific recommendations
-    recommendations = case operation_results.cache_operation do
-      :warm ->
-        if not operation_results.optimization_applied do
-          ["Consider enabling optimization during warming operations" | recommendations]
-        else
+    recommendations =
+      case operation_results.cache_operation do
+        :warm ->
+          if operation_results.optimization_applied do
+            recommendations
+          else
+            ["Consider enabling optimization during warming operations" | recommendations]
+          end
+
+        :evict ->
+          memory_freed = Map.get(operation_results.performance_impact, :memory_freed, 0)
+
+          if memory_freed < 5 do
+            ["Increase eviction aggressiveness for better memory management" | recommendations]
+          else
+            recommendations
+          end
+
+        :optimize ->
+          performance_improvement =
+            Map.get(operation_results.performance_impact, :performance_improvement, 0)
+
+          if performance_improvement < 0.05 do
+            ["Review optimization strategies for better performance gains" | recommendations]
+          else
+            recommendations
+          end
+
+        _ ->
           recommendations
-        end
-      
-      :evict ->
-        memory_freed = Map.get(operation_results.performance_impact, :memory_freed, 0)
-        if memory_freed < 5 do
-          ["Increase eviction aggressiveness for better memory management" | recommendations]
-        else
-          recommendations
-        end
-      
-      :optimize ->
-        performance_improvement = Map.get(operation_results.performance_impact, :performance_improvement, 0)
-        if performance_improvement < 0.05 do
-          ["Review optimization strategies for better performance gains" | recommendations]
-        else
-          recommendations
-        end
-      
-      _ ->
-        recommendations
-    end
-    
+      end
+
     case recommendations do
       [] -> ["Cache operation completed successfully - no additional recommendations"]
       _ -> recommendations
@@ -582,7 +621,8 @@ defmodule RubberDuck.Prompts.Agents.PromptCacheAgent do
   defp calculate_coordination_overhead(operation_time_us) do
     # Calculate coordination overhead
     coordination_overhead_ms = div(operation_time_us, 1_000)
-    min(coordination_overhead_ms, 20)  # Cap at 20ms
+    # Cap at 20ms
+    min(coordination_overhead_ms, 20)
   end
 
   defp get_operation_success_status(operation_results) do
