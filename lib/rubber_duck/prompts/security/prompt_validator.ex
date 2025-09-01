@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Security.PromptValidator do
   @moduledoc """
   Core security validation service for comprehensive prompt injection prevention.
-  
+
   Provides multi-layered security validation combining static pattern matching,
   ML-based semantic analysis, content validation, and context-aware security
   assessment. Designed for sub-100ms validation to maintain composition performance.
-  
+
   Features:
   - Static pattern matching for known injection techniques with comprehensive rule database
   - Semantic analysis using ML classifiers with embedding-based detection and confidence scoring
@@ -24,39 +24,44 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
   }
 
   @validation_layers [:static_rules, :content_analysis, :ml_classification, :context_validation]
-  
+
   @dangerous_patterns [
     # System command injection patterns
     ~r/\{\{\s*system\s*\}\}/i,
     ~r/\{\{\s*exec\s*\}\}/i,
     ~r/\{\{\s*eval\s*\}\}/i,
     ~r/\{\{\s*shell\s*\}\}/i,
-    
+
     # Script injection patterns
     ~r/<script[^>]*>/i,
     ~r/javascript\s*:/i,
     ~r/data\s*:\s*text\/html/i,
     ~r/vbscript\s*:/i,
-    
+
     # Event handler injection
     ~r/on\w+\s*=/i,
     ~r/style\s*=.*expression/i,
-    
+
     # Template injection patterns
-    ~r/\$\{.*\}/,  # Template literal injection
-    ~r/<%.*%>/,    # Template processing injection
-    ~r/\{\%.*\%\}/, # Jinja-style injection
-    
+    # Template literal injection
+    ~r/\$\{.*\}/,
+    # Template processing injection
+    ~r/<%.*%>/,
+    # Jinja-style injection
+    ~r/\{\%.*\%\}/,
+
     # SQL injection indicators in prompts
     ~r/union\s+select/i,
     ~r/drop\s+table/i,
     ~r/delete\s+from/i,
-    
+
     # File system access patterns
-    ~r/\.\.\//, # Path traversal
-    ~r/\/etc\//, # System file access
+    # Path traversal
+    ~r/\.\.\//,
+    # System file access
+    ~r/\/etc\//,
     ~r/file\s*:\/\//i,
-    
+
     # Network request patterns
     ~r/http\s*:\/\/(?!localhost)/i,
     ~r/https\s*:\/\/(?!localhost)/i,
@@ -81,7 +86,7 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   def init(opts) do
     config = build_validation_config(opts)
-    
+
     state = %__MODULE__{
       config: config,
       rule_engine: initialize_rule_engine(config),
@@ -102,7 +107,11 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
   # Public API
 
   def validate_prompt_content(content, context \\ %{}, options \\ %{}) do
-    GenServer.call(__MODULE__, {:validate_content, content, context, options}, @validation_timeout_ms + 1000)
+    GenServer.call(
+      __MODULE__,
+      {:validate_content, content, context, options},
+      @validation_timeout_ms + 1000
+    )
   end
 
   def validate_prompt_variables(variables, context \\ %{}, options \\ %{}) do
@@ -110,7 +119,10 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
   end
 
   def validate_composed_prompt(composed_prompt, composition_metadata, context \\ %{}) do
-    GenServer.call(__MODULE__, {:validate_composed, composed_prompt, composition_metadata, context})
+    GenServer.call(
+      __MODULE__,
+      {:validate_composed, composed_prompt, composition_metadata, context}
+    )
   end
 
   def get_security_report(prompt_id, time_window \\ {24, :hours}) do
@@ -125,7 +137,7 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   def handle_call({:validate_content, content, context, options}, _from, state) do
     validation_start_time = System.monotonic_time(:microsecond)
-    
+
     Logger.debug("PromptValidator: Starting content validation",
       content_length: String.length(content),
       context_keys: Map.keys(context)
@@ -134,13 +146,13 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
     case execute_multi_layer_validation(content, context, options, state) do
       {:ok, validation_result} ->
         validation_time = System.monotonic_time(:microsecond) - validation_start_time
-        
+
         # Cache validation result for performance
         cache_validation_result(content, validation_result, state)
-        
+
         # Update performance metrics
         update_validation_metrics(validation_time, :success, state)
-        
+
         Logger.debug("PromptValidator: Content validation completed",
           validation_time_us: validation_time,
           security_score: validation_result.security_score,
@@ -148,12 +160,12 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
         )
 
         {:reply, {:ok, validation_result}, state}
-      
+
       {:error, reason} ->
         validation_time = System.monotonic_time(:microsecond) - validation_start_time
-        
+
         update_validation_metrics(validation_time, :error, state)
-        
+
         Logger.warn("PromptValidator: Content validation failed",
           validation_time_us: validation_time,
           error: reason
@@ -172,14 +184,18 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
         )
 
         {:reply, {:ok, validation_result}, state}
-      
+
       {:error, reason} ->
         Logger.warn("PromptValidator: Variables validation failed", error: reason)
         {:reply, {:error, reason}, state}
     end
   end
 
-  def handle_call({:validate_composed, composed_prompt, composition_metadata, context}, _from, state) do
+  def handle_call(
+        {:validate_composed, composed_prompt, composition_metadata, context},
+        _from,
+        state
+      ) do
     case validate_final_composition(composed_prompt, composition_metadata, context, state) do
       {:ok, validation_result} ->
         Logger.debug("PromptValidator: Composition validation completed",
@@ -188,7 +204,7 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
         )
 
         {:reply, {:ok, validation_result}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -203,12 +219,12 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   def handle_cast({:update_rules, new_rules, rule_type}, state) do
     updated_state = update_validation_rules(new_rules, rule_type, state)
-    
+
     Logger.info("PromptValidator: Security rules updated",
       rule_type: rule_type,
       rule_count: length(new_rules)
     )
-    
+
     {:noreply, updated_state}
   end
 
@@ -230,14 +246,17 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
          {:ok, content_result} <- validate_content_properties(content, options),
          {:ok, ml_result} <- validate_with_ml_classifier(content, context, state),
          {:ok, context_result} <- validate_security_context(content, context, state) do
-      
-      final_result = merge_validation_results([
-        {:static_rules, static_result},
-        {:content_analysis, content_result},
-        {:ml_classification, ml_result},
-        {:context_validation, context_result}
-      ], validation_results)
-      
+      final_result =
+        merge_validation_results(
+          [
+            {:static_rules, static_result},
+            {:content_analysis, content_result},
+            {:ml_classification, ml_result},
+            {:context_validation, context_result}
+          ],
+          validation_results
+        )
+
       {:ok, final_result}
     else
       {:error, {layer, reason}} ->
@@ -247,94 +266,104 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp validate_static_patterns(content, state) do
     # Execute static pattern matching validation
-    detected_patterns = Enum.filter(@dangerous_patterns, fn pattern ->
-      Regex.match?(pattern, content)
-    end)
-    
+    detected_patterns =
+      Enum.filter(@dangerous_patterns, fn pattern ->
+        Regex.match?(pattern, content)
+      end)
+
     case detected_patterns do
       [] ->
-        {:ok, %{
-          security_level: :safe,
-          confidence: 0.95,
-          detected_issues: [],
-          validation_time_us: 0
-        }}
-      
+        {:ok,
+         %{
+           security_level: :safe,
+           confidence: 0.95,
+           detected_issues: [],
+           validation_time_us: 0
+         }}
+
       patterns ->
-        {:ok, %{
-          security_level: :dangerous,
-          confidence: 0.98,
-          detected_issues: build_pattern_issues(patterns, content),
-          validation_time_us: 0
-        }}
+        {:ok,
+         %{
+           security_level: :dangerous,
+           confidence: 0.98,
+           detected_issues: build_pattern_issues(patterns, content),
+           validation_time_us: 0
+         }}
     end
   end
 
   defp validate_content_properties(content, options) do
     # Validate content length, encoding, and basic properties
     issues = []
-    
+
     # Check content length
-    issues = if String.length(content) > @max_content_length do
-      [{:content_too_long, String.length(content), @max_content_length} | issues]
-    else
-      issues
-    end
-    
+    issues =
+      if String.length(content) > @max_content_length do
+        [{:content_too_long, String.length(content), @max_content_length} | issues]
+      else
+        issues
+      end
+
     # Check encoding
-    issues = if not String.valid?(content) do
-      [{:invalid_encoding, "Content contains invalid UTF-8"} | issues]
-    else
-      issues
-    end
-    
+    issues =
+      if not String.valid?(content) do
+        [{:invalid_encoding, "Content contains invalid UTF-8"} | issues]
+      else
+        issues
+      end
+
     # Check for suspicious repetition
-    issues = if has_suspicious_repetition?(content) do
-      [{:suspicious_repetition, "Content contains excessive repetition"} | issues]
-    else
-      issues
-    end
-    
+    issues =
+      if has_suspicious_repetition?(content) do
+        [{:suspicious_repetition, "Content contains excessive repetition"} | issues]
+      else
+        issues
+      end
+
     case issues do
       [] ->
-        {:ok, %{
-          security_level: :safe,
-          confidence: 0.90,
-          detected_issues: [],
-          content_metrics: analyze_content_metrics(content)
-        }}
-      
+        {:ok,
+         %{
+           security_level: :safe,
+           confidence: 0.90,
+           detected_issues: [],
+           content_metrics: analyze_content_metrics(content)
+         }}
+
       _ ->
-        {:ok, %{
-          security_level: :suspicious,
-          confidence: 0.85,
-          detected_issues: issues,
-          content_metrics: analyze_content_metrics(content)
-        }}
+        {:ok,
+         %{
+           security_level: :suspicious,
+           confidence: 0.85,
+           detected_issues: issues,
+           content_metrics: analyze_content_metrics(content)
+         }}
     end
   end
 
   defp validate_with_ml_classifier(content, context, state) do
     case InjectionClassifier.classify_content(content, context) do
       {:ok, classification_result} ->
-        {:ok, %{
-          security_level: classification_result.security_level,
-          confidence: classification_result.confidence,
-          ml_features: classification_result.features,
-          classification_time_us: classification_result.processing_time_us
-        }}
-      
+        {:ok,
+         %{
+           security_level: classification_result.security_level,
+           confidence: classification_result.confidence,
+           ml_features: classification_result.features,
+           classification_time_us: classification_result.processing_time_us
+         }}
+
       {:error, reason} ->
         # Fallback to conservative validation if ML fails
         Logger.warn("PromptValidator: ML classification failed, using fallback", error: reason)
-        
-        {:ok, %{
-          security_level: :unknown,
-          confidence: 0.5,
-          ml_features: [],
-          classification_time_us: 0,
-          fallback_used: true
-        }}
+
+        {:ok,
+         %{
+           security_level: :unknown,
+           confidence: 0.5,
+           ml_features: [],
+           classification_time_us: 0,
+           fallback_used: true
+         }}
     end
   end
 
@@ -346,46 +375,50 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
       content_source: Map.get(context, :source, :user_input),
       composition_strategy: Map.get(context, :composition_strategy, :unknown)
     }
-    
+
     risk_score = calculate_context_risk_score(content, security_factors)
-    
-    {:ok, %{
-      security_level: determine_security_level_from_risk(risk_score),
-      confidence: 0.80,
-      context_factors: security_factors,
-      risk_score: risk_score
-    }}
+
+    {:ok,
+     %{
+       security_level: determine_security_level_from_risk(risk_score),
+       confidence: 0.80,
+       context_factors: security_factors,
+       risk_score: risk_score
+     }}
   end
 
   defp validate_all_variables(variables, context, options, state) do
     # Validate all template variables for security
-    variable_results = Enum.map(variables, fn {name, value} ->
-      case validate_single_variable(name, value, context, state) do
-        {:ok, result} -> {name, result}
-        {:error, reason} -> {name, {:error, reason}}
-      end
-    end)
-    
-    {safe_variables, dangerous_variables} = Enum.split_with(variable_results, fn {_name, result} ->
-      case result do
-        %{security_level: level} -> level == :safe
-        _ -> false
-      end
-    end)
-    
+    variable_results =
+      Enum.map(variables, fn {name, value} ->
+        case validate_single_variable(name, value, context, state) do
+          {:ok, result} -> {name, result}
+          {:error, reason} -> {name, {:error, reason}}
+        end
+      end)
+
+    {safe_variables, dangerous_variables} =
+      Enum.split_with(variable_results, fn {_name, result} ->
+        case result do
+          %{security_level: level} -> level == :safe
+          _ -> false
+        end
+      end)
+
     overall_security_score = calculate_variables_security_score(variable_results)
-    
-    {:ok, %{
-      overall_security_score: overall_security_score,
-      safe_variables: safe_variables,
-      dangerous_variables: dangerous_variables,
-      variable_count: map_size(variables),
-      validation_summary: %{
-        safe_count: length(safe_variables),
-        dangerous_count: length(dangerous_variables),
-        total_count: map_size(variables)
-      }
-    }}
+
+    {:ok,
+     %{
+       overall_security_score: overall_security_score,
+       safe_variables: safe_variables,
+       dangerous_variables: dangerous_variables,
+       variable_count: map_size(variables),
+       validation_summary: %{
+         safe_count: length(safe_variables),
+         dangerous_count: length(dangerous_variables),
+         total_count: map_size(variables)
+       }
+     }}
   end
 
   defp validate_single_variable(name, value, context, state) do
@@ -393,18 +426,21 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
     with {:ok, name_validation} <- validate_variable_name(name),
          {:ok, value_validation} <- validate_variable_value(value, context),
          {:ok, context_validation} <- validate_variable_context(name, value, context) do
-      
-      overall_score = calculate_variable_security_score([
-        name_validation, value_validation, context_validation
-      ])
-      
-      {:ok, %{
-        security_level: determine_security_level_from_score(overall_score),
-        security_score: overall_score,
-        name_validation: name_validation,
-        value_validation: value_validation,
-        context_validation: context_validation
-      }}
+      overall_score =
+        calculate_variable_security_score([
+          name_validation,
+          value_validation,
+          context_validation
+        ])
+
+      {:ok,
+       %{
+         security_level: determine_security_level_from_score(overall_score),
+         security_score: overall_score,
+         name_validation: name_validation,
+         value_validation: value_validation,
+         context_validation: context_validation
+       }}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -417,17 +453,19 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
       validate_interpolation_results: true,
       check_token_limits: true
     }
-    
+
     case execute_multi_layer_validation(composed_prompt, context, final_validation_options, state) do
       {:ok, validation_result} ->
-        enhanced_result = Map.merge(validation_result, %{
-          composition_metadata: composition_metadata,
-          final_validation: true,
-          interpolation_security: analyze_interpolation_security(composed_prompt, composition_metadata)
-        })
-        
+        enhanced_result =
+          Map.merge(validation_result, %{
+            composition_metadata: composition_metadata,
+            final_validation: true,
+            interpolation_security:
+              analyze_interpolation_security(composed_prompt, composition_metadata)
+          })
+
         {:ok, enhanced_result}
-      
+
       {:error, reason} ->
         {:error, {:final_composition_validation_failed, reason}}
     end
@@ -438,7 +476,7 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
   defp build_pattern_issues(detected_patterns, content) do
     Enum.map(detected_patterns, fn pattern ->
       matches = Regex.scan(pattern, content, return: :index)
-      
+
       %{
         pattern_type: classify_pattern_type(pattern),
         pattern: inspect(pattern),
@@ -452,10 +490,10 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
   defp classify_pattern_type(pattern) do
     # Classify detected pattern type
     pattern_str = inspect(pattern)
-    
+
     cond do
       String.contains?(pattern_str, "system\\|exec\\|eval") -> :command_injection
-      String.contains?(pattern_str, "script\\|javascript") -> :script_injection  
+      String.contains?(pattern_str, "script\\|javascript") -> :script_injection
       String.contains?(pattern_str, "on\\w+") -> :event_handler_injection
       String.contains?(pattern_str, "\\$\\{\\|<%\\|\\{%") -> :template_injection
       String.contains?(pattern_str, "union\\|drop\\|delete") -> :sql_injection
@@ -467,7 +505,7 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp determine_pattern_severity(pattern) do
     pattern_str = inspect(pattern)
-    
+
     cond do
       String.contains?(pattern_str, "system\\|exec\\|eval") -> :critical
       String.contains?(pattern_str, "script\\|javascript") -> :high
@@ -494,7 +532,7 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
     # Check for suspicious content repetition patterns
     words = String.split(content, ~r/\s+/)
     word_frequencies = Enum.frequencies(words)
-    
+
     # Check if any word appears more than 20% of total words
     max_frequency = Enum.max(Map.values(word_frequencies), fn -> 0 end)
     max_frequency > length(words) * 0.2
@@ -515,38 +553,51 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp calculate_context_risk_score(content, security_factors) do
     base_risk = 0.1
-    
+
     # Adjust risk based on prompt type
-    type_risk = case security_factors.prompt_type do
-      :system -> 0.0    # System prompts are pre-validated
-      :project -> 0.2   # Project prompts have moderate risk
-      :user -> 0.4      # User prompts have higher risk
-    end
-    
+    type_risk =
+      case security_factors.prompt_type do
+        # System prompts are pre-validated
+        :system -> 0.0
+        # Project prompts have moderate risk
+        :project -> 0.2
+        # User prompts have higher risk
+        :user -> 0.4
+      end
+
     # Adjust risk based on user trust level
-    trust_risk = case security_factors.user_trust_level do
-      :verified -> 0.0
-      :trusted -> 0.1
-      :standard -> 0.3
-      :new -> 0.5
-      :suspicious -> 0.8
-    end
-    
+    trust_risk =
+      case security_factors.user_trust_level do
+        :verified -> 0.0
+        :trusted -> 0.1
+        :standard -> 0.3
+        :new -> 0.5
+        :suspicious -> 0.8
+      end
+
     # Adjust risk based on content characteristics
-    content_risk = case {
-      String.contains?(content, "{{"),
-      String.length(content) > 1000,
-      Regex.match?(~r/[<>{}]/, content)
-    } do
-      {true, true, true} -> 0.4   # High risk: variables + long + special chars
-      {true, _, true} -> 0.3      # Medium-high risk
-      {true, _, _} -> 0.2         # Medium risk: has variables
-      {_, true, true} -> 0.3      # Medium-high risk: long + special chars
-      {_, _, true} -> 0.2         # Medium risk: special chars
-      {_, true, _} -> 0.1         # Low risk: just long
-      _ -> 0.0                    # Minimal risk
-    end
-    
+    content_risk =
+      case {
+        String.contains?(content, "{{"),
+        String.length(content) > 1000,
+        Regex.match?(~r/[<>{}]/, content)
+      } do
+        # High risk: variables + long + special chars
+        {true, true, true} -> 0.4
+        # Medium-high risk
+        {true, _, true} -> 0.3
+        # Medium risk: has variables
+        {true, _, _} -> 0.2
+        # Medium-high risk: long + special chars
+        {_, true, true} -> 0.3
+        # Medium risk: special chars
+        {_, _, true} -> 0.2
+        # Low risk: just long
+        {_, true, _} -> 0.1
+        # Minimal risk
+        _ -> 0.0
+      end
+
     total_risk = base_risk + type_risk + trust_risk + content_risk
     min(1.0, total_risk)
   end
@@ -573,49 +624,55 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp validate_variable_name(name) do
     issues = []
-    
+
     # Check for reserved variable names
-    issues = if String.downcase(name) in ["system", "exec", "eval", "shell", "admin", "root"] do
-      [{:reserved_variable_name, name} | issues]
-    else
-      issues
-    end
-    
+    issues =
+      if String.downcase(name) in ["system", "exec", "eval", "shell", "admin", "root"] do
+        [{:reserved_variable_name, name} | issues]
+      else
+        issues
+      end
+
     # Check for suspicious patterns in name
-    issues = if Regex.match?(~r/[^a-zA-Z0-9_]/, name) do
-      [{:invalid_variable_name_characters, name} | issues]
-    else
-      issues
-    end
-    
+    issues =
+      if Regex.match?(~r/[^a-zA-Z0-9_]/, name) do
+        [{:invalid_variable_name_characters, name} | issues]
+      else
+        issues
+      end
+
     # Check length
-    issues = if String.length(name) > 50 do
-      [{:variable_name_too_long, String.length(name)} | issues]
-    else
-      issues
-    end
-    
-    security_score = case issues do
-      [] -> 1.0
-      _ -> max(0.0, 1.0 - (length(issues) * 0.3))
-    end
-    
-    {:ok, %{
-      security_score: security_score,
-      issues: issues,
-      variable_name: name
-    }}
+    issues =
+      if String.length(name) > 50 do
+        [{:variable_name_too_long, String.length(name)} | issues]
+      else
+        issues
+      end
+
+    security_score =
+      case issues do
+        [] -> 1.0
+        _ -> max(0.0, 1.0 - length(issues) * 0.3)
+      end
+
+    {:ok,
+     %{
+       security_score: security_score,
+       issues: issues,
+       variable_name: name
+     }}
   end
 
   defp validate_variable_value(value, context) when is_binary(value) do
     case ContentSanitizer.analyze_content_safety(value, context) do
       {:ok, safety_analysis} ->
-        {:ok, %{
-          security_score: safety_analysis.safety_score,
-          sanitization_needed: safety_analysis.sanitization_needed,
-          detected_risks: safety_analysis.detected_risks
-        }}
-      
+        {:ok,
+         %{
+           security_score: safety_analysis.safety_score,
+           sanitization_needed: safety_analysis.sanitization_needed,
+           detected_risks: safety_analysis.detected_risks
+         }}
+
       {:error, reason} ->
         {:error, {:variable_value_analysis_failed, reason}}
     end
@@ -623,69 +680,80 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp validate_variable_value(value, _context) do
     # Non-string values are generally safe but validate type
-    {:ok, %{
-      security_score: 0.9,
-      issues: [],
-      value_type: typeof(value)
-    }}
+    {:ok,
+     %{
+       security_score: 0.9,
+       issues: [],
+       value_type: typeof(value)
+     }}
   end
 
   defp validate_variable_context(name, value, context) do
     # Validate variable within its usage context
-    context_score = 0.8  # Base context score
-    
+    # Base context score
+    context_score = 0.8
+
     # Adjust based on context factors
-    context_score = if Map.get(context, :high_security_mode, false) do
-      context_score * 1.2  # Boost security in high security mode
-    else
-      context_score
-    end
-    
-    {:ok, %{
-      security_score: min(1.0, context_score),
-      context_appropriate: true,
-      context_factors: Map.keys(context)
-    }}
+    context_score =
+      if Map.get(context, :high_security_mode, false) do
+        # Boost security in high security mode
+        context_score * 1.2
+      else
+        context_score
+      end
+
+    {:ok,
+     %{
+       security_score: min(1.0, context_score),
+       context_appropriate: true,
+       context_factors: Map.keys(context)
+     }}
   end
 
   # Utility functions
 
   defp merge_validation_results(layer_results, base_results) do
     # Merge results from all validation layers
-    all_threats = Enum.flat_map(layer_results, fn {_layer, result} ->
-      Map.get(result, :detected_issues, [])
-    end)
-    
-    all_scores = Enum.map(layer_results, fn {_layer, result} ->
-      Map.get(result, :security_score, 0.5)
-    end)
-    
-    overall_score = case all_scores do
-      [] -> 0.5
-      scores -> Enum.sum(scores) / length(scores)
-    end
-    
-    passed_layers = Enum.filter(layer_results, fn {_layer, result} ->
-      Map.get(result, :security_level, :unknown) == :safe
-    end)
-    |> Enum.map(fn {layer, _result} -> layer end)
-    
-    %{base_results |
-      overall_security_score: overall_score,
-      threats_detected: all_threats,
-      validation_layers_passed: passed_layers,
-      layer_results: Map.new(layer_results)
+    all_threats =
+      Enum.flat_map(layer_results, fn {_layer, result} ->
+        Map.get(result, :detected_issues, [])
+      end)
+
+    all_scores =
+      Enum.map(layer_results, fn {_layer, result} ->
+        Map.get(result, :security_score, 0.5)
+      end)
+
+    overall_score =
+      case all_scores do
+        [] -> 0.5
+        scores -> Enum.sum(scores) / length(scores)
+      end
+
+    passed_layers =
+      Enum.filter(layer_results, fn {_layer, result} ->
+        Map.get(result, :security_level, :unknown) == :safe
+      end)
+      |> Enum.map(fn {layer, _result} -> layer end)
+
+    %{
+      base_results
+      | overall_security_score: overall_score,
+        threats_detected: all_threats,
+        validation_layers_passed: passed_layers,
+        layer_results: Map.new(layer_results)
     }
   end
 
   defp calculate_variables_security_score(variable_results) do
-    scores = Enum.map(variable_results, fn {_name, result} ->
-      case result do
-        %{security_score: score} -> score
-        {:error, _} -> 0.0
-      end
-    end)
-    
+    scores =
+      Enum.map(variable_results, fn {_name, result} ->
+        case result do
+          %{security_score: score} -> score
+          {:error, _} -> 0.0
+        end
+      end)
+
     case scores do
       [] -> 1.0
       _ -> Enum.sum(scores) / length(scores)
@@ -693,10 +761,11 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
   end
 
   defp calculate_variable_security_score(validations) do
-    scores = Enum.map(validations, fn validation ->
-      Map.get(validation, :security_score, 0.5)
-    end)
-    
+    scores =
+      Enum.map(validations, fn validation ->
+        Map.get(validation, :security_score, 0.5)
+      end)
+
     Enum.sum(scores) / length(scores)
   end
 
@@ -763,12 +832,13 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp generate_security_report(_prompt_id, _time_window, _state) do
     # Generate comprehensive security report
-    {:ok, %{
-      report_generated_at: DateTime.utc_now(),
-      validation_summary: %{},
-      threat_analysis: %{},
-      recommendations: []
-    }}
+    {:ok,
+     %{
+       report_generated_at: DateTime.utc_now(),
+       validation_summary: %{},
+       threat_analysis: %{},
+       recommendations: []
+     }}
   end
 
   defp update_validation_rules(_new_rules, _rule_type, state) do

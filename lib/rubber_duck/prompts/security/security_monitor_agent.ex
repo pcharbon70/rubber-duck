@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
   @moduledoc """
   Real-time security monitoring agent for prompt injection detection and response.
-  
+
   Provides continuous security monitoring with automated threat detection,
   alert generation, user blocking, and incident reporting. Integrates with
   existing security infrastructure for comprehensive protection.
-  
+
   Features:
   - Real-time monitoring of prompt injection attempts with pattern detection and alerting
   - Alert generation for suspicious patterns with severity classification and escalation
@@ -39,18 +39,26 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
   }
 
   @default_alert_thresholds %{
-    injection_attempt_threshold: 3,      # Alert after 3 attempts
-    critical_threat_threshold: 1,        # Alert immediately for critical threats
-    user_suspicious_activity_threshold: 5, # Alert after 5 suspicious activities
-    time_window_minutes: 15              # Time window for threshold calculations
+    # Alert after 3 attempts
+    injection_attempt_threshold: 3,
+    # Alert immediately for critical threats
+    critical_threat_threshold: 1,
+    # Alert after 5 suspicious activities
+    user_suspicious_activity_threshold: 5,
+    # Time window for threshold calculations
+    time_window_minutes: 15
   }
 
   @default_blocking_policies %{
     enable_auto_blocking: true,
-    block_threshold: 5,                   # Block after 5 violations
-    block_duration_minutes: 60,          # 1 hour block duration
-    escalation_threshold: 10,             # Escalate after 10 blocks
-    permanent_block_threshold: 20         # Permanent block after 20 violations
+    # Block after 5 violations
+    block_threshold: 5,
+    # 1 hour block duration
+    block_duration_minutes: 60,
+    # Escalate after 10 blocks
+    escalation_threshold: 10,
+    # Permanent block after 20 violations
+    permanent_block_threshold: 20
   }
 
   @default_incident_reporting %{
@@ -72,9 +80,8 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
          {:ok, monitoring_state} <- initialize_monitoring_state(validated_params, context),
          {:ok, monitoring_session} <- start_monitoring_session(monitoring_state),
          {:ok, monitoring_results} <- execute_security_monitoring(monitoring_session, context) do
-      
       monitoring_time = System.monotonic_time(:microsecond) - monitoring_start_time
-      
+
       Logger.info("SecurityMonitorAgent: Security monitoring session completed",
         monitoring_time_us: monitoring_time,
         threats_detected: get_threat_count(monitoring_results),
@@ -82,17 +89,18 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
         users_blocked: get_blocked_user_count(monitoring_results)
       )
 
-      {:ok, %{
-        monitoring_results: monitoring_results,
-        monitoring_metadata: %{
-          monitoring_time_microseconds: monitoring_time,
-          session_id: monitoring_session.session_id,
-          threats_detected: get_threat_count(monitoring_results),
-          alerts_generated: get_alert_count(monitoring_results),
-          incidents_reported: get_incident_count(monitoring_results),
-          monitoring_effectiveness: calculate_monitoring_effectiveness(monitoring_results)
-        }
-      }}
+      {:ok,
+       %{
+         monitoring_results: monitoring_results,
+         monitoring_metadata: %{
+           monitoring_time_microseconds: monitoring_time,
+           session_id: monitoring_session.session_id,
+           threats_detected: get_threat_count(monitoring_results),
+           alerts_generated: get_alert_count(monitoring_results),
+           incidents_reported: get_incident_count(monitoring_results),
+           monitoring_effectiveness: calculate_monitoring_effectiveness(monitoring_results)
+         }
+       }}
     else
       {:error, reason} ->
         Logger.error("SecurityMonitorAgent: Security monitoring failed", error: reason)
@@ -106,15 +114,15 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
     with :ok <- validate_monitoring_config(params.monitoring_config),
          :ok <- validate_alert_thresholds(params.alert_thresholds),
          :ok <- validate_blocking_policies(params.blocking_policies) do
-      
-      validated_params = Map.merge(params, %{
-        monitoring_config: Map.merge(@default_monitoring_config, params.monitoring_config),
-        alert_thresholds: Map.merge(@default_alert_thresholds, params.alert_thresholds),
-        blocking_policies: Map.merge(@default_blocking_policies, params.blocking_policies),
-        incident_reporting: Map.merge(@default_incident_reporting, params.incident_reporting),
-        validation_timestamp: DateTime.utc_now()
-      })
-      
+      validated_params =
+        Map.merge(params, %{
+          monitoring_config: Map.merge(@default_monitoring_config, params.monitoring_config),
+          alert_thresholds: Map.merge(@default_alert_thresholds, params.alert_thresholds),
+          blocking_policies: Map.merge(@default_blocking_policies, params.blocking_policies),
+          incident_reporting: Map.merge(@default_incident_reporting, params.incident_reporting),
+          validation_timestamp: DateTime.utc_now()
+        })
+
       {:ok, validated_params}
     else
       {:error, reason} -> {:error, {:parameter_validation_failed, reason}}
@@ -144,7 +152,7 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
       context: context,
       start_time: System.monotonic_time(:microsecond)
     }
-    
+
     {:ok, monitoring_state}
   end
 
@@ -158,11 +166,11 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
       users_monitored: 0,
       incidents_reported: 0
     }
-    
+
     Logger.debug("SecurityMonitorAgent: Monitoring session started",
       session_id: monitoring_session.session_id
     )
-    
+
     {:ok, monitoring_session}
   end
 
@@ -176,12 +184,12 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
       incident_summary: execute_incident_reporting_monitoring(),
       performance_summary: monitor_security_performance()
     }
-    
+
     Logger.debug("SecurityMonitorAgent: Security monitoring completed",
       threats_monitored: monitoring_results.monitoring_summary.threats_detected,
       alerts_generated: monitoring_results.alert_summary.alerts_generated
     )
-    
+
     {:ok, monitoring_results}
   end
 
@@ -190,7 +198,8 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
   defp execute_threat_detection_monitoring do
     # Monitor for prompt injection threats
     %{
-      threats_detected: 0,  # Would track actual threats
+      # Would track actual threats
+      threats_detected: 0,
       patterns_matched: [],
       ml_classifications: 0,
       threat_severity_distribution: %{critical: 0, high: 0, medium: 0, low: 0}
@@ -200,7 +209,8 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
   defp execute_alert_generation_monitoring do
     # Generate alerts for suspicious activities
     %{
-      alerts_generated: 0,  # Would track actual alerts
+      # Would track actual alerts
+      alerts_generated: 0,
       alert_types: [],
       escalated_alerts: 0,
       alert_effectiveness: 0.0
@@ -232,7 +242,8 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
   defp monitor_security_performance do
     # Monitor security system performance
     %{
-      monitoring_overhead_ms: 5.0,  # Target <10ms overhead
+      # Target <10ms overhead
+      monitoring_overhead_ms: 5.0,
       validation_performance: %{
         average_time_ms: 50.0,
         success_rate: 0.98
@@ -302,15 +313,19 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
 
   defp calculate_monitoring_effectiveness(monitoring_results) do
     # Calculate overall monitoring effectiveness
-    threat_detection_rate = case monitoring_results.monitoring_summary.threats_detected do
-      0 -> 1.0
-      threats -> min(1.0, threats / 10)  # Normalize against expected threat volume
-    end
-    
+    threat_detection_rate =
+      case monitoring_results.monitoring_summary.threats_detected do
+        0 -> 1.0
+        # Normalize against expected threat volume
+        threats -> min(1.0, threats / 10)
+      end
+
     alert_effectiveness = monitoring_results.alert_summary.alert_effectiveness
     response_effectiveness = calculate_response_effectiveness(monitoring_results)
-    
-    overall_effectiveness = (threat_detection_rate + alert_effectiveness + response_effectiveness) / 3
+
+    overall_effectiveness =
+      (threat_detection_rate + alert_effectiveness + response_effectiveness) / 3
+
     Float.round(overall_effectiveness, 3)
   end
 
@@ -318,18 +333,20 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
     # Calculate response effectiveness based on blocking and incident handling
     blocking_summary = monitoring_results.blocking_summary
     incident_summary = monitoring_results.incident_summary
-    
+
     # Simple effectiveness calculation
-    blocked_ratio = case blocking_summary.users_monitored do
-      0 -> 0.0
-      monitored -> blocking_summary.users_blocked / monitored
-    end
-    
-    incident_ratio = case incident_summary.incidents_detected do
-      0 -> 1.0
-      detected -> incident_summary.incidents_reported / detected
-    end
-    
+    blocked_ratio =
+      case blocking_summary.users_monitored do
+        0 -> 0.0
+        monitored -> blocking_summary.users_blocked / monitored
+      end
+
+    incident_ratio =
+      case incident_summary.incidents_detected do
+        0 -> 1.0
+        detected -> incident_summary.incidents_reported / detected
+      end
+
     (blocked_ratio + incident_ratio) / 2
   end
 
