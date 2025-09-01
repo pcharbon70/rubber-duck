@@ -27,8 +27,8 @@ defmodule RubberDuck.Prompts.Security.SecurityMonitorAgent do
   require Logger
 
   alias RubberDuck.Prompts.Security.{
-    PromptValidator,
-    InjectionClassifier
+    InjectionClassifier,
+    PromptValidator
   }
 
   @default_monitoring_config %{
