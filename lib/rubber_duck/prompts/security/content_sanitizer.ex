@@ -220,13 +220,7 @@ defmodule RubberDuck.Prompts.Security.ContentSanitizer do
       rule = Map.get(@sanitization_rules, rule_name)
 
       if rule do
-        replacement =
-          if preserve_context and rule.preserve_context do
-            generate_contextual_replacement(rule, acc_content)
-          else
-            rule.replacement
-          end
-
+        replacement = determine_replacement_text(rule, preserve_context, acc_content)
         String.replace(acc_content, rule.pattern, replacement)
       else
         acc_content
@@ -394,6 +388,14 @@ defmodule RubberDuck.Prompts.Security.ContentSanitizer do
       high_security_mode: Map.get(context, :high_security_mode, false),
       user_role: Map.get(context, :user_role, :user)
     }
+  end
+
+  defp determine_replacement_text(rule, preserve_context, content) do
+    if preserve_context and rule.preserve_context do
+      generate_contextual_replacement(rule, content)
+    else
+      rule.replacement
+    end
   end
 
   defp generate_contextual_replacement(rule, content) do
