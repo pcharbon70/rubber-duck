@@ -5,7 +5,7 @@
 ---
 
 ## Phase Links
-- **Previous**: [Phase 2A: Runic Workflow System](phase-02a-runic-workflow.md)
+- **Previous**: [Phase 2A: Reactor Workflow System](phase-02a-reactor-workflows.md)
 - **Next**: [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
 - **Related**: [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
 
@@ -13,7 +13,7 @@
 1. [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
 2. [Phase 1A: User Preferences & Runtime Configuration Management](phase-1a-user-preferences-config.md)
 3. [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
-4. [Phase 2A: Runic Workflow System](phase-02a-runic-workflow.md)
+4. [Phase 2A: Reactor Workflow System](phase-02a-reactor-workflows.md)
 5. **Phase 2B: Multi-Layered Prompt Management System** *(Current)*
 6. [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
 7. [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
@@ -36,7 +36,7 @@
 
 Implement a comprehensive three-tier prompt management system that enables hierarchical prompt composition, real-time collaboration, and intelligent optimization. This system provides the foundation for sophisticated LLM interactions by layering System prompts (immutable base instructions), Project prompts (team customization), and User prompts (dynamic context), with advanced security, caching, and integration capabilities.
 
-The system integrates deeply with Phase 2's LLM orchestration, Phase 2A's Runic workflows, and Phase 2.4's RAG system to provide context-aware, secure, and performant prompt composition for all AI-enhanced operations.
+The system integrates deeply with Phase 2's LLM orchestration, Phase 2A's Reactor workflows, and Phase 2.4's RAG system to provide context-aware, secure, and performant prompt composition for all AI-enhanced operations.
 
 ## 2B.1 Core Prompt Resources
 
@@ -312,11 +312,11 @@ The system integrates deeply with Phase 2's LLM orchestration, Phase 2A's Runic 
 ### 2B.6.2 Workflow System Integration
 
 #### Tasks:
-- [ ] 2B.6.2.1 Integrate with Runic workflows
-  - [ ] 2B.6.2.1.1 Named prompt references in workflow definitions
-  - [ ] 2B.6.2.1.2 Dynamic prompt resolution during workflow execution
-  - [ ] 2B.6.2.1.3 Context passing between workflow steps and prompts
-  - [ ] 2B.6.2.1.4 Workflow-specific prompt optimization
+- [ ] 2B.6.2.1 Integrate with Reactor workflows
+  - [ ] 2B.6.2.1.1 Named prompt references in Reactor workflow definitions
+  - [ ] 2B.6.2.1.2 Dynamic prompt resolution during Reactor workflow execution
+  - [ ] 2B.6.2.1.3 Context passing between Reactor steps and prompts
+  - [ ] 2B.6.2.1.4 Reactor workflow-specific prompt optimization
 - [ ] 2B.6.2.2 Enhance existing workflows
   - [ ] 2B.6.2.2.1 Enhanced Code Review: project-specific analysis prompts
   - [ ] 2B.6.2.2.2 Documentation Generation: customizable documentation styles
@@ -526,7 +526,7 @@ The system integrates deeply with Phase 2's LLM orchestration, Phase 2A's Runic 
 - Phase 1A: User Preferences (parallel development - for user preference integration)
 
 **Provides Foundation For:**
-- Phase 2A: Runic Workflow System (named prompt references in workflows)
+- Phase 2A: Reactor Workflow System (named prompt references in workflows)
 - Phase 3: Tool Agent System (sophisticated prompting for tool usage)
 - Phase 4: Multi-Agent Planning (coordinated prompting across agents)
 - Phase 7: Conversation System (conversation-aware prompt composition)
@@ -534,7 +534,7 @@ The system integrates deeply with Phase 2's LLM orchestration, Phase 2A's Runic 
 
 **Integration Points:**
 - Phase 2: LLM Orchestration enhanced with hierarchical prompt composition
-- Phase 2A: Runic workflows use named prompts for step definition
+- Phase 2A: Reactor workflows use named prompts for step definition
 - Phase 2.4: RAG system enhanced with project-specific context prompts
 - Phase 8: Security system provides prompt injection prevention
 - Phase 11: Token management provides budget enforcement for prompts
