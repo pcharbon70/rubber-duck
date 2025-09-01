@@ -25,10 +25,10 @@ defmodule RubberDuck.Prompts.Composition.CompositionEngine do
   require Logger
 
   alias RubberDuck.Prompts.{
-    Resources.Prompt,
     Composition.PromptResolver,
+    Composition.TokenOptimizer,
     Composition.VariableInterpolator,
-    Composition.TokenOptimizer
+    Resources.Prompt
   }
 
   @composition_strategies [

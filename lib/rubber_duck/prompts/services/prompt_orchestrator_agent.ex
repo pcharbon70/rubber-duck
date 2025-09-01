@@ -42,8 +42,8 @@ defmodule RubberDuck.Prompts.Services.PromptOrchestratorAgent do
 
   alias RubberDuck.Prompts.{
     Composition.CompositionEngine,
-    Services.CompositionCache,
-    Resources.PromptUsage
+    Resources.PromptUsage,
+    Services.CompositionCache
   }
 
   @default_orchestration_options %{

@@ -166,11 +166,16 @@ defmodule RubberDuck.Prompts.Composition.PromptResolver do
   defp resolve_hierarchy_from_database(prompt_name, context, options) do
     # Resolve hierarchical prompts from database
     resolved_prompts = []
-    
+
     # Resolve each prompt type and accumulate results
-    resolved_prompts = resolve_system_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts)
-    resolved_prompts = resolve_project_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts)
-    resolved_prompts = resolve_user_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts)
+    resolved_prompts =
+      resolve_system_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts)
+
+    resolved_prompts =
+      resolve_project_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts)
+
+    resolved_prompts =
+      resolve_user_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts)
 
     case resolved_prompts do
       [] -> {:error, :no_prompts_found}
@@ -181,7 +186,7 @@ defmodule RubberDuck.Prompts.Composition.PromptResolver do
   defp resolve_system_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts) do
     tenant_id = Map.get(context, :tenant_id)
     system_context = Map.merge(context, %{tenant_id: tenant_id})
-    
+
     case resolve_single_prompt(prompt_name, :system, system_context, options) do
       {:ok, system_prompt} -> [system_prompt | resolved_prompts]
       {:error, _} -> resolved_prompts
@@ -190,10 +195,10 @@ defmodule RubberDuck.Prompts.Composition.PromptResolver do
 
   defp resolve_project_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts) do
     project_id = Map.get(context, :project_id)
-    
+
     if project_id do
       project_context = Map.merge(context, %{project_id: project_id})
-      
+
       case resolve_single_prompt(prompt_name, :project, project_context, options) do
         {:ok, project_prompt} -> [project_prompt | resolved_prompts]
         {:error, _} -> resolved_prompts
@@ -205,10 +210,10 @@ defmodule RubberDuck.Prompts.Composition.PromptResolver do
 
   defp resolve_user_prompt_for_hierarchy(prompt_name, context, options, resolved_prompts) do
     user_id = Map.get(context, :user_id)
-    
+
     if user_id do
       user_context = Map.merge(context, %{user_id: user_id})
-      
+
       case resolve_single_prompt(prompt_name, :user, user_context, options) do
         {:ok, user_prompt} -> [user_prompt | resolved_prompts]
         {:error, _} -> resolved_prompts

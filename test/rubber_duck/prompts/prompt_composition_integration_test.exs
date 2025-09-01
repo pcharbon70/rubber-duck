@@ -14,8 +14,8 @@ defmodule RubberDuck.Prompts.PromptCompositionIntegrationTest do
   alias RubberDuck.Prompts.{
     Composition.CompositionEngine,
     Composition.PromptResolver,
-    Composition.VariableInterpolator,
     Composition.TokenOptimizer,
+    Composition.VariableInterpolator,
     Services.PromptOrchestratorAgent
   }
 

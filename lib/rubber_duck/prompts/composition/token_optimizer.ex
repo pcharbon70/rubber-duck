@@ -150,7 +150,7 @@ defmodule RubberDuck.Prompts.Composition.TokenOptimizer do
   end
 
   defp estimate_anthropic_tokens(content) do
-    # Anthropic token estimation (rough approximation)  
+    # Anthropic token estimation (rough approximation)
     # Claude models are more efficient, roughly 1 token per 0.8 words
     words = String.split(content, ~r/\s+/)
     round(length(words) / 0.8)

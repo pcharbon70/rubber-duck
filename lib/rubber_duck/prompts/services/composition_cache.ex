@@ -24,7 +24,7 @@ defmodule RubberDuck.Prompts.Services.CompositionCache do
   @cache_ttl %{
     # 1 minute
     ets: 60,
-    # 1 hour  
+    # 1 hour
     redis: 3600,
     # 24 hours
     dets: 86_400
