@@ -553,53 +553,48 @@ defmodule RubberDuck.Prompts.Security.PromptValidator do
 
   defp calculate_context_risk_score(content, security_factors) do
     base_risk = 0.1
-
-    # Adjust risk based on prompt type
-    type_risk =
-      case security_factors.prompt_type do
-        # System prompts are pre-validated
-        :system -> 0.0
-        # Project prompts have moderate risk
-        :project -> 0.2
-        # User prompts have higher risk
-        :user -> 0.4
-      end
-
-    # Adjust risk based on user trust level
-    trust_risk =
-      case security_factors.user_trust_level do
-        :verified -> 0.0
-        :trusted -> 0.1
-        :standard -> 0.3
-        :new -> 0.5
-        :suspicious -> 0.8
-      end
-
-    # Adjust risk based on content characteristics
-    content_risk =
-      case {
-        String.contains?(content, "{{"),
-        String.length(content) > 1000,
-        Regex.match?(~r/[<>{}]/, content)
-      } do
-        # High risk: variables + long + special chars
-        {true, true, true} -> 0.4
-        # Medium-high risk
-        {true, _, true} -> 0.3
-        # Medium risk: has variables
-        {true, _, _} -> 0.2
-        # Medium-high risk: long + special chars
-        {_, true, true} -> 0.3
-        # Medium risk: special chars
-        {_, _, true} -> 0.2
-        # Low risk: just long
-        {_, true, _} -> 0.1
-        # Minimal risk
-        _ -> 0.0
-      end
+    
+    # Calculate individual risk components
+    type_risk = calculate_prompt_type_risk(security_factors.prompt_type)
+    trust_risk = calculate_user_trust_risk(security_factors.user_trust_level)
+    content_risk = calculate_content_characteristics_risk(content)
 
     total_risk = base_risk + type_risk + trust_risk + content_risk
     min(1.0, total_risk)
+  end
+
+  defp calculate_prompt_type_risk(prompt_type) do
+    case prompt_type do
+      :system -> 0.0   # System prompts are pre-validated
+      :project -> 0.2  # Project prompts have moderate risk
+      :user -> 0.4     # User prompts have higher risk
+    end
+  end
+
+  defp calculate_user_trust_risk(trust_level) do
+    case trust_level do
+      :verified -> 0.0
+      :trusted -> 0.1
+      :standard -> 0.3
+      :new -> 0.5
+      :suspicious -> 0.8
+    end
+  end
+
+  defp calculate_content_characteristics_risk(content) do
+    has_variables = String.contains?(content, "{{")
+    is_long = String.length(content) > 1000
+    has_special_chars = Regex.match?(~r/[<>{}]/, content)
+    
+    case {has_variables, is_long, has_special_chars} do
+      {true, true, true} -> 0.4   # High risk: variables + long + special chars
+      {true, _, true} -> 0.3      # Medium-high risk
+      {true, _, _} -> 0.2         # Medium risk: has variables
+      {_, true, true} -> 0.3      # Medium-high risk: long + special chars
+      {_, _, true} -> 0.2         # Medium risk: special chars
+      {_, true, _} -> 0.1         # Low risk: just long
+      _ -> 0.0                    # Minimal risk
+    end
   end
 
   defp determine_security_level_from_risk(risk_score) do
