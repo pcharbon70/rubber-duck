@@ -98,7 +98,7 @@ defmodule RubberDuck.MixProject do
       {:excoveralls, "~> 0.10", only: :test},
       {:usage_rules, "~> 0.1.23"},
       {:jido, "~> 1.2"},
-      {:jido_ai, "~> 0.5.2"}
+      {:jido_ai, github: "agentjido/jido_ai", branch: "main"}
     ]
   end
 
