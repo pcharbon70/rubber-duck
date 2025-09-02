@@ -29,6 +29,11 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
     WorkflowTemplates
   }
 
+  alias RubberDuck.Prompts.WorkflowIntegration.{
+    WorkflowPromptResolver,
+    ReactorPromptIntegration
+  }
+
   @builder_modes [:reactor, :template, :composition, :hybrid]
 
   @default_builder_config %{
@@ -38,7 +43,12 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
     enable_optimization: true,
     fallback_on_error: true,
     # 10 seconds
-    max_build_time_ms: 10_000
+    max_build_time_ms: 10_000,
+    # Prompt integration features (Phase 6.2 enhancement)
+    enable_prompt_integration: true,
+    enable_named_prompt_references: true,
+    enable_context_enhancement: true,
+    prompt_resolution_strategy: :optimized
   }
 
   @doc """
@@ -58,10 +68,10 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
 
     with {:ok, validated_spec} <- validate_workflow_specification(workflow_spec),
          {:ok, builder_mode} <- determine_optimal_builder_mode(validated_spec, merged_config),
-         {:ok, build_context} <-
-           create_build_context(validated_spec, builder_mode, merged_config),
+         {:ok, build_context} <- create_build_context(validated_spec, builder_mode, merged_config),
          {:ok, built_workflow} <- execute_workflow_build(build_context),
-         {:ok, validated_workflow} <- validate_built_workflow(built_workflow, merged_config) do
+         {:ok, prompt_enhanced_workflow} <- enhance_workflow_with_prompts(built_workflow, merged_config),
+         {:ok, validated_workflow} <- validate_built_workflow(prompt_enhanced_workflow, merged_config) do
       build_time = System.monotonic_time(:microsecond) - build_start_time
 
       Logger.info("EnhancedWorkflowBuilder: Workflow creation completed",
@@ -617,6 +627,106 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
     timestamp = System.system_time(:nanosecond)
     random = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
     "build_#{timestamp}_#{random}"
+  end
+
+  defp enhance_workflow_with_prompts(built_workflow, merged_config) do
+    # Enhance built workflow with prompt integration if enabled
+    if merged_config.enable_prompt_integration do
+      Logger.debug("EnhancedWorkflowBuilder: Enhancing workflow with prompt integration",
+        workflow_id: built_workflow.id
+      )
+
+      case integrate_prompt_capabilities(built_workflow, merged_config) do
+        {:ok, enhanced_workflow} ->
+          Logger.debug("EnhancedWorkflowBuilder: Prompt integration completed",
+            workflow_id: enhanced_workflow.id,
+            prompt_features_enabled: Map.keys(Map.get(enhanced_workflow, :prompt_integration, %{}))
+          )
+
+          {:ok, enhanced_workflow}
+
+        {:error, reason} ->
+          Logger.warning("EnhancedWorkflowBuilder: Prompt integration failed, continuing without: #{inspect(reason)}")
+          {:ok, built_workflow}
+      end
+    else
+      {:ok, built_workflow}
+    end
+  end
+
+  defp integrate_prompt_capabilities(built_workflow, config) do
+    # Integrate prompt capabilities into workflow
+    prompt_integration = %{
+      enabled: true,
+      named_references_supported: config.enable_named_prompt_references,
+      context_enhancement_supported: config.enable_context_enhancement,
+      resolution_strategy: config.prompt_resolution_strategy,
+      integration_version: "6.2.0",
+      integration_metadata: %{
+        integrated_at: DateTime.utc_now(),
+        integration_mode: :automatic,
+        features_enabled: build_prompt_feature_list(config)
+      }
+    }
+
+    # Enhance workflow steps with prompt integration if they specify prompt names
+    enhanced_components = enhance_components_with_prompt_support(
+      Map.get(built_workflow, :components, []),
+      config
+    )
+
+    enhanced_workflow = Map.merge(built_workflow, %{
+      prompt_integration: prompt_integration,
+      components: enhanced_components,
+      prompt_integration_applied: true
+    })
+
+    {:ok, enhanced_workflow}
+  end
+
+  defp enhance_components_with_prompt_support(components, config) do
+    # Enhance workflow components with prompt support
+    Enum.map(components, fn component ->
+      case Map.get(component, :prompt_name) do
+        nil ->
+          component
+
+        prompt_name ->
+          Map.merge(component, %{
+            prompt_integration: %{
+              prompt_name: prompt_name,
+              resolution_strategy: config.prompt_resolution_strategy,
+              context_enhancement_enabled: config.enable_context_enhancement,
+              integration_applied: true
+            }
+          })
+      end
+    end)
+  end
+
+  defp build_prompt_feature_list(config) do
+    # Build list of enabled prompt features
+    features = []
+
+    features = if config.enable_named_prompt_references do
+      [:named_prompt_references | features]
+    else
+      features
+    end
+
+    features = if config.enable_context_enhancement do
+      [:context_enhancement | features]
+    else
+      features
+    end
+
+    features = if config.enable_prompt_integration do
+      [:prompt_integration | features]
+    else
+      features
+    end
+
+    features
   end
 
   defp generate_workflow_id(prefix) do
