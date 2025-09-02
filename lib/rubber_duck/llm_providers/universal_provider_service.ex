@@ -17,6 +17,7 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
 
   require Logger
 
+  alias RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration
   alias RubberDuck.Verdict.Configuration.VerdictConfigurationResolver
 
   # Simple provider configuration that works with existing systems
@@ -37,6 +38,7 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
   Universal LLM completion supporting all domains.
 
   Automatically selects optimal provider based on domain and requirements.
+  Enhanced with prompt composition integration for optimal LLM performance.
   """
   def complete(content, domain, options \\ %{}) do
     Logger.debug("Universal LLM completion for domain: #{domain}")
@@ -44,14 +46,41 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
     # Build universal request
     request = build_universal_request(content, domain, options)
 
-    # Select optimal provider
-    case select_provider_for_domain(domain, options) do
-      {:ok, provider_info} ->
-        # Route to appropriate provider system
-        route_to_provider_system(provider_info, request, domain)
+    # Enhanced request with prompt composition if enabled
+    enhanced_request =
+      case Map.get(options, :enable_prompt_composition, true) do
+        true -> enhance_request_with_prompt_composition(request, options)
+        false -> {:ok, request}
+      end
 
-      error ->
-        error
+    case enhanced_request do
+      {:ok, final_request} ->
+        # Select optimal provider (potentially updated by prompt optimization)
+        case select_provider_for_domain(
+               domain,
+               Map.merge(options, %{provider: Map.get(final_request, :provider)})
+             ) do
+          {:ok, provider_info} ->
+            # Route to appropriate provider system
+            route_to_provider_system(provider_info, final_request, domain)
+
+          error ->
+            error
+        end
+
+      {:error, reason} ->
+        Logger.warn(
+          "Prompt composition failed, falling back to basic completion: #{inspect(reason)}"
+        )
+
+        # Fallback to basic completion without prompt enhancement
+        case select_provider_for_domain(domain, options) do
+          {:ok, provider_info} ->
+            route_to_provider_system(provider_info, request, domain)
+
+          error ->
+            error
+        end
     end
   end
 
@@ -113,18 +142,148 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
       max_tokens: Map.get(options, :max_tokens, 1500),
       temperature: Map.get(options, :temperature, 0.1),
       specialized_features: Map.get(options, :specialized_features, []),
-      metadata: Map.get(options, :metadata, %{})
+      metadata: Map.get(options, :metadata, %{}),
+      # Prompt composition fields
+      prompt_name: Map.get(options, :prompt_name),
+      provider: Map.get(options, :provider),
+      prompt_composed: false,
+      provider_optimized: false
     }
+  end
+
+  # Prompt composition integration
+  defp enhance_request_with_prompt_composition(request, options) do
+    # Prepare LLM request for prompt composition integration
+    llm_request = %{
+      prompt: request.content,
+      provider: determine_preferred_provider(request.domain, options),
+      operation_type: request.use_case,
+      user_id: request.user_id,
+      project_id: request.project_id,
+      timeout: Map.get(options, :timeout, 30_000),
+      quality: Map.get(options, :quality, :standard),
+      cost_sensitivity: Map.get(options, :cost_sensitivity, :medium)
+    }
+
+    # Integration context
+    context = %{
+      prompt_name:
+        Map.get(
+          options,
+          :prompt_name,
+          determine_default_prompt_name(request.domain, request.use_case)
+        ),
+      user_role: Map.get(options, :user_role, :user),
+      domain: request.domain,
+      use_case: request.use_case
+    }
+
+    # Enhancement options
+    enhancement_options = %{
+      full_integration: Map.get(options, :full_integration, false),
+      validate_routing: Map.get(options, :validate_routing, true)
+    }
+
+    case LlmOrchestrationIntegration.enhance_llm_request(
+           llm_request,
+           context,
+           enhancement_options
+         ) do
+      {:ok, enhanced_llm_request} ->
+        # Merge enhanced fields back into universal request
+        enhanced_request =
+          Map.merge(request, %{
+            content: Map.get(enhanced_llm_request, :prompt, request.content),
+            provider: Map.get(enhanced_llm_request, :provider),
+            prompt_composed: Map.get(enhanced_llm_request, :prompt_composed, false),
+            provider_optimized: Map.get(enhanced_llm_request, :provider_optimized, false),
+            routing_optimized: Map.get(enhanced_llm_request, :routing_optimized, false),
+            enhancement_metadata: Map.get(enhanced_llm_request, :composition_metadata, %{})
+          })
+
+        {:ok, enhanced_request}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp determine_preferred_provider(domain, options) do
+    case Map.get(options, :provider) do
+      nil ->
+        case domain do
+          # Constitutional AI for evaluation
+          :evaluation -> "claude-3-sonnet"
+          # GPT-4 for orchestration
+          :orchestration -> "gpt-4"
+          # Default
+          _ -> "gpt-4"
+        end
+
+      provider ->
+        provider
+    end
+  end
+
+  defp determine_default_prompt_name(domain, use_case) do
+    case {domain, use_case} do
+      {:evaluation, :quality} -> "code_quality_evaluation_prompt"
+      {:evaluation, :security} -> "security_evaluation_prompt"
+      {:orchestration, :agent_communication} -> "agent_orchestration_prompt"
+      {:orchestration, _} -> "general_orchestration_prompt"
+      _ -> "universal_llm_prompt"
+    end
   end
 
   defp select_provider_for_domain(domain, options) do
     routing_strategy = Map.get(options, :routing_strategy, :balanced)
     preferred_providers = Map.get(options, :preferred_providers, [])
 
-    case domain do
-      :evaluation -> select_evaluation_provider(routing_strategy)
-      :orchestration -> select_orchestration_provider(routing_strategy)
-      _ -> select_fallback_provider(preferred_providers)
+    # Check if prompt composition provided a specific provider recommendation
+    case Map.get(options, :provider) do
+      nil ->
+        case domain do
+          :evaluation -> select_evaluation_provider(routing_strategy)
+          :orchestration -> select_orchestration_provider(routing_strategy)
+          _ -> select_fallback_provider(preferred_providers)
+        end
+
+      provider_name ->
+        # Use provider recommendation from prompt composition
+        case get_provider_info_by_name(provider_name) do
+          {:ok, provider_info} ->
+            {:ok, provider_info}
+
+          {:error, _} ->
+            Logger.warn(
+              "Prompt-recommended provider #{provider_name} not available, falling back"
+            )
+
+            case domain do
+              :evaluation -> select_evaluation_provider(routing_strategy)
+              :orchestration -> select_orchestration_provider(routing_strategy)
+              _ -> select_fallback_provider(preferred_providers)
+            end
+        end
+    end
+  end
+
+  defp get_provider_info_by_name(provider_name) do
+    provider_family =
+      case provider_name do
+        name when name in ["gpt-4", "gpt-3.5-turbo"] ->
+          :openai
+
+        name when name in ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku", "claude-2"] ->
+          :anthropic
+
+        _ ->
+          :unknown
+      end
+
+    case Map.get(@available_providers, provider_family) do
+      nil -> {:error, :provider_not_available}
+      provider_info -> {:ok, provider_info}
     end
   end
 

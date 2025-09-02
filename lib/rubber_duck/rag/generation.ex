@@ -1,6 +1,6 @@
 defmodule RubberDuck.Rag.Generation do
   @moduledoc """
-  Core Generation struct for RAG pipeline processing.
+  Core Generation struct for RAG pipeline processing with prompt composition integration.
 
   This module defines the central data structure used throughout the RAG pipeline
   to track query processing, embedding generation, retrieval results, context building,
@@ -9,10 +9,17 @@ defmodule RubberDuck.Rag.Generation do
   The Generation struct flows through each stage of the pipeline, accumulating
   data and metadata for comprehensive quality assessment and learning.
 
+  Enhanced with Phase 02b Section 6.1 LLM Orchestration Integration:
+  - Project-specific RAG query enhancement with prompt context injection
+  - Context-aware prompt modification based on RAG results with semantic integration
+  - RAG result injection into project prompts with content optimization
+  - Performance optimization for RAG + prompt composition with caching coordination
+
   Pipeline Flow:
-  Query → Embedding → Multi-Retrieval → Fusion → Context → Prompt → Generation → Evaluation
+  Query → Embedding → Multi-Retrieval → Fusion → Context → Prompt Enhancement → Generation → Evaluation
   """
 
+  alias RubberDuck.Prompts.Integrations.RagPromptEnhancer
   alias RubberDuck.Rag.{Embedding, Evaluation, Retrieval}
 
   @type retrieval_results :: %{
@@ -67,6 +74,11 @@ defmodule RubberDuck.Rag.Generation do
     prompt: nil,
     prompt_metadata: %{},
 
+    # Prompt enhancement stage (new integration)
+    prompt_enhanced: false,
+    prompt_enhancement_metadata: %{},
+    rag_prompt_context: nil,
+
     # Generation stage
     response: nil,
     generation_metadata: %{},
@@ -113,6 +125,9 @@ defmodule RubberDuck.Rag.Generation do
           context_metadata: map(),
           prompt: binary() | nil,
           prompt_metadata: map(),
+          prompt_enhanced: boolean(),
+          prompt_enhancement_metadata: map(),
+          rag_prompt_context: binary() | nil,
           response: binary() | nil,
           generation_metadata: map(),
           evaluations: evaluation_results(),
@@ -189,6 +204,35 @@ defmodule RubberDuck.Rag.Generation do
         prompt_metadata: Map.merge(generation.prompt_metadata, metadata)
     }
     |> record_stage_timing(:prompt_building)
+  end
+
+  @doc """
+  Enhance prompt with RAG integration using the prompt composition system.
+  """
+  def enhance_prompt_with_rag(generation, enhancement_options \\ %{}) do
+    case generation.prompt do
+      nil ->
+        add_error(generation, %{
+          error: "Cannot enhance prompt - no prompt available",
+          type: :prompt_enhancement
+        })
+
+      prompt_content ->
+        execute_prompt_enhancement(generation, prompt_content, enhancement_options)
+    end
+  end
+
+  @doc """
+  Add RAG-specific prompt context to the generation struct.
+  """
+  def put_rag_prompt_context(generation, rag_context, metadata \\ %{}) do
+    %{
+      generation
+      | rag_prompt_context: rag_context,
+        prompt_enhancement_metadata: Map.merge(generation.prompt_enhancement_metadata, metadata),
+        prompt_enhanced: true
+    }
+    |> record_stage_timing(:prompt_enhancement)
   end
 
   @doc """
@@ -280,6 +324,7 @@ defmodule RubberDuck.Rag.Generation do
       :retrieval,
       :context_building,
       :prompt_building,
+      :prompt_enhancement,
       :response_generation,
       :evaluation
     ]
@@ -313,11 +358,143 @@ defmodule RubberDuck.Rag.Generation do
         sources_count: length(generation.context_sources),
         context_length: if(generation.context, do: String.length(generation.context), else: 0),
         retrieval_count: length(generation.retrieval_results.fused_results)
+      },
+      prompt_enhancement_summary: %{
+        prompt_enhanced: generation.prompt_enhanced,
+        enhancement_metadata: generation.prompt_enhancement_metadata,
+        rag_prompt_context_available: not is_nil(generation.rag_prompt_context)
       }
     }
   end
 
   # Private helper functions
+
+  defp execute_prompt_enhancement(generation, prompt_content, enhancement_options) do
+    # Prepare RAG query based on original query and context
+    rag_query = build_rag_query_from_generation(generation)
+
+    # Prepare context for prompt enhancement
+    context = build_enhancement_context(generation, enhancement_options)
+
+    # Execute enhancement via RagPromptEnhancer
+    case RagPromptEnhancer.enhance_prompt_with_rag(
+           prompt_content,
+           rag_query,
+           context,
+           enhancement_options
+         ) do
+      {:ok, enhancement_result} ->
+        # Update generation with enhanced prompt and metadata
+        enhanced_generation =
+          %{
+            generation
+            | prompt: enhancement_result.enhanced_content,
+              rag_prompt_context: build_rag_context_summary(generation),
+              prompt_enhanced: true,
+              prompt_enhancement_metadata:
+                Map.merge(generation.prompt_enhancement_metadata, %{
+                  enhancement_successful: true,
+                  rag_context_injected: enhancement_result.rag_context_injected,
+                  enhancement_strategy:
+                    Map.get(enhancement_result, :enhancement_strategy, :unknown),
+                  original_prompt_length: String.length(prompt_content),
+                  enhanced_prompt_length: String.length(enhancement_result.enhanced_content)
+                })
+          }
+          |> record_stage_timing(:prompt_enhancement)
+
+        enhanced_generation
+
+      {:error, reason} ->
+        generation
+        |> add_error(%{error: reason, type: :prompt_enhancement})
+        |> Map.put(
+          :prompt_enhancement_metadata,
+          Map.merge(generation.prompt_enhancement_metadata, %{
+            enhancement_successful: false,
+            enhancement_error: reason
+          })
+        )
+    end
+  end
+
+  defp build_rag_query_from_generation(generation) do
+    # Build a comprehensive RAG query from the generation data
+    base_query = generation.query || ""
+
+    # Enhance query with context if available
+    enhanced_query =
+      case generation.context do
+        nil ->
+          base_query
+
+        context when is_binary(context) ->
+          if String.length(context) > 0 do
+            "#{base_query}\n\nRelevant context: #{String.slice(context, 0, 500)}"
+          else
+            base_query
+          end
+
+        _ ->
+          base_query
+      end
+
+    enhanced_query
+  end
+
+  defp build_enhancement_context(generation, enhancement_options) do
+    # Build context map for prompt enhancement
+    %{
+      user_context: generation.user_context,
+      pipeline_config: generation.pipeline_config,
+      query_metadata: generation.query_metadata,
+      retrieval_results_summary: summarize_retrieval_results(generation.retrieval_results),
+      context_sources_count: length(generation.context_sources),
+      enhancement_level: Map.get(enhancement_options, :enhancement_level, :standard),
+      project_specific: Map.get(enhancement_options, :project_specific, true)
+    }
+  end
+
+  defp build_rag_context_summary(generation) do
+    # Build a summary of RAG context for injection
+    context_parts = []
+
+    # Add retrieval summary if available
+    context_parts =
+      if not Enum.empty?(generation.retrieval_results.fused_results) do
+        retrieval_summary =
+          "Retrieved #{length(generation.retrieval_results.fused_results)} relevant documents"
+
+        [retrieval_summary | context_parts]
+      else
+        context_parts
+      end
+
+    # Add context summary if available
+    context_parts =
+      if generation.context do
+        context_summary =
+          "Context includes #{String.length(generation.context)} characters from #{length(generation.context_sources)} sources"
+
+        [context_summary | context_parts]
+      else
+        context_parts
+      end
+
+    case context_parts do
+      [] -> "No RAG context available"
+      parts -> Enum.join(parts, ". ")
+    end
+  end
+
+  defp summarize_retrieval_results(retrieval_results) do
+    %{
+      semantic_results_count: length(retrieval_results.semantic_results),
+      fulltext_results_count: length(retrieval_results.fulltext_results),
+      fused_results_count: length(retrieval_results.fused_results),
+      has_fusion_metadata: not Enum.empty?(Map.keys(retrieval_results.fusion_metadata))
+    }
+  end
 
   defp record_stage_timing(generation, stage) do
     current_time = System.monotonic_time(:microsecond)
@@ -334,6 +511,7 @@ defmodule RubberDuck.Rag.Generation do
       {:halted, generation.halted?},
       {:evaluation_complete, evaluation_complete?(generation)},
       {:response_generated, response_generated?(generation)},
+      {:prompt_enhanced, prompt_enhanced?(generation)},
       {:prompt_built, prompt_built?(generation)},
       {:context_built, context_built?(generation)},
       {:retrieval_complete, retrieval_complete?(generation)},
@@ -358,6 +536,10 @@ defmodule RubberDuck.Rag.Generation do
 
   defp response_generated?(generation) do
     not is_nil(generation.response)
+  end
+
+  defp prompt_enhanced?(generation) do
+    generation.prompt_enhanced
   end
 
   defp prompt_built?(generation) do
