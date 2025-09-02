@@ -461,13 +461,13 @@ defmodule RubberDuck.Rag.Generation do
 
     # Add retrieval summary if available
     context_parts =
-      if not Enum.empty?(generation.retrieval_results.fused_results) do
+      if Enum.empty?(generation.retrieval_results.fused_results) do
+        context_parts
+      else
         retrieval_summary =
           "Retrieved #{length(generation.retrieval_results.fused_results)} relevant documents"
 
         [retrieval_summary | context_parts]
-      else
-        context_parts
       end
 
     # Add context summary if available

@@ -229,7 +229,12 @@ defmodule RubberDuck.Prompts.Integrations.RagPromptEnhancer do
     with {:ok, context_result} <-
            execute_context_injection_enhancement(prompt_content, rag_query, context, state),
          {:ok, semantic_result} <-
-           execute_semantic_enhancement(context_result.enhanced_content, rag_query, context, state),
+           execute_semantic_enhancement(
+             context_result.enhanced_content,
+             rag_query,
+             context,
+             state
+           ),
          {:ok, integration_result} <-
            execute_result_integration_enhancement(
              semantic_result.enhanced_content,
@@ -237,13 +242,23 @@ defmodule RubberDuck.Prompts.Integrations.RagPromptEnhancer do
              context,
              state
            ) do
-      build_comprehensive_rag_result(prompt_content, context_result, semantic_result, integration_result)
+      build_comprehensive_rag_result(
+        prompt_content,
+        context_result,
+        semantic_result,
+        integration_result
+      )
     else
       {:error, reason} -> {:error, {:comprehensive_enhancement_failed, reason}}
     end
   end
 
-  defp build_comprehensive_rag_result(prompt_content, context_result, semantic_result, integration_result) do
+  defp build_comprehensive_rag_result(
+         prompt_content,
+         context_result,
+         semantic_result,
+         integration_result
+       ) do
     comprehensive_result = %{
       enhanced_content: integration_result.enhanced_content,
       original_content: prompt_content,

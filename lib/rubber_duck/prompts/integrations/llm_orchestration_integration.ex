@@ -260,16 +260,31 @@ defmodule RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration do
   defp execute_comprehensive_integration_enhancement(llm_request, context, options, state) do
     # Execute comprehensive integration with all enhancements
     with {:ok, composed_result} <- compose_prompt_for_request(llm_request, context, options),
-         {:ok, validation_result} <- validate_composed_prompt(composed_result, llm_request, context),
-         {:ok, formatted_result} <- format_composed_prompt_for_provider(composed_result, llm_request, context),
-         {:ok, routing_result} <- optimize_provider_routing(formatted_result, llm_request, context) do
-      build_comprehensive_request(llm_request, composed_result, validation_result, formatted_result, routing_result)
+         {:ok, validation_result} <-
+           validate_composed_prompt(composed_result, llm_request, context),
+         {:ok, formatted_result} <-
+           format_composed_prompt_for_provider(composed_result, llm_request, context),
+         {:ok, routing_result} <-
+           optimize_provider_routing(formatted_result, llm_request, context) do
+      build_comprehensive_request(
+        llm_request,
+        composed_result,
+        validation_result,
+        formatted_result,
+        routing_result
+      )
     else
       {:error, reason} -> {:error, {:comprehensive_integration_failed, reason}}
     end
   end
 
-  defp build_comprehensive_request(llm_request, composed_result, validation_result, formatted_result, routing_result) do
+  defp build_comprehensive_request(
+         llm_request,
+         composed_result,
+         validation_result,
+         formatted_result,
+         routing_result
+       ) do
     comprehensive_request =
       Map.merge(llm_request, %{
         prompt: routing_result.final_prompt,

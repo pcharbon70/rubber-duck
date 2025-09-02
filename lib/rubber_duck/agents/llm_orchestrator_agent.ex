@@ -63,68 +63,14 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     # Step 2: Enhance request with prompt composition (new integration)
     case enhance_request_with_prompt_composition(request, request_requirements, options) do
       {:ok, enhanced_request} ->
-        # Step 3: Select optimal provider using multi-criteria optimization (updated with prompt data)
-        case select_optimal_provider(agent, request_requirements, enhanced_request) do
-          {:ok, provider_selection} ->
-            # Step 4: Optimize request for selected provider (enhanced with prompt composition metadata)
-            optimized_request =
-              optimize_request_for_provider(enhanced_request, provider_selection, domain)
-
-            # Step 5: Execute request via Universal Provider System
-            case execute_optimized_request(optimized_request, provider_selection, domain, options) do
-              {:ok, response} ->
-                orchestration_time = System.monotonic_time(:millisecond) - start_time
-
-                # Step 6: Learn from outcome and update performance data (enhanced with prompt effectiveness)
-                learn_from_outcome_with_prompt_data(
-                  agent,
-                  provider_selection,
-                  response,
-                  orchestration_time,
-                  enhanced_request
-                )
-
-                # Step 7: Return enhanced response with orchestration metadata
-                enhanced_response =
-                  enhance_response_with_orchestration_data(
-                    response,
-                    provider_selection,
-                    orchestration_time,
-                    enhanced_request
-                  )
-
-                {:ok, enhanced_response}
-
-              error ->
-                # Learn from failure and potentially retry with different provider
-                handle_orchestration_failure(
-                  agent,
-                  provider_selection,
-                  error,
-                  request_requirements
-                )
-            end
-
-          {:error, reason} ->
-            Logger.error("Provider selection failed: #{inspect(reason)}")
-            # Fallback to Universal Provider Service default routing
-            fallback_to_universal_provider(request, domain, options)
-        end
+        execute_enhanced_orchestration(agent, enhanced_request, domain, options, request_requirements, start_time)
 
       {:error, reason} ->
         Logger.warning(
           "Prompt composition enhancement failed, proceeding with basic orchestration: #{inspect(reason)}"
         )
 
-        # Fallback to original orchestration without prompt enhancement
-        execute_basic_orchestration(
-          agent,
-          request,
-          domain,
-          options,
-          request_requirements,
-          start_time
-        )
+        execute_basic_orchestration(agent, request, domain, options, request_requirements, start_time)
     end
   end
 
@@ -397,7 +343,14 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     end
   end
 
-  defp execute_basic_orchestration(agent, request, domain, options, request_requirements, start_time) do
+  defp execute_basic_orchestration(
+         agent,
+         request,
+         domain,
+         options,
+         request_requirements,
+         start_time
+       ) do
     # Fallback to basic orchestration without prompt composition
     case select_optimal_provider(agent, request_requirements) do
       {:ok, provider_selection} ->
@@ -417,7 +370,15 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     end
   end
 
-  defp execute_basic_orchestration_with_provider(agent, request, domain, options, provider_selection, request_requirements, start_time) do
+  defp execute_basic_orchestration_with_provider(
+         agent,
+         request,
+         domain,
+         options,
+         provider_selection,
+         request_requirements,
+         start_time
+       ) do
     optimized_request = optimize_request_for_provider(request, provider_selection, domain)
 
     case execute_optimized_request(optimized_request, provider_selection, domain, options) do
@@ -425,10 +386,79 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
         orchestration_time = System.monotonic_time(:millisecond) - start_time
         learn_from_outcome(agent, provider_selection, response, orchestration_time)
 
-        enhanced_response = enhance_response_with_orchestration_data(response, provider_selection, orchestration_time)
+        enhanced_response =
+          enhance_response_with_orchestration_data(
+            response,
+            provider_selection,
+            orchestration_time
+          )
+
         {:ok, enhanced_response}
 
       error ->
+        handle_orchestration_failure(agent, provider_selection, error, request_requirements)
+    end
+  end
+
+  defp execute_enhanced_orchestration(agent, enhanced_request, domain, options, request_requirements, start_time) do
+    # Step 3: Select optimal provider using multi-criteria optimization (updated with prompt data)
+    case select_optimal_provider(agent, request_requirements, enhanced_request) do
+      {:ok, provider_selection} ->
+        execute_enhanced_orchestration_with_provider(
+          agent,
+          enhanced_request,
+          domain,
+          options,
+          provider_selection,
+          request_requirements,
+          start_time
+        )
+
+      {:error, reason} ->
+        Logger.error("Provider selection failed: #{inspect(reason)}")
+        fallback_to_universal_provider(enhanced_request, domain, options)
+    end
+  end
+
+  defp execute_enhanced_orchestration_with_provider(
+         agent,
+         enhanced_request,
+         domain,
+         options,
+         provider_selection,
+         request_requirements,
+         start_time
+       ) do
+    # Step 4: Optimize request for selected provider (enhanced with prompt composition metadata)
+    optimized_request = optimize_request_for_provider(enhanced_request, provider_selection, domain)
+
+    # Step 5: Execute request via Universal Provider System
+    case execute_optimized_request(optimized_request, provider_selection, domain, options) do
+      {:ok, response} ->
+        orchestration_time = System.monotonic_time(:millisecond) - start_time
+
+        # Step 6: Learn from outcome and update performance data (enhanced with prompt effectiveness)
+        learn_from_outcome_with_prompt_data(
+          agent,
+          provider_selection,
+          response,
+          orchestration_time,
+          enhanced_request
+        )
+
+        # Step 7: Return enhanced response with orchestration metadata
+        enhanced_response =
+          enhance_response_with_orchestration_data(
+            response,
+            provider_selection,
+            orchestration_time,
+            enhanced_request
+          )
+
+        {:ok, enhanced_response}
+
+      error ->
+        # Learn from failure and potentially retry with different provider
         handle_orchestration_failure(agent, provider_selection, error, request_requirements)
     end
   end
@@ -1077,33 +1107,39 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
         0.5
 
       request ->
-        base_score = 0.6
-
-        # Boost score if provider is recommended by prompt composition
-        provider_boost =
-          case Map.get(request, :recommended_provider) do
-            provider when is_binary(provider) ->
-              if provider == Atom.to_string(provider_type), do: 0.3, else: 0.0
-
-            _ ->
-              0.0
-          end
-
-        # Historical prompt composition effectiveness for this provider
-        historical_effectiveness =
-          case Map.get(performance_data, provider_type) do
-            nil -> 0.5
-            provider_data -> Map.get(provider_data, :prompt_effectiveness_score, 0.5)
-          end
-
-        # Provider optimization compatibility
-        optimization_boost = if Map.get(request, :provider_optimized, false), do: 0.2, else: 0.0
-
-        composition_score = base_score + provider_boost + optimization_boost
-
-        # Weighted average with historical data
-        (composition_score + historical_effectiveness) / 2
+        calculate_composition_score_for_request(provider_type, request, performance_data)
     end
+  end
+
+  defp calculate_composition_score_for_request(provider_type, request, performance_data) do
+    base_score = 0.6
+    provider_boost = calculate_provider_boost(provider_type, request)
+    historical_effectiveness = get_historical_effectiveness(provider_type, performance_data)
+    optimization_boost = calculate_optimization_boost(request)
+
+    composition_score = base_score + provider_boost + optimization_boost
+    (composition_score + historical_effectiveness) / 2
+  end
+
+  defp calculate_provider_boost(provider_type, request) do
+    case Map.get(request, :recommended_provider) do
+      provider when is_binary(provider) ->
+        if provider == Atom.to_string(provider_type), do: 0.3, else: 0.0
+
+      _ ->
+        0.0
+    end
+  end
+
+  defp get_historical_effectiveness(provider_type, performance_data) do
+    case Map.get(performance_data, provider_type) do
+      nil -> 0.5
+      provider_data -> Map.get(provider_data, :prompt_effectiveness_score, 0.5)
+    end
+  end
+
+  defp calculate_optimization_boost(request) do
+    if Map.get(request, :provider_optimized, false), do: 0.2, else: 0.0
   end
 
   defp determine_scoring_weights(requirements, learning_state, enhanced_request \\ nil) do
