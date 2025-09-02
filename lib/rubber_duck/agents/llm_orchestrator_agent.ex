@@ -63,14 +63,28 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     # Step 2: Enhance request with prompt composition (new integration)
     case enhance_request_with_prompt_composition(request, request_requirements, options) do
       {:ok, enhanced_request} ->
-        execute_enhanced_orchestration(agent, enhanced_request, domain, options, request_requirements, start_time)
+        execute_enhanced_orchestration(
+          agent,
+          enhanced_request,
+          domain,
+          options,
+          request_requirements,
+          start_time
+        )
 
       {:error, reason} ->
         Logger.warning(
           "Prompt composition enhancement failed, proceeding with basic orchestration: #{inspect(reason)}"
         )
 
-        execute_basic_orchestration(agent, request, domain, options, request_requirements, start_time)
+        execute_basic_orchestration(
+          agent,
+          request,
+          domain,
+          options,
+          request_requirements,
+          start_time
+        )
     end
   end
 
@@ -400,7 +414,14 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     end
   end
 
-  defp execute_enhanced_orchestration(agent, enhanced_request, domain, options, request_requirements, start_time) do
+  defp execute_enhanced_orchestration(
+         agent,
+         enhanced_request,
+         domain,
+         options,
+         request_requirements,
+         start_time
+       ) do
     # Step 3: Select optimal provider using multi-criteria optimization (updated with prompt data)
     case select_optimal_provider(agent, request_requirements, enhanced_request) do
       {:ok, provider_selection} ->
@@ -430,7 +451,8 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
          start_time
        ) do
     # Step 4: Optimize request for selected provider (enhanced with prompt composition metadata)
-    optimized_request = optimize_request_for_provider(enhanced_request, provider_selection, domain)
+    optimized_request =
+      optimize_request_for_provider(enhanced_request, provider_selection, domain)
 
     # Step 5: Execute request via Universal Provider System
     case execute_optimized_request(optimized_request, provider_selection, domain, options) do
