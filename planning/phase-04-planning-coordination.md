@@ -29,6 +29,8 @@
 
 Leverage Jido's full capabilities for multi-agent orchestration, creating a system where agents collaborate autonomously to plan, execute, and refine complex tasks using Instructions for workflow composition and Directives for runtime adaptation. Intelligence emerges from agent interactions without central control.
 
+**JidoAI Integration**: All planning agents utilize Phase 2AI's JidoAI interface for LLM-assisted planning. Planning prompts use `JidoAI.Prompt.MessageItem` for structured planning queries, multi-agent coordination leverages JidoAI's provider abstraction, and planning templates are stored in `JidoAI.Keyring` for reusable planning patterns across agent coordination workflows.
+
 ## 4.1 Enhanced Jido Integration with Instructions
 
 #### Tasks:

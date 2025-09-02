@@ -1,18 +1,19 @@
 defmodule RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration do
   @moduledoc """
-  Core LLM orchestration integration service for prompt composition coordination.
+  JidoAI-enhanced LLM orchestration integration service for prompt composition coordination.
 
-  Provides seamless integration between the prompt management system and existing
-  LLM orchestration infrastructure. Coordinates prompt composition with LLM requests,
-  provider-specific formatting, and performance optimization for end-to-end operations.
+  Provides seamless integration between the prompt management system and JidoAI-based
+  LLM orchestration infrastructure. Coordinates prompt composition with JidoAI requests,
+  provider-specific formatting via JidoAI patterns, and performance optimization for
+  end-to-end operations using JidoAI.Prompt.MessageItem and provider abstraction.
 
   Features:
-  - Prompt composition integration into LLM request routing with intelligent coordination
-  - Provider-specific prompt formatting with model optimization and compatibility validation
-  - Dynamic prompt selection based on request characteristics and context analysis
-  - Performance optimization for prompt + LLM operations with end-to-end coordination
-  - Integration with 6-agent prompt ecosystem and existing LLM orchestration infrastructure
-  - Backward compatibility with existing LLM operations while enhancing with prompt composition
+  - JidoAI.Prompt integration into LLM request routing with intelligent coordination
+  - JidoAI provider-specific prompt formatting with model optimization and compatibility validation
+  - Dynamic JidoAI.Prompt selection based on request characteristics and context analysis
+  - Performance optimization for prompt + JidoAI operations with end-to-end coordination
+  - Integration with 6-agent prompt ecosystem and JidoAI LLM orchestration infrastructure
+  - Full JidoAI native operations - no legacy LLM system support
   """
 
   use GenServer
@@ -23,6 +24,8 @@ defmodule RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration do
     Agents.PromptValidatorAgent,
     Integrations.ProviderPromptFormatter
   }
+  alias RubberDuck.JidoAI.{ProviderService, PromptAdapter}
+  alias Jido.AI.Prompt
 
   @supported_providers [
     "gpt-4",
@@ -535,7 +538,7 @@ defmodule RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration do
       enable_provider_optimization: Keyword.get(opts, :enable_provider_optimization, true),
       enable_rag_enhancement: Keyword.get(opts, :enable_rag_enhancement, true),
       performance_monitoring: Keyword.get(opts, :performance_monitoring, true),
-      backward_compatibility: Keyword.get(opts, :backward_compatibility, true)
+      jido_ai_native_only: true
     }
   end
 

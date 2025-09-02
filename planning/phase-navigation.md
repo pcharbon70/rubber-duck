@@ -18,10 +18,13 @@
 4. **[Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)**
    - Goal-based provider agents, intelligent routing, self-optimization
 
-5. **[Phase 2A: Reactor Workflows](phase-02a-reactor-workflows.md)**
+5. **[Phase 2AI: JidoAI Integration & LLM Standardization](phase-02ai-jidoai-integration.md)**
+   - Unified LLM interface, JidoAI provider management, prompt standardization
+
+6. **[Phase 2A: Reactor Workflows](phase-02a-reactor-workflows.md)**
    - Dynamic workflow composition, runtime modification, learning optimization
 
-6. **[Phase 2B: Multi-Layered Prompt Management System](phase-2b-multi-layered-prompts.md)**
+7. **[Phase 2B: Multi-Layered Prompt Management System](phase-2b-multi-layered-prompts.md)**
    - Hierarchical prompt composition, real-time collaboration, security validation
 
 7. **[Phase 2C: Coding Assistant Work Summary Management System](phase-02c-work-summary-management.md)**

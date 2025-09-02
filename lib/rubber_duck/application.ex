@@ -83,6 +83,9 @@ defmodule RubberDuck.Application do
   # Agentic System Layer - Core AI/ML functionality
   defp agentic_children do
     [
+      # JidoAI Integration - Unified LLM interface (Phase 2AI)
+      {RubberDuck.JidoAI.Supervisor, []},
+
       # Skills Registry - Central skill management
       RubberDuck.SkillsRegistry,
 
@@ -98,7 +101,7 @@ defmodule RubberDuck.Application do
       # Preference Change Monitoring
       RubberDuck.Preferences.PreferenceWatcher,
 
-      # LLM Provider Monitoring
+      # LLM Provider Monitoring (integrated with JidoAI)
       RubberDuck.Preferences.Llm.ProviderMonitor,
 
       # Agent Coordination Hub

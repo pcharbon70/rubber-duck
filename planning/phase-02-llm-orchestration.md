@@ -49,7 +49,7 @@
 
 ## Phase Links
 - **Previous**: [Phase 1B: Verdict-Based LLM Judge System](phase-1b-verdict-llm-judge.md)
-- **Next**: [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
+- **Next**: [Phase 2AI: JidoAI Integration & LLM Standardization](phase-02ai-jidoai-integration.md)
 - **Related**: [Implementation Appendices](implementation-appendices.md)
 
 ## All Phases
@@ -72,6 +72,8 @@
 ## Overview
 
 Transform LLM integration into a multi-agent system where agents autonomously select providers, optimize requests, learn from interactions, and continuously improve performance without human intervention. Using Jido Skills, each provider becomes a pluggable capability that can be configured, composed, and adapted at runtime through Instructions and Directives.
+
+**JidoAI Migration Note**: This phase's implementation requires complete replacement with Phase 2AI's JidoAI integration. The `UniversalProviderService` and all custom provider wrappers are replaced with `RubberDuck.JidoAI.ProviderService`, `LLMOrchestratorAgent` uses only JidoAI patterns, and all prompt composition utilizes `JidoAI.Prompt.MessageItem` exclusively. No legacy LLM systems remain.
 
 ## 2.1 LLM Orchestrator Agent System with Provider Skills  **COMPLETED - CORE IMPLEMENTATION**
 

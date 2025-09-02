@@ -97,7 +97,8 @@ defmodule RubberDuck.MixProject do
       {:dialyxir, "~> 1.3", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
       {:usage_rules, "~> 0.1.23"},
-      {:jido, "~> 1.2"}
+      {:jido, "~> 1.2"},
+      {:jido_ai, "~> 0.5.2"}
     ]
   end
 

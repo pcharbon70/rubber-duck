@@ -27,9 +27,10 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
   require Logger
 
-  alias RubberDuck.LlmProviders.{ProviderRouter, UniversalProviderService}
+  alias RubberDuck.JidoAI.{Configuration, ProviderService, PromptAdapter}
   alias RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration
   alias RubberDuck.SkillsActions.SkillsRegistry
+  alias Jido.AI.Prompt
 
   @orchestration_skills [
     :provider_selection_skill,
@@ -366,7 +367,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
       {:error, reason} ->
         Logger.error("Provider selection failed: #{inspect(reason)}")
-        fallback_to_universal_provider(request, domain, options)
+        fallback_to_jido_ai_provider(request, domain, options)
     end
   end
 
@@ -416,7 +417,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
       {:error, reason} ->
         Logger.error("Provider selection failed: #{inspect(reason)}")
-        fallback_to_universal_provider(enhanced_request, domain, options)
+        fallback_to_jido_ai_provider(enhanced_request, domain, options)
     end
   end
 
@@ -678,8 +679,8 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
   defp select_optimal_provider(agent, request_requirements, enhanced_request \\ nil) do
     current_state = Jido.Agent.get_state(agent)
 
-    # Get available providers from Universal Provider System
-    case UniversalProviderService.get_available_providers(request_requirements.domain) do
+    # Get available providers from JidoAI Provider System
+    case ProviderService.get_available_providers(request_requirements.domain) do
       {:ok, available_providers} ->
         # Apply multi-criteria optimization using learning data (enhanced with prompt composition data)
         case apply_multi_criteria_selection(
@@ -857,7 +858,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
         }
       })
 
-    UniversalProviderService.complete(optimized_request.content, domain, orchestration_options)
+    ProviderService.complete(optimized_request.content, domain, orchestration_options)
   end
 
   defp learn_from_outcome(agent, provider_selection, response, orchestration_time) do
@@ -945,11 +946,11 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     end
   end
 
-  defp fallback_to_universal_provider(request, domain, options) do
-    Logger.warning("Falling back to Universal Provider System default routing")
+  defp fallback_to_jido_ai_provider(request, domain, options) do
+    Logger.warning("Falling back to JidoAI Provider Service default routing")
 
-    # Use Universal Provider Service directly as fallback
-    UniversalProviderService.complete(request.content, domain, options)
+    # Use JidoAI Provider Service directly
+    ProviderService.complete(request.content, domain, options)
   end
 
   # Helper functions for orchestration logic
@@ -1480,7 +1481,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
   end
 
   defp check_all_provider_health do
-    case UniversalProviderService.get_provider_health() do
+    case ProviderService.get_provider_health() do
       {:ok, health_data} ->
         health_data
 

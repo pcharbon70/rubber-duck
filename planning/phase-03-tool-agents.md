@@ -5,9 +5,9 @@
 ---
 
 ## Phase Links
-- **Previous**: [Phase 2A: Runic Workflow System](phase-02a-runic-workflow.md)
+- **Previous**: [Phase 2B: Multi-Layered Prompt Management](phase-02b-multi-layered-prompts.md)
 - **Next**: [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
-- **Related**: [Implementation Appendices](implementation-appendices.md)
+- **Related**: [Phase 2AI: JidoAI Integration](phase-02ai-jidoai-integration.md), [Implementation Appendices](implementation-appendices.md)
 
 ## All Phases
 1. [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
@@ -28,6 +28,8 @@
 ## Overview
 
 Transform tools into intelligent agents powered by Jido Skills that autonomously decide when and how to execute, learn from usage patterns, optimize their own performance, and coordinate with other agents to achieve complex goals. Each tool becomes a reusable Skill that can be composed via Instructions and adapted through Directives.
+
+**JidoAI Integration**: All tool agents use Phase 2AI's unified JidoAI interface for LLM operations. Tool prompts are created using `JidoAI.Prompt.MessageItem`, provider selection uses `RubberDuck.JidoAI.ProviderService`, and configuration management utilizes `JidoAI.Keyring` for hierarchical tool preferences.
 
 ## 3.1 Tool Framework with Skills Architecture
 

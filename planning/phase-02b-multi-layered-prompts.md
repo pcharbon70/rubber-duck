@@ -7,28 +7,29 @@
 ## Phase Links
 - **Previous**: [Phase 2A: Reactor Workflow System](phase-02a-reactor-workflows.md)
 - **Next**: [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
-- **Related**: [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
+- **Related**: [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md), [Phase 2AI: JidoAI Integration](phase-02ai-jidoai-integration.md)
 
 ## All Phases
 1. [Phase 1: Agentic Foundation & Core Infrastructure](phase-01-agentic-foundation.md)
 2. [Phase 1A: User Preferences & Runtime Configuration Management](phase-1a-user-preferences-config.md)
 3. [Phase 2: Autonomous LLM Orchestration System](phase-02-llm-orchestration.md)
-4. [Phase 2A: Reactor Workflow System](phase-02a-reactor-workflows.md)
-5. **Phase 2B: Multi-Layered Prompt Management System** *(Current)*
-6. [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
-7. [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
-8. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
-9. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
-10. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
-11. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
-12. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
-13. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
-14. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
-15. [Phase 12: Advanced Code Analysis Capabilities](phase-12-advanced-analysis.md)
-16. [Phase 13: Integrated Web Interface & Collaborative Platform](phase-13-web-interface.md)
-17. [Phase 14: Intelligent Refactoring Agents System](phase-14-refactoring-agents.md)
-18. [Phase 15: Intelligent Code Smell Detection & Remediation System](phase-15-code-smell-detection.md)
-19. [Phase 16: Intelligent Anti-Pattern Detection & Refactoring System](phase-16-anti-pattern-detection.md)
+4. [Phase 2AI: JidoAI Integration & LLM Standardization](phase-02ai-jidoai-integration.md)
+5. [Phase 2A: Reactor Workflow System](phase-02a-reactor-workflows.md)
+6. **Phase 2B: Multi-Layered Prompt Management System** *(Current)*
+7. [Phase 3: Intelligent Tool Agent System](phase-03-tool-agents.md)
+8. [Phase 4: Multi-Agent Planning & Coordination](phase-04-planning-coordination.md)
+9. [Phase 5: Autonomous Memory & Context Management](phase-05-memory-context.md)
+10. [Phase 6: Self-Managing Communication Agents](phase-06-communication-agents.md)
+11. [Phase 7: Autonomous Conversation System](phase-07-conversation-system.md)
+12. [Phase 8: Self-Protecting Security System](phase-08-security-system.md)
+13. [Phase 9: Self-Optimizing Instruction Management](phase-09-instruction-management.md)
+14. [Phase 10: Autonomous Production Management](phase-10-production-management.md)
+15. [Phase 11: Autonomous Token & Cost Management System](phase-11-token-cost-management.md)
+16. [Phase 12: Advanced Code Analysis Capabilities](phase-12-advanced-analysis.md)
+17. [Phase 13: Integrated Web Interface & Collaborative Platform](phase-13-web-interface.md)
+18. [Phase 14: Intelligent Refactoring Agents System](phase-14-refactoring-agents.md)
+19. [Phase 15: Intelligent Code Smell Detection & Remediation System](phase-15-code-smell-detection.md)
+20. [Phase 16: Intelligent Anti-Pattern Detection & Refactoring System](phase-16-anti-pattern-detection.md)
 
 ---
 
@@ -36,7 +37,9 @@
 
 Implement a comprehensive three-tier prompt management system that enables hierarchical prompt composition, real-time collaboration, and intelligent optimization. This system provides the foundation for sophisticated LLM interactions by layering System prompts (immutable base instructions), Project prompts (team customization), and User prompts (dynamic context), with advanced security, caching, and integration capabilities.
 
-The system integrates deeply with Phase 2's LLM orchestration, Phase 2A's Reactor workflows, and Phase 2.4's RAG system to provide context-aware, secure, and performant prompt composition for all AI-enhanced operations.
+**JidoAI Integration Note**: This phase builds upon Phase 2AI's JidoAI integration, migrating the prompt management system to use `JidoAI.Prompt.MessageItem` for structured prompt composition, `JidoAI.Keyring` for configuration management, and JidoAI's native template engines (EEx/Liquid) for dynamic prompt rendering. The hierarchical prompt system is preserved but enhanced with JidoAI's type-safe, version-controlled prompt management patterns.
+
+The system integrates deeply with Phase 2's LLM orchestration (via Phase 2AI's JidoAI providers), Phase 2A's Reactor workflows, and Phase 2.4's RAG system to provide context-aware, secure, and performant prompt composition for all AI-enhanced operations using JidoAI's standardized interface.
 
 ## 2B.1 Core Prompt Resources
 
