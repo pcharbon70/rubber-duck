@@ -1,11 +1,11 @@
 defmodule RubberDuckWeb.Live.Components.PromptSelectionModal do
   @moduledoc """
   Modal LiveView component for prompt selection in LLM operations.
-  
+
   Provides a modal interface that overlays existing LLM operation interfaces,
   allowing users to browse, search, and select saved prompts with preview
   functionality and template variable substitution support.
-  
+
   Features:
   - Modal overlay for non-disruptive prompt selection
   - Full-featured prompt browser with search and filtering
@@ -62,7 +62,7 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModal do
     case find_prompt_by_id(prompt_id) do
       {:ok, prompt} ->
         variables = extract_template_variables(prompt.content)
-        
+
         socket =
           socket
           |> assign(:selected_prompt, prompt)
@@ -79,9 +79,9 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModal do
   @impl true
   def handle_event("update_variable", %{"variable" => variable_name, "value" => value}, socket) do
     %{variable_values: current_values, selected_prompt: prompt} = socket.assigns
-    
+
     updated_values = Map.put(current_values, variable_name, value)
-    
+
     # Update preview with new variable values
     case PromptVariableSubstitution.substitute_variables(prompt.content, updated_values) do
       {:ok, preview_content} ->
@@ -101,12 +101,13 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModal do
 
   @impl true
   def handle_event("insert_prompt", _params, socket) do
-    %{selected_prompt: prompt, preview_content: content, target_field: target_field} = socket.assigns
-    
+    %{selected_prompt: prompt, preview_content: content, target_field: target_field} =
+      socket.assigns
+
     if prompt && target_field do
       # Send insertion event to parent LiveView
       send(self(), {:insert_prompt_content, target_field, content, prompt})
-      
+
       socket =
         socket
         |> assign(:show_modal, false)
@@ -122,7 +123,7 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModal do
   @impl true
   def handle_info({:prompt_browser_selection, prompt}, socket) do
     variables = extract_template_variables(prompt.content)
-    
+
     socket =
       socket
       |> assign(:selected_prompt, prompt)
@@ -416,11 +417,12 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModal do
 
   defp extract_template_variables(content) do
     # Extract template variables from prompt content
-    variables = Regex.scan(~r/\{\{(\w+)\}\}/, content, capture: :all_but_first)
-    |> List.flatten()
-    |> Enum.uniq()
-    |> Enum.map(fn var -> {var, ""} end)
-    |> Map.new()
+    variables =
+      Regex.scan(~r/\{\{(\w+)\}\}/, content, capture: :all_but_first)
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.map(fn var -> {var, ""} end)
+      |> Map.new()
 
     variables
   end

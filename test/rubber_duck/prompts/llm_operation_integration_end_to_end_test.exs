@@ -13,35 +13,42 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       tenant_id = Ash.UUID.generate()
 
       # Step 1: Create comprehensive prompt library across three tiers
-      {:ok, system_prompt} = Prompt.create_system_prompt(%{
-        content: "Analyze the provided {{code_type}} code for {{analysis_focus}} issues. Provide detailed recommendations.",
-        name: "code_analysis_system_template",
-        tenant_id: tenant_id,
-        description: "System-wide code analysis template with variables"
-      })
+      {:ok, system_prompt} =
+        Prompt.create_system_prompt(%{
+          content:
+            "Analyze the provided {{code_type}} code for {{analysis_focus}} issues. Provide detailed recommendations.",
+          name: "code_analysis_system_template",
+          tenant_id: tenant_id,
+          description: "System-wide code analysis template with variables"
+        })
 
-      {:ok, project_prompt} = Prompt.create_project_prompt(%{
-        content: "Review {{code_component}} following our team standards: {{team_standards}}. Focus on {{quality_aspects}}.",
-        name: "team_code_review_prompt",
-        tenant_id: tenant_id,
-        project_id: project_id,
-        description: "Project-specific code review prompt with team standards"
-      })
+      {:ok, project_prompt} =
+        Prompt.create_project_prompt(%{
+          content:
+            "Review {{code_component}} following our team standards: {{team_standards}}. Focus on {{quality_aspects}}.",
+          name: "team_code_review_prompt",
+          tenant_id: tenant_id,
+          project_id: project_id,
+          description: "Project-specific code review prompt with team standards"
+        })
 
-      {:ok, user_prompt} = Prompt.create_user_prompt(%{
-        content: "Help me understand {{concept}} in the context of {{application_domain}}. Explain with practical examples.",
-        name: "concept_learning_prompt",
-        tenant_id: tenant_id,
-        user_id: user_id,
-        description: "Personal learning prompt for concept understanding"
-      })
+      {:ok, user_prompt} =
+        Prompt.create_user_prompt(%{
+          content:
+            "Help me understand {{concept}} in the context of {{application_domain}}. Explain with practical examples.",
+          name: "concept_learning_prompt",
+          tenant_id: tenant_id,
+          user_id: user_id,
+          description: "Personal learning prompt for concept understanding"
+        })
 
       # Step 2: Test three-tier prompt access in LLM operations
-      assert {:ok, available_prompts} = LlmPromptSelector.get_available_prompts(user_id, project_id)
+      assert {:ok, available_prompts} =
+               LlmPromptSelector.get_available_prompts(user_id, project_id)
 
       # Should have prompts from all three tiers
       assert length(available_prompts.system_prompts) >= 1
-      assert length(available_prompts.project_prompts) >= 1  
+      assert length(available_prompts.project_prompts) >= 1
       assert length(available_prompts.user_prompts) >= 1
       assert available_prompts.total_count >= 3
 
@@ -53,10 +60,12 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
 
       # Step 3: Test prompt search functionality for LLM operations
       # Search for code-related prompts
-      assert {:ok, code_search_results} = LlmPromptSelector.search_prompts(user_id, "code", project_id)
+      assert {:ok, code_search_results} =
+               LlmPromptSelector.search_prompts(user_id, "code", project_id)
 
       # Should find prompts with "code" in name or content
-      assert length(code_search_results) >= 2  # system and project prompts contain "code"
+      # system and project prompts contain "code"
+      assert length(code_search_results) >= 2
 
       # Results should be ranked by relevance
       for prompt <- code_search_results do
@@ -66,7 +75,8 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
 
       # Step 4: Test template variable extraction and substitution
       # Test system prompt variables
-      assert {:ok, system_variables} = PromptVariableSubstitution.extract_template_variables(system_prompt.content)
+      assert {:ok, system_variables} =
+               PromptVariableSubstitution.extract_template_variables(system_prompt.content)
 
       assert Map.has_key?(system_variables, "code_type")
       assert Map.has_key?(system_variables, "analysis_focus")
@@ -77,10 +87,11 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
         "analysis_focus" => "performance"
       }
 
-      assert {:ok, substituted_system} = PromptVariableSubstitution.substitute_variables(
-        system_prompt.content, 
-        variable_values
-      )
+      assert {:ok, substituted_system} =
+               PromptVariableSubstitution.substitute_variables(
+                 system_prompt.content,
+                 variable_values
+               )
 
       # Variables should be substituted
       assert String.contains?(substituted_system, "Elixir")
@@ -94,10 +105,11 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
         "quality_aspects" => "performance and maintainability"
       }
 
-      assert {:ok, substituted_project} = PromptVariableSubstitution.substitute_variables(
-        project_prompt.content,
-        project_variable_values
-      )
+      assert {:ok, substituted_project} =
+               PromptVariableSubstitution.substitute_variables(
+                 project_prompt.content,
+                 project_variable_values
+               )
 
       assert String.contains?(substituted_project, "UserService")
       assert String.contains?(substituted_project, "functional programming principles")
@@ -108,10 +120,11 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
         "application_domain" => "distributed systems"
       }
 
-      assert {:ok, substituted_user} = PromptVariableSubstitution.substitute_variables(
-        user_prompt.content,
-        user_variable_values
-      )
+      assert {:ok, substituted_user} =
+               PromptVariableSubstitution.substitute_variables(
+                 user_prompt.content,
+                 user_variable_values
+               )
 
       assert String.contains?(substituted_user, "GenServer supervision trees")
       assert String.contains?(substituted_user, "distributed systems")
@@ -157,7 +170,8 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       assert user_prompt.id in recent_prompt_ids
 
       # Step 10: Test usage analytics retrieval
-      assert {:ok, usage_stats} = PromptUsageTracker.get_prompt_usage_stats(system_prompt.id, user_id)
+      assert {:ok, usage_stats} =
+               PromptUsageTracker.get_prompt_usage_stats(system_prompt.id, user_id)
 
       assert Map.has_key?(usage_stats, :total_uses)
       assert Map.has_key?(usage_stats, :last_used)
@@ -167,7 +181,8 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       assert {:ok, user_analytics} = PromptUsageTracker.get_user_usage_analytics(user_id)
 
       assert user_analytics.user_id == user_id
-      assert user_analytics.total_usage_count >= 2  # System + user prompt usage
+      # System + user prompt usage
+      assert user_analytics.total_usage_count >= 2
       assert user_analytics.unique_prompts_used >= 2
 
       # Step 11: Test variable validation and security
@@ -179,7 +194,9 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
 
       safe_content = "Test prompt with {{safe_variable}} and {{another_var}}"
 
-      assert {:ok, safe_result} = PromptVariableSubstitution.substitute_variables(safe_content, safe_variables)
+      assert {:ok, safe_result} =
+               PromptVariableSubstitution.substitute_variables(safe_content, safe_variables)
+
       assert String.contains?(safe_result, "safe value")
 
       # Test variable validation catches unsafe content
@@ -203,17 +220,21 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       # Step 12: Test performance requirements validation
       # Create larger prompt collection for performance testing
       for i <- 1..100 do
-        {:ok, _prompt} = Prompt.create_user_prompt(%{
-          content: "Performance test prompt #{i} for load testing",
-          name: "perf_test_prompt_#{i}",
-          tenant_id: tenant_id,
-          user_id: user_id
-        })
+        {:ok, _prompt} =
+          Prompt.create_user_prompt(%{
+            content: "Performance test prompt #{i} for load testing",
+            name: "perf_test_prompt_#{i}",
+            tenant_id: tenant_id,
+            user_id: user_id
+          })
       end
 
       # Test search performance with larger collection
       search_start = System.monotonic_time(:microsecond)
-      assert {:ok, _large_search_results} = LlmPromptSelector.search_prompts(user_id, "performance", project_id)
+
+      assert {:ok, _large_search_results} =
+               LlmPromptSelector.search_prompts(user_id, "performance", project_id)
+
       search_time = System.monotonic_time(:microsecond) - search_start
       search_time_ms = search_time / 1000
 
@@ -222,12 +243,16 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
 
       # Test prompt retrieval performance
       retrieval_start = System.monotonic_time(:microsecond)
-      assert {:ok, _large_collection} = LlmPromptSelector.get_available_prompts(user_id, project_id)
+
+      assert {:ok, _large_collection} =
+               LlmPromptSelector.get_available_prompts(user_id, project_id)
+
       retrieval_time = System.monotonic_time(:microsecond) - retrieval_start
       retrieval_time_ms = retrieval_time / 1000
 
       # Should retrieve prompts efficiently
-      assert retrieval_time_ms < 300, "Prompt retrieval time #{retrieval_time_ms}ms exceeds 300ms target"
+      assert retrieval_time_ms < 300,
+             "Prompt retrieval time #{retrieval_time_ms}ms exceeds 300ms target"
 
       # Final assertion: Integration is complete and functional
       assert is_binary(user_id)
@@ -239,10 +264,12 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       # Test comprehensive template variable security
 
       # Test valid template content
-      valid_content = "Process {{data_input}} and generate {{output_format}} results for {{target_audience}}."
-      
-      assert {:ok, validation_result} = PromptVariableSubstitution.validate_template_variables(valid_content)
-      
+      valid_content =
+        "Process {{data_input}} and generate {{output_format}} results for {{target_audience}}."
+
+      assert {:ok, validation_result} =
+               PromptVariableSubstitution.validate_template_variables(valid_content)
+
       assert validation_result.safe == true
       assert validation_result.valid_syntax == true
       assert validation_result.variable_count == 3
@@ -250,7 +277,7 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       # Test content with forbidden patterns
       forbidden_contents = [
         "Execute {{system}} command",
-        "Run {{exec}} operation", 
+        "Run {{exec}} operation",
         "Evaluate {{eval}} expression",
         "Load <script>alert('test')</script>"
       ]
@@ -272,10 +299,12 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       end
 
       # Test variable extraction
-      complex_template = "Hello {{user_name|Anonymous}}, please {{action_verb}} the {{object_type|document}} for {{purpose}}."
-      
-      assert {:ok, extracted_vars} = PromptVariableSubstitution.extract_template_variables(complex_template)
-      
+      complex_template =
+        "Hello {{user_name|Anonymous}}, please {{action_verb}} the {{object_type|document}} for {{purpose}}."
+
+      assert {:ok, extracted_vars} =
+               PromptVariableSubstitution.extract_template_variables(complex_template)
+
       # Should extract all variables with their metadata
       assert Map.has_key?(extracted_vars, "user_name")
       assert Map.has_key?(extracted_vars, "action_verb")
@@ -298,34 +327,38 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       tenant_id = Ash.UUID.generate()
 
       # Create prompts with different access levels
-      {:ok, private_user1_prompt} = Prompt.create_user_prompt(%{
-        content: "User 1's private prompt",
-        name: "private_user1_prompt",
-        tenant_id: tenant_id,
-        user_id: user1_id
-      })
+      {:ok, private_user1_prompt} =
+        Prompt.create_user_prompt(%{
+          content: "User 1's private prompt",
+          name: "private_user1_prompt",
+          tenant_id: tenant_id,
+          user_id: user1_id
+        })
 
-      {:ok, project1_shared_prompt} = Prompt.create_project_prompt(%{
-        content: "Project 1 shared prompt",
-        name: "project1_shared_prompt",
-        tenant_id: tenant_id,
-        project_id: project1_id
-      })
+      {:ok, project1_shared_prompt} =
+        Prompt.create_project_prompt(%{
+          content: "Project 1 shared prompt",
+          name: "project1_shared_prompt",
+          tenant_id: tenant_id,
+          project_id: project1_id
+        })
 
       # Test User 1 access in Project 1 context
-      assert {:ok, user1_project1_prompts} = LlmPromptSelector.get_available_prompts(user1_id, project1_id)
+      assert {:ok, user1_project1_prompts} =
+               LlmPromptSelector.get_available_prompts(user1_id, project1_id)
 
       user1_project1_ids = extract_all_prompt_ids(user1_project1_prompts)
-      
+
       # User 1 should see their private prompt and project 1 shared prompt
       assert private_user1_prompt.id in user1_project1_ids
       assert project1_shared_prompt.id in user1_project1_ids
 
       # Test User 2 access in Project 1 context
-      assert {:ok, user2_project1_prompts} = LlmPromptSelector.get_available_prompts(user2_id, project1_id)
+      assert {:ok, user2_project1_prompts} =
+               LlmPromptSelector.get_available_prompts(user2_id, project1_id)
 
       user2_project1_ids = extract_all_prompt_ids(user2_project1_prompts)
-      
+
       # User 2 should see project 1 shared prompt but NOT User 1's private prompt
       assert project1_shared_prompt.id in user2_project1_ids
       assert private_user1_prompt.id not in user2_project1_ids
@@ -334,19 +367,22 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       assert {:ok, user1_no_project_prompts} = LlmPromptSelector.get_available_prompts(user1_id)
 
       user1_no_project_ids = extract_all_prompt_ids(user1_no_project_prompts)
-      
+
       # Without project context, should see personal and system prompts only
       assert private_user1_prompt.id in user1_no_project_ids
-      assert project1_shared_prompt.id not in user1_no_project_ids  # No project prompts without project context
+      # No project prompts without project context
+      assert project1_shared_prompt.id not in user1_no_project_ids
 
       # Test User 1 access in different project context (Project 2)
-      assert {:ok, user1_project2_prompts} = LlmPromptSelector.get_available_prompts(user1_id, project2_id)
+      assert {:ok, user1_project2_prompts} =
+               LlmPromptSelector.get_available_prompts(user1_id, project2_id)
 
       user1_project2_ids = extract_all_prompt_ids(user1_project2_prompts)
-      
+
       # Should see personal prompts but not Project 1's prompts in Project 2 context
       assert private_user1_prompt.id in user1_project2_ids
-      assert project1_shared_prompt.id not in user1_project2_ids  # Different project's prompts not visible
+      # Different project's prompts not visible
+      assert project1_shared_prompt.id not in user1_project2_ids
     end
 
     test "prompt search and filtering across tiers" do
@@ -357,38 +393,50 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       tenant_id = Ash.UUID.generate()
 
       # Create prompts with different characteristics for search testing
-      {:ok, code_review_prompt} = Prompt.create_user_prompt(%{
-        content: "Comprehensive code review focusing on security vulnerabilities and performance optimizations",
-        name: "security_performance_code_review",
-        tenant_id: tenant_id,
-        user_id: user_id,
-        description: "Security-focused code review template"
-      })
+      {:ok, code_review_prompt} =
+        Prompt.create_user_prompt(%{
+          content:
+            "Comprehensive code review focusing on security vulnerabilities and performance optimizations",
+          name: "security_performance_code_review",
+          tenant_id: tenant_id,
+          user_id: user_id,
+          description: "Security-focused code review template"
+        })
 
-      {:ok, documentation_prompt} = Prompt.create_user_prompt(%{
-        content: "Generate comprehensive API documentation with examples and error handling",
-        name: "api_documentation_generator", 
-        tenant_id: tenant_id,
-        user_id: user_id,
-        description: "API documentation template with examples"
-      })
+      {:ok, documentation_prompt} =
+        Prompt.create_user_prompt(%{
+          content: "Generate comprehensive API documentation with examples and error handling",
+          name: "api_documentation_generator",
+          tenant_id: tenant_id,
+          user_id: user_id,
+          description: "API documentation template with examples"
+        })
 
       # Test content-inclusive search
-      assert {:ok, security_search} = LlmPromptSelector.search_prompts(user_id, "security", project_id, %{include_content: true})
+      assert {:ok, security_search} =
+               LlmPromptSelector.search_prompts(user_id, "security", project_id, %{
+                 include_content: true
+               })
 
       # Should find prompts with "security" in content
       security_prompt_ids = Enum.map(security_search, fn p -> p.id end)
       assert code_review_prompt.id in security_prompt_ids
 
       # Test name/description only search
-      assert {:ok, api_name_search} = LlmPromptSelector.search_prompts(user_id, "api", project_id, %{include_content: false})
+      assert {:ok, api_name_search} =
+               LlmPromptSelector.search_prompts(user_id, "api", project_id, %{
+                 include_content: false
+               })
 
       # Should find prompts with "api" in name or description
       api_prompt_ids = Enum.map(api_name_search, fn p -> p.id end)
       assert documentation_prompt.id in api_prompt_ids
 
       # Test search scope filtering
-      assert {:ok, user_only_search} = LlmPromptSelector.search_prompts(user_id, "code", project_id, %{search_scope: :user_only})
+      assert {:ok, user_only_search} =
+               LlmPromptSelector.search_prompts(user_id, "code", project_id, %{
+                 search_scope: :user_only
+               })
 
       # Should only return user prompts
       for prompt <- user_only_search do
@@ -403,25 +451,38 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       project_id = Ash.UUID.generate()
       tenant_id = Ash.UUID.generate()
 
-      {:ok, analytics_test_prompt} = Prompt.create_user_prompt(%{
-        content: "Analytics test prompt with {{parameter}}",
-        name: "analytics_test_prompt",
-        tenant_id: tenant_id,
-        user_id: user_id
-      })
+      {:ok, analytics_test_prompt} =
+        Prompt.create_user_prompt(%{
+          content: "Analytics test prompt with {{parameter}}",
+          name: "analytics_test_prompt",
+          tenant_id: tenant_id,
+          user_id: user_id
+        })
 
       # Simulate multiple LLM operations using the prompt
       llm_operations = [
         %{
-          llm_context: %{llm_provider: "gpt-4", operation_type: :code_review, request_id: Ash.UUID.generate()},
+          llm_context: %{
+            llm_provider: "gpt-4",
+            operation_type: :code_review,
+            request_id: Ash.UUID.generate()
+          },
           metadata: %{success: true, response_quality: 0.9, tokens_used: 200}
         },
         %{
-          llm_context: %{llm_provider: "claude-3", operation_type: :documentation, request_id: Ash.UUID.generate()},
+          llm_context: %{
+            llm_provider: "claude-3",
+            operation_type: :documentation,
+            request_id: Ash.UUID.generate()
+          },
           metadata: %{success: true, response_quality: 0.85, tokens_used: 300}
         },
         %{
-          llm_context: %{llm_provider: "gpt-4", operation_type: :analysis, request_id: Ash.UUID.generate()},
+          llm_context: %{
+            llm_provider: "gpt-4",
+            operation_type: :analysis,
+            request_id: Ash.UUID.generate()
+          },
           metadata: %{success: false, response_quality: 0.6, tokens_used: 100}
         }
       ]
@@ -440,7 +501,8 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       Process.sleep(200)
 
       # Test usage statistics
-      assert {:ok, prompt_stats} = PromptUsageTracker.get_prompt_usage_stats(analytics_test_prompt.id, user_id)
+      assert {:ok, prompt_stats} =
+               PromptUsageTracker.get_prompt_usage_stats(analytics_test_prompt.id, user_id)
 
       assert prompt_stats.total_uses >= 3
       assert Map.has_key?(prompt_stats, :average_success_rate)
@@ -484,19 +546,21 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       # Test template validation catches dangerous patterns
       dangerous_templates = [
         "Execute {{system}} command",
-        "Run {{exec}} with parameters", 
+        "Run {{exec}} with parameters",
         "Evaluate {{eval}} expression"
       ]
 
       for dangerous_template <- dangerous_templates do
-        assert {:error, {:unsafe_content, _reason}} = 
-          PromptVariableSubstitution.validate_template_variables(dangerous_template)
+        assert {:error, {:unsafe_content, _reason}} =
+                 PromptVariableSubstitution.validate_template_variables(dangerous_template)
       end
 
       # Test valid templates pass validation
       safe_template = "Analyze {{code_input}} for {{quality_focus}} issues"
-      
-      assert {:ok, validation_result} = PromptVariableSubstitution.validate_template_variables(safe_template)
+
+      assert {:ok, validation_result} =
+               PromptVariableSubstitution.validate_template_variables(safe_template)
+
       assert validation_result.safe == true
       assert validation_result.valid_syntax == true
     end
@@ -509,34 +573,46 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
       tenant_id = Ash.UUID.generate()
 
       # Create realistic prompt library (500 prompts across tiers)
-      system_prompts = for i <- 1..50 do
-        {:ok, prompt} = Prompt.create_system_prompt(%{
-          content: "System prompt #{i} for performance testing with various content lengths and complexity",
-          name: "system_perf_prompt_#{i}",
-          tenant_id: tenant_id
-        })
-        prompt
-      end
+      system_prompts =
+        for i <- 1..50 do
+          {:ok, prompt} =
+            Prompt.create_system_prompt(%{
+              content:
+                "System prompt #{i} for performance testing with various content lengths and complexity",
+              name: "system_perf_prompt_#{i}",
+              tenant_id: tenant_id
+            })
 
-      project_prompts = for i <- 1..150 do
-        {:ok, prompt} = Prompt.create_project_prompt(%{
-          content: "Project prompt #{i} for team collaboration and performance testing with {{variable_#{i}}}",
-          name: "project_perf_prompt_#{i}",
-          tenant_id: tenant_id,
-          project_id: project_id
-        })
-        prompt
-      end
+          prompt
+        end
 
-      user_prompts = for i <- 1..300 do
-        {:ok, prompt} = Prompt.create_user_prompt(%{
-          content: "User prompt #{i} for personal productivity and performance testing with {{param_#{i}}} and {{context_#{i}}}",
-          name: "user_perf_prompt_#{i}",
-          tenant_id: tenant_id,
-          user_id: user_id
-        })
-        prompt
-      end
+      project_prompts =
+        for i <- 1..150 do
+          {:ok, prompt} =
+            Prompt.create_project_prompt(%{
+              content:
+                "Project prompt #{i} for team collaboration and performance testing with {{variable_#{i}}}",
+              name: "project_perf_prompt_#{i}",
+              tenant_id: tenant_id,
+              project_id: project_id
+            })
+
+          prompt
+        end
+
+      user_prompts =
+        for i <- 1..300 do
+          {:ok, prompt} =
+            Prompt.create_user_prompt(%{
+              content:
+                "User prompt #{i} for personal productivity and performance testing with {{param_#{i}}} and {{context_#{i}}}",
+              name: "user_perf_prompt_#{i}",
+              tenant_id: tenant_id,
+              user_id: user_id
+            })
+
+          prompt
+        end
 
       # Test retrieval performance with full collection
       full_retrieval_start = System.monotonic_time(:microsecond)
@@ -546,25 +622,33 @@ defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
 
       # Should handle 500+ prompts efficiently
       assert full_collection.total_count >= 500
-      assert full_retrieval_time_ms < 500, "Full collection retrieval #{full_retrieval_time_ms}ms exceeds 500ms target"
+
+      assert full_retrieval_time_ms < 500,
+             "Full collection retrieval #{full_retrieval_time_ms}ms exceeds 500ms target"
 
       # Test search performance with large collection
       large_search_start = System.monotonic_time(:microsecond)
-      assert {:ok, search_results} = LlmPromptSelector.search_prompts(user_id, "performance", project_id)
+
+      assert {:ok, search_results} =
+               LlmPromptSelector.search_prompts(user_id, "performance", project_id)
+
       large_search_time = System.monotonic_time(:microsecond) - large_search_start
       large_search_time_ms = large_search_time / 1000
 
       # Should search large collection within performance requirements
-      assert large_search_time_ms < 200, "Large collection search #{large_search_time_ms}ms exceeds 200ms requirement"
-      assert length(search_results) > 0  # Should find results
+      assert large_search_time_ms < 200,
+             "Large collection search #{large_search_time_ms}ms exceeds 200ms requirement"
+
+      # Should find results
+      assert length(search_results) > 0
     end
 
     # Helper functions
 
     defp extract_all_prompt_ids(organized_prompts) do
-      (organized_prompts.system_prompts || []) ++
-      (organized_prompts.project_prompts || []) ++
-      (organized_prompts.user_prompts || [])
+      ((organized_prompts.system_prompts || []) ++
+         (organized_prompts.project_prompts || []) ++
+         (organized_prompts.user_prompts || []))
       |> Enum.map(fn prompt -> prompt.id end)
     end
   end

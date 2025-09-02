@@ -1,12 +1,12 @@
 defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   @moduledoc """
   Service for efficient prompt selection in LLM operations.
-  
+
   Provides high-performance prompt retrieval, filtering, and selection
   capabilities for LLM operation interfaces. Enables users to browse
   and select from their three-tier prompt hierarchy (System/Project/User)
   with advanced search and filtering capabilities.
-  
+
   Features:
   - Efficient prompt retrieval with three-tier hierarchy access
   - Real-time search and filtering with sub-200ms performance
@@ -20,7 +20,8 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   alias RubberDuck.Prompts.Resources.{Prompt, PromptCategory, PromptUsage}
 
   @cache_table :llm_prompt_selection_cache
-  @cache_ttl :timer.minutes(5)  # 5-minute TTL for prompt selection cache
+  # 5-minute TTL for prompt selection cache
+  @cache_ttl :timer.minutes(5)
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -30,7 +31,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   def init(_opts) do
     # Initialize ETS cache for prompt selection
     :ets.new(@cache_table, [:set, :public, :named_table])
-    
+
     Logger.info("LlmPromptSelector: Service initialized with cache table")
     {:ok, %{}}
   end
@@ -48,7 +49,10 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   Search prompts for LLM operations with real-time filtering.
   """
   def search_prompts(user_id, search_query, project_id \\ nil, search_options \\ %{}) do
-    GenServer.call(__MODULE__, {:search_prompts, user_id, search_query, project_id, search_options})
+    GenServer.call(
+      __MODULE__,
+      {:search_prompts, user_id, search_query, project_id, search_options}
+    )
   end
 
   @doc """
@@ -84,7 +88,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   @impl true
   def handle_call({:get_available_prompts, user_id, project_id, options}, _from, state) do
     cache_key = build_cache_key(:available, user_id, project_id)
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_prompts} ->
         {:reply, {:ok, cached_prompts}, state}
@@ -102,9 +106,13 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   end
 
   @impl true
-  def handle_call({:search_prompts, user_id, search_query, project_id, search_options}, _from, state) do
-    Logger.debug("LlmPromptSelector: Searching prompts", 
-      user_id: user_id, 
+  def handle_call(
+        {:search_prompts, user_id, search_query, project_id, search_options},
+        _from,
+        state
+      ) do
+    Logger.debug("LlmPromptSelector: Searching prompts",
+      user_id: user_id,
       query: search_query,
       project_id: project_id
     )
@@ -122,7 +130,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   @impl true
   def handle_call({:get_recent_prompts, user_id, project_id, limit}, _from, state) do
     cache_key = build_cache_key(:recent, user_id, project_id)
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_recent} ->
         limited_recent = Enum.take(cached_recent, limit)
@@ -143,7 +151,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   @impl true
   def handle_call({:get_favorite_prompts, user_id, project_id}, _from, state) do
     cache_key = build_cache_key(:favorites, user_id, project_id)
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_favorites} ->
         {:reply, {:ok, cached_favorites}, state}
@@ -163,7 +171,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   @impl true
   def handle_call({:get_prompts_by_category, user_id, category_id, project_id}, _from, state) do
     cache_key = build_cache_key(:category, user_id, "#{project_id}:#{category_id}")
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_category_prompts} ->
         {:reply, {:ok, cached_category_prompts}, state}
@@ -183,11 +191,11 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   @impl true
   def handle_cast({:invalidate_cache, user_id}, state) do
     Logger.debug("LlmPromptSelector: Invalidating cache for user", user_id: user_id)
-    
+
     # Remove all cache entries for this user
     cache_pattern = "#{user_id}:*"
     :ets.match_delete(@cache_table, {cache_pattern, :_})
-    
+
     {:noreply, state}
   end
 
@@ -196,7 +204,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   defp fetch_available_prompts(user_id, project_id, options) do
     # Fetch prompts from all three tiers that user has access to
     filters = build_access_filters(user_id, project_id)
-    
+
     case Prompt.read(filters) do
       {:ok, prompts} ->
         # Organize by tier and priority
@@ -216,7 +224,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
 
     base_filters = build_access_filters(user_id, project_id)
     search_filters = build_search_filters(search_query, search_scope, include_content)
-    
+
     filters = Map.merge(base_filters, search_filters)
 
     case Prompt.read(filters) do
@@ -236,11 +244,12 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
       {:ok, recent_usage} ->
         # Get the actual prompts from usage records
         prompt_ids = Enum.map(recent_usage, fn usage -> usage.prompt_id end)
-        
-        filters = %{
-          id: {:in, prompt_ids}
-        }
-        |> Map.merge(build_access_filters(user_id, project_id))
+
+        filters =
+          %{
+            id: {:in, prompt_ids}
+          }
+          |> Map.merge(build_access_filters(user_id, project_id))
 
         case Prompt.read(filters) do
           {:ok, recent_prompts} ->
@@ -263,11 +272,12 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
     case PromptUsage.get_most_used_for_user(user_id, 20) do
       {:ok, frequent_usage} ->
         prompt_ids = Enum.map(frequent_usage, fn usage -> usage.prompt_id end)
-        
-        filters = %{
-          id: {:in, prompt_ids}
-        }
-        |> Map.merge(build_access_filters(user_id, project_id))
+
+        filters =
+          %{
+            id: {:in, prompt_ids}
+          }
+          |> Map.merge(build_access_filters(user_id, project_id))
 
         case Prompt.read(filters) do
           {:ok, favorite_prompts} ->
@@ -285,10 +295,11 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
 
   defp fetch_prompts_by_category(user_id, category_id, project_id) do
     # Fetch prompts in specific category
-    filters = %{
-      category_id: category_id
-    }
-    |> Map.merge(build_access_filters(user_id, project_id))
+    filters =
+      %{
+        category_id: category_id
+      }
+      |> Map.merge(build_access_filters(user_id, project_id))
 
     case Prompt.read(filters) do
       {:ok, category_prompts} ->
@@ -330,22 +341,23 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
     search_filters = %{}
 
     # Add text search filters
-    search_filters = if include_content do
-      Map.merge(search_filters, %{
-        or: [
-          %{name: {:ilike, "%#{search_query}%"}},
-          %{content: {:ilike, "%#{search_query}%"}},
-          %{description: {:ilike, "%#{search_query}%"}}
-        ]
-      })
-    else
-      Map.merge(search_filters, %{
-        or: [
-          %{name: {:ilike, "%#{search_query}%"}},
-          %{description: {:ilike, "%#{search_query}%"}}
-        ]
-      })
-    end
+    search_filters =
+      if include_content do
+        Map.merge(search_filters, %{
+          or: [
+            %{name: {:ilike, "%#{search_query}%"}},
+            %{content: {:ilike, "%#{search_query}%"}},
+            %{description: {:ilike, "%#{search_query}%"}}
+          ]
+        })
+      else
+        Map.merge(search_filters, %{
+          or: [
+            %{name: {:ilike, "%#{search_query}%"}},
+            %{description: {:ilike, "%#{search_query}%"}}
+          ]
+        })
+      end
 
     # Add scope filters
     case search_scope do
@@ -380,7 +392,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
   defp rank_search_results(search_results, search_query) do
     # Rank search results by relevance
     search_query_lower = String.downcase(search_query)
-    
+
     search_results
     |> Enum.map(fn prompt ->
       relevance_score = calculate_relevance_score(prompt, search_query_lower)
@@ -391,13 +403,21 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
 
   defp calculate_relevance_score(prompt, search_query) do
     # Calculate relevance score for search ranking
-    name_score = if String.contains?(String.downcase(prompt.name), search_query), do: 3.0, else: 0.0
-    description_score = if prompt.description && String.contains?(String.downcase(prompt.description), search_query), do: 2.0, else: 0.0
-    content_score = if String.contains?(String.downcase(prompt.content), search_query), do: 1.0, else: 0.0
-    
+    name_score =
+      if String.contains?(String.downcase(prompt.name), search_query), do: 3.0, else: 0.0
+
+    description_score =
+      if prompt.description &&
+           String.contains?(String.downcase(prompt.description), search_query),
+         do: 2.0,
+         else: 0.0
+
+    content_score =
+      if String.contains?(String.downcase(prompt.content), search_query), do: 1.0, else: 0.0
+
     # Boost score for more recent prompts
     recency_boost = calculate_recency_boost(prompt)
-    
+
     name_score + description_score + content_score + recency_boost
   end
 
@@ -405,27 +425,34 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelector do
     # Boost recently created or updated prompts
     now = DateTime.utc_now()
     updated_at = prompt.updated_at || prompt.inserted_at
-    
+
     days_old = DateTime.diff(now, updated_at, :day)
-    
+
     case days_old do
-      days when days <= 7 -> 1.0    # Recent prompts get boost
-      days when days <= 30 -> 0.5   # Moderately recent
-      _ -> 0.0                      # Older prompts
+      # Recent prompts get boost
+      days when days <= 7 -> 1.0
+      # Moderately recent
+      days when days <= 30 -> 0.5
+      # Older prompts
+      _ -> 0.0
     end
   end
 
   defp sort_prompts_by_usage_recency(prompts, usage_records) do
     # Sort prompts by usage recency
     usage_map = Map.new(usage_records, fn usage -> {usage.prompt_id, usage.used_at} end)
-    
+
     prompts
-    |> Enum.sort_by(fn prompt ->
-      case Map.get(usage_map, prompt.id) do
-        nil -> ~U[2000-01-01 00:00:00Z]  # Very old date for unused prompts
-        used_at -> used_at
-      end
-    end, :desc)
+    |> Enum.sort_by(
+      fn prompt ->
+        case Map.get(usage_map, prompt.id) do
+          # Very old date for unused prompts
+          nil -> ~U[2000-01-01 00:00:00Z]
+          used_at -> used_at
+        end
+      end,
+      :desc
+    )
   end
 
   # Cache functions

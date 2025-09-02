@@ -1,12 +1,12 @@
 defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
   @moduledoc """
   LiveView component for browsing and selecting saved prompts in LLM operations.
-  
+
   Provides an embeddable prompt browser interface that allows users to browse
   their three-tier prompt hierarchy (System/Project/User), search for relevant
   prompts, and select prompts for insertion into LLM request fields with
   template variable substitution support.
-  
+
   Features:
   - Three-tier prompt browsing with hierarchical navigation
   - Real-time search with live filtering and suggestions
@@ -35,18 +35,18 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
   @impl true
   def update(%{user_id: user_id, project_id: project_id} = assigns, socket) do
     socket = assign(socket, assigns)
-    
+
     # Load initial prompts asynchronously to avoid blocking
     send(self(), {:load_initial_prompts, user_id, project_id})
-    
+
     {:ok, socket}
   end
 
   @impl true
   def handle_event("search_prompts", %{"search_query" => query}, socket) do
     %{user_id: user_id, project_id: project_id} = socket.assigns
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:search_query, query)
       |> assign(:loading, true)
@@ -66,22 +66,22 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
   def handle_event("select_tier", %{"tier" => tier}, socket) do
     %{user_id: user_id, project_id: project_id} = socket.assigns
     selected_tier = String.to_existing_atom(tier)
-    
+
     socket = assign(socket, :selected_tier, selected_tier)
-    
+
     # Filter prompts by selected tier
     send(self(), {:filter_by_tier, selected_tier, user_id, project_id})
-    
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("select_prompt", %{"prompt_id" => prompt_id}, socket) do
     %{prompts: prompts} = socket.assigns
-    
+
     # Find selected prompt across all tiers
     selected_prompt = find_prompt_by_id(prompts, prompt_id)
-    
+
     case selected_prompt do
       nil ->
         {:noreply, assign(socket, :error, "Prompt not found")}
@@ -96,7 +96,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
   @impl true
   def handle_event("load_recent", _params, socket) do
     %{user_id: user_id, project_id: project_id} = socket.assigns
-    
+
     case LlmPromptSelector.get_recent_prompts(user_id, project_id, 10) do
       {:ok, recent_prompts} ->
         socket = assign(socket, :recent_prompts, recent_prompts)
@@ -111,7 +111,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
   @impl true
   def handle_event("load_favorites", _params, socket) do
     %{user_id: user_id, project_id: project_id} = socket.assigns
-    
+
     case LlmPromptSelector.get_favorite_prompts(user_id, project_id) do
       {:ok, favorite_prompts} ->
         socket = assign(socket, :prompts, %{favorites: favorite_prompts})
@@ -139,7 +139,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
 
       {:error, reason} ->
         Logger.error("Failed to load initial prompts: #{inspect(reason)}")
-        
+
         socket =
           socket
           |> assign(:loading, false)
@@ -164,7 +164,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
 
         {:error, reason} ->
           Logger.warning("Prompt search failed: #{inspect(reason)}")
-          
+
           socket =
             socket
             |> assign(:loading, false)
@@ -182,7 +182,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
     case LlmPromptSelector.get_available_prompts(user_id, project_id) do
       {:ok, organized_prompts} ->
         filtered_prompts = filter_prompts_by_tier(organized_prompts, tier)
-        
+
         socket =
           socket
           |> assign(:prompts, filtered_prompts)
@@ -583,12 +583,13 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
   # Private helper functions
 
   defp find_prompt_by_id(prompts, prompt_id) do
-    all_prompts = (prompts[:system_prompts] || []) ++ 
-                  (prompts[:project_prompts] || []) ++ 
-                  (prompts[:user_prompts] || []) ++
-                  (prompts[:search_results] || []) ++
-                  (prompts[:favorites] || [])
-    
+    all_prompts =
+      (prompts[:system_prompts] || []) ++
+        (prompts[:project_prompts] || []) ++
+        (prompts[:user_prompts] || []) ++
+        (prompts[:search_results] || []) ++
+        (prompts[:favorites] || [])
+
     Enum.find(all_prompts, fn prompt -> prompt.id == prompt_id end)
   end
 
@@ -613,7 +614,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
   defp format_prompt_type(prompt_type) do
     case prompt_type do
       :system -> "System"
-      :project -> "Project" 
+      :project -> "Project"
       :user -> "Personal"
       _ -> "Unknown"
     end
@@ -628,7 +629,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponent do
       length(prompts[:favorites] || []),
       length(recent_prompts)
     ]
-    
+
     Enum.sum(prompt_counts) == 0
   end
 end

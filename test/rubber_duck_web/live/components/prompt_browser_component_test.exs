@@ -12,18 +12,20 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
       tenant_id = Ash.UUID.generate()
 
       # Create test prompts
-      {:ok, system_prompt} = Prompt.create_system_prompt(%{
-        content: "System prompt for component testing",
-        name: "component_system_prompt",
-        tenant_id: tenant_id
-      })
+      {:ok, system_prompt} =
+        Prompt.create_system_prompt(%{
+          content: "System prompt for component testing",
+          name: "component_system_prompt",
+          tenant_id: tenant_id
+        })
 
-      {:ok, user_prompt} = Prompt.create_user_prompt(%{
-        content: "User prompt for component testing",
-        name: "component_user_prompt",
-        tenant_id: tenant_id,
-        user_id: user_id
-      })
+      {:ok, user_prompt} =
+        Prompt.create_user_prompt(%{
+          content: "User prompt for component testing",
+          name: "component_user_prompt",
+          tenant_id: tenant_id,
+          user_id: user_id
+        })
 
       %{
         user_id: user_id,
@@ -34,7 +36,10 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
       }
     end
 
-    test "renders prompt browser with three-tier navigation", %{user_id: user_id, project_id: project_id} do
+    test "renders prompt browser with three-tier navigation", %{
+      user_id: user_id,
+      project_id: project_id
+    } do
       # Render component
       assigns = %{
         user_id: user_id,
@@ -46,7 +51,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
 
       # Should have tier selection tabs
       assert html =~ "All Prompts"
-      assert html =~ "My Prompts" 
+      assert html =~ "My Prompts"
       assert html =~ "Project Prompts"
       assert html =~ "System Templates"
 
@@ -58,13 +63,17 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
       assert html =~ "Favorites"
     end
 
-    test "search functionality works with live events", %{user_id: user_id, project_id: project_id} do
+    test "search functionality works with live events", %{
+      user_id: user_id,
+      project_id: project_id
+    } do
       # Mount component in LiveView context
-      {:ok, view, _html} = live_isolated(Phoenix.LiveView, fn socket ->
-        socket
-        |> assign(:user_id, user_id)
-        |> assign(:project_id, project_id)
-      end)
+      {:ok, view, _html} =
+        live_isolated(Phoenix.LiveView, fn socket ->
+          socket
+          |> assign(:user_id, user_id)
+          |> assign(:project_id, project_id)
+        end)
 
       # Test search event
       search_query = "component"
@@ -84,7 +93,10 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
       assert html =~ "value=\"#{search_query}\""
     end
 
-    test "tier filtering displays correct prompt types", %{user_id: user_id, project_id: project_id} do
+    test "tier filtering displays correct prompt types", %{
+      user_id: user_id,
+      project_id: project_id
+    } do
       assigns = %{
         user_id: user_id,
         project_id: project_id,
@@ -92,10 +104,22 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
         selected_tier: :user,
         prompts: %{
           user_prompts: [
-            %{id: "1", name: "User Prompt", prompt_type: :user, content: "User content", description: "User desc"}
+            %{
+              id: "1",
+              name: "User Prompt",
+              prompt_type: :user,
+              content: "User content",
+              description: "User desc"
+            }
           ],
           system_prompts: [
-            %{id: "2", name: "System Prompt", prompt_type: :system, content: "System content", description: "System desc"}
+            %{
+              id: "2",
+              name: "System Prompt",
+              prompt_type: :system,
+              content: "System content",
+              description: "System desc"
+            }
           ]
         }
       }
@@ -121,7 +145,8 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
       # Simulate prompt selection
       # In actual implementation, this would trigger {:prompt_browser_selection, prompt} message
 
-      assert true  # Placeholder for actual event testing
+      # Placeholder for actual event testing
+      assert true
     end
 
     test "component handles loading and error states", %{user_id: user_id, project_id: project_id} do
@@ -177,7 +202,8 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentTest do
       assert html =~ "prompt-browser-component"
 
       # Should have accessible form elements
-      assert html =~ "phx-debounce"  # Debounced search
+      # Debounced search
+      assert html =~ "phx-debounce"
     end
   end
 end

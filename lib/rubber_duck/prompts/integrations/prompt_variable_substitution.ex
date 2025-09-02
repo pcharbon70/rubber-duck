@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
   @moduledoc """
   Service for handling template variable substitution in saved prompts.
-  
+
   Provides safe and efficient template variable substitution for saved prompts
   when they are selected for use in LLM operations. Supports variable validation,
   default values, and security sanitization to prevent injection attacks.
-  
+
   Features:
   - Safe template variable substitution with injection prevention
   - Variable validation and type checking for prompt templates
@@ -41,7 +41,8 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
             Logger.debug("PromptVariableSubstitution: Variable substitution completed",
               original_length: String.length(prompt_content),
               substituted_length: String.length(substituted_content),
-              variables_substituted: count_substituted_variables(prompt_content, substituted_content)
+              variables_substituted:
+                count_substituted_variables(prompt_content, substituted_content)
             )
 
             {:ok, substituted_content}
@@ -63,15 +64,16 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
       content_length: String.length(prompt_content)
     )
 
-    variables = Regex.scan(@variable_pattern, prompt_content, capture: :all_but_first)
-    |> Enum.map(fn
-      [variable_name] -> 
-        {variable_name, %{default: nil, type: :string, required: true}}
-      
-      [variable_name, default_value] -> 
-        {variable_name, %{default: default_value, type: :string, required: false}}
-    end)
-    |> Map.new()
+    variables =
+      Regex.scan(@variable_pattern, prompt_content, capture: :all_but_first)
+      |> Enum.map(fn
+        [variable_name] ->
+          {variable_name, %{default: nil, type: :string, required: true}}
+
+        [variable_name, default_value] ->
+          {variable_name, %{default: default_value, type: :string, required: false}}
+      end)
+      |> Map.new()
 
     Logger.debug("PromptVariableSubstitution: Template variables extracted",
       variable_count: map_size(variables),
@@ -93,11 +95,12 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
       {:ok, :safe} ->
         case validate_variable_syntax(prompt_content) do
           {:ok, :valid_syntax} ->
-            {:ok, %{
-              safe: true,
-              valid_syntax: true,
-              variable_count: count_template_variables(prompt_content)
-            }}
+            {:ok,
+             %{
+               safe: true,
+               valid_syntax: true,
+               variable_count: count_template_variables(prompt_content)
+             }}
 
           {:error, reason} ->
             {:error, {:invalid_syntax, reason}}
@@ -131,37 +134,38 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
 
   defp execute_variable_substitution(prompt_content, validated_values, options) do
     # Execute safe variable substitution
-    substituted_content = Regex.replace(@variable_pattern, prompt_content, fn match_data ->
-      case match_data do
-        [full_match, variable_name] ->
-          case Map.get(validated_values, variable_name) do
-            nil ->
-              # Keep original if no value provided
-              full_match
+    substituted_content =
+      Regex.replace(@variable_pattern, prompt_content, fn match_data ->
+        case match_data do
+          [full_match, variable_name] ->
+            case Map.get(validated_values, variable_name) do
+              nil ->
+                # Keep original if no value provided
+                full_match
 
-            value ->
-              # Sanitize and substitute
-              sanitized_value = sanitize_variable_value(value, options)
-              sanitized_value
-          end
-        
-        [full_match, variable_name, default_value] ->
-          case Map.get(validated_values, variable_name) do
-            nil ->
-              # Use default value if provided
-              sanitize_variable_value(default_value, options)
+              value ->
+                # Sanitize and substitute
+                sanitized_value = sanitize_variable_value(value, options)
+                sanitized_value
+            end
 
-            "" ->
-              # Use default value for empty string
-              sanitize_variable_value(default_value, options)
+          [full_match, variable_name, default_value] ->
+            case Map.get(validated_values, variable_name) do
+              nil ->
+                # Use default value if provided
+                sanitize_variable_value(default_value, options)
 
-            value ->
-              # Use provided value
-              sanitized_value = sanitize_variable_value(value, options)
-              sanitized_value
-          end
-      end
-    end)
+              "" ->
+                # Use default value for empty string
+                sanitize_variable_value(default_value, options)
+
+              value ->
+                # Use provided value
+                sanitized_value = sanitize_variable_value(value, options)
+                sanitized_value
+            end
+        end
+      end)
 
     case validate_substitution_result(substituted_content, options) do
       {:ok, :valid} ->
@@ -174,9 +178,10 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
 
   defp validate_variable_values(variable_values, options) do
     # Validate variable values for safety and constraints
-    validation_results = Enum.map(variable_values, fn {variable_name, value} ->
-      validate_single_variable(variable_name, value, options)
-    end)
+    validation_results =
+      Enum.map(variable_values, fn {variable_name, value} ->
+        validate_single_variable(variable_name, value, options)
+      end)
 
     failed_validations = Enum.filter(validation_results, &match?({:error, _}, &1))
 
@@ -209,10 +214,11 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
   defp sanitize_variable_value(value, options) do
     # Sanitize variable value for safe substitution
     enable_html_escaping = Map.get(options, :escape_html, true)
-    
-    sanitized = value
-    |> String.trim()
-    |> remove_control_characters()
+
+    sanitized =
+      value
+      |> String.trim()
+      |> remove_control_characters()
 
     if enable_html_escaping do
       Phoenix.HTML.html_escape(sanitized) |> Phoenix.HTML.safe_to_string()
@@ -223,9 +229,10 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
 
   defp check_for_forbidden_patterns(content) do
     # Check for forbidden patterns in content
-    forbidden_found = Enum.any?(@forbidden_patterns, fn pattern ->
-      Regex.match?(pattern, content)
-    end)
+    forbidden_found =
+      Enum.any?(@forbidden_patterns, fn pattern ->
+        Regex.match?(pattern, content)
+      end)
 
     if forbidden_found do
       {:error, :forbidden_patterns_detected}
@@ -241,9 +248,10 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
         {:ok, :no_variables}
 
       variables ->
-        invalid_variables = Enum.filter(variables, fn [full_match, variable_name | _] ->
-          not valid_variable_name?(variable_name)
-        end)
+        invalid_variables =
+          Enum.filter(variables, fn [full_match, variable_name | _] ->
+            not valid_variable_name?(variable_name)
+          end)
 
         case invalid_variables do
           [] ->
@@ -292,7 +300,7 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
     # Count how many variables were actually substituted
     original_count = count_template_variables(original_content)
     remaining_count = count_template_variables(substituted_content)
-    
+
     original_count - remaining_count
   end
 
@@ -301,39 +309,50 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
     suggestions = []
 
     # Add LLM operation context suggestions
-    suggestions = if Map.has_key?(context, :llm_operation_type) do
-      operation_suggestions = case context.llm_operation_type do
-        :code_review ->
-          [
-            %{name: "code_language", description: "Programming language", example: "Elixir"},
-            %{name: "review_focus", description: "Focus area for review", example: "security"}
-          ]
+    suggestions =
+      if Map.has_key?(context, :llm_operation_type) do
+        operation_suggestions =
+          case context.llm_operation_type do
+            :code_review ->
+              [
+                %{name: "code_language", description: "Programming language", example: "Elixir"},
+                %{name: "review_focus", description: "Focus area for review", example: "security"}
+              ]
 
-        :documentation ->
-          [
-            %{name: "component_name", description: "Component to document", example: "UserService"},
-            %{name: "documentation_type", description: "Type of documentation", example: "API reference"}
-          ]
+            :documentation ->
+              [
+                %{
+                  name: "component_name",
+                  description: "Component to document",
+                  example: "UserService"
+                },
+                %{
+                  name: "documentation_type",
+                  description: "Type of documentation",
+                  example: "API reference"
+                }
+              ]
 
-        _ ->
-          []
+            _ ->
+              []
+          end
+
+        suggestions ++ operation_suggestions
+      else
+        suggestions
       end
 
-      suggestions ++ operation_suggestions
-    else
-      suggestions
-    end
-
     # Add project context suggestions
-    suggestions = if Map.has_key?(context, :project_id) do
-      project_suggestions = [
-        %{name: "project_id", description: "Current project ID", example: context.project_id}
-      ]
+    suggestions =
+      if Map.has_key?(context, :project_id) do
+        project_suggestions = [
+          %{name: "project_id", description: "Current project ID", example: context.project_id}
+        ]
 
-      suggestions ++ project_suggestions
-    else
-      suggestions
-    end
+        suggestions ++ project_suggestions
+      else
+        suggestions
+      end
 
     suggestions
   end

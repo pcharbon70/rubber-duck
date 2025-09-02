@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   @moduledoc """
   Service for tracking prompt usage in LLM operations and analytics.
-  
+
   Provides comprehensive tracking of when and how saved prompts are used
   in LLM operations, enabling usage analytics, effectiveness measurement,
   and productivity insights for users and administrators.
-  
+
   Features:
   - Asynchronous usage tracking to avoid impacting LLM operation performance
   - Comprehensive usage analytics for saved prompts in LLM contexts
@@ -52,7 +52,10 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   Track prompt usage in LLM operations (asynchronous).
   """
   def track_llm_usage(user_id, prompt_id, llm_context, usage_metadata \\ %{}) do
-    GenServer.cast(__MODULE__, {:track_llm_usage, user_id, prompt_id, llm_context, usage_metadata})
+    GenServer.cast(
+      __MODULE__,
+      {:track_llm_usage, user_id, prompt_id, llm_context, usage_metadata}
+    )
   end
 
   @doc """
@@ -66,7 +69,10 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   Track prompt search events for search optimization.
   """
   def track_search_event(user_id, search_query, search_results_count, search_context) do
-    GenServer.cast(__MODULE__, {:track_search, user_id, search_query, search_results_count, search_context})
+    GenServer.cast(
+      __MODULE__,
+      {:track_search, user_id, search_query, search_results_count, search_context}
+    )
   end
 
   @doc """
@@ -99,12 +105,13 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
     updated_buffer = [usage_entry | state.usage_buffer]
 
     # Check if buffer should be flushed
-    updated_state = if length(updated_buffer) >= state.buffer_size do
-      flush_usage_buffer_sync(updated_buffer)
-      %{state | usage_buffer: []}
-    else
-      %{state | usage_buffer: updated_buffer}
-    end
+    updated_state =
+      if length(updated_buffer) >= state.buffer_size do
+        flush_usage_buffer_sync(updated_buffer)
+        %{state | usage_buffer: []}
+      else
+        %{state | usage_buffer: updated_buffer}
+      end
 
     {:noreply, updated_state}
   end
@@ -216,11 +223,12 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
       usage_type: :llm_operation,
       usage_context: entry.context,
       used_at: entry.timestamp,
-      metadata: Map.merge(entry.metadata, %{
-        llm_provider: Map.get(entry.context, :llm_provider),
-        operation_type: Map.get(entry.context, :operation_type),
-        success: Map.get(entry.metadata, :success, true)
-      })
+      metadata:
+        Map.merge(entry.metadata, %{
+          llm_provider: Map.get(entry.context, :llm_provider),
+          operation_type: Map.get(entry.context, :operation_type),
+          success: Map.get(entry.metadata, :success, true)
+        })
     }
 
     case PromptUsage.create(usage_attrs) do
@@ -272,12 +280,13 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   defp fetch_prompt_usage_stats(prompt_id, user_id) do
     # Fetch usage statistics for prompt
     filters = %{prompt_id: prompt_id}
-    
-    filters = if user_id do
-      Map.put(filters, :user_id, user_id)
-    else
-      filters
-    end
+
+    filters =
+      if user_id do
+        Map.put(filters, :user_id, user_id)
+      else
+        filters
+      end
 
     case PromptUsage.read(filters) do
       {:ok, usage_records} ->
@@ -294,9 +303,11 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
     time_range = Map.get(analytics_options, :time_range, :last_30_days)
     include_details = Map.get(analytics_options, :include_details, false)
 
-    filters = %{
-      user_id: user_id
-    } |> add_time_range_filter(time_range)
+    filters =
+      %{
+        user_id: user_id
+      }
+      |> add_time_range_filter(time_range)
 
     case PromptUsage.read(filters) do
       {:ok, usage_records} ->
@@ -311,14 +322,15 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
           analytics_generated_at: DateTime.utc_now()
         }
 
-        analytics = if include_details do
-          Map.merge(analytics, %{
-            detailed_usage: usage_records,
-            prompt_effectiveness: calculate_prompt_effectiveness(usage_records)
-          })
-        else
-          analytics
-        end
+        analytics =
+          if include_details do
+            Map.merge(analytics, %{
+              detailed_usage: usage_records,
+              prompt_effectiveness: calculate_prompt_effectiveness(usage_records)
+            })
+          else
+            analytics
+          end
 
         {:ok, analytics}
 
@@ -373,7 +385,7 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   defp calculate_daily_pattern(usage_records) do
     # Calculate usage pattern by day of week
     usage_records
-    |> Enum.group_by(fn record -> 
+    |> Enum.group_by(fn record ->
       Date.day_of_week(DateTime.to_date(record.used_at))
     end)
     |> Enum.map(fn {day, records} -> {day, length(records)} end)
@@ -382,8 +394,10 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
 
   defp get_first_usage_date(usage_records) do
     case usage_records do
-      [] -> nil
-      records -> 
+      [] ->
+        nil
+
+      records ->
         records
         |> Enum.min_by(fn record -> record.used_at end)
         |> Map.get(:used_at)
@@ -392,7 +406,9 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
 
   defp get_last_usage_date(usage_records) do
     case usage_records do
-      [] -> nil
+      [] ->
+        nil
+
       records ->
         records
         |> Enum.max_by(fn record -> record.used_at end)
@@ -403,11 +419,13 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   defp calculate_usage_frequency(usage_records) do
     # Calculate usage frequency (uses per day)
     case usage_records do
-      [] -> 0.0
+      [] ->
+        0.0
+
       records ->
         first_date = get_first_usage_date(records)
         last_date = get_last_usage_date(records)
-        
+
         if first_date && last_date do
           days_span = max(1, DateTime.diff(last_date, first_date, :day))
           length(records) / days_span
@@ -419,13 +437,14 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
 
   defp calculate_average_success_rate(usage_records) do
     # Calculate average success rate from metadata
-    success_records = Enum.filter(usage_records, fn record ->
-      case record.metadata do
-        %{success: true} -> true
-        %{"success" => true} -> true
-        _ -> false
-      end
-    end)
+    success_records =
+      Enum.filter(usage_records, fn record ->
+        case record.metadata do
+          %{success: true} -> true
+          %{"success" => true} -> true
+          _ -> false
+        end
+      end)
 
     case length(usage_records) do
       0 -> 0.0
@@ -444,12 +463,13 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
 
   defp add_time_range_filter(filters, time_range) do
     # Add time range filter to usage queries
-    cutoff_date = case time_range do
-      :last_7_days -> DateTime.add(DateTime.utc_now(), -7, :day)
-      :last_30_days -> DateTime.add(DateTime.utc_now(), -30, :day)
-      :last_90_days -> DateTime.add(DateTime.utc_now(), -90, :day)
-      _ -> DateTime.add(DateTime.utc_now(), -30, :day)
-    end
+    cutoff_date =
+      case time_range do
+        :last_7_days -> DateTime.add(DateTime.utc_now(), -7, :day)
+        :last_30_days -> DateTime.add(DateTime.utc_now(), -30, :day)
+        :last_90_days -> DateTime.add(DateTime.utc_now(), -90, :day)
+        _ -> DateTime.add(DateTime.utc_now(), -30, :day)
+      end
 
     Map.put(filters, :used_at, {:>=, cutoff_date})
   end
