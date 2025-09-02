@@ -28,6 +28,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
   require Logger
 
   alias RubberDuck.LlmProviders.{ProviderRouter, UniversalProviderService}
+  alias RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration
   alias RubberDuck.SkillsActions.SkillsRegistry
 
   @orchestration_skills [
@@ -47,48 +48,29 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
   @doc """
   Orchestrate LLM request with autonomous provider selection and optimization.
+  Enhanced with prompt composition integration for optimal performance.
   """
   def orchestrate_request(agent, request, domain, options \\ %{}) do
-    Logger.debug("Orchestrating LLM request for domain: #{domain}")
+    Logger.debug(
+      "Orchestrating LLM request for domain: #{domain} with prompt composition integration"
+    )
 
     start_time = System.monotonic_time(:millisecond)
 
     # Step 1: Analyze request and determine requirements
     request_requirements = analyze_request_requirements(request, domain, options)
 
-    # Step 2: Select optimal provider using multi-criteria optimization
-    case select_optimal_provider(agent, request_requirements) do
-      {:ok, provider_selection} ->
-        # Step 3: Optimize request for selected provider
-        optimized_request = optimize_request_for_provider(request, provider_selection, domain)
-
-        # Step 4: Execute request via Universal Provider System
-        case execute_optimized_request(optimized_request, provider_selection, domain, options) do
-          {:ok, response} ->
-            orchestration_time = System.monotonic_time(:millisecond) - start_time
-
-            # Step 5: Learn from outcome and update performance data
-            learn_from_outcome(agent, provider_selection, response, orchestration_time)
-
-            # Step 6: Return enhanced response with orchestration metadata
-            enhanced_response =
-              enhance_response_with_orchestration_data(
-                response,
-                provider_selection,
-                orchestration_time
-              )
-
-            {:ok, enhanced_response}
-
-          error ->
-            # Learn from failure and potentially retry with different provider
-            handle_orchestration_failure(agent, provider_selection, error, request_requirements)
-        end
+    # Step 2: Enhance request with prompt composition (new integration)
+    case enhance_request_with_prompt_composition(request, request_requirements, options) do
+      {:ok, enhanced_request} ->
+        execute_enhanced_orchestration(agent, enhanced_request, domain, options, request_requirements, start_time)
 
       {:error, reason} ->
-        Logger.error("Provider selection failed: #{inspect(reason)}")
-        # Fallback to Universal Provider Service default routing
-        fallback_to_universal_provider(request, domain, options)
+        Logger.warning(
+          "Prompt composition enhancement failed, proceeding with basic orchestration: #{inspect(reason)}"
+        )
+
+        execute_basic_orchestration(agent, request, domain, options, request_requirements, start_time)
     end
   end
 
@@ -197,7 +179,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
   end
 
   @impl true
-  def handle_signal(agent, %{pattern: "orchestrator.health_check"} = signal) do
+  def handle_signal(agent, %{pattern: "orchestrator.health_check"} = _signal) do
     Logger.debug("Performing orchestrator health check")
 
     current_state = Jido.Agent.get_state(agent)
@@ -229,7 +211,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
   end
 
   @impl true
-  def handle_signal(agent, %{pattern: "orchestrator.performance_update"} = signal) do
+  def handle_signal(agent, %{pattern: "orchestrator.performance_update"} = _signal) do
     Logger.debug("Updating orchestrator performance metrics")
 
     current_state = Jido.Agent.get_state(agent)
@@ -253,7 +235,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
   end
 
   @impl true
-  def handle_signal(agent, %{pattern: "orchestrator.learning_consolidation"} = signal) do
+  def handle_signal(agent, %{pattern: "orchestrator.learning_consolidation"} = _signal) do
     Logger.debug("Consolidating orchestrator learning")
 
     current_state = Jido.Agent.get_state(agent)
@@ -278,7 +260,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
   end
 
   @impl true
-  def handle_signal(agent, %{pattern: "provider_health_changed", data: health_data} = signal) do
+  def handle_signal(agent, %{pattern: "provider_health_changed", data: health_data} = _signal) do
     Logger.info("Provider health changed: #{inspect(health_data)}")
 
     current_state = Jido.Agent.get_state(agent)
@@ -294,6 +276,392 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
   # Private implementation
 
+  # Prompt composition integration functions
+
+  defp enhance_request_with_prompt_composition(request, request_requirements, options) do
+    Logger.debug("Enhancing request with prompt composition integration")
+
+    # Prepare LLM request for prompt composition
+    llm_request = %{
+      prompt: extract_prompt_content(request),
+      provider: determine_initial_provider_preference(request_requirements, options),
+      operation_type: request_requirements.domain,
+      user_id: Map.get(options, :user_id),
+      project_id: Map.get(options, :project_id),
+      timeout: Map.get(options, :timeout, 30_000),
+      quality: determine_quality_level(request_requirements),
+      cost_sensitivity: determine_cost_sensitivity(request_requirements)
+    }
+
+    # Integration context with orchestrator-specific information
+    context = %{
+      prompt_name:
+        Map.get(
+          options,
+          :prompt_name,
+          determine_prompt_name_for_orchestration(request_requirements)
+        ),
+      user_role: Map.get(options, :user_role, :user),
+      domain: request_requirements.domain,
+      use_case: request_requirements.domain,
+      orchestrator_context: %{
+        complexity: request_requirements.content_complexity,
+        estimated_tokens: request_requirements.estimated_tokens,
+        quality_requirements: request_requirements.quality_requirements
+      }
+    }
+
+    # Enhancement options for orchestrator integration
+    enhancement_options = %{
+      full_integration: Map.get(options, :enable_full_prompt_integration, true),
+      validate_routing: true,
+      provider_compatibility_check: true
+    }
+
+    case LlmOrchestrationIntegration.enhance_llm_request(
+           llm_request,
+           context,
+           enhancement_options
+         ) do
+      {:ok, enhanced_llm_request} ->
+        # Convert back to request format with enhancements
+        enhanced_request =
+          Map.merge(request, %{
+            content: Map.get(enhanced_llm_request, :prompt, request.content),
+            prompt_composed: Map.get(enhanced_llm_request, :prompt_composed, false),
+            provider_optimized: Map.get(enhanced_llm_request, :provider_optimized, false),
+            routing_optimized: Map.get(enhanced_llm_request, :routing_optimized, false),
+            recommended_provider: Map.get(enhanced_llm_request, :provider),
+            composition_metadata: Map.get(enhanced_llm_request, :composition_metadata, %{}),
+            enhancement_applied: true
+          })
+
+        {:ok, enhanced_request}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp execute_basic_orchestration(
+         agent,
+         request,
+         domain,
+         options,
+         request_requirements,
+         start_time
+       ) do
+    # Fallback to basic orchestration without prompt composition
+    case select_optimal_provider(agent, request_requirements) do
+      {:ok, provider_selection} ->
+        execute_basic_orchestration_with_provider(
+          agent,
+          request,
+          domain,
+          options,
+          provider_selection,
+          request_requirements,
+          start_time
+        )
+
+      {:error, reason} ->
+        Logger.error("Provider selection failed: #{inspect(reason)}")
+        fallback_to_universal_provider(request, domain, options)
+    end
+  end
+
+  defp execute_basic_orchestration_with_provider(
+         agent,
+         request,
+         domain,
+         options,
+         provider_selection,
+         request_requirements,
+         start_time
+       ) do
+    optimized_request = optimize_request_for_provider(request, provider_selection, domain)
+
+    case execute_optimized_request(optimized_request, provider_selection, domain, options) do
+      {:ok, response} ->
+        orchestration_time = System.monotonic_time(:millisecond) - start_time
+        learn_from_outcome(agent, provider_selection, response, orchestration_time)
+
+        enhanced_response =
+          enhance_response_with_orchestration_data(
+            response,
+            provider_selection,
+            orchestration_time
+          )
+
+        {:ok, enhanced_response}
+
+      error ->
+        handle_orchestration_failure(agent, provider_selection, error, request_requirements)
+    end
+  end
+
+  defp execute_enhanced_orchestration(agent, enhanced_request, domain, options, request_requirements, start_time) do
+    # Step 3: Select optimal provider using multi-criteria optimization (updated with prompt data)
+    case select_optimal_provider(agent, request_requirements, enhanced_request) do
+      {:ok, provider_selection} ->
+        execute_enhanced_orchestration_with_provider(
+          agent,
+          enhanced_request,
+          domain,
+          options,
+          provider_selection,
+          request_requirements,
+          start_time
+        )
+
+      {:error, reason} ->
+        Logger.error("Provider selection failed: #{inspect(reason)}")
+        fallback_to_universal_provider(enhanced_request, domain, options)
+    end
+  end
+
+  defp execute_enhanced_orchestration_with_provider(
+         agent,
+         enhanced_request,
+         domain,
+         options,
+         provider_selection,
+         request_requirements,
+         start_time
+       ) do
+    # Step 4: Optimize request for selected provider (enhanced with prompt composition metadata)
+    optimized_request = optimize_request_for_provider(enhanced_request, provider_selection, domain)
+
+    # Step 5: Execute request via Universal Provider System
+    case execute_optimized_request(optimized_request, provider_selection, domain, options) do
+      {:ok, response} ->
+        orchestration_time = System.monotonic_time(:millisecond) - start_time
+
+        # Step 6: Learn from outcome and update performance data (enhanced with prompt effectiveness)
+        learn_from_outcome_with_prompt_data(
+          agent,
+          provider_selection,
+          response,
+          orchestration_time,
+          enhanced_request
+        )
+
+        # Step 7: Return enhanced response with orchestration metadata
+        enhanced_response =
+          enhance_response_with_orchestration_data(
+            response,
+            provider_selection,
+            orchestration_time,
+            enhanced_request
+          )
+
+        {:ok, enhanced_response}
+
+      error ->
+        # Learn from failure and potentially retry with different provider
+        handle_orchestration_failure(agent, provider_selection, error, request_requirements)
+    end
+  end
+
+  defp learn_from_outcome_with_prompt_data(
+         agent,
+         provider_selection,
+         response,
+         orchestration_time,
+         enhanced_request
+       ) do
+    # Enhanced learning that includes prompt composition effectiveness
+    current_state = Jido.Agent.get_state(agent)
+
+    # Create enhanced learning data
+    learning_data = %{
+      provider: provider_selection.provider,
+      model: provider_selection.model,
+      predicted_cost: provider_selection.cost_estimate,
+      actual_cost: response.cost_usd,
+      predicted_quality: provider_selection.quality_prediction,
+      actual_response_quality: estimate_response_quality(response),
+      predicted_performance: provider_selection.performance_expectation,
+      actual_performance: orchestration_time,
+      success: response.success,
+      timestamp: DateTime.utc_now(),
+      # Prompt composition specific data
+      prompt_composed: Map.get(enhanced_request, :prompt_composed, false),
+      provider_optimized: Map.get(enhanced_request, :provider_optimized, false),
+      routing_optimized: Map.get(enhanced_request, :routing_optimized, false),
+      prompt_effectiveness: estimate_prompt_effectiveness(response, enhanced_request)
+    }
+
+    # Update provider performance data with prompt composition insights
+    updated_performance =
+      update_provider_performance_data_with_prompts(
+        current_state.provider_performance_data,
+        learning_data
+      )
+
+    # Update optimization metrics
+    updated_metrics =
+      update_optimization_metrics(current_state.optimization_metrics, learning_data)
+
+    updated_state = %{
+      current_state
+      | provider_performance_data: updated_performance,
+        optimization_metrics: updated_metrics
+    }
+
+    Jido.Agent.put_state(agent, updated_state)
+
+    # Send performance update to Universal Provider System
+    notify_provider_performance_update(learning_data)
+  end
+
+  # Utility functions for prompt composition integration
+
+  defp extract_prompt_content(request) do
+    case request do
+      %{content: content} when is_binary(content) -> content
+      %{prompt: prompt} when is_binary(prompt) -> prompt
+      content when is_binary(content) -> content
+      _ -> ""
+    end
+  end
+
+  defp determine_initial_provider_preference(request_requirements, options) do
+    cond do
+      Map.has_key?(options, :preferred_provider) ->
+        options.preferred_provider
+
+      request_requirements.quality_requirements.constitutional_ai_required ->
+        "claude-3-sonnet"
+
+      request_requirements.cost_constraints.cost_priority == :high ->
+        "gpt-3.5-turbo"
+
+      true ->
+        "gpt-4"
+    end
+  end
+
+  defp determine_quality_level(request_requirements) do
+    case request_requirements.quality_requirements.quality_priority do
+      :high -> :high
+      :medium -> :standard
+      :low -> :basic
+      _ -> :standard
+    end
+  end
+
+  defp determine_cost_sensitivity(request_requirements) do
+    case request_requirements.cost_constraints.cost_priority do
+      :high -> :high
+      :medium -> :medium
+      :low -> :low
+      _ -> :medium
+    end
+  end
+
+  defp determine_prompt_name_for_orchestration(request_requirements) do
+    case {request_requirements.domain, request_requirements.content_complexity} do
+      {:evaluation, :high} -> "complex_code_evaluation_prompt"
+      {:evaluation, _} -> "standard_code_evaluation_prompt"
+      {:orchestration, :high} -> "complex_orchestration_prompt"
+      {:orchestration, _} -> "standard_orchestration_prompt"
+      {domain, _} -> "#{domain}_orchestration_prompt"
+    end
+  end
+
+  defp estimate_prompt_effectiveness(response, enhanced_request) do
+    # Estimate how effective the prompt composition was
+    base_effectiveness = if Map.get(enhanced_request, :prompt_composed, false), do: 0.8, else: 0.5
+
+    # Adjust based on response quality
+    quality_adjustment =
+      case response.success do
+        true -> 0.2
+        false -> -0.3
+      end
+
+    # Adjust based on provider optimization
+    provider_adjustment =
+      if Map.get(enhanced_request, :provider_optimized, false), do: 0.1, else: 0.0
+
+    max(0.0, min(1.0, base_effectiveness + quality_adjustment + provider_adjustment))
+  end
+
+  defp update_provider_performance_data_with_prompts(current_data, learning_data) do
+    provider = learning_data.provider
+
+    current_data
+    |> Map.update(provider, %{}, fn provider_data ->
+      base_data = %{
+        total_requests: Map.get(provider_data, :total_requests, 0) + 1,
+        success_rate: update_success_rate(provider_data, learning_data.success),
+        avg_cost: update_average_cost(provider_data, learning_data.actual_cost),
+        avg_quality: update_average_quality(provider_data, learning_data.actual_response_quality),
+        avg_response_time:
+          update_average_response_time(provider_data, learning_data.actual_performance),
+        cost_prediction_accuracy: update_prediction_accuracy(provider_data, :cost, learning_data),
+        quality_prediction_accuracy:
+          update_prediction_accuracy(provider_data, :quality, learning_data),
+        last_updated: DateTime.utc_now()
+      }
+
+      # Add prompt composition specific metrics
+      prompt_data = %{
+        prompt_composition_usage_rate: update_prompt_usage_rate(provider_data, learning_data),
+        prompt_effectiveness_score: update_prompt_effectiveness(provider_data, learning_data),
+        provider_optimization_impact:
+          update_provider_optimization_impact(provider_data, learning_data)
+      }
+
+      Map.merge(base_data, prompt_data)
+    end)
+  end
+
+  defp update_prompt_usage_rate(provider_data, learning_data) do
+    current_rate = Map.get(provider_data, :prompt_composition_usage_rate, 0.0)
+    current_count = Map.get(provider_data, :total_requests, 0)
+
+    if current_count > 0 do
+      (current_rate * current_count + if(learning_data.prompt_composed, do: 1.0, else: 0.0)) /
+        (current_count + 1)
+    else
+      if learning_data.prompt_composed, do: 1.0, else: 0.0
+    end
+  end
+
+  defp update_prompt_effectiveness(provider_data, learning_data) do
+    current_effectiveness = Map.get(provider_data, :prompt_effectiveness_score, 0.5)
+    current_count = Map.get(provider_data, :total_requests, 0)
+
+    if current_count > 0 do
+      (current_effectiveness * current_count + learning_data.prompt_effectiveness) /
+        (current_count + 1)
+    else
+      learning_data.prompt_effectiveness
+    end
+  end
+
+  defp update_provider_optimization_impact(provider_data, learning_data) do
+    current_impact = Map.get(provider_data, :provider_optimization_impact, 0.0)
+    current_count = Map.get(provider_data, :total_requests, 0)
+
+    optimization_impact =
+      if learning_data.provider_optimized do
+        # Estimate impact based on quality vs baseline
+        # 0.7 as baseline
+        max(0.0, learning_data.actual_response_quality - 0.7)
+      else
+        0.0
+      end
+
+    if current_count > 0 do
+      (current_impact * current_count + optimization_impact) / (current_count + 1)
+    else
+      optimization_impact
+    end
+  end
+
   defp analyze_request_requirements(request, domain, options) do
     %{
       domain: domain,
@@ -307,18 +675,19 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     }
   end
 
-  defp select_optimal_provider(agent, request_requirements) do
+  defp select_optimal_provider(agent, request_requirements, enhanced_request \\ nil) do
     current_state = Jido.Agent.get_state(agent)
 
     # Get available providers from Universal Provider System
     case UniversalProviderService.get_available_providers(request_requirements.domain) do
       {:ok, available_providers} ->
-        # Apply multi-criteria optimization using learning data
+        # Apply multi-criteria optimization using learning data (enhanced with prompt composition data)
         case apply_multi_criteria_selection(
                available_providers,
                request_requirements,
                current_state.provider_performance_data,
-               current_state.learning_state
+               current_state.learning_state,
+               enhanced_request
              ) do
           {:ok, selection} ->
             # Record routing decision for learning
@@ -352,9 +721,10 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
          available_providers,
          requirements,
          performance_data,
-         learning_state
+         learning_state,
+         enhanced_request \\ nil
        ) do
-    # Multi-criteria optimization using performance data and learning
+    # Multi-criteria optimization using performance data and learning (enhanced with prompt composition)
     scored_providers =
       available_providers
       |> Enum.map(fn {provider_type, provider_info} ->
@@ -363,7 +733,8 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
           provider_info,
           requirements,
           performance_data,
-          learning_state
+          learning_state,
+          enhanced_request
         )
       end)
       |> Enum.sort_by(& &1.overall_score, :desc)
@@ -391,7 +762,8 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
          provider_info,
          requirements,
          performance_data,
-         learning_state
+         learning_state,
+         enhanced_request \\ nil
        ) do
     # Calculate comprehensive provider score
     base_capabilities_score = calculate_base_capabilities_score(provider_info, requirements)
@@ -406,15 +778,20 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
     health_status_score = calculate_health_status_score(provider_type, provider_info)
 
-    # Apply weights based on requirements and learning
-    weights = determine_scoring_weights(requirements, learning_state)
+    # Calculate prompt composition compatibility score (new enhancement)
+    prompt_composition_score =
+      calculate_prompt_composition_score(provider_type, enhanced_request, performance_data)
+
+    # Apply weights based on requirements and learning (enhanced with prompt composition)
+    weights = determine_scoring_weights(requirements, learning_state, enhanced_request)
 
     overall_score =
       base_capabilities_score * weights.capabilities +
         historical_performance_score * weights.performance +
         learning_adjustment * weights.learning +
         cost_efficiency_score * weights.cost +
-        health_status_score * weights.health
+        health_status_score * weights.health +
+        prompt_composition_score * weights.prompt_composition
 
     %{
       provider_type: provider_type,
@@ -424,6 +801,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
       learning_adjustment: learning_adjustment,
       cost_efficiency_score: cost_efficiency_score,
       health_status_score: health_status_score,
+      prompt_composition_score: prompt_composition_score,
       recommended_model: select_optimal_model_for_provider(provider_type, requirements),
       cost_estimate: estimate_provider_cost(provider_type, requirements),
       quality_prediction: predict_provider_quality(provider_type, requirements, performance_data),
@@ -710,7 +1088,7 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     end
   end
 
-  defp calculate_health_status_score(provider_type, provider_info) do
+  defp calculate_health_status_score(_provider_type, provider_info) do
     # Health status from provider info
     case Map.get(provider_info, :health_status) do
       :healthy -> 1.0
@@ -721,28 +1099,111 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     end
   end
 
-  defp determine_scoring_weights(requirements, learning_state) do
-    # Dynamic weight calculation based on requirements and learning
+  defp calculate_prompt_composition_score(provider_type, enhanced_request, performance_data) do
+    # Calculate compatibility score with prompt composition features
+    case enhanced_request do
+      nil ->
+        # No prompt composition enhancement, neutral score
+        0.5
+
+      request ->
+        calculate_composition_score_for_request(provider_type, request, performance_data)
+    end
+  end
+
+  defp calculate_composition_score_for_request(provider_type, request, performance_data) do
+    base_score = 0.6
+    provider_boost = calculate_provider_boost(provider_type, request)
+    historical_effectiveness = get_historical_effectiveness(provider_type, performance_data)
+    optimization_boost = calculate_optimization_boost(request)
+
+    composition_score = base_score + provider_boost + optimization_boost
+    (composition_score + historical_effectiveness) / 2
+  end
+
+  defp calculate_provider_boost(provider_type, request) do
+    case Map.get(request, :recommended_provider) do
+      provider when is_binary(provider) ->
+        if provider == Atom.to_string(provider_type), do: 0.3, else: 0.0
+
+      _ ->
+        0.0
+    end
+  end
+
+  defp get_historical_effectiveness(provider_type, performance_data) do
+    case Map.get(performance_data, provider_type) do
+      nil -> 0.5
+      provider_data -> Map.get(provider_data, :prompt_effectiveness_score, 0.5)
+    end
+  end
+
+  defp calculate_optimization_boost(request) do
+    if Map.get(request, :provider_optimized, false), do: 0.2, else: 0.0
+  end
+
+  defp determine_scoring_weights(requirements, learning_state, enhanced_request \\ nil) do
+    # Dynamic weight calculation based on requirements and learning (enhanced with prompt composition)
     base_weights = %{
-      capabilities: 0.3,
-      performance: 0.25,
+      capabilities: 0.25,
+      performance: 0.2,
       learning: 0.15,
-      cost: 0.2,
-      health: 0.1
+      cost: 0.15,
+      health: 0.1,
+      # New weight for prompt composition
+      prompt_composition: 0.15
     }
 
     # Adjust weights based on requirements
     adjusted_weights =
       case {requirements.cost_constraints.cost_priority,
             requirements.quality_requirements.quality_priority} do
-        {:high, _} -> %{base_weights | cost: 0.4, performance: 0.2, capabilities: 0.2}
-        {_, :high} -> %{base_weights | capabilities: 0.4, performance: 0.3, cost: 0.1}
-        _ -> base_weights
+        {:high, _} ->
+          %{
+            base_weights
+            | cost: 0.35,
+              performance: 0.15,
+              capabilities: 0.15,
+              prompt_composition: 0.1
+          }
+
+        {_, :high} ->
+          %{
+            base_weights
+            | capabilities: 0.3,
+              performance: 0.25,
+              prompt_composition: 0.2,
+              cost: 0.1
+          }
+
+        _ ->
+          base_weights
+      end
+
+    # Further adjust weights based on prompt composition availability
+    final_weights =
+      case enhanced_request do
+        nil ->
+          # No prompt composition, redistribute weight
+          %{
+            adjusted_weights
+            | capabilities: adjusted_weights.capabilities + 0.08,
+              performance: adjusted_weights.performance + 0.07,
+              prompt_composition: 0.0
+          }
+
+        request ->
+          # Boost prompt composition weight when composition is available
+          if Map.get(request, :prompt_composed, false) do
+            %{adjusted_weights | prompt_composition: adjusted_weights.prompt_composition + 0.05}
+          else
+            adjusted_weights
+          end
       end
 
     # Apply learning influence
     learning_influence = learning_state.learning_rate * 0.1
-    %{adjusted_weights | learning: adjusted_weights.learning + learning_influence}
+    %{final_weights | learning: final_weights.learning + learning_influence}
   end
 
   defp select_optimal_model_for_provider(provider_type, requirements) do
@@ -823,14 +1284,37 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
     "Selected #{provider_type} (score: #{Float.round(overall_score, 2)}) based on #{Enum.join(primary_factors, " and ")} optimization"
   end
 
-  defp enhance_response_with_orchestration_data(response, provider_selection, orchestration_time) do
-    orchestration_metadata = %{
+  defp enhance_response_with_orchestration_data(
+         response,
+         provider_selection,
+         orchestration_time,
+         enhanced_request \\ nil
+       ) do
+    # Base orchestration metadata
+    base_metadata = %{
       orchestrator_used: true,
       provider_selection: provider_selection,
       orchestration_time_ms: orchestration_time,
       cost_optimization_applied: true,
       autonomous_selection: true
     }
+
+    # Add prompt composition metadata if available
+    orchestration_metadata =
+      case enhanced_request do
+        nil ->
+          base_metadata
+
+        request ->
+          prompt_metadata = %{
+            prompt_composition_used: Map.get(request, :prompt_composed, false),
+            provider_optimization_applied: Map.get(request, :provider_optimized, false),
+            routing_optimization_applied: Map.get(request, :routing_optimized, false),
+            composition_metadata: Map.get(request, :composition_metadata, %{})
+          }
+
+          Map.merge(base_metadata, prompt_metadata)
+      end
 
     Map.update(response, :metadata, orchestration_metadata, fn existing_metadata ->
       Map.merge(existing_metadata, orchestration_metadata)
