@@ -30,8 +30,17 @@ defmodule RubberDuck.Workflows.ReactorConfig do
       :telemetry,
       :error_handling,
       :timeout_management,
-      :resource_cleanup
-    ]
+      :resource_cleanup,
+      # Phase 6.2 enhancement: prompt integration middleware
+      :prompt_integration
+    ],
+    # Phase 6.2 enhancement: prompt integration configuration
+    prompt_integration: %{
+      enabled: true,
+      resolution_strategy: :optimized,
+      context_enhancement: true,
+      performance_monitoring: true
+    }
   }
 
   # RubberDuck-specific Reactor middleware configurations
@@ -58,6 +67,14 @@ defmodule RubberDuck.Workflows.ReactorConfig do
       # 10 seconds for cleanup
       cleanup_timeout: 10_000,
       preserve_on_error: false
+    },
+    # Phase 6.2 enhancement: prompt integration middleware configuration
+    prompt_integration: %{
+      enable_prompt_resolution: true,
+      enable_context_enhancement: true,
+      enable_performance_monitoring: true,
+      resolution_cache_enabled: true,
+      max_resolution_time_ms: 1000
     }
   }
 
