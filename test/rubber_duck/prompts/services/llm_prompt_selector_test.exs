@@ -73,7 +73,7 @@ defmodule RubberDuck.Prompts.Services.LlmPromptSelectorTest do
       assert length(organized_prompts.user_prompts) >= 1
 
       # Should not have project prompts without project context
-      assert length(organized_prompts.project_prompts) == 0
+      assert Enum.empty?(organized_prompts.project_prompts)
     end
 
     test "search_prompts finds prompts across tiers with relevance ranking", %{

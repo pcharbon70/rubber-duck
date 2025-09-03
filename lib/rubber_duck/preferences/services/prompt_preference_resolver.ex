@@ -1,11 +1,11 @@
 defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   @moduledoc """
   Service for resolving prompt management preferences with high-performance caching.
-  
+
   Provides specialized preference resolution for prompt management interface customization,
   integrating with the Phase 1A user preference system to enable personalized prompt
   library organization, display modes, search behavior, and workflow optimization.
-  
+
   Features:
   - Integration with Phase 1A preference hierarchy (System → User → Project)
   - High-performance ETS caching for sub-100ms preference resolution
@@ -20,12 +20,13 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   alias RubberDuck.Preferences.Resources.{SystemDefault, UserPreference}
 
   @cache_table :prompt_preference_cache
-  @cache_ttl :timer.minutes(15)  # 15-minute cache TTL
+  # 15-minute cache TTL
+  @cache_ttl :timer.minutes(15)
 
   @prompt_preference_keys %{
     display: [
       "prompt_management.display.view_mode",
-      "prompt_management.display.sort_by", 
+      "prompt_management.display.sort_by",
       "prompt_management.display.sort_direction",
       "prompt_management.display.items_per_page",
       "prompt_management.display.show_metadata",
@@ -59,10 +60,10 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   def init(_opts) do
     # Initialize ETS cache for prompt preferences
     :ets.new(@cache_table, [:set, :public, :named_table])
-    
+
     # Subscribe to preference change events
     Phoenix.PubSub.subscribe(RubberDuck.PubSub, "preference_changes")
-    
+
     Logger.info("PromptPreferenceResolver: Service initialized with cache table")
     {:ok, %{}}
   end
@@ -116,7 +117,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   @impl true
   def handle_call({:resolve_display_preferences, user_id, project_id}, _from, state) do
     cache_key = build_cache_key(:display, user_id, project_id)
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_preferences} ->
         {:reply, {:ok, cached_preferences}, state}
@@ -139,7 +140,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   @impl true
   def handle_call({:resolve_organization_preferences, user_id, project_id}, _from, state) do
     cache_key = build_cache_key(:organization, user_id, project_id)
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_preferences} ->
         {:reply, {:ok, cached_preferences}, state}
@@ -161,7 +162,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   @impl true
   def handle_call({:resolve_search_preferences, user_id, project_id}, _from, state) do
     cache_key = build_cache_key(:search, user_id, project_id)
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_preferences} ->
         {:reply, {:ok, cached_preferences}, state}
@@ -183,7 +184,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   @impl true
   def handle_call({:resolve_workflow_preferences, user_id, project_id}, _from, state) do
     cache_key = build_cache_key(:workflow, user_id, project_id)
-    
+
     case get_from_cache(cache_key) do
       {:ok, cached_preferences} ->
         {:reply, {:ok, cached_preferences}, state}
@@ -208,7 +209,6 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
          {:ok, org_prefs} <- resolve_organization_preferences(user_id, project_id),
          {:ok, search_prefs} <- resolve_search_preferences(user_id, project_id),
          {:ok, workflow_prefs} <- resolve_workflow_preferences(user_id, project_id) do
-      
       all_preferences = %{
         display: display_prefs,
         organization: org_prefs,
@@ -226,10 +226,10 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   @impl true
   def handle_cast({:invalidate_user_cache, user_id}, state) do
     Logger.debug("PromptPreferenceResolver: Invalidating cache for user", user_id: user_id)
-    
+
     # Remove all cache entries for this user
     :ets.match_delete(@cache_table, {"*:#{user_id}:*", :_})
-    
+
     {:noreply, state}
   end
 
@@ -237,11 +237,11 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   def handle_info({:preference_changed, user_id, preference_key, project_id}, state) do
     # Invalidate specific preference cache when preferences change
     category = determine_preference_category(preference_key)
-    
+
     if category do
       cache_key = build_cache_key(category, user_id, project_id)
       :ets.delete(@cache_table, cache_key)
-      
+
       Logger.debug("PromptPreferenceResolver: Cache invalidated for preference change",
         user_id: user_id,
         preference_key: preference_key,
@@ -257,7 +257,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   defp resolve_preference_category(category, user_id, project_id) do
     # Resolve preferences for specific category using Phase 1A infrastructure
     preference_keys = Map.get(@prompt_preference_keys, category, [])
-    
+
     case PreferenceResolver.resolve_batch(user_id, preference_keys, project_id) do
       resolved_map when is_map(resolved_map) ->
         # Organize resolved preferences into structured format
@@ -265,7 +265,10 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
         {:ok, structured_prefs}
 
       error ->
-        Logger.warning("Failed to resolve #{category} preferences for user #{user_id}: #{inspect(error)}")
+        Logger.warning(
+          "Failed to resolve #{category} preferences for user #{user_id}: #{inspect(error)}"
+        )
+
         {:error, {:preference_resolution_failed, category, error}}
     end
   end
@@ -277,34 +280,65 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
         %{
           view_mode: Map.get(resolved_map, "prompt_management.display.view_mode", "list"),
           sort_by: Map.get(resolved_map, "prompt_management.display.sort_by", "name"),
-          sort_direction: Map.get(resolved_map, "prompt_management.display.sort_direction", "asc"),
+          sort_direction:
+            Map.get(resolved_map, "prompt_management.display.sort_direction", "asc"),
           items_per_page: Map.get(resolved_map, "prompt_management.display.items_per_page", 25),
           show_metadata: Map.get(resolved_map, "prompt_management.display.show_metadata", true),
-          color_coding: parse_json_preference(Map.get(resolved_map, "prompt_management.display.color_coding", "{}"))
+          color_coding:
+            parse_json_preference(
+              Map.get(resolved_map, "prompt_management.display.color_coding", "{}")
+            )
         }
 
       :organization ->
         %{
-          categorization_scheme: Map.get(resolved_map, "prompt_management.organization.categorization_scheme", "hierarchical"),
-          auto_categorization: Map.get(resolved_map, "prompt_management.organization.auto_categorization", true),
-          custom_categories: parse_json_preference(Map.get(resolved_map, "prompt_management.organization.custom_categories", "[]")),
-          hierarchy_depth: Map.get(resolved_map, "prompt_management.organization.hierarchy_depth", 3)
+          categorization_scheme:
+            Map.get(
+              resolved_map,
+              "prompt_management.organization.categorization_scheme",
+              "hierarchical"
+            ),
+          auto_categorization:
+            Map.get(resolved_map, "prompt_management.organization.auto_categorization", true),
+          custom_categories:
+            parse_json_preference(
+              Map.get(resolved_map, "prompt_management.organization.custom_categories", "[]")
+            ),
+          hierarchy_depth:
+            Map.get(resolved_map, "prompt_management.organization.hierarchy_depth", 3)
         }
 
       :search ->
         %{
           default_scope: Map.get(resolved_map, "prompt_management.search.default_scope", "all"),
           fuzzy_search: Map.get(resolved_map, "prompt_management.search.fuzzy_search", true),
-          include_content: Map.get(resolved_map, "prompt_management.search.include_content", true),
-          quick_filters: parse_json_preference(Map.get(resolved_map, "prompt_management.search.quick_filters", "[\"recent\", \"favorites\"]"))
+          include_content:
+            Map.get(resolved_map, "prompt_management.search.include_content", true),
+          quick_filters:
+            parse_json_preference(
+              Map.get(
+                resolved_map,
+                "prompt_management.search.quick_filters",
+                "[\"recent\", \"favorites\"]"
+              )
+            )
         }
 
       :workflow ->
         %{
-          quick_access_prompts: parse_json_preference(Map.get(resolved_map, "prompt_management.workflow.quick_access_prompts", "[]")),
-          favorite_categories: parse_json_preference(Map.get(resolved_map, "prompt_management.workflow.favorite_categories", "[]")),
+          quick_access_prompts:
+            parse_json_preference(
+              Map.get(resolved_map, "prompt_management.workflow.quick_access_prompts", "[]")
+            ),
+          favorite_categories:
+            parse_json_preference(
+              Map.get(resolved_map, "prompt_management.workflow.favorite_categories", "[]")
+            ),
           recent_limit: Map.get(resolved_map, "prompt_management.workflow.recent_limit", 10),
-          shortcuts: parse_json_preference(Map.get(resolved_map, "prompt_management.workflow.shortcuts", "{}"))
+          shortcuts:
+            parse_json_preference(
+              Map.get(resolved_map, "prompt_management.workflow.shortcuts", "{}")
+            )
         }
     end
   end
@@ -340,7 +374,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   defp build_intelligent_display_defaults(user_id) do
     # Build intelligent display defaults based on user characteristics
     user_type = determine_user_type(user_id)
-    
+
     case user_type do
       :power_user ->
         %{
@@ -377,7 +411,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   defp build_intelligent_organization_defaults(user_id) do
     # Build intelligent organization defaults
     user_type = determine_user_type(user_id)
-    
+
     case user_type do
       :power_user ->
         %{
@@ -400,7 +434,7 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
   defp build_intelligent_search_defaults(user_id) do
     # Build intelligent search defaults
     user_type = determine_user_type(user_id)
-    
+
     case user_type do
       :power_user ->
         %{
@@ -453,7 +487,8 @@ defmodule RubberDuck.Preferences.Services.PromptPreferenceResolver do
     # Parse JSON preference values safely
     case Jason.decode(json_string) do
       {:ok, parsed_value} -> parsed_value
-      {:error, _} -> json_string  # Return as string if not valid JSON
+      # Return as string if not valid JSON
+      {:error, _} -> json_string
     end
   end
 end

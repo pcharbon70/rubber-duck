@@ -1,11 +1,11 @@
 defmodule RubberDuck.Preferences.Services.PromptInterfaceCustomizer do
   @moduledoc """
   Service for applying user preferences to prompt management interfaces.
-  
+
   Provides real-time interface customization based on user prompt management
   preferences, enabling personalized display modes, organization patterns,
   search behaviors, and workflow optimizations for improved user productivity.
-  
+
   Features:
   - Real-time interface adaptation based on user preference changes
   - Integration with PromptBrowserComponent and WorkflowPromptBrowserComponent customization
@@ -28,8 +28,9 @@ defmodule RubberDuck.Preferences.Services.PromptInterfaceCustomizer do
 
     case PromptPreferenceResolver.resolve_all_prompt_management_preferences(user_id, project_id) do
       {:ok, all_preferences} ->
-        customized_config = apply_all_preferences_to_interface(base_interface_config, all_preferences)
-        
+        customized_config =
+          apply_all_preferences_to_interface(base_interface_config, all_preferences)
+
         Logger.debug("PromptInterfaceCustomizer: Prompt browser interface customized",
           user_id: user_id,
           customizations_applied: Map.keys(customized_config.customizations || %{})
@@ -173,11 +174,12 @@ defmodule RubberDuck.Preferences.Services.PromptInterfaceCustomizer do
 
   defp apply_all_preferences_to_interface(base_config, all_preferences) do
     # Apply all preference categories to interface configuration
-    customized_config = base_config
-    |> apply_display_preferences(all_preferences.display)
-    |> apply_organization_preferences(all_preferences.organization)
-    |> apply_search_preferences(all_preferences.search)
-    |> apply_workflow_preferences(all_preferences.workflow)
+    customized_config =
+      base_config
+      |> apply_display_preferences(all_preferences.display)
+      |> apply_organization_preferences(all_preferences.organization)
+      |> apply_search_preferences(all_preferences.search)
+      |> apply_workflow_preferences(all_preferences.workflow)
 
     # Add customization metadata
     Map.merge(customized_config, %{

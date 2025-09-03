@@ -1,11 +1,11 @@
 defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentSimple do
   @moduledoc """
   Simplified LiveView component for browsing saved prompts in LLM operations.
-  
+
   TODO: This is a simplified version to resolve CSS compilation issues in original component.
   TODO: Add complete styling and advanced features when HEEx CSS framework issues are resolved.
   TODO: Implement full search functionality, filtering, and sophisticated UI interactions.
-  
+
   Features:
   - Basic three-tier prompt browsing (System/Project/User)
   - Simple prompt selection for LLM operations
@@ -29,20 +29,20 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentSimple do
   @impl true
   def update(%{user_id: user_id, project_id: project_id} = assigns, socket) do
     socket = assign(socket, assigns)
-    
+
     # Load initial prompts asynchronously
     send(self(), {:load_initial_prompts, user_id, project_id})
-    
+
     {:ok, socket}
   end
 
   @impl true
   def handle_event("select_prompt", %{"prompt_id" => prompt_id}, socket) do
     %{prompts: prompts} = socket.assigns
-    
+
     # Find selected prompt across all tiers
     selected_prompt = find_prompt_by_id(prompts, prompt_id)
-    
+
     case selected_prompt do
       nil ->
         {:noreply, assign(socket, :error, "Prompt not found")}
@@ -70,7 +70,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentSimple do
 
       {:error, reason} ->
         Logger.error("Failed to load initial prompts: #{inspect(reason)}")
-        
+
         socket =
           socket
           |> assign(:loading, false)
@@ -178,10 +178,11 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentSimple do
   # Private helper functions
 
   defp find_prompt_by_id(prompts, prompt_id) do
-    all_prompts = (prompts[:system_prompts] || []) ++ 
-                  (prompts[:project_prompts] || []) ++ 
-                  (prompts[:user_prompts] || [])
-    
+    all_prompts =
+      (prompts[:system_prompts] || []) ++
+        (prompts[:project_prompts] || []) ++
+        (prompts[:user_prompts] || [])
+
     Enum.find(all_prompts, fn prompt -> prompt.id == prompt_id end)
   end
 
@@ -191,21 +192,22 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentSimple do
       length(prompts[:project_prompts] || []),
       length(prompts[:user_prompts] || [])
     ]
-    
+
     Enum.sum(prompt_counts) == 0
   end
 
   defp extract_template_variables(content) do
     # Extract template variables from prompt content
-    variables = Regex.scan(~r/\{\{(\w+)(?:\|([^}]+))?\}\}/, content, capture: :all_but_first)
-    |> Enum.map(fn
-      [variable_name] -> 
-        {variable_name, %{default: nil}}
-      
-      [variable_name, default_value] -> 
-        {variable_name, %{default: default_value}}
-    end)
-    |> Map.new()
+    variables =
+      Regex.scan(~r/\{\{(\w+)(?:\|([^}]+))?\}\}/, content, capture: :all_but_first)
+      |> Enum.map(fn
+        [variable_name] ->
+          {variable_name, %{default: nil}}
+
+        [variable_name, default_value] ->
+          {variable_name, %{default: default_value}}
+      end)
+      |> Map.new()
 
     variables
   end

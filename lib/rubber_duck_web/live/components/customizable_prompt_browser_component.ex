@@ -1,11 +1,11 @@
 defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   @moduledoc """
   Preference-driven customizable prompt browser component.
-  
+
   Extends the basic PromptBrowserComponent with comprehensive user preference
   integration, enabling personalized display modes, organization patterns,
   search behaviors, and workflow optimizations based on Phase 1A user preferences.
-  
+
   Features:
   - User preference-driven display customization (list/grid/cards/compact)
   - Organization preference integration with categorization schemes
@@ -36,19 +36,20 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   @impl true
   def update(%{user_id: user_id, project_id: project_id} = assigns, socket) do
     socket = assign(socket, assigns)
-    
+
     # Load user preferences and customize interface
     send(self(), {:load_user_preferences, user_id, project_id})
     send(self(), {:load_initial_prompts, user_id, project_id})
-    
+
     {:ok, socket}
   end
 
   @impl true
   def handle_event("search_prompts", %{"search_query" => query}, socket) do
-    %{user_id: user_id, project_id: project_id, user_preferences: user_preferences} = socket.assigns
-    
-    socket = 
+    %{user_id: user_id, project_id: project_id, user_preferences: user_preferences} =
+      socket.assigns
+
+    socket =
       socket
       |> assign(:search_query, query)
       |> assign(:loading, true)
@@ -58,7 +59,11 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
 
     if String.length(String.trim(query)) >= 2 do
       # Perform search with user preference customizations
-      Process.send_after(self(), {:execute_customized_search, query, user_id, project_id, search_options}, 300)
+      Process.send_after(
+        self(),
+        {:execute_customized_search, query, user_id, project_id, search_options},
+        300
+      )
     else
       # Reload all available prompts with display preferences applied
       send(self(), {:load_initial_prompts, user_id, project_id})
@@ -70,7 +75,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   @impl true
   def handle_event("change_display_mode", %{"mode" => new_mode}, socket) do
     %{user_id: user_id, project_id: project_id} = socket.assigns
-    
+
     # Update user preference for display mode
     case update_user_display_preference(user_id, "view_mode", new_mode) do
       :ok ->
@@ -86,24 +91,25 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
 
   @impl true
   def handle_event("apply_quick_filter", %{"filter" => filter_name}, socket) do
-    %{user_id: user_id, project_id: project_id, user_preferences: user_preferences} = socket.assigns
-    
+    %{user_id: user_id, project_id: project_id, user_preferences: user_preferences} =
+      socket.assigns
+
     # Apply quick filter based on user preferences
     filter_config = get_quick_filter_config(filter_name, user_preferences)
-    
+
     # Apply filter and refresh prompts
     send(self(), {:apply_filter_and_refresh, user_id, project_id, filter_config})
-    
+
     {:noreply, assign(socket, :loading, true)}
   end
 
   @impl true
   def handle_event("select_prompt", %{"prompt_id" => prompt_id}, socket) do
     %{prompts: prompts} = socket.assigns
-    
+
     # Find selected prompt across all tiers
     selected_prompt = find_prompt_by_id(prompts, prompt_id)
-    
+
     case selected_prompt do
       nil ->
         {:noreply, assign(socket, :error, "Prompt not found")}
@@ -123,7 +129,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
       {:ok, all_preferences} ->
         # Customize interface based on preferences
         base_config = %{layout: :standard, theme: :light}
-        
+
         case PromptInterfaceCustomizer.customize_prompt_browser(user_id, base_config, project_id) do
           {:ok, customized_config} ->
             socket =
@@ -149,14 +155,15 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   def handle_info({:load_initial_prompts, user_id, project_id}, socket) do
     # Apply user preferences to prompt loading
     %{user_preferences: user_preferences} = socket.assigns
-    
+
     loading_options = build_loading_options_from_preferences(user_preferences)
 
     case LlmPromptSelector.get_available_prompts(user_id, project_id, loading_options) do
       {:ok, organized_prompts} ->
         # Apply organization preferences to prompt structure
-        customized_prompts = apply_organization_to_prompts(organized_prompts, user_preferences.organization || %{})
-        
+        customized_prompts =
+          apply_organization_to_prompts(organized_prompts, user_preferences.organization || %{})
+
         socket =
           socket
           |> assign(:prompts, customized_prompts)
@@ -167,7 +174,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
 
       {:error, reason} ->
         Logger.error("Failed to load initial prompts: #{inspect(reason)}")
-        
+
         socket =
           socket
           |> assign(:loading, false)
@@ -178,14 +185,18 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   end
 
   @impl true
-  def handle_info({:execute_customized_search, query, user_id, project_id, search_options}, socket) do
+  def handle_info(
+        {:execute_customized_search, query, user_id, project_id, search_options},
+        socket
+      ) do
     # Only execute if query hasn't changed (debouncing)
     if socket.assigns.search_query == query do
       case LlmPromptSelector.search_prompts(user_id, query, project_id, search_options) do
         {:ok, search_results} ->
           # Apply user preferences to search result organization
-          customized_results = apply_search_result_customization(search_results, socket.assigns.user_preferences)
-          
+          customized_results =
+            apply_search_result_customization(search_results, socket.assigns.user_preferences)
+
           socket =
             socket
             |> assign(:prompts, %{search_results: customized_results})
@@ -195,7 +206,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
 
         {:error, reason} ->
           Logger.warning("Customized prompt search failed: #{inspect(reason)}")
-          
+
           socket =
             socket
             |> assign(:loading, false)
@@ -468,7 +479,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp build_loading_options_from_preferences(user_preferences) do
     # Build loading options from user preferences
     display_prefs = Map.get(user_preferences, :display, %{})
-    
+
     %{
       sort_by: Map.get(display_prefs, :sort_by, "name"),
       sort_direction: Map.get(display_prefs, :sort_direction, "asc"),
@@ -478,8 +489,9 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
 
   defp apply_organization_to_prompts(organized_prompts, organization_preferences) do
     # Apply organization preferences to prompt structure
-    categorization_scheme = Map.get(organization_preferences, :categorization_scheme, "hierarchical")
-    
+    categorization_scheme =
+      Map.get(organization_preferences, :categorization_scheme, "hierarchical")
+
     case categorization_scheme do
       "tag_based" ->
         # Reorganize by tags if user prefers tag-based organization
@@ -498,12 +510,13 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp apply_search_result_customization(search_results, user_preferences) do
     # Apply user preferences to search result customization
     search_prefs = Map.get(user_preferences, :search, %{})
-    
+
     # Apply user-preferred result sorting
     case Map.get(search_prefs, :result_sort, "relevance") do
       "name" -> Enum.sort_by(search_results, fn prompt -> prompt.name end)
       "created_at" -> Enum.sort_by(search_results, fn prompt -> prompt.inserted_at end, :desc)
-      _ -> search_results  # Keep relevance sorting
+      # Keep relevance sorting
+      _ -> search_results
     end
   end
 
@@ -527,8 +540,13 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp update_user_display_preference(user_id, preference_key, new_value) do
     # Update user preference using Phase 1A infrastructure
     full_preference_key = "prompt_management.display.#{preference_key}"
-    
-    case UserPreference.set_preference(user_id, full_preference_key, new_value, "Interface customization") do
+
+    case UserPreference.set_preference(
+           user_id,
+           full_preference_key,
+           new_value,
+           "Interface customization"
+         ) do
       {:ok, _preference} ->
         # Invalidate cache for immediate effect
         PromptPreferenceResolver.invalidate_user_cache(user_id)
@@ -544,9 +562,9 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp render_prompts_list(prompts, user_preferences, myself) do
     # Render prompts in list view with user preferences
     show_metadata = get_show_metadata_preference(user_preferences)
-    
+
     all_prompts = extract_all_prompts_for_display(prompts)
-    
+
     for prompt <- all_prompts do
       """
       <div class="prompt-item list-item" phx-click="select_prompt" phx-value-prompt_id="#{prompt.id}" phx-target="#{myself}">
@@ -556,10 +574,10 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
         </div>
         <div class="prompt-description">#{prompt.description || "No description"}</div>
         #{if show_metadata do
-          "<div class=\"prompt-metadata\">Created: #{format_date(prompt.inserted_at)}</div>"
-        else
-          ""
-        end}
+        "<div class=\"prompt-metadata\">Created: #{format_date(prompt.inserted_at)}</div>"
+      else
+        ""
+      end}
       </div>
       """
     end
@@ -570,7 +588,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp render_prompts_grid(prompts, user_preferences, myself) do
     # Render prompts in grid view
     all_prompts = extract_all_prompts_for_display(prompts)
-    
+
     for prompt <- all_prompts do
       """
       <div class="prompt-item grid-item" phx-click="select_prompt" phx-value-prompt_id="#{prompt.id}" phx-target="#{myself}">
@@ -587,7 +605,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp render_prompts_cards(prompts, user_preferences, myself) do
     # Render prompts in card view
     all_prompts = extract_all_prompts_for_display(prompts)
-    
+
     for prompt <- all_prompts do
       """
       <div class="prompt-card" phx-click="select_prompt" phx-value-prompt_id="#{prompt.id}" phx-target="#{myself}">
@@ -607,7 +625,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp render_prompts_compact(prompts, user_preferences, myself) do
     # Render prompts in compact view
     all_prompts = extract_all_prompts_for_display(prompts)
-    
+
     for prompt <- all_prompts do
       """
       <div class="prompt-item compact-item" phx-click="select_prompt" phx-value-prompt_id="#{prompt.id}" phx-target="#{myself}">
@@ -623,19 +641,20 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   # Helper functions
 
   defp find_prompt_by_id(prompts, prompt_id) do
-    all_prompts = (prompts[:system_prompts] || []) ++ 
-                  (prompts[:project_prompts] || []) ++ 
-                  (prompts[:user_prompts] || []) ++
-                  (prompts[:search_results] || [])
-    
+    all_prompts =
+      (prompts[:system_prompts] || []) ++
+        (prompts[:project_prompts] || []) ++
+        (prompts[:user_prompts] || []) ++
+        (prompts[:search_results] || [])
+
     Enum.find(all_prompts, fn prompt -> prompt.id == prompt_id end)
   end
 
   defp extract_all_prompts_for_display(prompts) do
-    (prompts[:system_prompts] || []) ++ 
-    (prompts[:project_prompts] || []) ++ 
-    (prompts[:user_prompts] || []) ++
-    (prompts[:search_results] || [])
+    (prompts[:system_prompts] || []) ++
+      (prompts[:project_prompts] || []) ++
+      (prompts[:user_prompts] || []) ++
+      (prompts[:search_results] || [])
   end
 
   defp get_display_mode(user_preferences) do
@@ -676,7 +695,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
   defp display_mode_button_class(user_preferences, mode) do
     current_mode = get_display_mode(user_preferences)
     base_class = "display-mode-btn"
-    
+
     if current_mode == mode do
       "#{base_class} active"
     else
@@ -717,7 +736,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
       length(prompts[:user_prompts] || []),
       length(prompts[:search_results] || [])
     ]
-    
+
     Enum.sum(prompt_counts) == 0
   end
 

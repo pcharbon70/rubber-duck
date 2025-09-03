@@ -1,11 +1,11 @@
 defmodule RubberDuckWeb.Live.Components.PromptSelectionModalSimple do
   @moduledoc """
   Simplified modal LiveView component for prompt selection in LLM operations.
-  
+
   TODO: This is a simplified version to resolve CSS compilation issues.
   TODO: Implement full-featured modal with advanced styling when HEEx CSS framework is ready.
   TODO: Add rich template variable editing interface and preview functionality.
-  
+
   Features:
   - Simple modal overlay for prompt selection in LLM operations
   - Basic prompt browser integration with search functionality
@@ -58,12 +58,13 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModalSimple do
 
   @impl true
   def handle_event("insert_prompt", _params, socket) do
-    %{selected_prompt: prompt, preview_content: content, target_field: target_field} = socket.assigns
-    
+    %{selected_prompt: prompt, preview_content: content, target_field: target_field} =
+      socket.assigns
+
     if prompt && target_field do
       # Send insertion event to parent LiveView
       send(self(), {:insert_prompt_content, target_field, content, prompt})
-      
+
       socket =
         socket
         |> assign(:show_modal, false)
@@ -79,7 +80,7 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModalSimple do
   @impl true
   def handle_info({:prompt_browser_selection, prompt}, socket) do
     variables = extract_template_variables(prompt.content)
-    
+
     socket =
       socket
       |> assign(:selected_prompt, prompt)
@@ -95,7 +96,7 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModalSimple do
     <!-- TODO: Add sophisticated modal styling and responsive design -->
     <!-- TODO: Implement rich variable editing interface with validation -->
     <!-- TODO: Add advanced preview functionality with syntax highlighting -->
-    
+
     <!-- Simple Modal Overlay -->
     <div :if={@show_modal} style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;">
       <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 1000px; max-height: 80%; overflow-y: auto;">
@@ -180,15 +181,16 @@ defmodule RubberDuckWeb.Live.Components.PromptSelectionModalSimple do
 
   defp extract_template_variables(content) do
     # Extract template variables from prompt content
-    variables = Regex.scan(~r/\{\{(\w+)(?:\|([^}]+))?\}\}/, content, capture: :all_but_first)
-    |> Enum.map(fn
-      [variable_name] -> 
-        {variable_name, %{default: nil}}
-      
-      [variable_name, default_value] -> 
-        {variable_name, %{default: default_value}}
-    end)
-    |> Map.new()
+    variables =
+      Regex.scan(~r/\{\{(\w+)(?:\|([^}]+))?\}\}/, content, capture: :all_but_first)
+      |> Enum.map(fn
+        [variable_name] ->
+          {variable_name, %{default: nil}}
+
+        [variable_name, default_value] ->
+          {variable_name, %{default: default_value}}
+      end)
+      |> Map.new()
 
     variables
   end
