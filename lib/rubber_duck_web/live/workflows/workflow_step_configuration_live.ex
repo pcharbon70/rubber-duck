@@ -86,30 +86,7 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
 
     case validate_step_configuration(step_configuration, selected_prompt) do
       {:ok, validated_config} ->
-        # Save workflow step configuration (would integrate with actual workflow persistence)
-        case save_workflow_step_configuration(workflow_step, validated_config, selected_prompt) do
-          {:ok, saved_config} ->
-            # Track prompt usage in workflow context
-            if selected_prompt do
-              track_workflow_prompt_usage(
-                socket.assigns.current_user.id,
-                selected_prompt.id,
-                workflow_step,
-                socket.assigns.workflow_context
-              )
-            end
-
-            socket =
-              socket
-              |> put_flash(:info, "Workflow step configuration saved successfully")
-              |> assign(:step_configuration, saved_config)
-
-            {:noreply, socket}
-
-          {:error, reason} ->
-            socket = put_flash(socket, :error, "Failed to save configuration: #{inspect(reason)}")
-            {:noreply, socket}
-        end
+        handle_successful_validation(socket, workflow_step, validated_config, selected_prompt)
 
       {:error, validation_errors} ->
         socket = assign(socket, :validation_errors, validation_errors)
@@ -673,6 +650,33 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
   end
 
   # Private helper functions
+
+  defp handle_successful_validation(socket, workflow_step, validated_config, selected_prompt) do
+    # Handle successful step configuration validation
+    case save_workflow_step_configuration(workflow_step, validated_config, selected_prompt) do
+      {:ok, saved_config} ->
+        # Track prompt usage in workflow context
+        if selected_prompt do
+          track_workflow_prompt_usage(
+            socket.assigns.current_user.id,
+            selected_prompt.id,
+            workflow_step,
+            socket.assigns.workflow_context
+          )
+        end
+
+        socket =
+          socket
+          |> put_flash(:info, "Workflow step configuration saved successfully")
+          |> assign(:step_configuration, saved_config)
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        socket = put_flash(socket, :error, "Failed to save configuration: #{inspect(reason)}")
+        {:noreply, socket}
+    end
+  end
 
   defp build_workflow_context(workflow_id, step_id, params) do
     # Build comprehensive workflow context for prompt selection

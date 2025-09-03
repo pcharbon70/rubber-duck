@@ -134,38 +134,9 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
 
   defp execute_variable_substitution(prompt_content, validated_values, options) do
     # Execute safe variable substitution
-    substituted_content =
-      Regex.replace(@variable_pattern, prompt_content, fn match_data ->
-        case match_data do
-          [full_match, variable_name] ->
-            case Map.get(validated_values, variable_name) do
-              nil ->
-                # Keep original if no value provided
-                full_match
-
-              value ->
-                # Sanitize and substitute
-                sanitized_value = sanitize_variable_value(value, options)
-                sanitized_value
-            end
-
-          [full_match, variable_name, default_value] ->
-            case Map.get(validated_values, variable_name) do
-              nil ->
-                # Use default value if provided
-                sanitize_variable_value(default_value, options)
-
-              "" ->
-                # Use default value for empty string
-                sanitize_variable_value(default_value, options)
-
-              value ->
-                # Use provided value
-                sanitized_value = sanitize_variable_value(value, options)
-                sanitized_value
-            end
-        end
-      end)
+    substituted_content = Regex.replace(@variable_pattern, prompt_content, fn match_data ->
+      substitute_single_variable_match(match_data, validated_values, options)
+    end)
 
     case validate_substitution_result(substituted_content, options) do
       {:ok, :valid} ->
@@ -173,6 +144,31 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
 
       {:error, reason} ->
         {:error, {:substitution_validation_failed, reason}}
+    end
+  end
+
+  defp substitute_single_variable_match(match_data, validated_values, options) do
+    case match_data do
+      [full_match, variable_name] ->
+        substitute_simple_variable(full_match, variable_name, validated_values, options)
+
+      [_full_match, variable_name, default_value] ->
+        substitute_variable_with_default(variable_name, default_value, validated_values, options)
+    end
+  end
+
+  defp substitute_simple_variable(full_match, variable_name, validated_values, options) do
+    case Map.get(validated_values, variable_name) do
+      nil -> full_match
+      value -> sanitize_variable_value(value, options)
+    end
+  end
+
+  defp substitute_variable_with_default(variable_name, default_value, validated_values, options) do
+    case Map.get(validated_values, variable_name) do
+      nil -> sanitize_variable_value(default_value, options)
+      "" -> sanitize_variable_value(default_value, options)
+      value -> sanitize_variable_value(value, options)
     end
   end
 
