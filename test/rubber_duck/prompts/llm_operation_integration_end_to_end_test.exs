@@ -1,9 +1,9 @@
 defmodule RubberDuck.Prompts.LlmOperationIntegrationEndToEndTest do
   use RubberDuck.DataCase, async: true
 
+  alias RubberDuck.Prompts.Integrations.PromptVariableSubstitution
   alias RubberDuck.Prompts.Resources.{Prompt, PromptUsage}
   alias RubberDuck.Prompts.Services.{LlmPromptSelector, PromptUsageTracker}
-  alias RubberDuck.Prompts.Integrations.PromptVariableSubstitution
 
   describe "Phase 6.1: LLM Operation Integration - End-to-End Testing" do
     test "complete saved prompt selection and usage workflow in LLM operations" do

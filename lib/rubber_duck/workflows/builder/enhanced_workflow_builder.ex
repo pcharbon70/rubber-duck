@@ -30,8 +30,8 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
   }
 
   alias RubberDuck.Prompts.WorkflowIntegration.{
-    WorkflowPromptResolver,
-    ReactorPromptIntegration
+    ReactorPromptIntegration,
+    WorkflowPromptResolver
   }
 
   @builder_modes [:reactor, :template, :composition, :hybrid]

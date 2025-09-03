@@ -229,7 +229,8 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
         {:ok, standard_analytics}
 
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -250,7 +251,8 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
         {:ok, detailed_analytics}
 
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -269,7 +271,8 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
         {:ok, comprehensive_analytics}
 
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

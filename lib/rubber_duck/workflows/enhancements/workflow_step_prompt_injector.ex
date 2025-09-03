@@ -19,9 +19,9 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
   require Logger
 
   alias RubberDuck.Prompts.WorkflowIntegration.{
-    WorkflowPromptResolver,
+    ReactorPromptIntegration,
     WorkflowContextEnhancer,
-    ReactorPromptIntegration
+    WorkflowPromptResolver
   }
 
   @injection_strategies [

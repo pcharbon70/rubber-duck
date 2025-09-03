@@ -25,8 +25,8 @@ defmodule RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration do
     Integrations.ProviderPromptFormatter
   }
 
-  alias RubberDuck.JidoAI.{ProviderService, PromptAdapter}
   alias Jido.AI.Prompt
+  alias RubberDuck.JidoAI.{PromptAdapter, ProviderService}
 
   @supported_providers [
     "gpt-4",

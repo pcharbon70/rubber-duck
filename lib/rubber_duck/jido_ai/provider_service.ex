@@ -18,8 +18,8 @@ defmodule RubberDuck.JidoAI.ProviderService do
 
   require Logger
 
-  alias RubberDuck.JidoAI.Configuration
   alias Jido.AI.Prompt
+  alias RubberDuck.JidoAI.Configuration
 
   @doc """
   Complete LLM request using JidoAI provider management.

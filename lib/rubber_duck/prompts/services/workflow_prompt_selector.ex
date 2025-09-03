@@ -15,8 +15,8 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
 
   require Logger
 
-  alias RubberDuck.Prompts.Services.LlmPromptSelector
   alias RubberDuck.Prompts.Integrations.PromptVariableSubstitution
+  alias RubberDuck.Prompts.Services.LlmPromptSelector
 
   @doc """
   Get prompts suitable for workflow step execution with context filtering.

@@ -16,8 +16,8 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
 
   use Phoenix.LiveComponent
 
+  alias RubberDuck.Preferences.Services.{PromptInterfaceCustomizer, PromptPreferenceResolver}
   alias RubberDuck.Prompts.Services.LlmPromptSelector
-  alias RubberDuck.Preferences.Services.{PromptPreferenceResolver, PromptInterfaceCustomizer}
 
   @impl true
   def mount(socket) do

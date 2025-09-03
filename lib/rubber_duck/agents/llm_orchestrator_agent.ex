@@ -27,10 +27,10 @@ defmodule RubberDuck.Agents.LlmOrchestratorAgent do
 
   require Logger
 
-  alias RubberDuck.JidoAI.{Configuration, ProviderService, PromptAdapter}
+  alias Jido.AI.Prompt
+  alias RubberDuck.JidoAI.{Configuration, PromptAdapter, ProviderService}
   alias RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration
   alias RubberDuck.SkillsActions.SkillsRegistry
-  alias Jido.AI.Prompt
 
   @orchestration_skills [
     :provider_selection_skill,

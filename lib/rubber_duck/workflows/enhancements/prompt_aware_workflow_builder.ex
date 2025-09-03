@@ -20,9 +20,9 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   alias RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder
 
   alias RubberDuck.Prompts.WorkflowIntegration.{
-    WorkflowPromptResolver,
     NamedPromptReferenceManager,
-    ReactorPromptIntegration
+    ReactorPromptIntegration,
+    WorkflowPromptResolver
   }
 
   @prompt_integration_modes [:basic, :enhanced, :optimized, :comprehensive]
