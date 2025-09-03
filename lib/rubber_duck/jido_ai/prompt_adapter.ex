@@ -1,7 +1,7 @@
 defmodule RubberDuck.JidoAI.PromptAdapter do
   @moduledoc """
   JidoAI prompt management for RubberDuck - The unified prompt system.
-  
+
   Handles all prompt operations using JidoAI.Prompt patterns, replacing legacy
   prompt systems entirely. Provides the three-tier hierarchical prompt
   system (System/Project/User) using JidoAI's structured prompt composition.
@@ -15,7 +15,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   """
 
   require Logger
-  
+
   alias Jido.AI.Prompt
   alias RubberDuck.Prompts.Composition.CompositionEngine
   alias RubberDuck.Prompts.Resources.{Prompt, PromptVersion}
@@ -29,7 +29,6 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
     with {:ok, composed_content} <- compose_hierarchical_content(prompt_data, context),
          {:ok, messages} <- build_jido_ai_messages(composed_content, prompt_data),
          {:ok, jido_prompt} <- build_jido_prompt_from_messages(messages, prompt_data, context) do
-      
       {:ok, jido_prompt}
     else
       {:error, reason} = error ->
@@ -52,7 +51,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
         # Post-process messages with RubberDuck enhancements
         processed_messages = post_process_rendered_messages(messages, enhanced_context)
         {:ok, processed_messages}
-        
+
       {:error, reason} = error ->
         Logger.error("Failed to render JidoAI prompt: #{inspect(reason)}")
         error
@@ -67,12 +66,12 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
 
     # Determine template engine based on content
     template_engine = determine_template_engine(template_content, options)
-    
+
     # Convert template content to JidoAI format
     case convert_template_content(template_content, template_engine, options) do
       {:ok, jido_template_content} ->
         create_jido_template(jido_template_content, template_type, template_engine, options)
-        
+
       {:error, reason} = error ->
         Logger.error("Failed to create JidoAI template: #{inspect(reason)}")
         error
@@ -88,7 +87,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
     case get_prompt_versions(rubber_duck_prompt) do
       {:ok, versions} ->
         migrate_versions_to_jido_ai(versions, rubber_duck_prompt, options)
-        
+
       {:error, reason} = error ->
         Logger.error("Failed to get prompt versions for migration: #{inspect(reason)}")
         error
@@ -103,8 +102,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
 
     with {:ok, validated_content} <- validate_prompt_security(content, options),
          {:ok, messages} <- build_secure_messages(validated_content, context),
-         {:ok, jido_prompt} <- create_jido_ai_prompt(messages, nil, context) do
-      
+         {:ok, jido_prompt} <- create_jido_ai_prompt_from_messages(messages, context) do
       {:ok, jido_prompt}
     else
       {:error, reason} = error ->
@@ -120,7 +118,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
     case CompositionEngine.compose_prompt(rubber_duck_prompt.id, context) do
       {:ok, composed} ->
         {:ok, composed}
-        
+
       {:error, reason} ->
         Logger.warning("Hierarchical composition failed, using base content: #{inspect(reason)}")
         {:ok, rubber_duck_prompt.content}
@@ -129,20 +127,21 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
 
   defp build_jido_ai_messages(content, rubber_duck_prompt) do
     # Convert content to JidoAI message structure
-    messages = case rubber_duck_prompt.level do
-      :system ->
-        [%{role: :system, content: content}]
-        
-      :user ->
-        [%{role: :user, content: content}]
-        
-      :project ->
-        # Project prompts become system messages with context
-        [%{role: :system, content: "Project Context: #{content}"}]
-        
-      _ ->
-        [%{role: :user, content: content}]
-    end
+    messages =
+      case rubber_duck_prompt.level do
+        :system ->
+          [%{role: :system, content: content}]
+
+        :user ->
+          [%{role: :user, content: content}]
+
+        :project ->
+          # Project prompts become system messages with context
+          [%{role: :system, content: "Project Context: #{content}"}]
+
+        _ ->
+          [%{role: :user, content: content}]
+      end
 
     {:ok, messages}
   end
@@ -150,14 +149,14 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp build_jido_prompt_from_messages(messages, prompt_data, context) do
     # Build prompt options from RubberDuck prompt and context
     prompt_options = build_prompt_options_from_data(prompt_data, context)
-    
+
     # Create JidoAI.Prompt
     case Prompt.new(messages, prompt_options) do
       %Prompt{} = jido_prompt ->
         # Add RubberDuck-specific metadata
-        enhanced_prompt = enhance_jido_prompt_with_metadata(jido_prompt, rubber_duck_prompt)
+        enhanced_prompt = enhance_jido_prompt_with_metadata(jido_prompt, prompt_data)
         {:ok, enhanced_prompt}
-        
+
       error ->
         {:error, {:jido_prompt_creation_failed, error}}
     end
@@ -167,21 +166,25 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
     base_options = %{
       temperature: 0.1,
       max_tokens: 1500,
-      engine: :eex  # Default to EEx for compatibility with existing templates
+      # Default to EEx for compatibility with existing templates
+      engine: :eex
     }
 
     # Add options from rubber_duck_prompt if available
-    rubber_duck_options = case rubber_duck_prompt do
-      nil -> %{}
-      prompt ->
-        %{
-          name: prompt.name,
-          description: prompt.description,
-          category: prompt.category_id,
-          level: prompt.level,
-          ruby_duck_id: prompt.id
-        }
-    end
+    rubber_duck_options =
+      case prompt_data do
+        nil ->
+          %{}
+
+        prompt ->
+          %{
+            name: prompt.name,
+            description: prompt.description,
+            category: prompt.category_id,
+            level: prompt.level,
+            ruby_duck_id: prompt.id
+          }
+      end
 
     # Add options from context
     context_options = Map.take(context, [:temperature, :max_tokens, :engine, :timeout])
@@ -191,18 +194,21 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
 
   defp enhance_jido_prompt_with_metadata(jido_prompt, rubber_duck_prompt) do
     # Add RubberDuck metadata to JidoAI prompt
-    rubber_duck_metadata = case rubber_duck_prompt do
-      nil -> %{}
-      prompt ->
-        %{
-          rubber_duck_source: true,
-          original_id: prompt.id,
-          level: prompt.level,
-          category: prompt.category_id,
-          created_at: prompt.inserted_at,
-          updated_at: prompt.updated_at
-        }
-    end
+    rubber_duck_metadata =
+      case rubber_duck_prompt do
+        nil ->
+          %{}
+
+        prompt ->
+          %{
+            rubber_duck_source: true,
+            original_id: prompt.id,
+            level: prompt.level,
+            category: prompt.category_id,
+            created_at: prompt.inserted_at,
+            updated_at: prompt.updated_at
+          }
+      end
 
     # This would enhance the JidoAI prompt with metadata
     # (JidoAI.Prompt may not directly support metadata, so we'd store this separately)
@@ -245,9 +251,10 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
         cond do
           String.contains?(template_content, "<%") -> :eex
           String.contains?(template_content, "{{") -> :liquid
-          true -> :eex  # Default to EEx for Elixir compatibility
+          # Default to EEx for Elixir compatibility
+          true -> :eex
         end
-        
+
       explicit_engine ->
         explicit_engine
     end
@@ -259,12 +266,12 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
       :eex ->
         # EEx templates should work directly with JidoAI
         {:ok, template_content}
-        
+
       :liquid ->
         # Convert EEx patterns to Liquid if needed
         converted_content = convert_eex_to_liquid(template_content)
         {:ok, converted_content}
-        
+
       _ ->
         {:error, :unsupported_template_engine}
     end
@@ -280,24 +287,25 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
 
   defp create_jido_template(template_content, template_type, template_engine, options) do
     # Create JidoAI template with specified engine
-    messages = case template_type do
-      :system ->
-        [%{role: :system, content: template_content, engine: template_engine}]
-        
-      :user ->
-        [%{role: :user, content: template_content, engine: template_engine}]
-        
-      :mixed ->
-        # Parse mixed content for multiple messages
-        parse_mixed_template_content(template_content, template_engine)
-    end
+    messages =
+      case template_type do
+        :system ->
+          [%{role: :system, content: template_content, engine: template_engine}]
+
+        :user ->
+          [%{role: :user, content: template_content, engine: template_engine}]
+
+        :mixed ->
+          # Parse mixed content for multiple messages
+          parse_mixed_template_content(template_content, template_engine)
+      end
 
     template_options = Map.merge(options, %{engine: template_engine})
-    
+
     case Prompt.new(messages, template_options) do
       %Prompt{} = template ->
         {:ok, template}
-        
+
       error ->
         {:error, {:template_creation_failed, error}}
     end
@@ -327,12 +335,12 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp migrate_versions_to_jido_ai(versions, rubber_duck_prompt, options) do
     Logger.debug("Migrating #{length(versions)} versions to JidoAI")
 
-    migrated_versions = 
+    migrated_versions =
       Enum.map(versions, fn version ->
         case convert_version_to_jido_ai(version, rubber_duck_prompt, options) do
           {:ok, jido_version} ->
             jido_version
-            
+
           {:error, reason} ->
             Logger.warning("Failed to migrate version: #{inspect(reason)}")
             nil
@@ -346,35 +354,36 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
 
   defp convert_version_to_jido_ai(version, rubber_duck_prompt, options) do
     # Convert individual version to JidoAI format
-    context = Map.merge(options, %{
-      version: version.version,
-      created_at: version.created_at,
-      created_by: version.created_by
-    })
+    context =
+      Map.merge(options, %{
+        version: version.version,
+        created_at: version.created_at,
+        created_by: version.created_by
+      })
 
     # Create temporary prompt for this version
     version_prompt = %{
-      rubber_duck_prompt | 
-      content: version.content,
-      inserted_at: version.created_at
+      rubber_duck_prompt
+      | content: version.content,
+        inserted_at: version.created_at
     }
 
-    convert_to_jido_ai_prompt(version_prompt, context)
+    convert_version_to_jido_ai_prompt(version_prompt, context)
   end
 
   defp validate_prompt_security(content, options) do
     # Integrate with existing prompt security validation
     security_level = Map.get(options, :security_level, :standard)
-    
+
     case security_level do
       :high ->
         # Use existing PromptValidator for high security
         validate_with_existing_security_system(content, options)
-        
+
       :standard ->
         # Basic validation for standard security
         basic_security_validation(content)
-        
+
       :low ->
         # Minimal validation for low security
         {:ok, content}
@@ -387,7 +396,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
     case String.contains?(content, ["<script>", "DROP TABLE", "rm -rf"]) do
       true ->
         {:error, :security_violation_detected}
-        
+
       false ->
         {:ok, content}
     end
@@ -405,16 +414,19 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp build_secure_messages(validated_content, context) do
     # Build messages with security context
     role = Map.get(context, :role, :user)
-    
-    messages = [%{
-      role: role,
-      content: validated_content
-    }]
+
+    messages = [
+      %{
+        role: role,
+        content: validated_content
+      }
+    ]
 
     # Add security metadata
-    secure_messages = Enum.map(messages, fn message ->
-      Map.put(message, :security_validated, true)
-    end)
+    secure_messages =
+      Enum.map(messages, fn message ->
+        Map.put(message, :security_validated, true)
+      end)
 
     {:ok, secure_messages}
   end
@@ -430,16 +442,16 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
       {:hit, cached_prompt} ->
         Logger.debug("JidoAI prompt cache hit")
         {:ok, cached_prompt}
-        
+
       :miss ->
         Logger.debug("JidoAI prompt cache miss, building new prompt")
-        
+
         case build_function.() do
           {:ok, jido_prompt} ->
             # Store in cache for future use
             store_in_existing_cache(cache_key, jido_prompt)
             {:ok, jido_prompt}
-            
+
           error ->
             error
         end
@@ -449,7 +461,8 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp get_from_existing_cache(cache_key) do
     # Would integrate with existing cache system
     # (RubberDuck.Prompts.Caching.CacheManager)
-    :miss  # Simulate cache miss for now
+    # Simulate cache miss for now
+    :miss
   end
 
   defp store_in_existing_cache(cache_key, jido_prompt) do
@@ -457,7 +470,6 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
     Logger.debug("Storing JidoAI prompt in cache with key: #{cache_key}")
     :ok
   end
-
 
   @doc """
   Validate JidoAI prompt adapter functionality.
@@ -477,7 +489,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
       true ->
         Logger.info("JidoAI prompt adapter validation passed")
         :ok
-        
+
       false ->
         Logger.error("JidoAI prompt adapter validation failed")
         {:error, :validation_failed}
@@ -485,6 +497,75 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   end
 
   # Private validation functions
+
+  # Implementation of missing functions using JidoAI 0.5.2 API
+
+  defp create_jido_ai_prompt_from_messages(messages, context) do
+    # Create JidoAI prompt from messages using the 0.5.2 API
+    prompt_attrs = %{
+      messages: messages,
+      params: Map.get(context, :template_params, %{}),
+      metadata: build_metadata_from_context(context)
+    }
+
+    case Jido.AI.Prompt.new(prompt_attrs) do
+      %Jido.AI.Prompt{} = prompt ->
+        {:ok, prompt}
+
+      error ->
+        Logger.error("Failed to create JidoAI prompt: #{inspect(error)}")
+        {:error, {:jido_prompt_creation_failed, error}}
+    end
+  end
+
+  defp convert_version_to_jido_ai_prompt(version_prompt, context) do
+    # Convert prompt version to JidoAI prompt
+    messages = [
+      %{
+        role: determine_role_from_level(version_prompt.level),
+        content: version_prompt.content
+      }
+    ]
+
+    create_jido_ai_prompt_from_messages(messages, context)
+  end
+
+  defp convert_test_prompt_to_jido_ai(test_prompt) do
+    # Convert test prompt to JidoAI format
+    messages = [
+      %{
+        role: determine_role_from_level(test_prompt.level),
+        content: test_prompt.content
+      }
+    ]
+
+    context = %{
+      test_conversion: true,
+      prompt_name: test_prompt.name
+    }
+
+    create_jido_ai_prompt_from_messages(messages, context)
+  end
+
+  defp build_metadata_from_context(context) do
+    # Build JidoAI prompt metadata from context
+    %{
+      source: "rubber_duck_prompt_adapter",
+      created_at: DateTime.utc_now(),
+      context_type: Map.get(context, :context_type, :general),
+      integration_version: "6.1.0"
+    }
+  end
+
+  defp determine_role_from_level(level) do
+    # Convert RubberDuck prompt levels to JidoAI message roles
+    case level do
+      :system -> :system
+      :user -> :user
+      :assistant -> :assistant
+      _ -> :user  # Default to user role
+    end
+  end
 
   defp validate_conversion_accuracy do
     # Test conversion accuracy
@@ -495,7 +576,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
       name: "test_prompt"
     }
 
-    case convert_to_jido_ai_prompt(test_prompt) do
+    case convert_test_prompt_to_jido_ai(test_prompt) do
       {:ok, _jido_prompt} -> :ok
       {:error, _} -> {:error, :conversion_failed}
     end
@@ -504,27 +585,28 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp validate_rendering_performance do
     # Test rendering performance
     start_time = System.monotonic_time(:millisecond)
-    
+
     test_messages = [%{role: :user, content: "Hello <%= @name %>", engine: :eex}]
     test_context = %{name: "World"}
-    
+
     case Prompt.new(test_messages) do
       %Prompt{} = prompt ->
         case Prompt.render(prompt, test_context) do
           {:ok, _rendered} ->
             end_time = System.monotonic_time(:millisecond)
             render_time = end_time - start_time
-            
-            if render_time < 50 do  # Sub-50ms target
+
+            # Sub-50ms target
+            if render_time < 50 do
               :ok
             else
               {:error, :rendering_too_slow}
             end
-            
+
           {:error, _} ->
             {:error, :rendering_failed}
         end
-        
+
       error ->
         {:error, {:prompt_creation_failed, error}}
     end
@@ -533,7 +615,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp validate_template_creation do
     # Test template creation
     test_template = "Hello <%= @user %>, welcome to <%= @app %>!"
-    
+
     case create_jido_ai_template(test_template, :user, %{engine: :eex}) do
       {:ok, _template} -> :ok
       {:error, _} -> {:error, :template_creation_failed}
@@ -543,10 +625,12 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp validate_security_integration do
     # Test security validation integration
     malicious_content = "<script>alert('xss')</script>"
-    
+
     case validate_prompt_security(malicious_content, %{security_level: :high}) do
-      {:error, :security_violation_detected} -> :ok  # Should detect and reject
-      {:ok, _} -> {:error, :security_validation_failed}  # Should not pass
+      # Should detect and reject
+      {:error, :security_violation_detected} -> :ok
+      # Should not pass
+      {:ok, _} -> {:error, :security_validation_failed}
       {:error, _} -> {:error, :security_system_error}
     end
   end
@@ -554,9 +638,10 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   defp validate_caching_integration do
     # Test caching integration
     cache_key = "test_jido_ai_cache"
-    
+
     build_function = fn ->
       messages = [%{role: :user, content: "Test cached prompt"}]
+
       case Prompt.new(messages) do
         %Prompt{} = prompt -> {:ok, prompt}
         error -> {:error, error}
@@ -574,7 +659,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
   """
   def get_adapter_status do
     validation_result = validate_adapter_functionality()
-    
+
     %{
       adapter_operational: validation_result == :ok,
       jido_ai_integration: true,

@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
   @moduledoc """
   Workflow context-aware prompt selection service.
-  
+
   Extends the LlmPromptSelector service for Reactor workflow contexts, providing
   workflow step-specific prompt selection, context variable integration, and
   workflow-optimized prompt recommendations for improved productivity.
-  
+
   Features:
   - Workflow context-aware prompt selection with step parameter integration
   - Extension of Section 6.1 LlmPromptSelector for workflow environments
@@ -34,8 +34,9 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     case LlmPromptSelector.get_available_prompts(user_id, project_id, options) do
       {:ok, available_prompts} ->
         # Filter and rank prompts based on workflow context
-        workflow_optimized_prompts = optimize_prompts_for_workflow(available_prompts, workflow_context)
-        
+        workflow_optimized_prompts =
+          optimize_prompts_for_workflow(available_prompts, workflow_context)
+
         Logger.debug("WorkflowPromptSelector: Workflow-suitable prompts retrieved",
           total_prompts: available_prompts.total_count,
           workflow_optimized: workflow_optimized_prompts.total_count
@@ -53,12 +54,13 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
   """
   def search_workflow_prompts(user_id, search_query, workflow_context, search_options \\ %{}) do
     project_id = Map.get(workflow_context, :project_id)
-    
+
     # Enhance search options with workflow context
-    enhanced_search_options = Map.merge(search_options, %{
-      workflow_context: workflow_context,
-      rank_by_workflow_relevance: true
-    })
+    enhanced_search_options =
+      Map.merge(search_options, %{
+        workflow_context: workflow_context,
+        rank_by_workflow_relevance: true
+      })
 
     Logger.debug("WorkflowPromptSelector: Searching workflow prompts",
       user_id: user_id,
@@ -66,7 +68,12 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
       workflow_type: Map.get(workflow_context, :workflow_type)
     )
 
-    case LlmPromptSelector.search_prompts(user_id, search_query, project_id, enhanced_search_options) do
+    case LlmPromptSelector.search_prompts(
+           user_id,
+           search_query,
+           project_id,
+           enhanced_search_options
+         ) do
       {:ok, search_results} ->
         # Re-rank results based on workflow relevance
         workflow_ranked_results = rank_by_workflow_relevance(search_results, workflow_context)
@@ -92,7 +99,9 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     case LlmPromptSelector.get_available_prompts(user_id, project_id, options) do
       {:ok, available_prompts} ->
         # Filter prompts relevant to step type
-        step_relevant_prompts = filter_prompts_for_step_type(available_prompts, step_type, workflow_context)
+        step_relevant_prompts =
+          filter_prompts_for_step_type(available_prompts, step_type, workflow_context)
+
         {:ok, step_relevant_prompts}
 
       {:error, reason} ->
@@ -112,7 +121,7 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
 
     # Extract workflow context variables that can be used for substitution
     workflow_variables = extract_workflow_context_variables(workflow_context)
-    
+
     # Merge user-provided values with workflow context variables
     all_variables = Map.merge(workflow_variables, variable_values)
 
@@ -143,16 +152,18 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
   def get_available_workflow_variables(workflow_context) do
     # Extract variables available from workflow context
     available_variables = extract_workflow_context_variables(workflow_context)
-    
+
     # Add metadata about variable sources
-    variables_with_metadata = Map.new(available_variables, fn {var_name, var_value} ->
-      {var_name, %{
-        value: var_value,
-        source: :workflow_context,
-        type: determine_variable_type(var_value),
-        description: generate_variable_description(var_name, workflow_context)
-      }}
-    end)
+    variables_with_metadata =
+      Map.new(available_variables, fn {var_name, var_value} ->
+        {var_name,
+         %{
+           value: var_value,
+           source: :workflow_context,
+           type: determine_variable_type(var_value),
+           description: generate_variable_description(var_name, workflow_context)
+         }}
+      end)
 
     {:ok, variables_with_metadata}
   end
@@ -163,9 +174,14 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     # Optimize prompt collections for workflow context
     workflow_type = Map.get(workflow_context, :workflow_type, :general)
 
-    optimized_system = filter_prompts_by_workflow_relevance(available_prompts.system_prompts, workflow_type)
-    optimized_project = filter_prompts_by_workflow_relevance(available_prompts.project_prompts, workflow_type)  
-    optimized_user = filter_prompts_by_workflow_relevance(available_prompts.user_prompts, workflow_type)
+    optimized_system =
+      filter_prompts_by_workflow_relevance(available_prompts.system_prompts, workflow_type)
+
+    optimized_project =
+      filter_prompts_by_workflow_relevance(available_prompts.project_prompts, workflow_type)
+
+    optimized_user =
+      filter_prompts_by_workflow_relevance(available_prompts.user_prompts, workflow_type)
 
     %{
       system_prompts: optimized_system,
@@ -185,7 +201,7 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     |> Enum.filter(fn prompt ->
       content_relevance = calculate_workflow_content_relevance(prompt, workflow_keywords)
       name_relevance = calculate_workflow_name_relevance(prompt, workflow_keywords)
-      
+
       # Include prompt if it has some relevance to workflow type
       content_relevance > 0.1 or name_relevance > 0.2
     end)
@@ -206,10 +222,10 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     |> Enum.map(fn prompt ->
       workflow_relevance = calculate_total_workflow_relevance(prompt, workflow_keywords)
       original_relevance = Map.get(prompt, :relevance_score, 0.5)
-      
+
       # Combine original search relevance with workflow relevance
-      combined_score = (original_relevance * 0.7) + (workflow_relevance * 0.3)
-      
+      combined_score = original_relevance * 0.7 + workflow_relevance * 0.3
+
       Map.put(prompt, :combined_relevance_score, combined_score)
     end)
     |> Enum.sort_by(fn prompt -> prompt.combined_relevance_score end, :desc)
@@ -219,20 +235,22 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     # Filter prompts relevant to specific step type
     step_keywords = get_step_type_keywords(step_type)
 
-    all_prompts = (available_prompts.system_prompts || []) ++
-                  (available_prompts.project_prompts || []) ++
-                  (available_prompts.user_prompts || [])
+    all_prompts =
+      (available_prompts.system_prompts || []) ++
+        (available_prompts.project_prompts || []) ++
+        (available_prompts.user_prompts || [])
 
-    relevant_prompts = all_prompts
-    |> Enum.filter(fn prompt ->
-      step_relevance = calculate_step_type_relevance(prompt, step_keywords)
-      step_relevance > 0.2
-    end)
-    |> Enum.map(fn prompt ->
-      relevance_score = calculate_step_type_relevance(prompt, step_keywords)
-      Map.put(prompt, :step_relevance_score, relevance_score)
-    end)
-    |> Enum.sort_by(fn prompt -> prompt.step_relevance_score end, :desc)
+    relevant_prompts =
+      all_prompts
+      |> Enum.filter(fn prompt ->
+        step_relevance = calculate_step_type_relevance(prompt, step_keywords)
+        step_relevance > 0.2
+      end)
+      |> Enum.map(fn prompt ->
+        relevance_score = calculate_step_type_relevance(prompt, step_keywords)
+        Map.put(prompt, :step_relevance_score, relevance_score)
+      end)
+      |> Enum.sort_by(fn prompt -> prompt.step_relevance_score end, :desc)
 
     %{
       recommended_prompts: relevant_prompts,
@@ -252,28 +270,29 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     }
 
     # Add workflow-specific variables
-    workflow_specific = case Map.get(workflow_context, :workflow_type) do
-      :code_review ->
-        %{
-          "review_type" => Map.get(workflow_context, :review_type, "general"),
-          "code_language" => Map.get(workflow_context, :code_language, "unknown")
-        }
+    workflow_specific =
+      case Map.get(workflow_context, :workflow_type) do
+        :code_review ->
+          %{
+            "review_type" => Map.get(workflow_context, :review_type, "general"),
+            "code_language" => Map.get(workflow_context, :code_language, "unknown")
+          }
 
-      :documentation ->
-        %{
-          "doc_type" => Map.get(workflow_context, :documentation_type, "general"),
-          "target_audience" => Map.get(workflow_context, :target_audience, "developers")
-        }
+        :documentation ->
+          %{
+            "doc_type" => Map.get(workflow_context, :documentation_type, "general"),
+            "target_audience" => Map.get(workflow_context, :target_audience, "developers")
+          }
 
-      :testing ->
-        %{
-          "test_type" => Map.get(workflow_context, :test_type, "unit"),
-          "test_framework" => Map.get(workflow_context, :test_framework, "exunit")
-        }
+        :testing ->
+          %{
+            "test_type" => Map.get(workflow_context, :test_type, "unit"),
+            "test_framework" => Map.get(workflow_context, :test_framework, "exunit")
+          }
 
-      _ ->
-        %{}
-    end
+        _ ->
+          %{}
+      end
 
     # Add custom context variables if provided
     custom_variables = Map.get(workflow_context, :custom_variables, %{})
@@ -307,10 +326,11 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
   defp calculate_workflow_content_relevance(prompt, workflow_keywords) do
     # Calculate relevance of prompt content to workflow type
     content_lower = String.downcase(prompt.content)
-    
-    matching_keywords = Enum.count(workflow_keywords, fn keyword ->
-      String.contains?(content_lower, keyword)
-    end)
+
+    matching_keywords =
+      Enum.count(workflow_keywords, fn keyword ->
+        String.contains?(content_lower, keyword)
+      end)
 
     matching_keywords / length(workflow_keywords)
   end
@@ -318,10 +338,11 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
   defp calculate_workflow_name_relevance(prompt, workflow_keywords) do
     # Calculate relevance of prompt name to workflow type
     name_lower = String.downcase(prompt.name)
-    
-    matching_keywords = Enum.count(workflow_keywords, fn keyword ->
-      String.contains?(name_lower, keyword)
-    end)
+
+    matching_keywords =
+      Enum.count(workflow_keywords, fn keyword ->
+        String.contains?(name_lower, keyword)
+      end)
 
     matching_keywords / length(workflow_keywords)
   end
@@ -330,25 +351,28 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     # Calculate total workflow relevance score
     content_relevance = calculate_workflow_content_relevance(prompt, workflow_keywords)
     name_relevance = calculate_workflow_name_relevance(prompt, workflow_keywords)
-    
+
     # Weight name relevance higher than content relevance
-    (name_relevance * 0.6) + (content_relevance * 0.4)
+    name_relevance * 0.6 + content_relevance * 0.4
   end
 
   defp calculate_step_type_relevance(prompt, step_keywords) do
     # Calculate relevance to specific step type
     content_lower = String.downcase(prompt.content)
     name_lower = String.downcase(prompt.name)
-    
-    content_matches = Enum.count(step_keywords, fn keyword ->
-      String.contains?(content_lower, keyword)
-    end)
-    
-    name_matches = Enum.count(step_keywords, fn keyword ->
-      String.contains?(name_lower, keyword)
-    end)
 
-    total_matches = content_matches + (name_matches * 2)  # Weight name matches higher
+    content_matches =
+      Enum.count(step_keywords, fn keyword ->
+        String.contains?(content_lower, keyword)
+      end)
+
+    name_matches =
+      Enum.count(step_keywords, fn keyword ->
+        String.contains?(name_lower, keyword)
+      end)
+
+    # Weight name matches higher
+    total_matches = content_matches + name_matches * 2
     total_matches / (length(step_keywords) * 2)
   end
 
