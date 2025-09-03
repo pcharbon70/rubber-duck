@@ -1,11 +1,11 @@
 defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   @moduledoc """
   Performance monitoring service for workflow-prompt operations.
-  
+
   Provides comprehensive performance monitoring and analytics for workflow-prompt
   integration operations, enabling performance optimization, bottleneck detection,
   and performance reporting for enterprise-scale workflow operations.
-  
+
   Features:
   - Performance monitoring for workflow-prompt operations with comprehensive metrics
   - Real-time performance tracking with bottleneck detection and optimization recommendations
@@ -86,7 +86,7 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     )
 
     updated_state = record_performance_data(operation_type, operation_data, timing_data, state)
-    
+
     # Check for performance alerts
     check_performance_thresholds(operation_type, timing_data, updated_state)
 
@@ -150,7 +150,7 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   defp record_performance_data(operation_type, operation_data, timing_data, state) do
     # Record performance data for operation
     workflow_id = Map.get(operation_data, :workflow_id, "global")
-    
+
     performance_entry = %{
       operation_type: operation_type,
       workflow_id: workflow_id,
@@ -163,9 +163,11 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     # Update performance data
     workflow_data = Map.get(state.performance_data, workflow_id, %{})
     operation_history = Map.get(workflow_data, operation_type, [])
-    
-    updated_operation_history = [performance_entry | operation_history]
-    |> Enum.take(100)  # Keep last 100 operations
+
+    updated_operation_history =
+      [performance_entry | operation_history]
+      # Keep last 100 operations
+      |> Enum.take(100)
 
     updated_workflow_data = Map.put(workflow_data, operation_type, updated_operation_history)
     updated_performance_data = Map.put(state.performance_data, workflow_id, updated_workflow_data)
@@ -176,7 +178,7 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   defp generate_performance_analytics(workflow_id, analytics_options, state) do
     # Generate comprehensive performance analytics
     analytics_level = Map.get(analytics_options, :analytics_level, :standard)
-    
+
     case analytics_level do
       :basic ->
         generate_basic_analytics(workflow_id, state)
@@ -195,7 +197,7 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   defp generate_basic_analytics(workflow_id, state) do
     # Generate basic performance analytics
     performance_data = get_performance_data_for_workflow(workflow_id, state)
-    
+
     basic_analytics = %{
       metrics: calculate_basic_metrics(performance_data),
       summary: %{
@@ -214,13 +216,15 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     # Generate standard performance analytics
     with {:ok, basic_analytics} <- generate_basic_analytics(workflow_id, state) do
       performance_data = get_performance_data_for_workflow(workflow_id, state)
-      
-      standard_analytics = Map.merge(basic_analytics, %{
-        metrics: Map.merge(basic_analytics.metrics, calculate_standard_metrics(performance_data)),
-        trends: analyze_performance_trends(performance_data),
-        bottlenecks: identify_performance_bottlenecks(performance_data),
-        analytics_level: :standard
-      })
+
+      standard_analytics =
+        Map.merge(basic_analytics, %{
+          metrics:
+            Map.merge(basic_analytics.metrics, calculate_standard_metrics(performance_data)),
+          trends: analyze_performance_trends(performance_data),
+          bottlenecks: identify_performance_bottlenecks(performance_data),
+          analytics_level: :standard
+        })
 
       {:ok, standard_analytics}
     else
@@ -232,14 +236,15 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     # Generate detailed performance analytics
     with {:ok, standard_analytics} <- generate_standard_analytics(workflow_id, state) do
       performance_data = get_performance_data_for_workflow(workflow_id, state)
-      
-      detailed_analytics = Map.merge(standard_analytics, %{
-        detailed_metrics: calculate_detailed_metrics(performance_data, analytics_options),
-        performance_breakdown: generate_performance_breakdown(performance_data),
-        optimization_opportunities: identify_optimization_opportunities(performance_data),
-        comparative_analysis: generate_comparative_analysis(workflow_id, state),
-        analytics_level: :detailed
-      })
+
+      detailed_analytics =
+        Map.merge(standard_analytics, %{
+          detailed_metrics: calculate_detailed_metrics(performance_data, analytics_options),
+          performance_breakdown: generate_performance_breakdown(performance_data),
+          optimization_opportunities: identify_optimization_opportunities(performance_data),
+          comparative_analysis: generate_comparative_analysis(workflow_id, state),
+          analytics_level: :detailed
+        })
 
       {:ok, detailed_analytics}
     else
@@ -249,14 +254,16 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
   defp generate_comprehensive_analytics(workflow_id, analytics_options, state) do
     # Generate comprehensive performance analytics
-    with {:ok, detailed_analytics} <- generate_detailed_analytics(workflow_id, analytics_options, state) do
-      comprehensive_analytics = Map.merge(detailed_analytics, %{
-        predictive_analysis: generate_predictive_analysis(workflow_id, state),
-        resource_utilization: analyze_resource_utilization(workflow_id, state),
-        integration_health: assess_integration_health(workflow_id, state),
-        performance_forecasting: generate_performance_forecasting(workflow_id, state),
-        analytics_level: :comprehensive
-      })
+    with {:ok, detailed_analytics} <-
+           generate_detailed_analytics(workflow_id, analytics_options, state) do
+      comprehensive_analytics =
+        Map.merge(detailed_analytics, %{
+          predictive_analysis: generate_predictive_analysis(workflow_id, state),
+          resource_utilization: analyze_resource_utilization(workflow_id, state),
+          integration_health: assess_integration_health(workflow_id, state),
+          performance_forecasting: generate_performance_forecasting(workflow_id, state),
+          analytics_level: :comprehensive
+        })
 
       {:ok, comprehensive_analytics}
     else
@@ -267,39 +274,49 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   defp generate_performance_recommendations(workflow_id, state) do
     # Generate performance improvement recommendations
     performance_data = get_performance_data_for_workflow(workflow_id, state)
-    
+
     recommendations = []
 
     # Check resolution time
     avg_resolution_time = calculate_average_resolution_time(performance_data)
-    recommendations = if avg_resolution_time > 500 do
-      ["Consider enabling prompt resolution caching to improve resolution times" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if avg_resolution_time > 500 do
+        [
+          "Consider enabling prompt resolution caching to improve resolution times"
+          | recommendations
+        ]
+      else
+        recommendations
+      end
 
     # Check context enhancement overhead
     avg_context_time = calculate_average_context_enhancement_time(performance_data)
-    recommendations = if avg_context_time > 100 do
-      ["Optimize context enhancement by reducing context size or complexity" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if avg_context_time > 100 do
+        ["Optimize context enhancement by reducing context size or complexity" | recommendations]
+      else
+        recommendations
+      end
 
     # Check overall integration overhead
     avg_integration_overhead = calculate_average_integration_overhead(performance_data)
-    recommendations = if avg_integration_overhead > 50 do
-      ["Consider optimizing prompt integration strategy to reduce overhead" | recommendations]
-    else
-      recommendations
-    end
+
+    recommendations =
+      if avg_integration_overhead > 50 do
+        ["Consider optimizing prompt integration strategy to reduce overhead" | recommendations]
+      else
+        recommendations
+      end
 
     recommendation_result = %{
       workflow_id: workflow_id,
-      recommendations: case recommendations do
-        [] -> ["Performance is optimal - no specific recommendations"]
-        _ -> recommendations
-      end,
+      recommendations:
+        case recommendations do
+          [] -> ["Performance is optimal - no specific recommendations"]
+          _ -> recommendations
+        end,
       performance_score: calculate_overall_performance_score(performance_data),
       optimization_potential: calculate_optimization_potential(performance_data),
       generated_at: DateTime.utc_now()
@@ -325,7 +342,7 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     # Calculate integration overhead
     total_time = Map.get(timing_data, :total_time, 0)
     base_workflow_time = Map.get(timing_data, :base_workflow_time, total_time * 0.8)
-    
+
     max(0, total_time - base_workflow_time)
   end
 
@@ -347,26 +364,32 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
   defp calculate_average_operation_time(performance_data) do
     # Calculate average operation time
-    all_operations = performance_data
-    |> Map.values()
-    |> List.flatten()
+    all_operations =
+      performance_data
+      |> Map.values()
+      |> List.flatten()
 
     case all_operations do
-      [] -> 0.0
+      [] ->
+        0.0
+
       operations ->
-        total_time = Enum.reduce(operations, 0, fn op, acc ->
-          acc + Map.get(op.performance_metrics, :total_time_us, 0)
-        end)
-        
-        total_time / length(operations) / 1000  # Convert to milliseconds
+        total_time =
+          Enum.reduce(operations, 0, fn op, acc ->
+            acc + Map.get(op.performance_metrics, :total_time_us, 0)
+          end)
+
+        # Convert to milliseconds
+        total_time / length(operations) / 1000
     end
   end
 
   defp calculate_overall_performance_score(performance_data) do
     # Calculate overall performance score
-    all_operations = performance_data
-    |> Map.values()
-    |> List.flatten()
+    all_operations =
+      performance_data
+      |> Map.values()
+      |> List.flatten()
 
     case all_operations do
       [] -> 1.0
@@ -376,9 +399,10 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
   defp calculate_efficiency_score_for_operations(operations) do
     # Calculate efficiency score for operations
-    efficiency_scores = Enum.map(operations, fn op ->
-      calculate_single_operation_efficiency(op)
-    end)
+    efficiency_scores =
+      Enum.map(operations, fn op ->
+        calculate_single_operation_efficiency(op)
+      end)
 
     Enum.sum(efficiency_scores) / length(efficiency_scores)
   end
@@ -388,7 +412,7 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     overhead = Map.get(operation.performance_metrics, :integration_overhead_us, 0)
 
     if total_time > 0 do
-      max(0.0, 1.0 - (overhead / total_time))
+      max(0.0, 1.0 - overhead / total_time)
     else
       1.0
     end
@@ -409,7 +433,8 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     # Calculate standard performance metrics
     %{
       average_resolution_time_ms: calculate_average_resolution_time(performance_data),
-      average_context_enhancement_time_ms: calculate_average_context_enhancement_time(performance_data),
+      average_context_enhancement_time_ms:
+        calculate_average_context_enhancement_time(performance_data),
       average_integration_overhead_ms: calculate_average_integration_overhead(performance_data),
       operation_success_rate: calculate_operation_success_rate(performance_data)
     }
@@ -421,7 +446,8 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
       percentile_metrics: calculate_percentile_metrics(performance_data),
       operation_type_breakdown: calculate_operation_type_breakdown(performance_data),
       cache_performance_metrics: calculate_cache_performance_metrics(performance_data),
-      context_optimization_effectiveness: calculate_context_optimization_effectiveness(performance_data)
+      context_optimization_effectiveness:
+        calculate_context_optimization_effectiveness(performance_data)
     }
   end
 
@@ -439,34 +465,42 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
   defp extract_average_metric(performance_data, metric_key) do
     # Extract average for specific metric
-    all_operations = performance_data
-    |> Map.values()
-    |> List.flatten()
+    all_operations =
+      performance_data
+      |> Map.values()
+      |> List.flatten()
 
     case all_operations do
-      [] -> 0.0
+      [] ->
+        0.0
+
       operations ->
-        metric_values = Enum.map(operations, fn op ->
-          Map.get(op.performance_metrics, metric_key, 0)
-        end)
-        
+        metric_values =
+          Enum.map(operations, fn op ->
+            Map.get(op.performance_metrics, metric_key, 0)
+          end)
+
         Enum.sum(metric_values) / length(metric_values)
     end
   end
 
   defp calculate_operation_success_rate(performance_data) do
     # Calculate operation success rate
-    all_operations = performance_data
-    |> Map.values()
-    |> List.flatten()
+    all_operations =
+      performance_data
+      |> Map.values()
+      |> List.flatten()
 
     case all_operations do
-      [] -> 1.0
+      [] ->
+        1.0
+
       operations ->
-        successful_operations = Enum.filter(operations, fn op ->
-          Map.get(op.operation_data, :success, true)
-        end)
-        
+        successful_operations =
+          Enum.filter(operations, fn op ->
+            Map.get(op.operation_data, :success, true)
+          end)
+
         length(successful_operations) / length(operations)
     end
   end
@@ -482,7 +516,8 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   defp analyze_performance_trends(performance_data) do
     # Analyze performance trends over time
     %{
-      trend_direction: :stable,  # Simplified
+      # Simplified
+      trend_direction: :stable,
       performance_consistency: 0.85,
       improvement_rate: 0.02,
       trend_analysis_timestamp: DateTime.utc_now()
@@ -497,23 +532,32 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
     bottlenecks = []
 
-    bottlenecks = if avg_resolution_time > 500 do
-      [%{type: :prompt_resolution, severity: :high, avg_time_ms: avg_resolution_time} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if avg_resolution_time > 500 do
+        [
+          %{type: :prompt_resolution, severity: :high, avg_time_ms: avg_resolution_time}
+          | bottlenecks
+        ]
+      else
+        bottlenecks
+      end
 
-    bottlenecks = if avg_context_time > 100 do
-      [%{type: :context_enhancement, severity: :medium, avg_time_ms: avg_context_time} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if avg_context_time > 100 do
+        [
+          %{type: :context_enhancement, severity: :medium, avg_time_ms: avg_context_time}
+          | bottlenecks
+        ]
+      else
+        bottlenecks
+      end
 
-    bottlenecks = if avg_overhead > 50 do
-      [%{type: :integration_overhead, severity: :low, avg_time_ms: avg_overhead} | bottlenecks]
-    else
-      bottlenecks
-    end
+    bottlenecks =
+      if avg_overhead > 50 do
+        [%{type: :integration_overhead, severity: :low, avg_time_ms: avg_overhead} | bottlenecks]
+      else
+        bottlenecks
+      end
 
     case bottlenecks do
       [] -> [%{type: :none, message: "No significant bottlenecks detected"}]
@@ -527,19 +571,23 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
     # Check cache hit rate
     cache_metrics = calculate_cache_performance_metrics(performance_data)
-    opportunities = if Map.get(cache_metrics, :hit_rate, 1.0) < 0.7 do
-      ["Improve prompt resolution caching strategy" | opportunities]
-    else
-      opportunities
-    end
+
+    opportunities =
+      if Map.get(cache_metrics, :hit_rate, 1.0) < 0.7 do
+        ["Improve prompt resolution caching strategy" | opportunities]
+      else
+        opportunities
+      end
 
     # Check context optimization
     context_effectiveness = calculate_context_optimization_effectiveness(performance_data)
-    opportunities = if context_effectiveness < 0.8 do
-      ["Optimize context enhancement for better performance" | opportunities]
-    else
-      opportunities
-    end
+
+    opportunities =
+      if context_effectiveness < 0.8 do
+        ["Optimize context enhancement for better performance" | opportunities]
+      else
+        opportunities
+      end
 
     case opportunities do
       [] -> ["Performance is well-optimized"]
@@ -550,15 +598,17 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   defp check_performance_thresholds(operation_type, timing_data, state) do
     # Check if performance thresholds are exceeded
     thresholds = get_performance_thresholds(state.alerting_system)
-    
-    operation_time = Map.get(timing_data, :total_time, 0) / 1000  # Convert to ms
 
-    threshold_exceeded = case operation_type do
-      :prompt_resolution -> operation_time > Map.get(thresholds, :resolution_threshold_ms, 1000)
-      :context_enhancement -> operation_time > Map.get(thresholds, :context_threshold_ms, 200)
-      :cache_coordination -> operation_time > Map.get(thresholds, :cache_threshold_ms, 100)
-      _ -> operation_time > Map.get(thresholds, :general_threshold_ms, 500)
-    end
+    # Convert to ms
+    operation_time = Map.get(timing_data, :total_time, 0) / 1000
+
+    threshold_exceeded =
+      case operation_type do
+        :prompt_resolution -> operation_time > Map.get(thresholds, :resolution_threshold_ms, 1000)
+        :context_enhancement -> operation_time > Map.get(thresholds, :context_threshold_ms, 200)
+        :cache_coordination -> operation_time > Map.get(thresholds, :cache_threshold_ms, 100)
+        _ -> operation_time > Map.get(thresholds, :general_threshold_ms, 500)
+      end
 
     if threshold_exceeded do
       Logger.warning("WorkflowPromptPerformanceMonitor: Performance threshold exceeded",
@@ -622,10 +672,11 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
     # Execute performance optimization
     optimization_level = Map.get(optimization_options, :optimization_level, :standard)
 
-    optimized_analytics = %{state.analytics_engine |
-      optimization_applied: true,
-      optimization_level: optimization_level,
-      last_optimization: DateTime.utc_now()
+    optimized_analytics = %{
+      state.analytics_engine
+      | optimization_applied: true,
+        optimization_level: optimization_level,
+        last_optimization: DateTime.utc_now()
     }
 
     %{state | analytics_engine: optimized_analytics}
@@ -634,7 +685,10 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
   # Placeholder functions for detailed metrics (would be implemented based on actual requirements)
   defp calculate_percentile_metrics(_performance_data), do: %{p50: 100, p90: 200, p99: 500}
   defp calculate_operation_type_breakdown(_performance_data), do: %{}
-  defp calculate_cache_performance_metrics(_performance_data), do: %{hit_rate: 0.8, miss_rate: 0.2}
+
+  defp calculate_cache_performance_metrics(_performance_data),
+    do: %{hit_rate: 0.8, miss_rate: 0.2}
+
   defp calculate_context_optimization_effectiveness(_performance_data), do: 0.85
   defp generate_performance_breakdown(_performance_data), do: %{}
   defp generate_comparative_analysis(_workflow_id, _state), do: %{}

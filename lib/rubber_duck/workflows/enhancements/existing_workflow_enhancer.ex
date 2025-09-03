@@ -1,12 +1,12 @@
 defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
   @moduledoc """
   Enhancement service for existing workflows with project-specific prompt customization.
-  
+
   Enhances existing Code Review, Documentation Generation, and Refactoring workflows
   with sophisticated prompt integration, enabling project-specific analysis prompts,
   customizable documentation styles, and team-specific refactoring preferences
   while maintaining backward compatibility and performance.
-  
+
   Features:
   - Code Review workflows with project-specific analysis prompts and customization
   - Documentation Generation workflows with customizable documentation styles and formats
@@ -82,7 +82,8 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
       {:ok, enhanced_workflow} ->
         Logger.info("ExistingWorkflowEnhancer: Refactoring workflow enhanced successfully",
           workflow_id: enhanced_workflow.id,
-          preferences_integrated: enhanced_workflow.refactoring_integration.preferences_integrated,
+          preferences_integrated:
+            enhanced_workflow.refactoring_integration.preferences_integrated,
           team_standards_applied: enhanced_workflow.refactoring_integration.team_standards_applied
         )
 
@@ -119,10 +120,12 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
     # Execute Code Review workflow enhancement
     code_review_prompts = build_code_review_prompt_spec(enhancement_spec, options)
 
-    with {:ok, prompt_enhanced_workflow} <- integrate_code_review_prompts(workflow_config, code_review_prompts, options),
-         {:ok, analysis_enhanced_workflow} <- enhance_code_analysis_capabilities(prompt_enhanced_workflow, enhancement_spec),
-         {:ok, customization_enhanced_workflow} <- apply_project_specific_customizations(analysis_enhanced_workflow, enhancement_spec) do
-      
+    with {:ok, prompt_enhanced_workflow} <-
+           integrate_code_review_prompts(workflow_config, code_review_prompts, options),
+         {:ok, analysis_enhanced_workflow} <-
+           enhance_code_analysis_capabilities(prompt_enhanced_workflow, enhancement_spec),
+         {:ok, customization_enhanced_workflow} <-
+           apply_project_specific_customizations(analysis_enhanced_workflow, enhancement_spec) do
       code_review_integration = %{
         prompts_integrated: length(code_review_prompts),
         analysis_capabilities_enhanced: true,
@@ -140,10 +143,11 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
         }
       }
 
-      final_workflow = Map.merge(customization_enhanced_workflow, %{
-        workflow_type: :enhanced_code_review,
-        code_review_integration: code_review_integration
-      })
+      final_workflow =
+        Map.merge(customization_enhanced_workflow, %{
+          workflow_type: :enhanced_code_review,
+          code_review_integration: code_review_integration
+        })
 
       {:ok, final_workflow}
     else
@@ -153,12 +157,19 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
 
   defp execute_documentation_enhancement(workflow_config, enhancement_spec, options) do
     # Execute Documentation Generation workflow enhancement
-    documentation_styles = Map.get(enhancement_spec, :documentation_styles, ["technical", "user_guide", "api_reference"])
+    documentation_styles =
+      Map.get(enhancement_spec, :documentation_styles, [
+        "technical",
+        "user_guide",
+        "api_reference"
+      ])
 
-    with {:ok, style_enhanced_workflow} <- integrate_documentation_styles(workflow_config, documentation_styles, options),
-         {:ok, format_enhanced_workflow} <- enhance_documentation_formats(style_enhanced_workflow, enhancement_spec),
-         {:ok, customization_enhanced_workflow} <- apply_documentation_customizations(format_enhanced_workflow, enhancement_spec) do
-      
+    with {:ok, style_enhanced_workflow} <-
+           integrate_documentation_styles(workflow_config, documentation_styles, options),
+         {:ok, format_enhanced_workflow} <-
+           enhance_documentation_formats(style_enhanced_workflow, enhancement_spec),
+         {:ok, customization_enhanced_workflow} <-
+           apply_documentation_customizations(format_enhanced_workflow, enhancement_spec) do
       documentation_integration = %{
         styles_count: length(documentation_styles),
         available_styles: documentation_styles,
@@ -177,10 +188,11 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
         }
       }
 
-      final_workflow = Map.merge(customization_enhanced_workflow, %{
-        workflow_type: :enhanced_documentation_generation,
-        documentation_integration: documentation_integration
-      })
+      final_workflow =
+        Map.merge(customization_enhanced_workflow, %{
+          workflow_type: :enhanced_documentation_generation,
+          documentation_integration: documentation_integration
+        })
 
       {:ok, final_workflow}
     else
@@ -192,10 +204,12 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
     # Execute Refactoring Suggestions workflow enhancement
     team_preferences = Map.get(enhancement_spec, :team_preferences, %{})
 
-    with {:ok, preferences_enhanced_workflow} <- integrate_team_preferences(workflow_config, team_preferences, options),
-         {:ok, standards_enhanced_workflow} <- enhance_refactoring_standards(preferences_enhanced_workflow, enhancement_spec),
-         {:ok, pattern_enhanced_workflow} <- integrate_refactoring_patterns(standards_enhanced_workflow, enhancement_spec) do
-      
+    with {:ok, preferences_enhanced_workflow} <-
+           integrate_team_preferences(workflow_config, team_preferences, options),
+         {:ok, standards_enhanced_workflow} <-
+           enhance_refactoring_standards(preferences_enhanced_workflow, enhancement_spec),
+         {:ok, pattern_enhanced_workflow} <-
+           integrate_refactoring_patterns(standards_enhanced_workflow, enhancement_spec) do
       refactoring_integration = %{
         preferences_integrated: not Enum.empty?(team_preferences),
         team_standards_applied: true,
@@ -213,10 +227,11 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
         }
       }
 
-      final_workflow = Map.merge(pattern_enhanced_workflow, %{
-        workflow_type: :enhanced_refactoring_suggestions,
-        refactoring_integration: refactoring_integration
-      })
+      final_workflow =
+        Map.merge(pattern_enhanced_workflow, %{
+          workflow_type: :enhanced_refactoring_suggestions,
+          refactoring_integration: refactoring_integration
+        })
 
       {:ok, final_workflow}
     else
@@ -226,10 +241,17 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
 
   defp execute_bulk_workflow_enhancement(workflows_config, global_enhancement_spec, options) do
     # Execute bulk enhancement for all workflows
-    enhancement_results = Enum.map(workflows_config, fn workflow_config ->
-      workflow_type = Map.get(workflow_config, :type, :unknown)
-      enhance_single_workflow_by_type(workflow_config, workflow_type, global_enhancement_spec, options)
-    end)
+    enhancement_results =
+      Enum.map(workflows_config, fn workflow_config ->
+        workflow_type = Map.get(workflow_config, :type, :unknown)
+
+        enhance_single_workflow_by_type(
+          workflow_config,
+          workflow_type,
+          global_enhancement_spec,
+          options
+        )
+      end)
 
     successful_enhancements = Enum.filter(enhancement_results, &match?({:ok, _}, &1))
     failed_enhancements = Enum.filter(enhancement_results, &match?({:error, _}, &1))
@@ -262,26 +284,28 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
 
     # Add custom prompts if specified
     custom_prompts = Map.get(enhancement_spec, :custom_analysis_prompts, [])
-    
+
     base_prompts ++ custom_prompts
   end
 
   defp integrate_code_review_prompts(workflow_config, code_review_prompts, options) do
     # Integrate code review prompts into workflow
-    prompt_injection_specs = Enum.map(code_review_prompts, fn prompt ->
-      %{
-        prompt_name: prompt.name,
-        injection_type: :context,
-        injection_timing: :before_step,
-        validation_required: true
-      }
-    end)
+    prompt_injection_specs =
+      Enum.map(code_review_prompts, fn prompt ->
+        %{
+          prompt_name: prompt.name,
+          injection_type: :context,
+          injection_timing: :before_step,
+          validation_required: true
+        }
+      end)
 
-    enhanced_workflow = Map.merge(workflow_config, %{
-      code_review_prompts: code_review_prompts,
-      prompt_injection_specs: prompt_injection_specs,
-      code_review_enhancement_applied: true
-    })
+    enhanced_workflow =
+      Map.merge(workflow_config, %{
+        code_review_prompts: code_review_prompts,
+        prompt_injection_specs: prompt_injection_specs,
+        code_review_enhancement_applied: true
+      })
 
     {:ok, enhanced_workflow}
   end
@@ -303,20 +327,22 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
 
   defp integrate_documentation_styles(workflow_config, documentation_styles, options) do
     # Integrate documentation styles into workflow
-    style_configurations = Enum.map(documentation_styles, fn style ->
-      %{
-        style_name: style,
-        prompt_name: "project_#{style}_documentation_prompt",
-        format_requirements: get_style_format_requirements(style),
-        customization_options: get_style_customization_options(style)
-      }
-    end)
+    style_configurations =
+      Enum.map(documentation_styles, fn style ->
+        %{
+          style_name: style,
+          prompt_name: "project_#{style}_documentation_prompt",
+          format_requirements: get_style_format_requirements(style),
+          customization_options: get_style_customization_options(style)
+        }
+      end)
 
-    enhanced_workflow = Map.merge(workflow_config, %{
-      documentation_styles: style_configurations,
-      style_flexibility_enabled: true,
-      documentation_enhancement_applied: true
-    })
+    enhanced_workflow =
+      Map.merge(workflow_config, %{
+        documentation_styles: style_configurations,
+        style_flexibility_enabled: true,
+        documentation_enhancement_applied: true
+      })
 
     {:ok, enhanced_workflow}
   end
@@ -349,10 +375,11 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
       }
     }
 
-    enhanced_workflow = Map.merge(workflow_config, %{
-      team_preferences_integration: preferences_integration,
-      preferences_enhancement_applied: true
-    })
+    enhanced_workflow =
+      Map.merge(workflow_config, %{
+        team_preferences_integration: preferences_integration,
+        preferences_enhancement_applied: true
+      })
 
     {:ok, enhanced_workflow}
   end
@@ -375,7 +402,8 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
   defp integrate_refactoring_patterns(workflow, enhancement_spec) do
     # Integrate refactoring patterns
     refactoring_patterns = %{
-      enabled_patterns: Map.get(enhancement_spec, :enabled_patterns, get_default_refactoring_patterns()),
+      enabled_patterns:
+        Map.get(enhancement_spec, :enabled_patterns, get_default_refactoring_patterns()),
       custom_patterns: Map.get(enhancement_spec, :custom_patterns, []),
       pattern_priority: Map.get(enhancement_spec, :pattern_priority, :quality_focused),
       pattern_suggestion_level: Map.get(enhancement_spec, :suggestion_level, :moderate)
@@ -410,7 +438,8 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
       template_customizations: Map.get(enhancement_spec, :template_customizations, %{})
     }
 
-    customized_workflow = Map.put(workflow, :documentation_customizations, documentation_customizations)
+    customized_workflow =
+      Map.put(workflow, :documentation_customizations, documentation_customizations)
 
     {:ok, customized_workflow}
   end
@@ -469,10 +498,17 @@ defmodule RubberDuck.Workflows.Enhancements.ExistingWorkflowEnhancer do
   defp get_style_format_requirements(style) do
     # Get format requirements for documentation style
     case style do
-      "technical" -> %{format: :markdown, sections: [:overview, :technical_details, :examples]}
-      "user_guide" -> %{format: :markdown, sections: [:introduction, :getting_started, :usage_examples]}
-      "api_reference" -> %{format: :markdown, sections: [:endpoints, :parameters, :examples, :responses]}
-      _ -> %{format: :markdown, sections: [:content]}
+      "technical" ->
+        %{format: :markdown, sections: [:overview, :technical_details, :examples]}
+
+      "user_guide" ->
+        %{format: :markdown, sections: [:introduction, :getting_started, :usage_examples]}
+
+      "api_reference" ->
+        %{format: :markdown, sections: [:endpoints, :parameters, :examples, :responses]}
+
+      _ ->
+        %{format: :markdown, sections: [:content]}
     end
   end
 

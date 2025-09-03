@@ -1,12 +1,12 @@
 defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
   @moduledoc """
   LiveView for configuring Reactor workflow steps with integrated prompt selection.
-  
+
   Provides comprehensive workflow step configuration interface that seamlessly
   integrates saved prompt library access, enabling users to select and configure
   prompts for workflow step execution with context variable substitution and
   template customization.
-  
+
   Features:
   - Workflow step parameter configuration with prompt integration
   - Embedded prompt selection from three-tier hierarchy (System/Project/User)
@@ -36,7 +36,7 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
   def handle_params(%{"workflow_id" => workflow_id, "step_id" => step_id} = params, _uri, socket) do
     # Load workflow step configuration context
     workflow_context = build_workflow_context(workflow_id, step_id, params)
-    
+
     socket =
       socket
       |> assign(:workflow_context, workflow_context)
@@ -58,12 +58,16 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
   end
 
   @impl true
-  def handle_event("configure_step_parameter", %{"parameter" => parameter_name, "value" => value}, socket) do
+  def handle_event(
+        "configure_step_parameter",
+        %{"parameter" => parameter_name, "value" => value},
+        socket
+      ) do
     current_config = socket.assigns.step_configuration
     updated_config = Map.put(current_config, parameter_name, value)
-    
+
     socket = assign(socket, :step_configuration, updated_config)
-    
+
     # Update preview if prompt is selected
     if socket.assigns.selected_prompt do
       send(self(), :update_step_preview)
@@ -171,7 +175,8 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
   @impl true
   def handle_info(:update_step_preview, socket) do
     # Update step preview with current configuration
-    %{selected_prompt: prompt, step_configuration: config, workflow_context: context} = socket.assigns
+    %{selected_prompt: prompt, step_configuration: config, workflow_context: context} =
+      socket.assigns
 
     if prompt do
       case prepare_prompt_with_step_configuration(prompt, config, context) do
@@ -687,15 +692,17 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
     case PromptVariableSubstitution.extract_template_variables(prompt.content) do
       {:ok, variables} ->
         # Enhance variables with workflow context information
-        enhanced_variables = Map.new(variables, fn {var_name, var_meta} ->
-          enhanced_meta = Map.merge(var_meta, %{
-            current_value: get_workflow_variable_value(var_name, workflow_context),
-            description: generate_workflow_variable_description(var_name, workflow_context),
-            example: generate_workflow_variable_example(var_name, workflow_context)
-          })
+        enhanced_variables =
+          Map.new(variables, fn {var_name, var_meta} ->
+            enhanced_meta =
+              Map.merge(var_meta, %{
+                current_value: get_workflow_variable_value(var_name, workflow_context),
+                description: generate_workflow_variable_description(var_name, workflow_context),
+                example: generate_workflow_variable_example(var_name, workflow_context)
+              })
 
-          {var_name, enhanced_meta}
-        end)
+            {var_name, enhanced_meta}
+          end)
 
         {:ok, enhanced_variables}
 
@@ -707,12 +714,17 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
   defp prepare_prompt_with_step_configuration(prompt, step_configuration, workflow_context) do
     # Prepare prompt with step configuration and workflow context
     # Combine step parameters with workflow context variables
-    all_variables = Map.merge(
-      extract_workflow_context_variables(workflow_context),
-      step_configuration
-    )
+    all_variables =
+      Map.merge(
+        extract_workflow_context_variables(workflow_context),
+        step_configuration
+      )
 
-    case WorkflowPromptSelector.prepare_prompt_for_workflow(prompt.content, workflow_context, all_variables) do
+    case WorkflowPromptSelector.prepare_prompt_for_workflow(
+           prompt.content,
+           workflow_context,
+           all_variables
+         ) do
       {:ok, preparation_result} ->
         {:ok, preparation_result.prepared_content}
 
@@ -726,18 +738,20 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
     errors = []
 
     # Check required parameters
-    errors = if Map.get(step_configuration, "step_name", "") == "" do
-      ["Step name is required" | errors]
-    else
-      errors
-    end
+    errors =
+      if Map.get(step_configuration, "step_name", "") == "" do
+        ["Step name is required" | errors]
+      else
+        errors
+      end
 
     # Validate prompt parameters if prompt is selected
-    errors = if selected_prompt do
-      validate_prompt_parameters(step_configuration, selected_prompt, errors)
-    else
-      errors
-    end
+    errors =
+      if selected_prompt do
+        validate_prompt_parameters(step_configuration, selected_prompt, errors)
+      else
+        errors
+      end
 
     if errors == [] do
       {:ok, step_configuration}
@@ -754,10 +768,11 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLive do
 
   defp save_workflow_step_configuration(workflow_step, validated_config, selected_prompt) do
     # Save workflow step configuration (placeholder - would integrate with actual workflow persistence)
-    saved_config = Map.merge(validated_config, %{
-      "saved_at" => DateTime.utc_now(),
-      "prompt_id" => if(selected_prompt, do: selected_prompt.id, else: nil)
-    })
+    saved_config =
+      Map.merge(validated_config, %{
+        "saved_at" => DateTime.utc_now(),
+        "prompt_id" => if(selected_prompt, do: selected_prompt.id, else: nil)
+      })
 
     {:ok, saved_config}
   end

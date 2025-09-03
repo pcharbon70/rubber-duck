@@ -1,11 +1,11 @@
 defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponentSimple do
   @moduledoc """
   Simplified LiveView component for browsing saved prompts in workflow contexts.
-  
+
   TODO: This is a simplified version to resolve compilation issues.
   TODO: Integrate full CSS styling and advanced features when UI framework is ready.
   TODO: Add complete workflow context awareness and variable preview functionality.
-  
+
   Features:
   - Basic workflow context-aware prompt browsing
   - Simple prompt selection for workflow step configuration  
@@ -34,34 +34,46 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponentSimple do
   @impl true
   def update(%{user_id: user_id, workflow_context: workflow_context} = assigns, socket) do
     socket = assign(socket, assigns)
-    
+
     # Load workflow-suitable prompts and context variables
     send(self(), {:load_workflow_prompts, user_id, workflow_context})
     send(self(), {:load_workflow_variables, workflow_context})
-    
+
     {:ok, socket}
   end
 
   @impl true
   def handle_event("select_workflow_prompt", %{"prompt_id" => prompt_id}, socket) do
-    %{prompts: prompts, recommended_prompts: recommended_prompts, workflow_context: workflow_context} = socket.assigns
-    
+    %{
+      prompts: prompts,
+      recommended_prompts: recommended_prompts,
+      workflow_context: workflow_context
+    } = socket.assigns
+
     # Find selected prompt across all collections
-    selected_prompt = find_prompt_by_id([
-      prompts[:system_prompts] || [],
-      prompts[:project_prompts] || [],
-      prompts[:user_prompts] || [],
-      prompts[:search_results] || [],
-      recommended_prompts
-    ], prompt_id)
-    
+    selected_prompt =
+      find_prompt_by_id(
+        [
+          prompts[:system_prompts] || [],
+          prompts[:project_prompts] || [],
+          prompts[:user_prompts] || [],
+          prompts[:search_results] || [],
+          recommended_prompts
+        ],
+        prompt_id
+      )
+
     case selected_prompt do
       nil ->
         {:noreply, assign(socket, :error, "Prompt not found")}
 
       prompt ->
         # Prepare prompt for workflow context
-        case WorkflowPromptSelector.prepare_prompt_for_workflow(prompt.content, workflow_context, %{}) do
+        case WorkflowPromptSelector.prepare_prompt_for_workflow(
+               prompt.content,
+               workflow_context,
+               %{}
+             ) do
           {:ok, preparation_result} ->
             # Send prepared prompt to parent component
             send(self(), {:workflow_prompt_selected, prompt, preparation_result})
@@ -90,7 +102,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponentSimple do
 
       {:error, reason} ->
         Logger.error("Failed to load workflow prompts: #{inspect(reason)}")
-        
+
         socket =
           socket
           |> assign(:loading, false)
@@ -236,7 +248,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponentSimple do
       length(prompts[:search_results] || []),
       length(recommended_prompts)
     ]
-    
+
     Enum.sum(prompt_counts) == 0
   end
 end

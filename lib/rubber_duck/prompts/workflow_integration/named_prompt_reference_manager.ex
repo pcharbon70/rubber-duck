@@ -1,12 +1,12 @@
 defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   @moduledoc """
   Named prompt reference management service for workflow integration.
-  
+
   Provides comprehensive management of named prompt references within workflow 
   definitions, enabling workflows to reference prompts by name with validation,
   resolution tracking, and dependency management. Coordinates with prompt agents
   for dynamic resolution and optimization.
-  
+
   Features:
   - Named prompt reference validation and management with comprehensive checking
   - Reference dependency tracking and resolution with circular dependency detection
@@ -89,7 +89,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
 
   # GenServer callbacks
 
-  def handle_call({:register_prompt_reference, workflow_id, reference_spec, options}, _from, state) do
+  def handle_call(
+        {:register_prompt_reference, workflow_id, reference_spec, options},
+        _from,
+        state
+      ) do
     Logger.debug("NamedPromptReferenceManager: Registering prompt reference",
       workflow_id: workflow_id,
       reference_name: Map.get(reference_spec, :name, "unknown")
@@ -143,7 +147,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   end
 
   def handle_cast({:update_dependency_graph, workflow_id}, state) do
-    updated_graph = update_dependency_graph_for_workflow(state.dependency_graph, workflow_id, state)
+    updated_graph =
+      update_dependency_graph_for_workflow(state.dependency_graph, workflow_id, state)
+
     updated_state = %{state | dependency_graph: updated_graph}
 
     {:noreply, updated_state}
@@ -153,9 +159,15 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
     cleaned_registry = cleanup_references_for_workflow(state.reference_registry, workflow_id)
     cleaned_graph = cleanup_dependency_graph_for_workflow(state.dependency_graph, workflow_id)
 
-    updated_state = %{state | reference_registry: cleaned_registry, dependency_graph: cleaned_graph}
+    updated_state = %{
+      state
+      | reference_registry: cleaned_registry,
+        dependency_graph: cleaned_graph
+    }
 
-    Logger.debug("NamedPromptReferenceManager: Cleaned up references for workflow", workflow_id: workflow_id)
+    Logger.debug("NamedPromptReferenceManager: Cleaned up references for workflow",
+      workflow_id: workflow_id
+    )
 
     {:noreply, updated_state}
   end
@@ -165,9 +177,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   defp execute_reference_registration(workflow_id, reference_spec, options, state) do
     # Execute prompt reference registration
     with {:ok, validated_spec} <- validate_reference_specification(reference_spec, options),
-         {:ok, reference_context} <- build_reference_context(workflow_id, validated_spec, options),
+         {:ok, reference_context} <-
+           build_reference_context(workflow_id, validated_spec, options),
          {:ok, dependency_analysis} <- analyze_reference_dependencies(validated_spec, state) do
-      
       registration_result = %{
         reference_name: validated_spec.name,
         reference_type: validated_spec.type,
@@ -198,9 +210,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
 
   defp execute_references_validation(workflow_id, reference_list, state) do
     # Execute validation for multiple references
-    validation_results = Enum.map(reference_list, fn reference ->
-      validate_single_reference(workflow_id, reference, state)
-    end)
+    validation_results =
+      Enum.map(reference_list, fn reference ->
+        validate_single_reference(workflow_id, reference, state)
+      end)
 
     successful_validations = Enum.filter(validation_results, &match?({:ok, _}, &1))
     failed_validations = Enum.filter(validation_results, &match?({:error, _}, &1))
@@ -277,9 +290,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   # Helper functions
 
   defp validate_required_fields(spec, required_fields) do
-    missing_fields = Enum.filter(required_fields, fn field ->
-      not Map.has_key?(spec, field)
-    end)
+    missing_fields =
+      Enum.filter(required_fields, fn field ->
+        not Map.has_key?(spec, field)
+      end)
 
     if Enum.empty?(missing_fields) do
       {:ok, :all_fields_present}
@@ -303,7 +317,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
     # Determine context inheritance strategy
     case reference_spec.scope do
       :global -> :full_inheritance
-      :project -> :project_inheritance  
+      :project -> :project_inheritance
       :user -> :user_inheritance
       :workflow -> :workflow_inheritance
       :step -> :step_inheritance
@@ -313,10 +327,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   defp detect_circular_dependencies(dependencies, state) do
     # Detect circular dependencies (simplified implementation)
     case state.manager_config.circular_dependency_detection do
-      true -> 
+      true ->
         # Would implement actual circular dependency detection
         []
-      false -> 
+
+      false ->
         []
     end
   end
@@ -344,11 +359,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   defp validate_single_reference(workflow_id, reference, state) do
     # Validate a single reference
     case Map.get(state.reference_registry, workflow_id) do
-      nil -> {:error, {:workflow_not_found, workflow_id}}
-      
+      nil ->
+        {:error, {:workflow_not_found, workflow_id}}
+
       workflow_references ->
         reference_name = Map.get(reference, :name, "unknown")
-        
+
         case Map.get(workflow_references, reference_name) do
           nil -> {:error, {:reference_not_found, reference_name}}
           _reference_entry -> {:ok, {:reference_valid, reference_name}}
@@ -363,30 +379,33 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   defp update_reference_registry(state, workflow_id, registration_result) do
     # Update reference registry with new registration
     workflow_references = Map.get(state.reference_registry, workflow_id, %{})
-    
-    updated_references = Map.put(
-      workflow_references, 
-      registration_result.reference_name, 
-      registration_result
-    )
-    
+
+    updated_references =
+      Map.put(
+        workflow_references,
+        registration_result.reference_name,
+        registration_result
+      )
+
     updated_registry = Map.put(state.reference_registry, workflow_id, updated_references)
-    
+
     %{state | reference_registry: updated_registry}
   end
 
   defp update_dependency_graph_for_workflow(graph, workflow_id, state) do
     # Update dependency graph for workflow
     workflow_references = get_references_for_workflow(state.reference_registry, workflow_id)
-    
+
     # Build dependency relationships
-    workflow_dependencies = Enum.reduce(workflow_references, %{}, fn {ref_name, ref_entry}, acc ->
-      dependencies = Map.get(ref_entry, :dependency_analysis, %{})
-      |> Map.get(:direct_dependencies, [])
-      
-      Map.put(acc, ref_name, dependencies)
-    end)
-    
+    workflow_dependencies =
+      Enum.reduce(workflow_references, %{}, fn {ref_name, ref_entry}, acc ->
+        dependencies =
+          Map.get(ref_entry, :dependency_analysis, %{})
+          |> Map.get(:direct_dependencies, [])
+
+        Map.put(acc, ref_name, dependencies)
+      end)
+
     Map.put(graph, workflow_id, workflow_dependencies)
   end
 
@@ -415,8 +434,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.NamedPromptReferenceManager do
   defp get_reference_from_registry(registry, workflow_id, reference_name) do
     # Get reference from registry
     case Map.get(registry, workflow_id) do
-      nil -> {:error, {:workflow_not_found, workflow_id}}
-      
+      nil ->
+        {:error, {:workflow_not_found, workflow_id}}
+
       workflow_references ->
         case Map.get(workflow_references, reference_name) do
           nil -> {:error, {:reference_not_found, reference_name}}

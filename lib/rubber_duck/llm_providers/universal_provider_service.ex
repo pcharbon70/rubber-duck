@@ -242,14 +242,27 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
     # Check if prompt composition provided a specific provider recommendation
     case Map.get(options, :provider) do
       nil ->
-        select_provider_for_domain_without_recommendation(domain, routing_strategy, preferred_providers)
+        select_provider_for_domain_without_recommendation(
+          domain,
+          routing_strategy,
+          preferred_providers
+        )
 
       provider_name ->
-        select_provider_with_recommendation(domain, provider_name, routing_strategy, preferred_providers)
+        select_provider_with_recommendation(
+          domain,
+          provider_name,
+          routing_strategy,
+          preferred_providers
+        )
     end
   end
 
-  defp select_provider_for_domain_without_recommendation(domain, routing_strategy, preferred_providers) do
+  defp select_provider_for_domain_without_recommendation(
+         domain,
+         routing_strategy,
+         preferred_providers
+       ) do
     case domain do
       :evaluation -> select_evaluation_provider(routing_strategy)
       :orchestration -> select_orchestration_provider(routing_strategy)
@@ -257,7 +270,12 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
     end
   end
 
-  defp select_provider_with_recommendation(domain, provider_name, routing_strategy, preferred_providers) do
+  defp select_provider_with_recommendation(
+         domain,
+         provider_name,
+         routing_strategy,
+         preferred_providers
+       ) do
     # Use provider recommendation from prompt composition
     case get_provider_info_by_name(provider_name) do
       {:ok, provider_info} ->
@@ -265,7 +283,12 @@ defmodule RubberDuck.LlmProviders.UniversalProviderService do
 
       {:error, _} ->
         Logger.warning("Prompt-recommended provider #{provider_name} not available, falling back")
-        select_provider_for_domain_without_recommendation(domain, routing_strategy, preferred_providers)
+
+        select_provider_for_domain_without_recommendation(
+          domain,
+          routing_strategy,
+          preferred_providers
+        )
     end
   end
 

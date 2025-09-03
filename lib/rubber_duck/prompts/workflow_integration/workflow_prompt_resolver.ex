@@ -1,12 +1,12 @@
 defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
   @moduledoc """
   Core workflow-prompt resolution service for seamless prompt integration.
-  
+
   Provides intelligent resolution of named prompt references within Reactor workflows,
   enabling workflows to reference prompts by name with automatic composition, 
   validation, and optimization. Coordinates prompt composition with workflow
   execution context for enhanced workflow capabilities.
-  
+
   Features:
   - Named prompt reference resolution with automatic composition and validation
   - Dynamic prompt resolution during Reactor workflow execution with caching coordination
@@ -67,11 +67,17 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
   # Public API
 
   def resolve_workflow_prompt(workflow_id, prompt_name, context \\ %{}, options \\ %{}) do
-    GenServer.call(__MODULE__, {:resolve_workflow_prompt, workflow_id, prompt_name, context, options})
+    GenServer.call(
+      __MODULE__,
+      {:resolve_workflow_prompt, workflow_id, prompt_name, context, options}
+    )
   end
 
   def resolve_batch_prompts(workflow_id, prompt_references, context \\ %{}, options \\ %{}) do
-    GenServer.call(__MODULE__, {:resolve_batch_prompts, workflow_id, prompt_references, context, options})
+    GenServer.call(
+      __MODULE__,
+      {:resolve_batch_prompts, workflow_id, prompt_references, context, options}
+    )
   end
 
   def invalidate_workflow_cache(workflow_id) do
@@ -88,7 +94,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
 
   # GenServer callbacks
 
-  def handle_call({:resolve_workflow_prompt, workflow_id, prompt_name, context, options}, _from, state) do
+  def handle_call(
+        {:resolve_workflow_prompt, workflow_id, prompt_name, context, options},
+        _from,
+        state
+      ) do
     resolution_start_time = System.monotonic_time(:microsecond)
 
     Logger.debug("WorkflowPromptResolver: Resolving workflow prompt",
@@ -128,7 +138,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
     end
   end
 
-  def handle_call({:resolve_batch_prompts, workflow_id, prompt_references, context, options}, _from, state) do
+  def handle_call(
+        {:resolve_batch_prompts, workflow_id, prompt_references, context, options},
+        _from,
+        state
+      ) do
     batch_start_time = System.monotonic_time(:microsecond)
 
     Logger.debug("WorkflowPromptResolver: Resolving batch prompts",
@@ -159,7 +173,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
   end
 
   def handle_cast({:invalidate_workflow_cache, workflow_id}, state) do
-    Logger.debug("WorkflowPromptResolver: Invalidating cache for workflow", workflow_id: workflow_id)
+    Logger.debug("WorkflowPromptResolver: Invalidating cache for workflow",
+      workflow_id: workflow_id
+    )
 
     updated_cache = invalidate_cache_for_workflow(state.resolution_cache, workflow_id)
     updated_state = %{state | resolution_cache: updated_cache}
@@ -199,9 +215,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
     # Execute optimized resolution with full features
     with {:ok, cache_result} <- check_resolution_cache(workflow_id, prompt_name, state),
          {:ok, enhanced_context} <- enhance_workflow_context(context, workflow_id, options),
-         {:ok, composed_prompt} <- compose_prompt_for_workflow(prompt_name, enhanced_context, options),
+         {:ok, composed_prompt} <-
+           compose_prompt_for_workflow(prompt_name, enhanced_context, options),
          {:ok, validated_prompt} <- validate_composed_prompt(composed_prompt, enhanced_context) do
-      
       optimized_result = %{
         resolved_prompt: validated_prompt.content,
         prompt_name: prompt_name,
@@ -277,14 +293,16 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
 
   defp execute_batch_resolution(workflow_id, prompt_references, context, options, state) do
     # Execute batch resolution for multiple prompts
-    batch_results = Enum.map(prompt_references, fn prompt_ref ->
-      case execute_prompt_resolution(workflow_id, prompt_ref.name, context, options, state) do
-        {:ok, result} -> 
-          {:ok, Map.put(result, :reference_id, prompt_ref.id)}
-        {:error, reason} -> 
-          {:error, %{reference_id: prompt_ref.id, reason: reason}}
-      end
-    end)
+    batch_results =
+      Enum.map(prompt_references, fn prompt_ref ->
+        case execute_prompt_resolution(workflow_id, prompt_ref.name, context, options, state) do
+          {:ok, result} ->
+            {:ok, Map.put(result, :reference_id, prompt_ref.id)}
+
+          {:error, reason} ->
+            {:error, %{reference_id: prompt_ref.id, reason: reason}}
+        end
+      end)
 
     # Separate successful and failed resolutions
     {successful, failed} = Enum.split_with(batch_results, &match?({:ok, _}, &1))
@@ -320,7 +338,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
   defp check_resolution_cache(workflow_id, prompt_name, state) do
     # Check if prompt resolution is cached
     cache_key = build_cache_key(workflow_id, prompt_name)
-    
+
     case Map.get(state.resolution_cache, cache_key) do
       nil ->
         {:ok, %{cache_hit: false, cache_key: cache_key}}
@@ -409,13 +427,13 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
     cache_time = Map.get(cached_entry, :cached_at, 0)
     ttl = state.resolver_config.cache_ttl_seconds
 
-    (current_time - cache_time) < ttl
+    current_time - cache_time < ttl
   end
 
   defp update_resolution_cache(workflow_id, prompt_name, resolution_result, state) do
     # Update cache with new resolution result
     cache_key = build_cache_key(workflow_id, prompt_name)
-    
+
     cache_entry = %{
       result: resolution_result,
       cached_at: System.system_time(:second),
@@ -463,14 +481,20 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
     # Update resolution performance metrics
     tracker = state.performance_tracker
 
-    updated_tracker = %{tracker |
-      total_resolutions: tracker.total_resolutions + 1,
-      successful_resolutions: if(status == :success, do: tracker.successful_resolutions + 1, else: tracker.successful_resolutions),
-      average_resolution_time_us: calculate_new_average(
-        tracker.average_resolution_time_us, 
-        resolution_time, 
-        tracker.total_resolutions + 1
-      )
+    updated_tracker = %{
+      tracker
+      | total_resolutions: tracker.total_resolutions + 1,
+        successful_resolutions:
+          if(status == :success,
+            do: tracker.successful_resolutions + 1,
+            else: tracker.successful_resolutions
+          ),
+        average_resolution_time_us:
+          calculate_new_average(
+            tracker.average_resolution_time_us,
+            resolution_time,
+            tracker.total_resolutions + 1
+          )
     }
 
     %{state | performance_tracker: updated_tracker}
@@ -488,8 +512,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptResolver do
 
   defp execute_performance_optimization(state) do
     # Execute resolution performance optimization
-    optimized_tracker = %{state.performance_tracker |
-      resolution_effectiveness: min(1.0, state.performance_tracker.resolution_effectiveness + 0.02)
+    optimized_tracker = %{
+      state.performance_tracker
+      | resolution_effectiveness:
+          min(1.0, state.performance_tracker.resolution_effectiveness + 0.02)
     }
 
     %{state | performance_tracker: optimized_tracker}

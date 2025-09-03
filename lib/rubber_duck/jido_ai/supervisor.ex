@@ -1,7 +1,7 @@
 defmodule RubberDuck.JidoAI.Supervisor do
   @moduledoc """
   Supervisor for JidoAI integration components.
-  
+
   Manages the lifecycle of JidoAI-related processes including configuration,
   provider management, health monitoring, and integration services.
   """
@@ -21,13 +21,13 @@ defmodule RubberDuck.JidoAI.Supervisor do
     children = [
       # JidoAI Configuration Service
       {RubberDuck.JidoAI.ConfigurationService, []},
-      
+
       # JidoAI Provider Health Monitor
       {RubberDuck.JidoAI.ProviderHealthMonitor, []},
-      
+
       # JidoAI Prompt Cache Manager
       {RubberDuck.JidoAI.PromptCacheManager, []},
-      
+
       # JidoAI Integration Monitor
       {RubberDuck.JidoAI.IntegrationMonitor, []}
     ]
@@ -36,7 +36,7 @@ defmodule RubberDuck.JidoAI.Supervisor do
     case RubberDuck.JidoAI.Configuration.initialize_jido_ai_config() do
       :ok ->
         Logger.info("JidoAI configuration initialized successfully")
-        
+
       {:error, reason} ->
         Logger.error("Failed to initialize JidoAI configuration: #{inspect(reason)}")
         # Continue startup but log the failure
@@ -61,7 +61,7 @@ defmodule RubberDuck.JidoAI.ConfigurationService do
   @impl true
   def init(_opts) do
     Logger.info("Starting JidoAI Configuration Service")
-    
+
     # Initialize configuration state
     state = %{
       initialized: false,
@@ -85,10 +85,10 @@ defmodule RubberDuck.JidoAI.ConfigurationService do
     integration_status = RubberDuck.JidoAI.Configuration.get_integration_status()
 
     updated_state = %{
-      state | 
-      keyring_status: health_status,
-      last_health_check: DateTime.utc_now(),
-      provider_configs: integration_status.configured_providers
+      state
+      | keyring_status: health_status,
+        last_health_check: DateTime.utc_now(),
+        provider_configs: integration_status.configured_providers
     }
 
     # Broadcast health status
@@ -105,7 +105,8 @@ defmodule RubberDuck.JidoAI.ConfigurationService do
   end
 
   defp schedule_health_check do
-    Process.send_after(self(), :health_check, 60_000)  # Every minute
+    # Every minute
+    Process.send_after(self(), :health_check, 60_000)
   end
 
   def get_configuration_status do
@@ -133,11 +134,12 @@ defmodule RubberDuck.JidoAI.ProviderHealthMonitor do
   @impl true
   def init(_opts) do
     Logger.info("Starting JidoAI Provider Health Monitor")
-    
+
     state = %{
       provider_health: %{},
       last_check: nil,
-      check_interval: 30_000,  # 30 seconds
+      # 30 seconds
+      check_interval: 30_000,
       failure_counts: %{}
     }
 
@@ -155,9 +157,9 @@ defmodule RubberDuck.JidoAI.ProviderHealthMonitor do
       {:ok, health_data} ->
         # Update health state
         updated_state = %{
-          state |
-          provider_health: health_data,
-          last_check: DateTime.utc_now()
+          state
+          | provider_health: health_data,
+            last_check: DateTime.utc_now()
         }
 
         # Broadcast health updates
@@ -172,8 +174,8 @@ defmodule RubberDuck.JidoAI.ProviderHealthMonitor do
 
       {:error, reason} ->
         Logger.warning("JidoAI provider health check failed: #{inspect(reason)}")
-        
-        updated_failure_counts = 
+
+        updated_failure_counts =
           Map.update(state.failure_counts, :health_check_failures, 1, &(&1 + 1))
 
         schedule_provider_health_check()
@@ -210,11 +212,12 @@ defmodule RubberDuck.JidoAI.PromptCacheManager do
   @impl true
   def init(_opts) do
     Logger.info("Starting JidoAI Prompt Cache Manager")
-    
+
     state = %{
       cache_stats: %{hits: 0, misses: 0, evictions: 0},
       last_cleanup: DateTime.utc_now(),
-      cleanup_interval: 300_000  # 5 minutes
+      # 5 minutes
+      cleanup_interval: 300_000
     }
 
     # Schedule periodic cache cleanup
@@ -231,9 +234,9 @@ defmodule RubberDuck.JidoAI.PromptCacheManager do
     cleanup_results = perform_cache_cleanup()
 
     updated_state = %{
-      state |
-      last_cleanup: DateTime.utc_now(),
-      cache_stats: Map.merge(state.cache_stats, cleanup_results)
+      state
+      | last_cleanup: DateTime.utc_now(),
+        cache_stats: Map.merge(state.cache_stats, cleanup_results)
     }
 
     schedule_cache_cleanup()
@@ -247,7 +250,7 @@ defmodule RubberDuck.JidoAI.PromptCacheManager do
   defp perform_cache_cleanup do
     # Would integrate with existing cache systems and JidoAI session management
     Logger.debug("Cleaning up JidoAI prompt caches")
-    
+
     # Simulate cleanup results
     %{
       prompts_cleaned: Enum.random(5..20),
@@ -281,7 +284,7 @@ defmodule RubberDuck.JidoAI.IntegrationMonitor do
   @impl true
   def init(_opts) do
     Logger.info("Starting JidoAI Integration Monitor")
-    
+
     state = %{
       integration_metrics: %{
         requests_processed: 0,
@@ -306,7 +309,7 @@ defmodule RubberDuck.JidoAI.IntegrationMonitor do
 
     # Collect integration metrics
     metrics = collect_integration_metrics()
-    
+
     # Update performance history
     performance_entry = %{
       timestamp: DateTime.utc_now(),
@@ -320,11 +323,11 @@ defmodule RubberDuck.JidoAI.IntegrationMonitor do
     new_alerts = check_for_integration_alerts(metrics, state)
 
     updated_state = %{
-      state |
-      integration_metrics: metrics,
-      performance_history: updated_history,
-      alerts: new_alerts,
-      last_report: DateTime.utc_now()
+      state
+      | integration_metrics: metrics,
+        performance_history: updated_history,
+        alerts: new_alerts,
+        last_report: DateTime.utc_now()
     }
 
     # Broadcast integration status
@@ -339,7 +342,8 @@ defmodule RubberDuck.JidoAI.IntegrationMonitor do
   end
 
   defp schedule_integration_monitoring do
-    Process.send_after(self(), :integration_monitoring, 120_000)  # Every 2 minutes
+    # Every 2 minutes
+    Process.send_after(self(), :integration_monitoring, 120_000)
   end
 
   defp collect_integration_metrics do
@@ -365,35 +369,41 @@ defmodule RubberDuck.JidoAI.IntegrationMonitor do
   defp check_for_integration_alerts(metrics, state) do
     alerts = []
 
-    alerts = if metrics.success_rate < 0.90 do
-      alert = %{
-        type: :low_success_rate,
-        message: "JidoAI success rate below 90%: #{metrics.success_rate}",
-        timestamp: DateTime.utc_now(),
-        severity: :warning
-      }
-      [alert | alerts]
-    else
-      alerts
-    end
+    alerts =
+      if metrics.success_rate < 0.90 do
+        alert = %{
+          type: :low_success_rate,
+          message: "JidoAI success rate below 90%: #{metrics.success_rate}",
+          timestamp: DateTime.utc_now(),
+          severity: :warning
+        }
 
-    alerts = if metrics.average_response_time > 2000 do
-      alert = %{
-        type: :high_response_time,
-        message: "JidoAI response time above 2s: #{metrics.average_response_time}ms",
-        timestamp: DateTime.utc_now(), 
-        severity: :warning
-      }
-      [alert | alerts]
-    else
-      alerts
-    end
+        [alert | alerts]
+      else
+        alerts
+      end
+
+    alerts =
+      if metrics.average_response_time > 2000 do
+        alert = %{
+          type: :high_response_time,
+          message: "JidoAI response time above 2s: #{metrics.average_response_time}ms",
+          timestamp: DateTime.utc_now(),
+          severity: :warning
+        }
+
+        [alert | alerts]
+      else
+        alerts
+      end
 
     # Keep only recent alerts (last hour)
     one_hour_ago = DateTime.add(DateTime.utc_now(), -3600, :second)
-    recent_alerts = Enum.filter(state.alerts, fn alert ->
-      DateTime.compare(alert.timestamp, one_hour_ago) == :gt
-    end)
+
+    recent_alerts =
+      Enum.filter(state.alerts, fn alert ->
+        DateTime.compare(alert.timestamp, one_hour_ago) == :gt
+      end)
 
     alerts ++ recent_alerts
   end
@@ -410,7 +420,7 @@ defmodule RubberDuck.JidoAI.IntegrationMonitor do
       alerts: length(state.alerts),
       last_report: state.last_report
     }
-    
+
     {:reply, status, state}
   end
 end

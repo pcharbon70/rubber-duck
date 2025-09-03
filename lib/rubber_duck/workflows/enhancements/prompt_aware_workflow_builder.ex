@@ -1,11 +1,11 @@
 defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   @moduledoc """
   Enhanced workflow builder with comprehensive prompt integration capabilities.
-  
+
   Extends the existing EnhancedWorkflowBuilder to support prompt integration,
   enabling workflow definitions to include named prompt references, automatic
   prompt resolution, and context-aware prompt composition during execution.
-  
+
   Features:
   - Enhanced workflow builder supporting prompt references and integration
   - Named prompt reference validation and dependency management
@@ -18,6 +18,7 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   require Logger
 
   alias RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder
+
   alias RubberDuck.Prompts.WorkflowIntegration.{
     WorkflowPromptResolver,
     NamedPromptReferenceManager,
@@ -47,12 +48,19 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
         {:ok, build_result}
 
       {:error, reason} ->
-        Logger.error("PromptAwareWorkflowBuilder: Prompt-aware workflow creation failed", error: reason)
+        Logger.error("PromptAwareWorkflowBuilder: Prompt-aware workflow creation failed",
+          error: reason
+        )
+
         {:error, reason}
     end
   end
 
-  def enhance_existing_workflow_with_prompts(existing_workflow, prompt_enhancement_spec, options \\ %{}) do
+  def enhance_existing_workflow_with_prompts(
+        existing_workflow,
+        prompt_enhancement_spec,
+        options \\ %{}
+      ) do
     Logger.debug("PromptAwareWorkflowBuilder: Enhancing existing workflow with prompts",
       workflow_id: Map.get(existing_workflow, :id, "unknown"),
       enhancement_type: Map.get(options, :enhancement_type, :basic)
@@ -97,10 +105,11 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
     # Execute comprehensive prompt-aware workflow build
     with {:ok, validated_specs} <- validate_prompt_workflow_specs(workflow_spec, prompt_spec),
          {:ok, prompt_references} <- register_prompt_references(validated_specs, builder_config),
-         {:ok, enhanced_workflow_spec} <- enhance_workflow_spec_with_prompts(validated_specs.workflow_spec, prompt_references),
+         {:ok, enhanced_workflow_spec} <-
+           enhance_workflow_spec_with_prompts(validated_specs.workflow_spec, prompt_references),
          {:ok, base_workflow} <- build_base_workflow(enhanced_workflow_spec, builder_config),
-         {:ok, prompt_enhanced_workflow} <- integrate_prompts_with_workflow(base_workflow, prompt_references, builder_config) do
-      
+         {:ok, prompt_enhanced_workflow} <-
+           integrate_prompts_with_workflow(base_workflow, prompt_references, builder_config) do
       prompt_aware_result = %{
         workflow: prompt_enhanced_workflow,
         prompt_integration_level: determine_integration_level(prompt_spec, builder_config),
@@ -134,7 +143,11 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
         execute_optimized_prompt_enhancement(existing_workflow, prompt_enhancement_spec, options)
 
       :comprehensive ->
-        execute_comprehensive_prompt_enhancement(existing_workflow, prompt_enhancement_spec, options)
+        execute_comprehensive_prompt_enhancement(
+          existing_workflow,
+          prompt_enhancement_spec,
+          options
+        )
     end
   end
 
@@ -157,15 +170,18 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
 
   defp execute_enhanced_prompt_enhancement(existing_workflow, prompt_enhancement_spec, options) do
     # Execute enhanced prompt enhancement
-    with {:ok, basic_enhanced} <- execute_basic_prompt_enhancement(existing_workflow, prompt_enhancement_spec, options),
-         {:ok, context_enhanced} <- enhance_workflow_context_integration(basic_enhanced, prompt_enhancement_spec),
-         {:ok, resolution_enhanced} <- enhance_prompt_resolution_capabilities(context_enhanced, prompt_enhancement_spec) do
-      
-      enhanced_workflow = Map.merge(resolution_enhanced, %{
-        prompt_enhancement_level: :enhanced,
-        context_integration_enabled: true,
-        resolution_capabilities_enabled: true
-      })
+    with {:ok, basic_enhanced} <-
+           execute_basic_prompt_enhancement(existing_workflow, prompt_enhancement_spec, options),
+         {:ok, context_enhanced} <-
+           enhance_workflow_context_integration(basic_enhanced, prompt_enhancement_spec),
+         {:ok, resolution_enhanced} <-
+           enhance_prompt_resolution_capabilities(context_enhanced, prompt_enhancement_spec) do
+      enhanced_workflow =
+        Map.merge(resolution_enhanced, %{
+          prompt_enhancement_level: :enhanced,
+          context_integration_enabled: true,
+          resolution_capabilities_enabled: true
+        })
 
       {:ok, add_prompt_integration_summary(enhanced_workflow, :enhanced)}
     else
@@ -194,17 +210,28 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
     {:ok, add_prompt_integration_summary(enhanced_workflow, :optimized)}
   end
 
-  defp execute_comprehensive_prompt_enhancement(existing_workflow, prompt_enhancement_spec, options) do
+  defp execute_comprehensive_prompt_enhancement(
+         existing_workflow,
+         prompt_enhancement_spec,
+         options
+       ) do
     # Execute comprehensive prompt enhancement with all features
-    with {:ok, enhanced_result} <- execute_enhanced_prompt_enhancement(existing_workflow, prompt_enhancement_spec, options),
-         {:ok, optimized_result} <- execute_optimized_prompt_enhancement(enhanced_result, prompt_enhancement_spec, options),
-         {:ok, integration_enhanced} <- enhance_prompt_integration_capabilities(optimized_result, prompt_enhancement_spec) do
-      
-      comprehensive_workflow = Map.merge(integration_enhanced, %{
-        prompt_enhancement_level: :comprehensive,
-        comprehensive_integration: true,
-        full_feature_set_enabled: true
-      })
+    with {:ok, enhanced_result} <-
+           execute_enhanced_prompt_enhancement(
+             existing_workflow,
+             prompt_enhancement_spec,
+             options
+           ),
+         {:ok, optimized_result} <-
+           execute_optimized_prompt_enhancement(enhanced_result, prompt_enhancement_spec, options),
+         {:ok, integration_enhanced} <-
+           enhance_prompt_integration_capabilities(optimized_result, prompt_enhancement_spec) do
+      comprehensive_workflow =
+        Map.merge(integration_enhanced, %{
+          prompt_enhancement_level: :comprehensive,
+          comprehensive_integration: true,
+          full_feature_set_enabled: true
+        })
 
       {:ok, add_prompt_integration_summary(comprehensive_workflow, :comprehensive)}
     else
@@ -242,11 +269,11 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
     # Validate both workflow and prompt specifications
     with {:ok, validated_workflow} <- validate_workflow_specification(workflow_spec),
          {:ok, validated_prompts} <- validate_prompt_specification(prompt_spec) do
-      
-      {:ok, %{
-        workflow_spec: validated_workflow,
-        prompt_spec: validated_prompts
-      }}
+      {:ok,
+       %{
+         workflow_spec: validated_workflow,
+         prompt_spec: validated_prompts
+       }}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -255,7 +282,7 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   defp validate_workflow_specification(workflow_spec) do
     # Validate workflow specification for prompt integration
     required_fields = [:type, :components]
-    
+
     case validate_required_fields(workflow_spec, required_fields) do
       {:ok, _} -> {:ok, workflow_spec}
       {:error, reason} -> {:error, {:invalid_workflow_spec, reason}}
@@ -265,7 +292,7 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   defp validate_prompt_specification(prompt_spec) do
     # Validate prompt specification
     prompt_references = Map.get(prompt_spec, :prompt_references, [])
-    
+
     case validate_prompt_references(prompt_references) do
       {:ok, _} -> {:ok, prompt_spec}
       {:error, reason} -> {:error, {:invalid_prompt_spec, reason}}
@@ -275,9 +302,9 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   defp validate_prompt_references(prompt_references) do
     # Validate prompt references structure
     validation_results = Enum.map(prompt_references, &validate_single_prompt_reference/1)
-    
+
     failed_validations = Enum.filter(validation_results, &match?({:error, _}, &1))
-    
+
     if Enum.empty?(failed_validations) do
       {:ok, :all_references_valid}
     else
@@ -288,7 +315,7 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   defp validate_single_prompt_reference(prompt_reference) do
     # Validate single prompt reference
     required_fields = [:name, :type]
-    
+
     case validate_required_fields(prompt_reference, required_fields) do
       {:ok, _} -> {:ok, prompt_reference}
       {:error, reason} -> {:error, reason}
@@ -296,9 +323,10 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   end
 
   defp validate_required_fields(spec, required_fields) do
-    missing_fields = Enum.filter(required_fields, fn field ->
-      not Map.has_key?(spec, field)
-    end)
+    missing_fields =
+      Enum.filter(required_fields, fn field ->
+        not Map.has_key?(spec, field)
+      end)
 
     if Enum.empty?(missing_fields) do
       {:ok, :all_fields_present}
@@ -312,9 +340,14 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
     workflow_id = generate_workflow_id()
     prompt_references = Map.get(validated_specs.prompt_spec, :prompt_references, [])
 
-    registration_results = Enum.map(prompt_references, fn prompt_ref ->
-      NamedPromptReferenceManager.register_prompt_reference(workflow_id, prompt_ref, builder_config)
-    end)
+    registration_results =
+      Enum.map(prompt_references, fn prompt_ref ->
+        NamedPromptReferenceManager.register_prompt_reference(
+          workflow_id,
+          prompt_ref,
+          builder_config
+        )
+      end)
 
     successful_registrations = Enum.filter(registration_results, &match?({:ok, _}, &1))
 
@@ -327,17 +360,19 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
 
   defp enhance_workflow_spec_with_prompts(workflow_spec, prompt_references) do
     # Enhance workflow specification with prompt integration
-    enhanced_spec = Map.merge(workflow_spec, %{
-      prompt_integration: %{
-        enabled: true,
-        prompt_references: prompt_references,
-        integration_version: "6.2.0"
-      },
-      prompt_enhanced_components: enhance_components_with_prompts(
-        Map.get(workflow_spec, :components, []),
-        prompt_references
-      )
-    })
+    enhanced_spec =
+      Map.merge(workflow_spec, %{
+        prompt_integration: %{
+          enabled: true,
+          prompt_references: prompt_references,
+          integration_version: "6.2.0"
+        },
+        prompt_enhanced_components:
+          enhance_components_with_prompts(
+            Map.get(workflow_spec, :components, []),
+            prompt_references
+          )
+      })
 
     {:ok, enhanced_spec}
   end
@@ -364,11 +399,12 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   defp find_matching_prompt_reference(component, prompt_references) do
     # Find prompt reference matching component
     component_type = Map.get(component, :type, :unknown)
-    
-    matching_ref = Enum.find(prompt_references, fn prompt_ref ->
-      prompt_ref.reference_name == "#{component_type}_prompt" or
-      Map.get(component, :prompt_name) == prompt_ref.reference_name
-    end)
+
+    matching_ref =
+      Enum.find(prompt_references, fn prompt_ref ->
+        prompt_ref.reference_name == "#{component_type}_prompt" or
+          Map.get(component, :prompt_name) == prompt_ref.reference_name
+      end)
 
     case matching_ref do
       nil -> {:error, :no_matching_reference}
@@ -389,7 +425,8 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
 
   defp integrate_prompts_with_workflow(base_workflow, prompt_references, builder_config) do
     # Integrate prompt references with built workflow
-    integration_level = determine_integration_level(%{prompt_references: prompt_references}, builder_config)
+    integration_level =
+      determine_integration_level(%{prompt_references: prompt_references}, builder_config)
 
     case integration_level do
       :basic ->
@@ -426,13 +463,15 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
 
   defp integrate_enhanced_prompts(base_workflow, prompt_references, builder_config) do
     # Enhanced prompt integration with context awareness
-    with {:ok, basic_integrated} <- integrate_basic_prompts(base_workflow, prompt_references, builder_config),
-         {:ok, context_enhanced} <- enhance_workflow_with_context_integration(basic_integrated, prompt_references) do
-      
-      enhanced_workflow = Map.merge(context_enhanced, %{
-        integration_level: :enhanced,
-        context_integration_enabled: true
-      })
+    with {:ok, basic_integrated} <-
+           integrate_basic_prompts(base_workflow, prompt_references, builder_config),
+         {:ok, context_enhanced} <-
+           enhance_workflow_with_context_integration(basic_integrated, prompt_references) do
+      enhanced_workflow =
+        Map.merge(context_enhanced, %{
+          integration_level: :enhanced,
+          context_integration_enabled: true
+        })
 
       {:ok, enhanced_workflow}
     else
@@ -460,14 +499,16 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
 
   defp integrate_comprehensive_prompts(base_workflow, prompt_references, builder_config) do
     # Comprehensive prompt integration with all features
-    with {:ok, enhanced_result} <- integrate_enhanced_prompts(base_workflow, prompt_references, builder_config),
-         {:ok, optimized_result} <- integrate_optimized_prompts(enhanced_result, prompt_references, builder_config) do
-      
-      comprehensive_workflow = Map.merge(optimized_result, %{
-        integration_level: :comprehensive,
-        comprehensive_integration: true,
-        full_feature_integration: true
-      })
+    with {:ok, enhanced_result} <-
+           integrate_enhanced_prompts(base_workflow, prompt_references, builder_config),
+         {:ok, optimized_result} <-
+           integrate_optimized_prompts(enhanced_result, prompt_references, builder_config) do
+      comprehensive_workflow =
+        Map.merge(optimized_result, %{
+          integration_level: :comprehensive,
+          comprehensive_integration: true,
+          full_feature_integration: true
+        })
 
       {:ok, comprehensive_workflow}
     else
@@ -574,23 +615,26 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
     # Get list of enabled prompt integration features
     features = []
 
-    features = if Map.get(workflow, :prompt_integration_enabled, false) do
-      [:prompt_integration | features]
-    else
-      features
-    end
+    features =
+      if Map.get(workflow, :prompt_integration_enabled, false) do
+        [:prompt_integration | features]
+      else
+        features
+      end
 
-    features = if Map.get(workflow, :context_integration_enabled, false) do
-      [:context_integration | features]
-    else
-      features
-    end
+    features =
+      if Map.get(workflow, :context_integration_enabled, false) do
+        [:context_integration | features]
+      else
+        features
+      end
 
-    features = if Map.get(workflow, :performance_optimization_enabled, false) do
-      [:performance_optimization | features]
-    else
-      features
-    end
+    features =
+      if Map.get(workflow, :performance_optimization_enabled, false) do
+        [:performance_optimization | features]
+      else
+        features
+      end
 
     features
   end
@@ -604,9 +648,19 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
     case NamedPromptReferenceManager.validate_prompt_references(workflow.id, prompt_references) do
       {:ok, validation_result} ->
         if validation_result.validation_success_rate > 0.9 do
-          {:ok, %{check: :prompt_references, status: :valid, success_rate: validation_result.validation_success_rate}}
+          {:ok,
+           %{
+             check: :prompt_references,
+             status: :valid,
+             success_rate: validation_result.validation_success_rate
+           }}
         else
-          {:error, %{check: :prompt_references, status: :integrity_issues, success_rate: validation_result.validation_success_rate}}
+          {:error,
+           %{
+             check: :prompt_references,
+             status: :integrity_issues,
+             success_rate: validation_result.validation_success_rate
+           }}
         end
 
       {:error, reason} ->
@@ -619,16 +673,18 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
     context_config = Map.get(workflow, :context_integration, %{})
 
     if Map.get(context_config, :enabled, false) do
-      {:ok, %{check: :context_integration, status: :valid, context_features: Map.keys(context_config)}}
+      {:ok,
+       %{check: :context_integration, status: :valid, context_features: Map.keys(context_config)}}
     else
-      {:ok, %{check: :context_integration, status: :disabled, note: "Context integration not enabled"}}
+      {:ok,
+       %{check: :context_integration, status: :disabled, note: "Context integration not enabled"}}
     end
   end
 
   defp validate_performance_requirements(workflow, validation_options) do
     # Validate performance requirements
     performance_config = Map.get(workflow, :performance_optimization, %{})
-    
+
     if Map.get(performance_config, :enabled, false) do
       {:ok, %{check: :performance, status: :optimized, features: Map.keys(performance_config)}}
     else
@@ -639,29 +695,32 @@ defmodule RubberDuck.Workflows.Enhancements.PromptAwareWorkflowBuilder do
   defp validate_integration_completeness(workflow, validation_options) do
     # Validate integration completeness
     required_integration_features = [:prompt_integration_enabled, :prompt_references]
-    
-    present_features = Enum.filter(required_integration_features, fn feature ->
-      Map.has_key?(workflow, feature)
-    end)
+
+    present_features =
+      Enum.filter(required_integration_features, fn feature ->
+        Map.has_key?(workflow, feature)
+      end)
 
     completeness_score = length(present_features) / length(required_integration_features)
 
     if completeness_score >= 0.8 do
       {:ok, %{check: :completeness, status: :complete, completeness_score: completeness_score}}
     else
-      {:error, %{check: :completeness, status: :incomplete, completeness_score: completeness_score}}
+      {:error,
+       %{check: :completeness, status: :incomplete, completeness_score: completeness_score}}
     end
   end
 
   defp prompt_references_validation_passed?(validation_checks) do
     # Check if prompt references validation passed
-    prompt_ref_check = Enum.find(validation_checks, fn check ->
-      case check do
-        {:ok, %{check: :prompt_references}} -> true
-        {:error, %{check: :prompt_references}} -> true
-        _ -> false
-      end
-    end)
+    prompt_ref_check =
+      Enum.find(validation_checks, fn check ->
+        case check do
+          {:ok, %{check: :prompt_references}} -> true
+          {:error, %{check: :prompt_references}} -> true
+          _ -> false
+        end
+      end)
 
     case prompt_ref_check do
       {:ok, _} -> true

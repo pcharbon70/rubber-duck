@@ -24,6 +24,7 @@ defmodule RubberDuck.Prompts.Integrations.LlmOrchestrationIntegration do
     Agents.PromptValidatorAgent,
     Integrations.ProviderPromptFormatter
   }
+
   alias RubberDuck.JidoAI.{ProviderService, PromptAdapter}
   alias Jido.AI.Prompt
 

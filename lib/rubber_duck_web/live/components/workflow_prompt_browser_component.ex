@@ -1,11 +1,11 @@
 defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
   @moduledoc """
   LiveView component for browsing and selecting saved prompts in Reactor workflow contexts.
-  
+
   Extends the PromptBrowserComponent for workflow step configuration interfaces,
   providing workflow context-aware prompt selection, variable substitution preview
   with workflow variables, and seamless integration with Reactor workflow steps.
-  
+
   Features:
   - Workflow context-aware prompt browsing with step-specific recommendations
   - Extension of Section 6.1 PromptBrowserComponent for workflow environments  
@@ -34,26 +34,30 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
   @impl true
   def update(%{user_id: user_id, workflow_context: workflow_context} = assigns, socket) do
     socket = assign(socket, assigns)
-    
+
     # Load workflow-suitable prompts and context variables
     send(self(), {:load_workflow_prompts, user_id, workflow_context})
     send(self(), {:load_workflow_variables, workflow_context})
-    
+
     {:ok, socket}
   end
 
   @impl true
   def handle_event("search_workflow_prompts", %{"search_query" => query}, socket) do
     %{user_id: user_id, workflow_context: workflow_context} = socket.assigns
-    
-    socket = 
+
+    socket =
       socket
       |> assign(:search_query, query)
       |> assign(:loading, true)
 
     if String.length(String.trim(query)) >= 2 do
       # Perform workflow-aware search
-      Process.send_after(self(), {:execute_workflow_search, query, user_id, workflow_context}, 300)
+      Process.send_after(
+        self(),
+        {:execute_workflow_search, query, user_id, workflow_context},
+        300
+      )
     else
       # Reload workflow-suitable prompts
       send(self(), {:load_workflow_prompts, user_id, workflow_context})
@@ -65,28 +69,36 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
   @impl true
   def handle_event("get_step_recommendations", %{"step_type" => step_type}, socket) do
     %{user_id: user_id, workflow_context: workflow_context} = socket.assigns
-    
+
     step_type_atom = String.to_existing_atom(step_type)
-    
+
     # Load step-specific recommendations
     send(self(), {:load_step_recommendations, user_id, step_type_atom, workflow_context})
-    
+
     {:noreply, assign(socket, :loading, true)}
   end
 
   @impl true
   def handle_event("select_workflow_prompt", %{"prompt_id" => prompt_id}, socket) do
-    %{prompts: prompts, recommended_prompts: recommended_prompts, workflow_context: workflow_context} = socket.assigns
-    
+    %{
+      prompts: prompts,
+      recommended_prompts: recommended_prompts,
+      workflow_context: workflow_context
+    } = socket.assigns
+
     # Find selected prompt across all collections
-    selected_prompt = find_prompt_by_id([
-      prompts[:system_prompts] || [],
-      prompts[:project_prompts] || [],
-      prompts[:user_prompts] || [],
-      prompts[:search_results] || [],
-      recommended_prompts
-    ], prompt_id)
-    
+    selected_prompt =
+      find_prompt_by_id(
+        [
+          prompts[:system_prompts] || [],
+          prompts[:project_prompts] || [],
+          prompts[:user_prompts] || [],
+          prompts[:search_results] || [],
+          recommended_prompts
+        ],
+        prompt_id
+      )
+
     case selected_prompt do
       nil ->
         {:noreply, assign(socket, :error, "Prompt not found")}
@@ -94,10 +106,11 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
       prompt ->
         # Prepare prompt for workflow context
         case WorkflowPromptSelector.prepare_prompt_for_workflow(
-          prompt.content,
-          workflow_context,
-          %{}  # No additional user variables yet
-        ) do
+               prompt.content,
+               workflow_context,
+               # No additional user variables yet
+               %{}
+             ) do
           {:ok, preparation_result} ->
             # Send prepared prompt to parent component
             send(self(), {:workflow_prompt_selected, prompt, preparation_result})
@@ -113,7 +126,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
   @impl true
   def handle_event("preview_with_workflow_context", %{"prompt_id" => prompt_id}, socket) do
     %{workflow_context: workflow_context} = socket.assigns
-    
+
     # Find and preview prompt with workflow context
     case find_prompt_by_id_across_collections(socket.assigns, prompt_id) do
       nil ->
@@ -142,7 +155,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
 
       {:error, reason} ->
         Logger.error("Failed to load workflow prompts: #{inspect(reason)}")
-        
+
         socket =
           socket
           |> assign(:loading, false)
@@ -180,7 +193,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
 
         {:error, reason} ->
           Logger.warning("Workflow prompt search failed: #{inspect(reason)}")
-          
+
           socket =
             socket
             |> assign(:loading, false)
@@ -195,7 +208,11 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
 
   @impl true
   def handle_info({:load_step_recommendations, user_id, step_type, workflow_context}, socket) do
-    case WorkflowPromptSelector.get_recommended_prompts_for_step(user_id, step_type, workflow_context) do
+    case WorkflowPromptSelector.get_recommended_prompts_for_step(
+           user_id,
+           step_type,
+           workflow_context
+         ) do
       {:ok, recommendations} ->
         socket =
           socket
@@ -294,7 +311,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
             class="variable-tag"
             title={var_meta.description}
           >
-            {{<%= var_name %>}}
+            {"{{#{var_name}}}"}
           </span>
         </div>
       </div>
@@ -580,12 +597,13 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponent do
   end
 
   defp find_prompt_by_id_across_collections(assigns, prompt_id) do
-    all_prompts = (assigns.prompts[:system_prompts] || []) ++ 
-                  (assigns.prompts[:project_prompts] || []) ++ 
-                  (assigns.prompts[:user_prompts] || []) ++
-                  (assigns.prompts[:search_results] || []) ++
-                  (assigns.recommended_prompts || [])
-    
+    all_prompts =
+      (assigns.prompts[:system_prompts] || []) ++
+        (assigns.prompts[:project_prompts] || []) ++
+        (assigns.prompts[:user_prompts] || []) ++
+        (assigns.prompts[:search_results] || []) ++
+        (assigns.recommended_prompts || [])
+
     Enum.find(all_prompts, fn prompt -> prompt.id == prompt_id end)
   end
 

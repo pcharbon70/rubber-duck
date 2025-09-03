@@ -563,7 +563,8 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
       :system -> :system
       :user -> :user
       :assistant -> :assistant
-      _ -> :user  # Default to user role
+      # Default to user role
+      _ -> :user
     end
   end
 

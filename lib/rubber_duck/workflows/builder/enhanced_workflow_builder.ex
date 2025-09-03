@@ -68,10 +68,13 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
 
     with {:ok, validated_spec} <- validate_workflow_specification(workflow_spec),
          {:ok, builder_mode} <- determine_optimal_builder_mode(validated_spec, merged_config),
-         {:ok, build_context} <- create_build_context(validated_spec, builder_mode, merged_config),
+         {:ok, build_context} <-
+           create_build_context(validated_spec, builder_mode, merged_config),
          {:ok, built_workflow} <- execute_workflow_build(build_context),
-         {:ok, prompt_enhanced_workflow} <- enhance_workflow_with_prompts(built_workflow, merged_config),
-         {:ok, validated_workflow} <- validate_built_workflow(prompt_enhanced_workflow, merged_config) do
+         {:ok, prompt_enhanced_workflow} <-
+           enhance_workflow_with_prompts(built_workflow, merged_config),
+         {:ok, validated_workflow} <-
+           validate_built_workflow(prompt_enhanced_workflow, merged_config) do
       build_time = System.monotonic_time(:microsecond) - build_start_time
 
       Logger.info("EnhancedWorkflowBuilder: Workflow creation completed",
@@ -640,13 +643,17 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
         {:ok, enhanced_workflow} ->
           Logger.debug("EnhancedWorkflowBuilder: Prompt integration completed",
             workflow_id: enhanced_workflow.id,
-            prompt_features_enabled: Map.keys(Map.get(enhanced_workflow, :prompt_integration, %{}))
+            prompt_features_enabled:
+              Map.keys(Map.get(enhanced_workflow, :prompt_integration, %{}))
           )
 
           {:ok, enhanced_workflow}
 
         {:error, reason} ->
-          Logger.warning("EnhancedWorkflowBuilder: Prompt integration failed, continuing without: #{inspect(reason)}")
+          Logger.warning(
+            "EnhancedWorkflowBuilder: Prompt integration failed, continuing without: #{inspect(reason)}"
+          )
+
           {:ok, built_workflow}
       end
     else
@@ -670,16 +677,18 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
     }
 
     # Enhance workflow steps with prompt integration if they specify prompt names
-    enhanced_components = enhance_components_with_prompt_support(
-      Map.get(built_workflow, :components, []),
-      config
-    )
+    enhanced_components =
+      enhance_components_with_prompt_support(
+        Map.get(built_workflow, :components, []),
+        config
+      )
 
-    enhanced_workflow = Map.merge(built_workflow, %{
-      prompt_integration: prompt_integration,
-      components: enhanced_components,
-      prompt_integration_applied: true
-    })
+    enhanced_workflow =
+      Map.merge(built_workflow, %{
+        prompt_integration: prompt_integration,
+        components: enhanced_components,
+        prompt_integration_applied: true
+      })
 
     {:ok, enhanced_workflow}
   end
@@ -708,23 +717,26 @@ defmodule RubberDuck.Workflows.Builder.EnhancedWorkflowBuilder do
     # Build list of enabled prompt features
     features = []
 
-    features = if config.enable_named_prompt_references do
-      [:named_prompt_references | features]
-    else
-      features
-    end
+    features =
+      if config.enable_named_prompt_references do
+        [:named_prompt_references | features]
+      else
+        features
+      end
 
-    features = if config.enable_context_enhancement do
-      [:context_enhancement | features]
-    else
-      features
-    end
+    features =
+      if config.enable_context_enhancement do
+        [:context_enhancement | features]
+      else
+        features
+      end
 
-    features = if config.enable_prompt_integration do
-      [:prompt_integration | features]
-    else
-      features
-    end
+    features =
+      if config.enable_prompt_integration do
+        [:prompt_integration | features]
+      else
+        features
+      end
 
     features
   end

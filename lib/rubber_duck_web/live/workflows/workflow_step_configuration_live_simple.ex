@@ -1,11 +1,11 @@
 defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLiveSimple do
   @moduledoc """
   Simplified LiveView for workflow step configuration with prompt selection.
-  
+
   TODO: This is a simplified version to resolve compilation issues.
   TODO: Add complete CSS styling and advanced UI features when framework is ready.
   TODO: Implement full workflow step configuration interface with rich template editing.
-  
+
   Features:
   - Basic workflow step parameter configuration with prompt integration
   - Simple prompt selection from three-tier hierarchy (System/Project/User)
@@ -35,7 +35,7 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLiveSimple do
   def handle_params(%{"workflow_id" => workflow_id, "step_id" => step_id} = params, _uri, socket) do
     # Load workflow step configuration context
     workflow_context = build_workflow_context(workflow_id, step_id, params)
-    
+
     socket =
       socket
       |> assign(:workflow_context, workflow_context)
@@ -57,12 +57,16 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLiveSimple do
   end
 
   @impl true
-  def handle_event("configure_step_parameter", %{"parameter" => parameter_name, "value" => value}, socket) do
+  def handle_event(
+        "configure_step_parameter",
+        %{"parameter" => parameter_name, "value" => value},
+        socket
+      ) do
     current_config = socket.assigns.step_configuration
     updated_config = Map.put(current_config, parameter_name, value)
-    
+
     socket = assign(socket, :step_configuration, updated_config)
-    
+
     # Update preview if prompt is selected
     if socket.assigns.selected_prompt do
       send(self(), :update_step_preview)
@@ -76,12 +80,18 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLiveSimple do
     # TODO: Implement full step configuration validation and persistence
     # TODO: Add integration with actual Reactor workflow system
     # TODO: Implement comprehensive error handling and user feedback
-    
+
     %{step_configuration: step_configuration, selected_prompt: selected_prompt} = socket.assigns
 
     case validate_step_configuration_basic(step_configuration, selected_prompt) do
       {:ok, validated_config} ->
-        socket = put_flash(socket, :info, "Step configuration saved (TODO: integrate with workflow persistence)")
+        socket =
+          put_flash(
+            socket,
+            :info,
+            "Step configuration saved (TODO: integrate with workflow persistence)"
+          )
+
         {:noreply, socket}
 
       {:error, validation_errors} ->
@@ -106,7 +116,8 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLiveSimple do
   @impl true
   def handle_info(:update_step_preview, socket) do
     # TODO: Implement sophisticated preview with variable substitution
-    %{selected_prompt: prompt, step_configuration: config, workflow_context: context} = socket.assigns
+    %{selected_prompt: prompt, step_configuration: config, workflow_context: context} =
+      socket.assigns
 
     if prompt do
       case WorkflowPromptSelector.prepare_prompt_for_workflow(prompt.content, context, config) do
@@ -243,11 +254,12 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLiveSimple do
     # Basic validation for step configuration
     errors = []
 
-    errors = if Map.get(step_configuration, "step_name", "") == "" do
-      ["Step name is required" | errors]
-    else
-      errors
-    end
+    errors =
+      if Map.get(step_configuration, "step_name", "") == "" do
+        ["Step name is required" | errors]
+      else
+        errors
+      end
 
     if errors == [] do
       {:ok, step_configuration}
