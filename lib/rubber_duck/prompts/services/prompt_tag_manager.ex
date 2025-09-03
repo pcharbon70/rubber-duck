@@ -1,12 +1,12 @@
 defmodule RubberDuck.Prompts.Services.PromptTagManager do
   @moduledoc """
   Advanced tagging system service for saved prompt organization.
-  
+
   Provides comprehensive tagging capabilities for users to organize their saved
   prompt collections including tag creation, management, hierarchical relationships,
   auto-suggestions, and tag-based organization patterns for improved prompt
   discovery and workflow optimization.
-  
+
   Features:
   - Tag creation and management with hierarchical relationships
   - Auto-suggest tags based on prompt content and user patterns
@@ -246,7 +246,7 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
   defp build_user_tag_hierarchy(user_id, hierarchy_options, state) do
     # Build hierarchical view of user's tags
     user_tags = get_user_tags(user_id)
-    
+
     hierarchy = %{
       user_id: user_id,
       root_tags: filter_root_tags(user_tags),
@@ -265,7 +265,7 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
   defp find_related_tags_for_user(tag_name, user_id, relation_options, state) do
     # Find tags related to the specified tag
     relation_types = Map.get(relation_options, :relation_types, @tag_relationship_types)
-    
+
     related_tags = %{
       tag_name: tag_name,
       user_id: user_id,
@@ -305,9 +305,11 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     content_keywords = extract_meaningful_keywords(prompt.content)
     content_topics = identify_content_topics(prompt.content)
 
-    suggested_tags = content_keywords ++ content_topics
-    |> Enum.uniq()
-    |> Enum.take(5)  # Top 5 suggestions
+    suggested_tags =
+      (content_keywords ++ content_topics)
+      |> Enum.uniq()
+      # Top 5 suggestions
+      |> Enum.take(5)
 
     suggestions = %{
       prompt_id: prompt.id,
@@ -363,10 +365,11 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     # Generate comprehensive suggestions combining all methods
     with {:ok, content_suggestions} <- generate_content_based_tag_suggestions(prompt),
          {:ok, usage_suggestions} <- generate_usage_pattern_tag_suggestions(prompt, user_context),
-         {:ok, similarity_suggestions} <- generate_similarity_based_tag_suggestions(prompt, user_context, state) do
-      
-      all_suggested_tags = combine_tag_suggestions([content_suggestions, usage_suggestions, similarity_suggestions])
-      
+         {:ok, similarity_suggestions} <-
+           generate_similarity_based_tag_suggestions(prompt, user_context, state) do
+      all_suggested_tags =
+        combine_tag_suggestions([content_suggestions, usage_suggestions, similarity_suggestions])
+
       comprehensive_suggestions = %{
         prompt_id: prompt.id,
         suggested_tags: all_suggested_tags,
@@ -390,10 +393,11 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     # Extract meaningful keywords from prompt content
     # Remove common stop words and extract relevant terms
     words = String.split(String.downcase(content), ~r/\W+/)
-    
-    meaningful_words = Enum.filter(words, fn word ->
-      String.length(word) > 3 and word not in get_stop_words()
-    end)
+
+    meaningful_words =
+      Enum.filter(words, fn word ->
+        String.length(word) > 3 and word not in get_stop_words()
+      end)
 
     Enum.take(meaningful_words, 10)
   end
@@ -409,7 +413,7 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     }
 
     content_lower = String.downcase(content)
-    
+
     Enum.filter(topic_keywords, fn {topic, keywords} ->
       Enum.any?(keywords, fn keyword -> String.contains?(content_lower, keyword) end)
     end)
@@ -435,23 +439,26 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
 
   defp extract_common_tags_from_similar_prompts(similar_prompts) do
     # Extract common tags from similar prompts
-    all_tags = similar_prompts
-    |> Enum.flat_map(fn prompt -> prompt.tags || [] end)
-    |> Enum.frequencies()
-    |> Enum.filter(fn {_tag, frequency} -> frequency > 1 end)
-    |> Enum.map(fn {tag, _frequency} -> tag end)
+    all_tags =
+      similar_prompts
+      |> Enum.flat_map(fn prompt -> prompt.tags || [] end)
+      |> Enum.frequencies()
+      |> Enum.filter(fn {_tag, frequency} -> frequency > 1 end)
+      |> Enum.map(fn {tag, _frequency} -> tag end)
 
     all_tags
   end
 
   defp combine_tag_suggestions(suggestion_lists) do
     # Combine tag suggestions from multiple methods
-    all_tags = suggestion_lists
-    |> Enum.flat_map(fn suggestions -> suggestions.suggested_tags end)
-    |> Enum.frequencies()
-    |> Enum.sort_by(fn {_tag, frequency} -> frequency end, :desc)
-    |> Enum.map(fn {tag, _frequency} -> tag end)
-    |> Enum.take(8)  # Top 8 combined suggestions
+    all_tags =
+      suggestion_lists
+      |> Enum.flat_map(fn suggestions -> suggestions.suggested_tags end)
+      |> Enum.frequencies()
+      |> Enum.sort_by(fn {_tag, frequency} -> frequency end, :desc)
+      |> Enum.map(fn {tag, _frequency} -> tag end)
+      # Top 8 combined suggestions
+      |> Enum.take(8)
 
     all_tags
   end
@@ -463,7 +470,7 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
 
   defp filter_root_tags(user_tags) do
     # Filter tags that don't have parent tags (root level)
-    Enum.filter(user_tags, fn tag -> 
+    Enum.filter(user_tags, fn tag ->
       is_nil(Map.get(tag, :parent_tag_id))
     end)
   end
@@ -480,7 +487,8 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     # Simplified implementation
     case user_tags do
       [] -> 0
-      _ -> 3  # Assume max depth of 3 for now
+      # Assume max depth of 3 for now
+      _ -> 3
     end
   end
 
@@ -489,7 +497,8 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     Enum.map(tags, fn tag ->
       %{
         tag_name: tag,
-        relationships: [],  # Would build actual relationships
+        # Would build actual relationships
+        relationships: [],
         applied_at: DateTime.utc_now()
       }
     end)
@@ -508,10 +517,14 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     analytics = %{
       user_id: user_id,
       tag_name: tag_name,
-      total_usage: 0,  # Would calculate from actual usage data
-      prompts_tagged: 0,  # Would count prompts with this tag
-      usage_frequency: 0.0,  # Would calculate usage per day/week
-      effectiveness_score: 0.75,  # Would calculate from user feedback
+      # Would calculate from actual usage data
+      total_usage: 0,
+      # Would count prompts with this tag
+      prompts_tagged: 0,
+      # Would calculate usage per day/week
+      usage_frequency: 0.0,
+      # Would calculate from user feedback
+      effectiveness_score: 0.75,
       analytics_metadata: %{
         analytics_type: :user_specific,
         generated_at: DateTime.utc_now()
@@ -526,9 +539,12 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     analytics = %{
       tag_name: tag_name,
       user_id: user_id,
-      tag_popularity: 0.0,  # Would calculate popularity score
-      usage_contexts: [],   # Would analyze where tag is used
-      related_tags: [],     # Would find related/similar tags
+      # Would calculate popularity score
+      tag_popularity: 0.0,
+      # Would analyze where tag is used
+      usage_contexts: [],
+      # Would find related/similar tags
+      related_tags: [],
       analytics_metadata: %{
         analytics_type: :tag_specific,
         generated_at: DateTime.utc_now()
@@ -542,7 +558,6 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
     # Generate comprehensive analytics combining multiple perspectives
     with {:ok, user_analytics} <- generate_user_tag_analytics(user_id, tag_name),
          {:ok, tag_analytics} <- generate_specific_tag_analytics(tag_name, user_id) do
-      
       comprehensive_analytics = %{
         user_analytics: user_analytics,
         tag_analytics: tag_analytics,
@@ -592,7 +607,9 @@ defmodule RubberDuck.Prompts.Services.PromptTagManager do
   end
 
   # Utility functions (simplified implementations)
-  defp get_stop_words, do: ["the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"]
+  defp get_stop_words,
+    do: ["the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"]
+
   defp calculate_tag_suggestion_confidence(_tags, _prompt), do: %{}
   defp calculate_similarity_confidence(_tags, _prompts), do: %{}
   defp calculate_comprehensive_tag_confidence(_tags), do: %{}

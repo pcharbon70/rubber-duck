@@ -1,12 +1,12 @@
 defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   @moduledoc """
   Core organization service for saved prompt categorization and hierarchical management.
-  
+
   Provides comprehensive organization capabilities for users to manage their saved
   prompt collections including flexible categorization schemes, hierarchical
   organization structures, and automated organization suggestions based on prompt
   content and usage patterns.
-  
+
   Features:
   - Flexible categorization schemes for saved prompt organization (hierarchical, flat, tag-based)
   - Hierarchical category management with nesting and relationship support
@@ -21,7 +21,12 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   alias RubberDuck.Prompts.Resources.{Prompt, PromptCategory}
 
   @categorization_schemes [:hierarchical, :flat, :tag_based, :custom, :mixed]
-  @auto_categorization_strategies [:content_analysis, :usage_patterns, :manual_classification, :hybrid]
+  @auto_categorization_strategies [
+    :content_analysis,
+    :usage_patterns,
+    :manual_classification,
+    :hybrid
+  ]
 
   defstruct [
     :organization_config,
@@ -85,7 +90,10 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   Reorganize user's prompt collection with new scheme.
   """
   def reorganize_prompt_collection(user_id, new_scheme, reorganization_options \\ %{}) do
-    GenServer.call(__MODULE__, {:reorganize_collection, user_id, new_scheme, reorganization_options})
+    GenServer.call(
+      __MODULE__,
+      {:reorganize_collection, user_id, new_scheme, reorganization_options}
+    )
   end
 
   # GenServer callbacks
@@ -119,7 +127,11 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   end
 
   @impl true
-  def handle_call({:get_suggestions, user_id, prompt_collection, suggestion_options}, _from, state) do
+  def handle_call(
+        {:get_suggestions, user_id, prompt_collection, suggestion_options},
+        _from,
+        state
+      ) do
     case generate_organization_suggestions(user_id, prompt_collection, suggestion_options, state) do
       {:ok, suggestions} ->
         Logger.debug("PromptOrganizer: Organization suggestions generated",
@@ -162,7 +174,11 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   end
 
   @impl true
-  def handle_call({:reorganize_collection, user_id, new_scheme, reorganization_options}, _from, state) do
+  def handle_call(
+        {:reorganize_collection, user_id, new_scheme, reorganization_options},
+        _from,
+        state
+      ) do
     case execute_collection_reorganization(user_id, new_scheme, reorganization_options, state) do
       {:ok, reorganization_result} ->
         Logger.info("PromptOrganizer: Collection reorganized",
@@ -204,9 +220,10 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
 
   defp execute_hierarchical_organization(user_id, prompts, options, state) do
     # Execute hierarchical organization of prompts
-    categorized_prompts = prompts
-    |> group_prompts_by_category()
-    |> organize_into_hierarchy(Map.get(options, :hierarchy_depth, 3))
+    categorized_prompts =
+      prompts
+      |> group_prompts_by_category()
+      |> organize_into_hierarchy(Map.get(options, :hierarchy_depth, 3))
 
     organization_result = %{
       organized_prompts: categorized_prompts,
@@ -223,9 +240,10 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
 
   defp execute_flat_organization(user_id, prompts, options, state) do
     # Execute flat organization (single level categories)
-    categorized_prompts = prompts
-    |> group_prompts_by_category()
-    |> flatten_category_structure()
+    categorized_prompts =
+      prompts
+      |> group_prompts_by_category()
+      |> flatten_category_structure()
 
     organization_result = %{
       organized_prompts: categorized_prompts,
@@ -242,9 +260,10 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
 
   defp execute_tag_based_organization(user_id, prompts, options, state) do
     # Execute tag-based organization
-    tagged_prompts = prompts
-    |> analyze_prompt_tags()
-    |> organize_by_tag_relationships()
+    tagged_prompts =
+      prompts
+      |> analyze_prompt_tags()
+      |> organize_by_tag_relationships()
 
     organization_result = %{
       organized_prompts: tagged_prompts,
@@ -262,7 +281,7 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   defp execute_custom_organization(user_id, prompts, options, state) do
     # Execute custom organization based on user-defined rules
     custom_rules = Map.get(options, :custom_rules, [])
-    
+
     organized_prompts = apply_custom_organization_rules(prompts, custom_rules)
 
     organization_result = %{
@@ -280,9 +299,9 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
 
   defp execute_mixed_organization(user_id, prompts, options, state) do
     # Execute mixed organization combining multiple schemes
-    with {:ok, hierarchical_result} <- execute_hierarchical_organization(user_id, prompts, options, state),
+    with {:ok, hierarchical_result} <-
+           execute_hierarchical_organization(user_id, prompts, options, state),
          {:ok, tag_result} <- execute_tag_based_organization(user_id, prompts, options, state) do
-      
       mixed_organization = combine_organization_schemes(hierarchical_result, tag_result)
 
       organization_result = %{
@@ -365,7 +384,7 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
     case get_user_prompt_collection(user_id) do
       {:ok, current_prompts} ->
         reorganization_options = Map.put(reorganization_options, :scheme, new_scheme)
-        
+
         case execute_prompt_organization(user_id, current_prompts, reorganization_options, state) do
           {:ok, organization_result} ->
             reorganization_result = %{
@@ -394,7 +413,7 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   defp group_prompts_by_category(prompts) do
     # Group prompts by their existing categories
     prompts
-    |> Enum.group_by(fn prompt -> 
+    |> Enum.group_by(fn prompt ->
       case prompt.category_id do
         nil -> "Uncategorized"
         category_id -> get_category_name(category_id)
@@ -425,7 +444,7 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   defp organize_by_tag_relationships(tagged_prompts) do
     # Organize prompts based on tag relationships and hierarchies
     tagged_prompts
-    |> Enum.group_by(fn prompt -> 
+    |> Enum.group_by(fn prompt ->
       primary_tag = get_primary_tag(prompt.extracted_tags || [])
       primary_tag || "Untagged"
     end)
@@ -507,11 +526,20 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
     with {:ok, usage_suggestions} <- generate_usage_based_suggestions(user_id, prompt_collection),
          {:ok, content_suggestions} <- generate_content_based_suggestions(prompt_collection),
          {:ok, similarity_suggestions} <- generate_similarity_based_suggestions(prompt_collection) do
-      
       comprehensive_suggestions = %{
-        suggestions: combine_suggestion_types([usage_suggestions, content_suggestions, similarity_suggestions]),
+        suggestions:
+          combine_suggestion_types([
+            usage_suggestions,
+            content_suggestions,
+            similarity_suggestions
+          ]),
         analysis_type: :comprehensive,
-        confidence_level: calculate_comprehensive_confidence([usage_suggestions, content_suggestions, similarity_suggestions]),
+        confidence_level:
+          calculate_comprehensive_confidence([
+            usage_suggestions,
+            content_suggestions,
+            similarity_suggestions
+          ]),
         suggestion_metadata: %{
           analysis_methods: [:usage_patterns, :content_analysis, :similarity_analysis],
           generated_at: DateTime.utc_now()
@@ -558,7 +586,8 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
     all_suggestions = content_suggestions ++ context_suggestions
     ranked_suggestions = rank_category_suggestions(all_suggestions)
 
-    Enum.take(ranked_suggestions, 3)  # Top 3 suggestions
+    # Top 3 suggestions
+    Enum.take(ranked_suggestions, 3)
   end
 
   # Helper functions
@@ -585,8 +614,9 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   defp extract_tags_from_prompt(prompt) do
     # Extract tags from prompt content and metadata
     # Look for hashtags in content or existing tags field
-    content_tags = Regex.scan(~r/#(\w+)/, prompt.content, capture: :all_but_first)
-    |> List.flatten()
+    content_tags =
+      Regex.scan(~r/#(\w+)/, prompt.content, capture: :all_but_first)
+      |> List.flatten()
 
     existing_tags = prompt.tags || []
 
@@ -610,7 +640,8 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
         end)
 
       :group_by_pattern ->
-        prompts  # Simplified - would implement pattern-based grouping
+        # Simplified - would implement pattern-based grouping
+        prompts
 
       _ ->
         prompts
@@ -642,7 +673,7 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   defp extract_categorization_keywords(content) do
     # Extract keywords for categorization
     common_keywords = ["code", "review", "documentation", "testing", "analysis", "generation"]
-    
+
     Enum.filter(common_keywords, fn keyword ->
       String.contains?(String.downcase(content), keyword)
     end)
@@ -651,11 +682,20 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
   defp determine_prompt_content_type(content) do
     # Determine the type of prompt based on content
     cond do
-      String.contains?(String.downcase(content), ["review", "analyze", "check"]) -> :analysis
-      String.contains?(String.downcase(content), ["generate", "create", "write"]) -> :generation
-      String.contains?(String.downcase(content), ["explain", "describe", "document"]) -> :documentation
-      String.contains?(String.downcase(content), ["test", "verify", "validate"]) -> :testing
-      true -> :general
+      String.contains?(String.downcase(content), ["review", "analyze", "check"]) ->
+        :analysis
+
+      String.contains?(String.downcase(content), ["generate", "create", "write"]) ->
+        :generation
+
+      String.contains?(String.downcase(content), ["explain", "describe", "document"]) ->
+        :documentation
+
+      String.contains?(String.downcase(content), ["test", "verify", "validate"]) ->
+        :testing
+
+      true ->
+        :general
     end
   end
 
@@ -673,17 +713,19 @@ defmodule RubberDuck.Prompts.Services.PromptOrganizer do
 
   defp suggest_categories_from_content(keywords, content_type) do
     # Suggest categories based on content analysis
-    base_category = case content_type do
-      :analysis -> "Code Analysis"
-      :generation -> "Content Generation"
-      :documentation -> "Documentation"
-      :testing -> "Testing"
-      :general -> "General"
-    end
+    base_category =
+      case content_type do
+        :analysis -> "Code Analysis"
+        :generation -> "Content Generation"
+        :documentation -> "Documentation"
+        :testing -> "Testing"
+        :general -> "General"
+      end
 
-    keyword_categories = Enum.map(keywords, fn keyword ->
-      String.capitalize(keyword)
-    end)
+    keyword_categories =
+      Enum.map(keywords, fn keyword ->
+        String.capitalize(keyword)
+      end)
 
     [base_category | keyword_categories] |> Enum.uniq()
   end

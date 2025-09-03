@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
   @moduledoc """
   Template variable definition and validation service for saved prompts.
-  
+
   Provides comprehensive template management capabilities enabling users to create
   reusable prompt templates with variable placeholders, validation rules, and
   substitution logic for improved productivity and consistency across prompt usage.
-  
+
   Features:
   - Template variable definition and validation for saved prompts
   - Variable placeholder parsing and structure validation
@@ -128,14 +128,15 @@ defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
     # Extract variables using regex pattern matching
     variable_matches = Regex.scan(@variable_pattern, content, capture: :all_but_first)
 
-    variables = Enum.map(variable_matches, fn
-      [variable_name] ->
-        build_variable_definition(variable_name, nil, parsing_options)
+    variables =
+      Enum.map(variable_matches, fn
+        [variable_name] ->
+          build_variable_definition(variable_name, nil, parsing_options)
 
-      [variable_name, default_value] ->
-        build_variable_definition(variable_name, default_value, parsing_options)
-    end)
-    |> Enum.uniq_by(fn var -> var.name end)
+        [variable_name, default_value] ->
+          build_variable_definition(variable_name, default_value, parsing_options)
+      end)
+      |> Enum.uniq_by(fn var -> var.name end)
 
     case variables do
       [] ->
@@ -170,10 +171,11 @@ defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
       validate_template_structure_rules(content, template_definition)
     ]
 
-    issues = Enum.filter(validation_checks, fn
-      {:ok, _} -> false
-      {:error, _} -> true
-    end)
+    issues =
+      Enum.filter(validation_checks, fn
+        {:ok, _} -> false
+        {:error, _} -> true
+      end)
 
     validation_result = %{
       valid: Enum.empty?(issues),
@@ -193,7 +195,7 @@ defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
     case parse_template_variables(prompt.content) do
       {:ok, parsed_variables} ->
         enhanced_variables = enhance_variables_with_specs(parsed_variables, variable_specs)
-        
+
         template_definition = %{
           prompt_id: prompt.id,
           template_name: Map.get(options, :template_name, prompt.name),
@@ -263,8 +265,10 @@ defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
       base_prompt_id: base_prompt.id,
       derived_prompt_id: derived_prompt.id,
       inheritance_type: :extend,
-      inherited_variables: [],  # Would extract from base prompt
-      new_variables: [],        # Would extract new variables from derived
+      # Would extract from base prompt
+      inherited_variables: [],
+      # Would extract new variables from derived
+      new_variables: [],
       inheritance_successful: true,
       inheritance_metadata: %{
         extended_at: DateTime.utc_now(),
@@ -281,7 +285,8 @@ defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
       base_prompt_id: base_prompt.id,
       derived_prompt_id: derived_prompt.id,
       inheritance_type: :override,
-      overridden_variables: [],  # Would identify overridden variables
+      # Would identify overridden variables
+      overridden_variables: [],
       inheritance_successful: true,
       inheritance_metadata: %{
         overridden_at: DateTime.utc_now(),
@@ -298,7 +303,8 @@ defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
       base_prompt_id: base_prompt.id,
       derived_prompt_id: derived_prompt.id,
       inheritance_type: :merge,
-      merged_variables: [],  # Would merge variable definitions
+      # Would merge variable definitions
+      merged_variables: [],
       inheritance_successful: true,
       inheritance_metadata: %{
         merged_at: DateTime.utc_now(),
@@ -322,27 +328,32 @@ defmodule RubberDuck.Prompts.Services.PromptTemplateManager do
 
   defp validate_variable_consistency(content, template_definition) do
     # Validate variables are consistent with definition
-    {:ok, :consistent}  # Simplified implementation
+    # Simplified implementation
+    {:ok, :consistent}
   end
 
   defp validate_template_structure_rules(content, template_definition) do
     # Validate template follows structure rules
-    {:ok, :valid_structure}  # Simplified implementation
+    # Simplified implementation
+    {:ok, :valid_structure}
   end
 
   defp validate_all_required_variables_provided(content, variable_values) do
     # Check all required variables have values
-    {:ok, :all_provided}  # Simplified implementation
+    # Simplified implementation
+    {:ok, :all_provided}
   end
 
   defp validate_variable_value_types(variable_values) do
     # Validate variable value types
-    {:ok, :types_valid}  # Simplified implementation
+    # Simplified implementation
+    {:ok, :types_valid}
   end
 
   defp validate_substitution_safety(variable_values, validation_options) do
     # Validate substitution is safe (no injection attacks)
-    {:ok, :safe}  # Simplified implementation
+    # Simplified implementation
+    {:ok, :safe}
   end
 
   # Helper functions
