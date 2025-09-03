@@ -344,7 +344,8 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
         prompt.project_id == project_id and prompt.status == :approved
 
       {:project, nil} ->
-        false  # No project prompts without project context
+        # No project prompts without project context
+        false
 
       {:user, _} ->
         prompt.user_id == user_id
