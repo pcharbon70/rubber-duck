@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   @moduledoc """
   Advanced filtering and saved search queries service for prompt discovery.
-  
+
   Provides comprehensive filtering capabilities for saved prompt collections
   including custom filter creation, saved search queries, complex filter
   combinations, and filter usage tracking for improved prompt discovery.
-  
+
   Features:
   - Custom filter creation and management with user-defined criteria
   - Saved search queries for quick access to complex search patterns
@@ -18,7 +18,15 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   require Logger
 
   @filter_types [:category, :tag, :prompt_type, :date_range, :user, :content, :usage_frequency]
-  @filter_operators [:equals, :contains, :starts_with, :ends_with, :between, :greater_than, :less_than]
+  @filter_operators [
+    :equals,
+    :contains,
+    :starts_with,
+    :ends_with,
+    :between,
+    :greater_than,
+    :less_than
+  ]
   @boolean_operators [:and, :or, :not]
 
   defstruct [
@@ -62,7 +70,10 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   Apply filter to prompt collection with performance optimization.
   """
   def apply_filter(user_id, filter_criteria, prompt_collection \\ nil, filter_options \\ %{}) do
-    GenServer.call(__MODULE__, {:apply_filter, user_id, filter_criteria, prompt_collection, filter_options})
+    GenServer.call(
+      __MODULE__,
+      {:apply_filter, user_id, filter_criteria, prompt_collection, filter_options}
+    )
   end
 
   @doc """
@@ -76,7 +87,10 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   Execute saved search query with current data.
   """
   def execute_saved_search(user_id, saved_search_id, execution_options \\ %{}) do
-    GenServer.call(__MODULE__, {:execute_saved_search, user_id, saved_search_id, execution_options})
+    GenServer.call(
+      __MODULE__,
+      {:execute_saved_search, user_id, saved_search_id, execution_options}
+    )
   end
 
   @doc """
@@ -120,8 +134,18 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   end
 
   @impl true
-  def handle_call({:apply_filter, user_id, filter_criteria, prompt_collection, filter_options}, _from, state) do
-    case execute_filter_application(user_id, filter_criteria, prompt_collection, filter_options, state) do
+  def handle_call(
+        {:apply_filter, user_id, filter_criteria, prompt_collection, filter_options},
+        _from,
+        state
+      ) do
+    case execute_filter_application(
+           user_id,
+           filter_criteria,
+           prompt_collection,
+           filter_options,
+           state
+         ) do
       {:ok, filtered_results} ->
         Logger.debug("PromptFilterManager: Filter applied successfully",
           user_id: user_id,
@@ -156,7 +180,11 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   end
 
   @impl true
-  def handle_call({:execute_saved_search, user_id, saved_search_id, execution_options}, _from, state) do
+  def handle_call(
+        {:execute_saved_search, user_id, saved_search_id, execution_options},
+        _from,
+        state
+      ) do
     case execute_saved_search_query(user_id, saved_search_id, execution_options, state) do
       {:ok, search_results} ->
         {:reply, {:ok, search_results}, state}
@@ -193,7 +221,7 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   defp execute_filter_creation(user_id, filter_definition, options, state) do
     # Execute custom filter creation
     filter_id = Ash.UUID.generate()
-    
+
     custom_filter = %{
       filter_id: filter_id,
       user_id: user_id,
@@ -211,7 +239,13 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     {:ok, custom_filter}
   end
 
-  defp execute_filter_application(user_id, filter_criteria, prompt_collection, filter_options, state) do
+  defp execute_filter_application(
+         user_id,
+         filter_criteria,
+         prompt_collection,
+         filter_options,
+         state
+       ) do
     # Execute filter application to prompt collection
     target_collection = prompt_collection || get_user_accessible_prompts(user_id, filter_options)
 
@@ -231,7 +265,7 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   defp save_search_query_for_user(user_id, search_query_definition, save_options, state) do
     # Save search query for user reuse
     saved_search_id = Ash.UUID.generate()
-    
+
     saved_search = %{
       id: saved_search_id,
       user_id: user_id,
@@ -252,7 +286,13 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     case get_saved_search(user_id, saved_search_id, state) do
       {:ok, saved_search} ->
         # Execute the saved search criteria
-        case execute_filter_application(user_id, saved_search.search_criteria, nil, execution_options, state) do
+        case execute_filter_application(
+               user_id,
+               saved_search.search_criteria,
+               nil,
+               execution_options,
+               state
+             ) do
           {:ok, search_results} ->
             # Update usage tracking
             update_saved_search_usage(saved_search_id, state)
@@ -270,7 +310,7 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   defp get_popular_filters_for_user(user_id, popularity_options, state) do
     # Get popular filters based on usage analytics
     time_range = Map.get(popularity_options, :time_range, :last_30_days)
-    
+
     popular_filters = %{
       user_id: user_id,
       time_range: time_range,
@@ -337,11 +377,20 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     prompt_value = get_prompt_field_value(prompt, field)
 
     case operator do
-      :equals -> prompt_value == value
-      :contains -> prompt_value && String.contains?(String.downcase(prompt_value), String.downcase(value))
-      :starts_with -> prompt_value && String.starts_with?(String.downcase(prompt_value), String.downcase(value))
-      :ends_with -> prompt_value && String.ends_with?(String.downcase(prompt_value), String.downcase(value))
-      _ -> false
+      :equals ->
+        prompt_value == value
+
+      :contains ->
+        prompt_value && String.contains?(String.downcase(prompt_value), String.downcase(value))
+
+      :starts_with ->
+        prompt_value && String.starts_with?(String.downcase(prompt_value), String.downcase(value))
+
+      :ends_with ->
+        prompt_value && String.ends_with?(String.downcase(prompt_value), String.downcase(value))
+
+      _ ->
+        false
     end
   end
 
@@ -364,35 +413,43 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
   defp get_user_accessible_prompts(user_id, options) do
     # Get all prompts accessible to user (would use proper Ash query)
     project_id = Map.get(options, :project_id)
-    
+
+    case Prompt.read() do
+      {:ok, prompts} ->
+        filtered_prompts = filter_prompts_by_access_level(prompts, user_id, project_id)
+        {:ok, filtered_prompts}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp filter_prompts_by_access_level(prompts, user_id, project_id) do
     case project_id do
       nil ->
-        # User + System prompts
-        case Prompt.read() do
-          {:ok, prompts} ->
-            Enum.filter(prompts, fn prompt ->
-              prompt.prompt_type == :system and prompt.status == :approved or
-              prompt.prompt_type == :user and prompt.user_id == user_id
-            end)
-
-          {:error, reason} ->
-            {:error, reason}
-        end
+        filter_prompts_without_project_context(prompts, user_id)
 
       project_id ->
-        # User + Project + System prompts
-        case Prompt.read() do
-          {:ok, prompts} ->
-            Enum.filter(prompts, fn prompt ->
-              prompt.prompt_type == :system and prompt.status == :approved or
-              prompt.prompt_type == :project and prompt.project_id == project_id and prompt.status == :approved or
-              prompt.prompt_type == :user and prompt.user_id == user_id
-            end)
-
-          {:error, reason} ->
-            {:error, reason}
-        end
+        filter_prompts_with_project_context(prompts, user_id, project_id)
     end
+  end
+
+  defp filter_prompts_without_project_context(prompts, user_id) do
+    # User + System prompts only
+    Enum.filter(prompts, fn prompt ->
+      (prompt.prompt_type == :system and prompt.status == :approved) or
+        (prompt.prompt_type == :user and prompt.user_id == user_id)
+    end)
+  end
+
+  defp filter_prompts_with_project_context(prompts, user_id, project_id) do
+    # User + Project + System prompts
+    Enum.filter(prompts, fn prompt ->
+      (prompt.prompt_type == :system and prompt.status == :approved) or
+        (prompt.prompt_type == :project and prompt.project_id == project_id and
+           prompt.status == :approved) or
+        (prompt.prompt_type == :user and prompt.user_id == user_id)
+    end)
   end
 
   defp determine_filter_type(criteria) do
@@ -420,7 +477,7 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     # Assess complexity of filter criteria
     criteria_count = count_filter_criteria(criteria)
     has_nested_conditions = Map.has_key?(criteria, :conditions)
-    
+
     case {criteria_count, has_nested_conditions} do
       {count, true} when count > 5 -> :high
       {count, _} when count > 3 -> :medium
@@ -446,7 +503,7 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     # Add custom filter to state
     filter_key = "#{filter_result.user_id}:#{filter_result.filter_id}"
     updated_filters = Map.put(state.filter_cache, filter_key, filter_result)
-    
+
     %{state | filter_cache: updated_filters}
   end
 
@@ -454,7 +511,7 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     # Add saved search to state
     search_key = "#{saved_search.user_id}:#{saved_search.id}"
     updated_searches = Map.put(state.saved_searches, search_key, saved_search)
-    
+
     %{state | saved_searches: updated_searches}
   end
 
@@ -465,11 +522,15 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     analytics = %{
       user_id: user_id,
       filter_id: filter_id,
-      usage_frequency: 0.0,  # Would calculate from actual usage data
-      effectiveness_score: 0.8,  # Would calculate from user feedback
-      most_used_criteria: [],  # Would analyze criteria usage
+      # Would calculate from actual usage data
+      usage_frequency: 0.0,
+      # Would calculate from user feedback
+      effectiveness_score: 0.8,
+      # Would analyze criteria usage
+      most_used_criteria: [],
       filter_performance: %{
-        average_execution_time_ms: 50,  # Would measure actual performance
+        # Would measure actual performance
+        average_execution_time_ms: 50,
         cache_hit_rate: 0.85
       },
       analytics_metadata: %{
@@ -486,9 +547,12 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     analytics = %{
       filter_id: filter_id,
       user_id: user_id,
-      filter_popularity: 0.0,  # Would calculate popularity across users
-      usage_contexts: [],  # Would analyze when filter is used
-      effectiveness_metrics: %{},  # Would calculate effectiveness
+      # Would calculate popularity across users
+      filter_popularity: 0.0,
+      # Would analyze when filter is used
+      usage_contexts: [],
+      # Would calculate effectiveness
+      effectiveness_metrics: %{},
       analytics_metadata: %{
         analytics_type: :filter_specific,
         generated_at: DateTime.utc_now()
@@ -502,7 +566,6 @@ defmodule RubberDuck.Prompts.Services.PromptFilterManager do
     # Generate comprehensive analytics
     with {:ok, user_analytics} <- generate_user_filter_analytics(user_id, filter_id),
          {:ok, filter_analytics} <- generate_specific_filter_analytics(filter_id, user_id) do
-      
       comprehensive_analytics = %{
         user_analytics: user_analytics,
         filter_analytics: filter_analytics,

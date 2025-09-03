@@ -2,7 +2,12 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
   use RubberDuck.DataCase, async: true
 
   alias RubberDuck.Prompts.Resources.{Prompt, PromptCategory, PromptUsage}
-  alias RubberDuck.Prompts.Services.{PromptSearchEngine, PromptFilterManager, PromptRecommendationEngine}
+
+  alias RubberDuck.Prompts.Services.{
+    PromptFilterManager,
+    PromptRecommendationEngine,
+    PromptSearchEngine
+  }
 
   describe "Phase 2B.3: Prompt Search & Discovery - Integration Testing" do
     test "complete advanced search workflow with full-text search and intelligent ranking" do
@@ -71,9 +76,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       end
 
       # Security analysis prompt should rank highly for "security analysis" query
-      security_prompt_in_results = Enum.find(security_search_results, fn prompt ->
-        prompt.id == security_analysis_prompt.id
-      end)
+      security_prompt_in_results =
+        Enum.find(security_search_results, fn prompt ->
+          prompt.id == security_analysis_prompt.id
+        end)
 
       assert security_prompt_in_results != nil
       assert security_prompt_in_results.ranking_score > 0.5
@@ -87,12 +93,17 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
 
       # Search with typo: "performace" instead of "performance"
       assert {:ok, fuzzy_search_results} =
-               PromptSearchEngine.fuzzy_search_prompts("performace optimization", user_id, fuzzy_options)
+               PromptSearchEngine.fuzzy_search_prompts(
+                 "performace optimization",
+                 user_id,
+                 fuzzy_options
+               )
 
       # Should find performance optimization prompt despite typo
-      performance_prompt_found = Enum.any?(fuzzy_search_results, fn prompt ->
-        prompt.id == performance_optimization_prompt.id
-      end)
+      performance_prompt_found =
+        Enum.any?(fuzzy_search_results, fn prompt ->
+          prompt.id == performance_optimization_prompt.id
+        end)
 
       assert performance_prompt_found
 
@@ -118,9 +129,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
                PromptSearchEngine.advanced_search(advanced_criteria, user_id, advanced_options)
 
       # Should find project prompts related to code review
-      code_review_found = Enum.any?(advanced_search_results, fn prompt ->
-        prompt.id == code_review_prompt.id
-      end)
+      code_review_found =
+        Enum.any?(advanced_search_results, fn prompt ->
+          prompt.id == code_review_prompt.id
+        end)
 
       assert code_review_found
 
@@ -143,9 +155,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       assert is_list(suggestions_result.suggestions)
 
       # Should suggest terms starting with "sec" (security, etc.)
-      security_suggested = Enum.any?(suggestions_result.suggestions, fn suggestion ->
-        String.starts_with?(String.downcase(suggestion), "sec")
-      end)
+      security_suggested =
+        Enum.any?(suggestions_result.suggestions, fn suggestion ->
+          String.starts_with?(String.downcase(suggestion), "sec")
+        end)
 
       assert security_suggested or length(suggestions_result.suggestions) >= 0
     end
@@ -221,11 +234,13 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
                PromptFilterManager.apply_filter(user_id, tag_filter_criteria, prompt_collection)
 
       # Should filter to prompts with "analysis" tag
-      analysis_prompts = Enum.filter(tag_filtered_results, fn prompt ->
-        prompt.tags && "analysis" in prompt.tags
-      end)
+      analysis_prompts =
+        Enum.filter(tag_filtered_results, fn prompt ->
+          prompt.tags && "analysis" in prompt.tags
+        end)
 
-      assert length(analysis_prompts) >= 2 # analysis_prompt and security_prompt
+      # analysis_prompt and security_prompt
+      assert length(analysis_prompts) >= 2
 
       # Step 3: Test complex filter with boolean logic
       complex_filter_criteria = %{
@@ -237,7 +252,11 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       }
 
       assert {:ok, complex_filtered_results} =
-               PromptFilterManager.apply_filter(user_id, complex_filter_criteria, prompt_collection)
+               PromptFilterManager.apply_filter(
+                 user_id,
+                 complex_filter_criteria,
+                 prompt_collection
+               )
 
       # Should include security and documentation prompts
       assert length(complex_filtered_results) >= 2
@@ -353,9 +372,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       assert length(contextual_recommendations.recommended_prompts) <= 5
 
       # Should recommend code review related prompts
-      code_review_recommended = Enum.any?(contextual_recommendations.recommended_prompts, fn prompt ->
-        prompt.id in [popular_prompt.id, similar_prompt.id]
-      end)
+      code_review_recommended =
+        Enum.any?(contextual_recommendations.recommended_prompts, fn prompt ->
+          prompt.id in [popular_prompt.id, similar_prompt.id]
+        end)
 
       assert code_review_recommended
 
@@ -378,9 +398,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       assert similarity_recommendations.similarity_threshold == 0.3
 
       # Should recommend similar prompt
-      similar_found = Enum.any?(similarity_recommendations.similar_prompts, fn prompt ->
-        prompt.id == similar_prompt.id and Map.has_key?(prompt, :similarity_score)
-      end)
+      similar_found =
+        Enum.any?(similarity_recommendations.similar_prompts, fn prompt ->
+          prompt.id == similar_prompt.id and Map.has_key?(prompt, :similarity_score)
+        end)
 
       assert similar_found or length(similarity_recommendations.similar_prompts) >= 0
 
@@ -391,7 +412,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       }
 
       assert {:ok, usage_recommendations} =
-               PromptRecommendationEngine.get_usage_pattern_recommendations(user_id, pattern_options)
+               PromptRecommendationEngine.get_usage_pattern_recommendations(
+                 user_id,
+                 pattern_options
+               )
 
       assert usage_recommendations.user_id == user_id
       assert usage_recommendations.analysis_period == :last_30_days
@@ -406,7 +430,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       }
 
       assert {:ok, discovery_recommendations} =
-               PromptRecommendationEngine.get_discovery_recommendations(user_id, discovery_options)
+               PromptRecommendationEngine.get_discovery_recommendations(
+                 user_id,
+                 discovery_options
+               )
 
       assert discovery_recommendations.user_id == user_id
       assert discovery_recommendations.discovery_strategy == :underutilized_prompts
@@ -455,35 +482,46 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       tenant_id = Ash.UUID.generate()
 
       # Create large prompt collection for performance testing
-      large_collection = for i <- 1..500 do
-        content_type = Enum.random(["analysis", "generation", "documentation", "testing", "review"])
-        
-        complexity = Enum.random([:simple, :moderate, :complex])
-        
-        content = case complexity do
-          :simple -> "#{String.capitalize(content_type)} prompt #{i} for basic workflows"
-          :moderate -> "#{String.capitalize(content_type)} prompt #{i} with {{variable_#{rem(i, 10)}}} for enhanced productivity"
-          :complex -> "Comprehensive #{content_type} prompt #{i} with {{param_1}} and {{param_2}} including advanced {{analysis_type}} and detailed {{output_format}} generation"
+      large_collection =
+        for i <- 1..500 do
+          content_type =
+            Enum.random(["analysis", "generation", "documentation", "testing", "review"])
+
+          complexity = Enum.random([:simple, :moderate, :complex])
+
+          content =
+            case complexity do
+              :simple ->
+                "#{String.capitalize(content_type)} prompt #{i} for basic workflows"
+
+              :moderate ->
+                "#{String.capitalize(content_type)} prompt #{i} with {{variable_#{rem(i, 10)}}} for enhanced productivity"
+
+              :complex ->
+                "Comprehensive #{content_type} prompt #{i} with {{param_1}} and {{param_2}} including advanced {{analysis_type}} and detailed {{output_format}} generation"
+            end
+
+          {:ok, prompt} =
+            Prompt.create_user_prompt(%{
+              content: content,
+              name: "#{content_type}_prompt_#{i}",
+              tenant_id: tenant_id,
+              user_id: user_id,
+              description:
+                "#{content_type} prompt for performance testing (#{complexity} complexity)",
+              tags: [content_type, "performance-test", Atom.to_string(complexity)]
+            })
+
+          prompt
         end
-
-        {:ok, prompt} =
-          Prompt.create_user_prompt(%{
-            content: content,
-            name: "#{content_type}_prompt_#{i}",
-            tenant_id: tenant_id,
-            user_id: user_id,
-            description: "#{content_type} prompt for performance testing (#{complexity} complexity)",
-            tags: [content_type, "performance-test", Atom.to_string(complexity)]
-          })
-
-        prompt
-      end
 
       # Step 1: Test full-text search performance
       search_performance_start = System.monotonic_time(:microsecond)
 
       assert {:ok, search_results} =
-               PromptSearchEngine.search_prompts("analysis template", user_id, %{project_id: project_id})
+               PromptSearchEngine.search_prompts("analysis template", user_id, %{
+                 project_id: project_id
+               })
 
       search_performance_time = System.monotonic_time(:microsecond) - search_performance_start
       search_performance_time_ms = search_performance_time / 1000
@@ -524,7 +562,11 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       filter_performance_start = System.monotonic_time(:microsecond)
 
       assert {:ok, filtered_results} =
-               PromptFilterManager.apply_filter(user_id, complex_filter_criteria, large_collection)
+               PromptFilterManager.apply_filter(
+                 user_id,
+                 complex_filter_criteria,
+                 large_collection
+               )
 
       filter_performance_time = System.monotonic_time(:microsecond) - filter_performance_start
       filter_performance_time_ms = filter_performance_time / 1000
@@ -539,10 +581,14 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       sample_prompt = List.first(large_collection)
 
       assert {:ok, recommendation_results} =
-               PromptRecommendationEngine.get_similarity_recommendations(sample_prompt, user_id, %{
-                 algorithm: :content_similarity,
-                 limit: 10
-               })
+               PromptRecommendationEngine.get_similarity_recommendations(
+                 sample_prompt,
+                 user_id,
+                 %{
+                   algorithm: :content_similarity,
+                   limit: 10
+                 }
+               )
 
       recommendation_performance_time =
         System.monotonic_time(:microsecond) - recommendation_performance_start
@@ -559,7 +605,9 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       assert {:ok, suggestion_results} =
                PromptSearchEngine.get_search_suggestions("anal", user_id, %{suggestion_count: 10})
 
-      suggestion_performance_time = System.monotonic_time(:microsecond) - suggestion_performance_start
+      suggestion_performance_time =
+        System.monotonic_time(:microsecond) - suggestion_performance_start
+
       suggestion_performance_time_ms = suggestion_performance_time / 1000
 
       # Should provide suggestions quickly
@@ -616,12 +664,15 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
 
       # Test search without project context (should exclude project prompts)
       assert {:ok, no_project_search} =
-               PromptSearchEngine.search_prompts("search template", user_id, %{include_content: true})
+               PromptSearchEngine.search_prompts("search template", user_id, %{
+                 include_content: true
+               })
 
       no_project_ids = Enum.map(no_project_search, fn prompt -> prompt.id end)
       assert system_prompt.id in no_project_ids
       assert user_prompt.id in no_project_ids
-      assert project_prompt.id not in no_project_ids # Should NOT see project prompts without project context
+      # Should NOT see project prompts without project context
+      assert project_prompt.id not in no_project_ids
 
       # Test Section 2 organization integration
       # Use Section 2 PromptOrganizer to organize, then search organized results
@@ -635,9 +686,13 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
 
       # Test recommendations work with Section 2 template variables
       assert {:ok, template_recommendations} =
-               PromptRecommendationEngine.get_similarity_recommendations(system_prompt, user_id, %{
-                 algorithm: :content_similarity
-               })
+               PromptRecommendationEngine.get_similarity_recommendations(
+                 system_prompt,
+                 user_id,
+                 %{
+                   algorithm: :content_similarity
+                 }
+               )
 
       assert is_list(template_recommendations.similar_prompts)
     end
@@ -727,9 +782,10 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
       assert is_list(basic_search)
 
       # Should find the compatibility prompt
-      compatibility_found = Enum.any?(basic_search, fn prompt ->
-        prompt.id == simple_prompt.id
-      end)
+      compatibility_found =
+        Enum.any?(basic_search, fn prompt ->
+          prompt.id == simple_prompt.id
+        end)
 
       assert compatibility_found
 
@@ -748,7 +804,9 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
 
       # Test that recommendations work with simple prompts
       assert {:ok, simple_recommendations} =
-               PromptRecommendationEngine.get_contextual_recommendations(user_id, %{type: :general})
+               PromptRecommendationEngine.get_contextual_recommendations(user_id, %{
+                 type: :general
+               })
 
       assert is_list(simple_recommendations.recommended_prompts)
     end
@@ -798,11 +856,14 @@ defmodule RubberDuck.Prompts.PromptSearchDiscoveryIntegrationTest do
 
       # Recommendation engine should work with prompt similarity
       assert {:ok, _recommendations} =
-               PromptRecommendationEngine.get_contextual_recommendations(user_id, %{type: :general})
+               PromptRecommendationEngine.get_contextual_recommendations(user_id, %{
+                 type: :general
+               })
 
       # Should integrate with Section 2 organization features
       # (Services should be compatible with organized prompt collections)
-      assert true  # Integration verified through successful service calls
+      # Integration verified through successful service calls
+      assert true
     end
   end
 end

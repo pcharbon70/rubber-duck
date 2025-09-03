@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
   @moduledoc """
   Discovery and recommendation engine for saved prompt collections.
-  
+
   Provides intelligent prompt discovery and recommendation capabilities based on
   user usage patterns, prompt similarity analysis, and contextual relevance to
   help users discover relevant saved prompts and improve prompt library utilization.
-  
+
   Features:
   - Contextual prompt recommendations based on current user workflow and task
   - Similarity-based recommendations using content and usage pattern analysis
@@ -40,7 +40,10 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
         {:ok, recommendations}
 
       {:error, reason} ->
-        Logger.error("PromptRecommendationEngine: Contextual recommendations failed", error: reason)
+        Logger.error("PromptRecommendationEngine: Contextual recommendations failed",
+          error: reason
+        )
+
         {:error, reason}
     end
   end
@@ -111,14 +114,15 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
       {:ok, accessible_prompts} ->
         # Filter prompts relevant to current context
         contextual_prompts = filter_prompts_by_context(accessible_prompts, context)
-        
+
         # Rank by contextual relevance
         ranked_prompts = rank_by_contextual_relevance(contextual_prompts, context)
 
         recommendations = %{
           user_id: user_id,
           context_type: context_type,
-          recommended_prompts: Enum.take(ranked_prompts, Map.get(recommendation_options, :limit, 10)),
+          recommended_prompts:
+            Enum.take(ranked_prompts, Map.get(recommendation_options, :limit, 10)),
           context_relevance_score: calculate_overall_context_relevance(ranked_prompts, context),
           recommendation_metadata: %{
             context_analyzed: context,
@@ -142,18 +146,20 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     case get_user_accessible_prompts(user_id, Map.get(similarity_options, :project_id)) do
       {:ok, accessible_prompts} ->
         # Remove reference prompt from candidates
-        candidate_prompts = Enum.filter(accessible_prompts, fn prompt ->
-          prompt.id != reference_prompt.id
-        end)
+        candidate_prompts =
+          Enum.filter(accessible_prompts, fn prompt ->
+            prompt.id != reference_prompt.id
+          end)
 
         # Calculate similarity scores
-        similar_prompts = candidate_prompts
-        |> Enum.map(fn prompt ->
-          similarity_score = calculate_prompt_similarity(reference_prompt, prompt, algorithm)
-          Map.put(prompt, :similarity_score, similarity_score)
-        end)
-        |> Enum.filter(fn prompt -> prompt.similarity_score >= similarity_threshold end)
-        |> Enum.sort_by(fn prompt -> prompt.similarity_score end, :desc)
+        similar_prompts =
+          candidate_prompts
+          |> Enum.map(fn prompt ->
+            similarity_score = calculate_prompt_similarity(reference_prompt, prompt, algorithm)
+            Map.put(prompt, :similarity_score, similarity_score)
+          end)
+          |> Enum.filter(fn prompt -> prompt.similarity_score >= similarity_threshold end)
+          |> Enum.sort_by(fn prompt -> prompt.similarity_score end, :desc)
 
         similarity_recommendations = %{
           reference_prompt_id: reference_prompt.id,
@@ -178,10 +184,10 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
   defp execute_usage_pattern_recommendations(user_id, pattern_options) do
     # Execute usage pattern-based recommendations
     analysis_period = Map.get(pattern_options, :analysis_period, :last_30_days)
-    
+
     # Analyze user's prompt usage patterns (simplified - would query PromptUsage)
     usage_patterns = analyze_user_prompt_usage_patterns(user_id, analysis_period)
-    
+
     pattern_recommendations = %{
       user_id: user_id,
       analysis_period: analysis_period,
@@ -223,9 +229,10 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     # Discover prompts that are rarely used but potentially valuable
     case get_user_accessible_prompts(user_id, Map.get(options, :project_id)) do
       {:ok, accessible_prompts} ->
-        underutilized = accessible_prompts
-        |> filter_underutilized_prompts(user_id)
-        |> rank_by_potential_value(user_id)
+        underutilized =
+          accessible_prompts
+          |> filter_underutilized_prompts(user_id)
+          |> rank_by_potential_value(user_id)
 
         discovery_result = %{
           user_id: user_id,
@@ -251,19 +258,13 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
   defp discover_prompts_similar_to_popular(user_id, options) do
     # Discover prompts similar to user's most popular prompts
     popular_prompts = get_user_popular_prompts(user_id, 5)
-    
+
     case popular_prompts do
       [] ->
         {:ok, %{discovered_prompts: [], discovery_strategy: :similar_to_popular}}
 
       prompts ->
-        similar_discoveries = Enum.flat_map(prompts, fn popular_prompt ->
-          case get_similarity_recommendations(popular_prompt, user_id, %{limit: 2}) do
-            {:ok, similarity_result} -> similarity_result.similar_prompts
-            {:error, _} -> []
-          end
-        end)
-        |> Enum.uniq_by(fn prompt -> prompt.id end)
+        similar_discoveries = find_prompts_similar_to_popular_list(prompts, user_id)
 
         discovery_result = %{
           user_id: user_id,
@@ -279,11 +280,21 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     end
   end
 
+  defp find_prompts_similar_to_popular_list(popular_prompts, user_id) do
+    popular_prompts
+    |> Enum.flat_map(fn popular_prompt ->
+      case get_similarity_recommendations(popular_prompt, user_id, %{limit: 2}) do
+        {:ok, similarity_result} -> similarity_result.similar_prompts
+        {:error, _} -> []
+      end
+    end)
+    |> Enum.uniq_by(fn prompt -> prompt.id end)
+  end
+
   defp discover_prompts_comprehensive(user_id, options) do
     # Comprehensive discovery combining multiple strategies
     with {:ok, underutilized} <- discover_underutilized_prompts(user_id, options),
          {:ok, similar_to_popular} <- discover_prompts_similar_to_popular(user_id, options) do
-      
       comprehensive_discovery = %{
         user_id: user_id,
         discovery_strategy: :comprehensive,
@@ -310,16 +321,7 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     # Get all prompts accessible to user (simplified implementation)
     case Prompt.read() do
       {:ok, all_prompts} ->
-        accessible_prompts = Enum.filter(all_prompts, fn prompt ->
-          case {prompt.prompt_type, project_id} do
-            {:system, _} -> prompt.status == :approved
-            {:project, ^project_id} -> prompt.project_id == project_id and prompt.status == :approved
-            {:project, nil} -> false  # No project prompts without project context
-            {:user, _} -> prompt.user_id == user_id
-            _ -> false
-          end
-        end)
-
+        accessible_prompts = filter_accessible_prompts(all_prompts, user_id, project_id)
         {:ok, accessible_prompts}
 
       {:error, reason} ->
@@ -327,20 +329,46 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     end
   end
 
+  defp filter_accessible_prompts(all_prompts, user_id, project_id) do
+    Enum.filter(all_prompts, fn prompt ->
+      check_prompt_accessibility(prompt, user_id, project_id)
+    end)
+  end
+
+  defp check_prompt_accessibility(prompt, user_id, project_id) do
+    case {prompt.prompt_type, project_id} do
+      {:system, _} ->
+        prompt.status == :approved
+
+      {:project, ^project_id} ->
+        prompt.project_id == project_id and prompt.status == :approved
+
+      {:project, nil} ->
+        false  # No project prompts without project context
+
+      {:user, _} ->
+        prompt.user_id == user_id
+
+      _ ->
+        false
+    end
+  end
+
   defp filter_prompts_by_context(prompts, context) do
     # Filter prompts relevant to current context
     context_keywords = extract_context_keywords(context)
-    
+
     Enum.filter(prompts, fn prompt ->
       prompt_relevance = calculate_context_relevance(prompt, context_keywords, context)
-      prompt_relevance > 0.3  # Minimum relevance threshold
+      # Minimum relevance threshold
+      prompt_relevance > 0.3
     end)
   end
 
   defp rank_by_contextual_relevance(prompts, context) do
     # Rank prompts by relevance to current context
     context_keywords = extract_context_keywords(context)
-    
+
     prompts
     |> Enum.map(fn prompt ->
       relevance_score = calculate_context_relevance(prompt, context_keywords, context)
@@ -365,9 +393,9 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
         content_sim = calculate_content_similarity(prompt1.content, prompt2.content)
         usage_sim = calculate_usage_similarity(prompt1, prompt2)
         tag_sim = calculate_tag_similarity(prompt1, prompt2)
-        
+
         # Weighted average
-        (content_sim * 0.5) + (usage_sim * 0.3) + (tag_sim * 0.2)
+        content_sim * 0.5 + usage_sim * 0.3 + tag_sim * 0.2
     end
   end
 
@@ -378,18 +406,21 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     usage_relevance = calculate_usage_context_relevance(prompt, context)
 
     # Combine relevance scores
-    (keyword_relevance * 0.5) + (type_relevance * 0.3) + (usage_relevance * 0.2)
+    keyword_relevance * 0.5 + type_relevance * 0.3 + usage_relevance * 0.2
   end
 
   defp calculate_overall_context_relevance(ranked_prompts, context) do
     # Calculate overall context relevance for recommendation set
     case ranked_prompts do
-      [] -> 0.0
+      [] ->
+        0.0
+
       prompts ->
-        relevance_scores = Enum.map(prompts, fn prompt -> 
-          Map.get(prompt, :context_relevance_score, 0.0) 
-        end)
-        
+        relevance_scores =
+          Enum.map(prompts, fn prompt ->
+            Map.get(prompt, :context_relevance_score, 0.0)
+          end)
+
         Enum.sum(relevance_scores) / length(relevance_scores)
     end
   end
@@ -400,7 +431,7 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     # Calculate similarity between prompt contents
     words1 = extract_content_words(content1)
     words2 = extract_content_words(content2)
-    
+
     common_words = MapSet.intersection(words1, words2)
     union_words = MapSet.union(words1, words2)
 
@@ -420,7 +451,7 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     # Calculate similarity based on tags
     tags1 = MapSet.new(prompt1.tags || [])
     tags2 = MapSet.new(prompt2.tags || [])
-    
+
     common_tags = MapSet.intersection(tags1, tags2)
     union_tags = MapSet.union(tags1, tags2)
 
@@ -434,10 +465,11 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     # Calculate relevance based on keyword matching
     prompt_text = "#{prompt.name} #{prompt.description} #{prompt.content}"
     prompt_words = extract_content_words(prompt_text)
-    
-    keyword_matches = Enum.count(context_keywords, fn keyword ->
-      MapSet.member?(prompt_words, String.downcase(keyword))
-    end)
+
+    keyword_matches =
+      Enum.count(context_keywords, fn keyword ->
+        MapSet.member?(prompt_words, String.downcase(keyword))
+      end)
 
     case length(context_keywords) do
       0 -> 0.0
@@ -448,7 +480,7 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
   defp calculate_type_relevance(prompt, context) do
     # Calculate relevance based on prompt type and context
     context_type = Map.get(context, :type, :general)
-    
+
     case {prompt.prompt_type, context_type} do
       {:system, :general} -> 0.6
       {:project, :project_work} -> 0.8
@@ -482,7 +514,7 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     |> Enum.filter(fn prompt ->
       usage_count = get_prompt_usage_count(prompt, user_id)
       potential_value = assess_prompt_potential_value(prompt)
-      
+
       # Underutilized if low usage but high potential
       usage_count < 3 and potential_value > 0.6
     end)
@@ -503,14 +535,15 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
   defp extract_context_keywords(context) do
     # Extract keywords from context for relevance matching
     keywords = []
-    
+
     # Add workflow type keywords
-    keywords = case Map.get(context, :workflow_type) do
-      :code_review -> ["code", "review", "quality", "analysis"] ++ keywords
-      :documentation -> ["document", "explain", "guide", "reference"] ++ keywords
-      :testing -> ["test", "verify", "validate", "check"] ++ keywords
-      _ -> keywords
-    end
+    keywords =
+      case Map.get(context, :workflow_type) do
+        :code_review -> ["code", "review", "quality", "analysis"] ++ keywords
+        :documentation -> ["document", "explain", "guide", "reference"] ++ keywords
+        :testing -> ["test", "verify", "validate", "check"] ++ keywords
+        _ -> keywords
+      end
 
     # Add custom context keywords
     custom_keywords = Map.get(context, :keywords, [])
@@ -544,7 +577,7 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     category_value = assess_category_value(prompt)
 
     # Combine factors
-    (content_complexity * 0.4) + (template_value * 0.4) + (category_value * 0.2)
+    content_complexity * 0.4 + template_value * 0.4 + category_value * 0.2
   end
 
   defp assess_content_complexity(content) do
@@ -553,30 +586,40 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
     variable_count = length(Regex.scan(~r/\{\{.*?\}\}/, content))
 
     case {word_count, variable_count} do
-      {words, vars} when words > 50 and vars > 0 -> 0.9  # Complex and templated
-      {words, vars} when words > 100 or vars > 3 -> 0.8  # High complexity
-      {words, vars} when words > 30 or vars > 0 -> 0.6   # Moderate complexity
-      _ -> 0.4                                           # Simple
+      # Complex and templated
+      {words, vars} when words > 50 and vars > 0 -> 0.9
+      # High complexity
+      {words, vars} when words > 100 or vars > 3 -> 0.8
+      # Moderate complexity
+      {words, vars} when words > 30 or vars > 0 -> 0.6
+      # Simple
+      _ -> 0.4
     end
   end
 
   defp assess_template_value(content) do
     # Assess value of template variables in content
     variable_count = length(Regex.scan(~r/\{\{.*?\}\}/, content))
-    
+
     case variable_count do
-      0 -> 0.3      # No template value
-      1 -> 0.6      # Some template value
-      count when count <= 3 -> 0.8   # Good template value
-      _ -> 0.9      # High template value
+      # No template value
+      0 -> 0.3
+      # Some template value
+      1 -> 0.6
+      # Good template value
+      count when count <= 3 -> 0.8
+      # High template value
+      _ -> 0.9
     end
   end
 
   defp assess_category_value(prompt) do
     # Assess value based on prompt category
     case prompt.category_id do
-      nil -> 0.3      # Uncategorized
-      _category -> 0.7  # Categorized prompts have higher value
+      # Uncategorized
+      nil -> 0.3
+      # Categorized prompts have higher value
+      _category -> 0.7
     end
   end
 
@@ -590,7 +633,10 @@ defmodule RubberDuck.Prompts.Services.PromptRecommendationEngine do
   defp get_underutilized_prompts(user_id, usage_patterns), do: []
   defp get_trending_prompts(usage_patterns), do: []
   defp generate_usage_insights(usage_patterns), do: %{}
-  defp discover_prompts_by_category_exploration(user_id, options), do: {:ok, %{discovered_prompts: []}}
+
+  defp discover_prompts_by_category_exploration(user_id, options),
+    do: {:ok, %{discovered_prompts: []}}
+
   defp combine_discovery_results(discovery_lists), do: []
   defp count_total_discoveries(discovery_lists), do: 0
   defp count_high_potential_prompts(prompts), do: 0
