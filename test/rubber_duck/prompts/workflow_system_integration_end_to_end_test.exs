@@ -2,7 +2,7 @@ defmodule RubberDuck.Prompts.WorkflowSystemIntegrationEndToEndTest do
   use RubberDuck.DataCase, async: true
 
   alias RubberDuck.Prompts.Resources.{Prompt, PromptUsage}
-  alias RubberDuck.Prompts.Services.{WorkflowPromptSelector, PromptUsageTracker}
+  alias RubberDuck.Prompts.Services.{PromptUsageTracker, WorkflowPromptSelector}
 
   describe "Phase 6.2: Workflow System Integration - End-to-End Testing" do
     test "complete saved prompt selection and usage workflow in Reactor workflow contexts" do
@@ -599,7 +599,7 @@ defmodule RubberDuck.Prompts.WorkflowSystemIntegrationEndToEndTest do
 
       assert length(search_results) > 0
 
-      # Test step recommendations performance  
+      # Test step recommendations performance
       step_recommendations_start = System.monotonic_time(:microsecond)
 
       assert {:ok, step_recs} =

@@ -15,8 +15,8 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
 
   require Logger
 
-  alias RubberDuck.Prompts.Services.LlmPromptSelector
   alias RubberDuck.Prompts.Integrations.PromptVariableSubstitution
+  alias RubberDuck.Prompts.Services.LlmPromptSelector
 
   @doc """
   Get prompts suitable for workflow step execution with context filtering.
@@ -389,13 +389,23 @@ defmodule RubberDuck.Prompts.Services.WorkflowPromptSelector do
     end
   end
 
-  defp generate_variable_description(var_name, workflow_context) do
+  defp generate_variable_description(var_name, _workflow_context) do
     # Generate helpful description for workflow variables
+    get_standard_variable_description(var_name)
+  end
+
+  defp get_standard_variable_description(var_name) do
     case var_name do
       "workflow_type" -> "Type of workflow being executed"
       "step_name" -> "Name of the current workflow step"
       "project_id" -> "Current project identifier"
       "execution_time" -> "Workflow execution timestamp"
+      _ -> get_workflow_specific_description(var_name)
+    end
+  end
+
+  defp get_workflow_specific_description(var_name) do
+    case var_name do
       "review_type" -> "Type of code review being performed"
       "code_language" -> "Programming language being reviewed"
       "doc_type" -> "Type of documentation being generated"

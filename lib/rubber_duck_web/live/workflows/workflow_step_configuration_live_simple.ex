@@ -15,7 +15,7 @@ defmodule RubberDuckWeb.Live.Workflows.WorkflowStepConfigurationLiveSimple do
 
   use RubberDuckWeb, :live_view
 
-  alias RubberDuck.Prompts.Services.{WorkflowPromptSelector, PromptUsageTracker}
+  alias RubberDuck.Prompts.Services.{PromptUsageTracker, WorkflowPromptSelector}
 
   @impl true
   def mount(_params, _session, socket) do

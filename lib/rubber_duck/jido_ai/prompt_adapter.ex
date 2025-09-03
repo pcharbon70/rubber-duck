@@ -568,6 +568,18 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
     end
   end
 
+  defp validate_render_time(start_time) do
+    end_time = System.monotonic_time(:millisecond)
+    render_time = end_time - start_time
+
+    # Sub-50ms target
+    if render_time < 50 do
+      :ok
+    else
+      {:error, :rendering_too_slow}
+    end
+  end
+
   defp validate_conversion_accuracy do
     # Test conversion accuracy
     test_prompt = %{
@@ -594,15 +606,7 @@ defmodule RubberDuck.JidoAI.PromptAdapter do
       %Prompt{} = prompt ->
         case Prompt.render(prompt, test_context) do
           {:ok, _rendered} ->
-            end_time = System.monotonic_time(:millisecond)
-            render_time = end_time - start_time
-
-            # Sub-50ms target
-            if render_time < 50 do
-              :ok
-            else
-              {:error, :rendering_too_slow}
-            end
+            validate_render_time(start_time)
 
           {:error, _} ->
             {:error, :rendering_failed}

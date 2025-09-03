@@ -18,8 +18,8 @@ defmodule RubberDuck.JidoAI.ProviderService do
 
   require Logger
 
-  alias RubberDuck.JidoAI.Configuration
   alias Jido.AI.Prompt
+  alias RubberDuck.JidoAI.Configuration
 
   @doc """
   Complete LLM request using JidoAI provider management.
@@ -473,14 +473,18 @@ defmodule RubberDuck.JidoAI.ProviderService do
 
       specific_domain ->
         Enum.filter(all_providers, fn {_provider_name, provider_config} ->
-          domain_specializations = get_domain_specializations(specific_domain)
-          provider_specializations = Map.get(provider_config, :specializations, [])
-
-          # Check if provider supports any required specializations
-          Enum.any?(domain_specializations, fn req -> req in provider_specializations end)
+          check_provider_domain_compatibility(provider_config, specific_domain)
         end)
         |> Enum.into(%{})
     end
+  end
+
+  defp check_provider_domain_compatibility(provider_config, specific_domain) do
+    domain_specializations = get_domain_specializations(specific_domain)
+    provider_specializations = Map.get(provider_config, :specializations, [])
+
+    # Check if provider supports any required specializations
+    Enum.any?(domain_specializations, fn req -> req in provider_specializations end)
   end
 
   defp calculate_jido_ai_cost(content, provider_selection, options) do

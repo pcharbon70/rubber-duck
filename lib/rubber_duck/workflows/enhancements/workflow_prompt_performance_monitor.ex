@@ -214,60 +214,65 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowPromptPerformanceMonitor do
 
   defp generate_standard_analytics(workflow_id, state) do
     # Generate standard performance analytics
-    with {:ok, basic_analytics} <- generate_basic_analytics(workflow_id, state) do
-      performance_data = get_performance_data_for_workflow(workflow_id, state)
+    case generate_basic_analytics(workflow_id, state) do
+      {:ok, basic_analytics} ->
+        performance_data = get_performance_data_for_workflow(workflow_id, state)
 
-      standard_analytics =
-        Map.merge(basic_analytics, %{
-          metrics:
-            Map.merge(basic_analytics.metrics, calculate_standard_metrics(performance_data)),
-          trends: analyze_performance_trends(performance_data),
-          bottlenecks: identify_performance_bottlenecks(performance_data),
-          analytics_level: :standard
-        })
+        standard_analytics =
+          Map.merge(basic_analytics, %{
+            metrics:
+              Map.merge(basic_analytics.metrics, calculate_standard_metrics(performance_data)),
+            trends: analyze_performance_trends(performance_data),
+            bottlenecks: identify_performance_bottlenecks(performance_data),
+            analytics_level: :standard
+          })
 
-      {:ok, standard_analytics}
-    else
-      {:error, reason} -> {:error, reason}
+        {:ok, standard_analytics}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   defp generate_detailed_analytics(workflow_id, analytics_options, state) do
     # Generate detailed performance analytics
-    with {:ok, standard_analytics} <- generate_standard_analytics(workflow_id, state) do
-      performance_data = get_performance_data_for_workflow(workflow_id, state)
+    case generate_standard_analytics(workflow_id, state) do
+      {:ok, standard_analytics} ->
+        performance_data = get_performance_data_for_workflow(workflow_id, state)
 
-      detailed_analytics =
-        Map.merge(standard_analytics, %{
-          detailed_metrics: calculate_detailed_metrics(performance_data, analytics_options),
-          performance_breakdown: generate_performance_breakdown(performance_data),
-          optimization_opportunities: identify_optimization_opportunities(performance_data),
-          comparative_analysis: generate_comparative_analysis(workflow_id, state),
-          analytics_level: :detailed
-        })
+        detailed_analytics =
+          Map.merge(standard_analytics, %{
+            detailed_metrics: calculate_detailed_metrics(performance_data, analytics_options),
+            performance_breakdown: generate_performance_breakdown(performance_data),
+            optimization_opportunities: identify_optimization_opportunities(performance_data),
+            comparative_analysis: generate_comparative_analysis(workflow_id, state),
+            analytics_level: :detailed
+          })
 
-      {:ok, detailed_analytics}
-    else
-      {:error, reason} -> {:error, reason}
+        {:ok, detailed_analytics}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   defp generate_comprehensive_analytics(workflow_id, analytics_options, state) do
     # Generate comprehensive performance analytics
-    with {:ok, detailed_analytics} <-
-           generate_detailed_analytics(workflow_id, analytics_options, state) do
-      comprehensive_analytics =
-        Map.merge(detailed_analytics, %{
-          predictive_analysis: generate_predictive_analysis(workflow_id, state),
-          resource_utilization: analyze_resource_utilization(workflow_id, state),
-          integration_health: assess_integration_health(workflow_id, state),
-          performance_forecasting: generate_performance_forecasting(workflow_id, state),
-          analytics_level: :comprehensive
-        })
+    case generate_detailed_analytics(workflow_id, analytics_options, state) do
+      {:ok, detailed_analytics} ->
+        comprehensive_analytics =
+          Map.merge(detailed_analytics, %{
+            predictive_analysis: generate_predictive_analysis(workflow_id, state),
+            resource_utilization: analyze_resource_utilization(workflow_id, state),
+            integration_health: assess_integration_health(workflow_id, state),
+            performance_forecasting: generate_performance_forecasting(workflow_id, state),
+            analytics_level: :comprehensive
+          })
 
-      {:ok, comprehensive_analytics}
-    else
-      {:error, reason} -> {:error, reason}
+        {:ok, comprehensive_analytics}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

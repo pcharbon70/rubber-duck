@@ -18,9 +18,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   require Logger
 
   alias RubberDuck.Prompts.WorkflowIntegration.{
-    WorkflowPromptResolver,
     WorkflowContextEnhancer,
-    WorkflowPromptCacheCoordinator
+    WorkflowPromptCacheCoordinator,
+    WorkflowPromptResolver
   }
 
   @integration_modes [:step_enhanced, :context_aware, :performance_optimized, :full_integration]
