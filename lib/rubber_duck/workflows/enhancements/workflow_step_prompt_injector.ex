@@ -1,12 +1,12 @@
 defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
   @moduledoc """
   Prompt injection service for workflow steps with intelligent integration.
-  
+
   Provides sophisticated prompt injection capabilities for Reactor workflow steps,
   enabling automatic prompt resolution, context enhancement, and seamless
   integration of composed prompts into workflow execution with performance
   optimization and validation.
-  
+
   Features:
   - Prompt injection into workflow steps with automatic resolution and composition
   - Context-aware prompt enhancement during step execution with optimization
@@ -24,7 +24,12 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
     ReactorPromptIntegration
   }
 
-  @injection_strategies [:parameter_injection, :context_injection, :metadata_injection, :comprehensive]
+  @injection_strategies [
+    :parameter_injection,
+    :context_injection,
+    :metadata_injection,
+    :comprehensive
+  ]
   @injection_timing [:before_step, :during_step, :after_step, :conditional]
 
   def inject_prompt_into_step(step_config, prompt_injection_spec, injection_options \\ %{}) do
@@ -62,7 +67,11 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
     end
   end
 
-  def enhance_step_with_context_aware_prompts(step_config, context_enhancement_spec, options \\ %{}) do
+  def enhance_step_with_context_aware_prompts(
+        step_config,
+        context_enhancement_spec,
+        options \\ %{}
+      ) do
     Logger.debug("WorkflowStepPromptInjector: Enhancing step with context-aware prompts",
       step_name: Map.get(step_config, :name, "unknown"),
       context_enhancement_enabled: Map.get(options, :enable_context_enhancement, true)
@@ -125,9 +134,10 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
 
   defp execute_parameter_injection(step_config, prompt_injection_spec, injection_options) do
     # Execute parameter-based prompt injection
-    with {:ok, resolved_prompt} <- resolve_prompt_for_injection(prompt_injection_spec, injection_options),
-         {:ok, enhanced_step} <- inject_prompt_as_parameter(step_config, resolved_prompt, injection_options) do
-      
+    with {:ok, resolved_prompt} <-
+           resolve_prompt_for_injection(prompt_injection_spec, injection_options),
+         {:ok, enhanced_step} <-
+           inject_prompt_as_parameter(step_config, resolved_prompt, injection_options) do
       injection_result = %{
         enhanced_step: enhanced_step,
         prompt_name: prompt_injection_spec.prompt_name,
@@ -144,10 +154,11 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
 
   defp execute_context_injection(step_config, prompt_injection_spec, injection_options) do
     # Execute context-based prompt injection
-    with {:ok, resolved_prompt} <- resolve_prompt_for_injection(prompt_injection_spec, injection_options),
-         {:ok, enhanced_context} <- enhance_step_context_with_prompt(step_config, resolved_prompt, injection_options),
+    with {:ok, resolved_prompt} <-
+           resolve_prompt_for_injection(prompt_injection_spec, injection_options),
+         {:ok, enhanced_context} <-
+           enhance_step_context_with_prompt(step_config, resolved_prompt, injection_options),
          {:ok, enhanced_step} <- apply_context_enhancement_to_step(step_config, enhanced_context) do
-      
       injection_result = %{
         enhanced_step: enhanced_step,
         prompt_name: prompt_injection_spec.prompt_name,
@@ -164,9 +175,10 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
 
   defp execute_metadata_injection(step_config, prompt_injection_spec, injection_options) do
     # Execute metadata-based prompt injection
-    with {:ok, resolved_prompt} <- resolve_prompt_for_injection(prompt_injection_spec, injection_options),
-         {:ok, enhanced_step} <- inject_prompt_as_metadata(step_config, resolved_prompt, injection_options) do
-      
+    with {:ok, resolved_prompt} <-
+           resolve_prompt_for_injection(prompt_injection_spec, injection_options),
+         {:ok, enhanced_step} <-
+           inject_prompt_as_metadata(step_config, resolved_prompt, injection_options) do
       injection_result = %{
         enhanced_step: enhanced_step,
         prompt_name: prompt_injection_spec.prompt_name,
@@ -183,10 +195,20 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
 
   defp execute_comprehensive_injection(step_config, prompt_injection_spec, injection_options) do
     # Execute comprehensive injection using all strategies
-    with {:ok, param_result} <- execute_parameter_injection(step_config, prompt_injection_spec, injection_options),
-         {:ok, context_result} <- execute_context_injection(param_result.enhanced_step, prompt_injection_spec, injection_options),
-         {:ok, metadata_result} <- execute_metadata_injection(context_result.enhanced_step, prompt_injection_spec, injection_options) do
-      
+    with {:ok, param_result} <-
+           execute_parameter_injection(step_config, prompt_injection_spec, injection_options),
+         {:ok, context_result} <-
+           execute_context_injection(
+             param_result.enhanced_step,
+             prompt_injection_spec,
+             injection_options
+           ),
+         {:ok, metadata_result} <-
+           execute_metadata_injection(
+             context_result.enhanced_step,
+             prompt_injection_spec,
+             injection_options
+           ) do
       comprehensive_result = %{
         enhanced_step: metadata_result.enhanced_step,
         prompt_name: prompt_injection_spec.prompt_name,
@@ -209,18 +231,21 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
   defp execute_context_aware_enhancement(step_config, context_enhancement_spec, options) do
     # Execute context-aware step enhancement
     workflow_id = Map.get(options, :workflow_id, generate_temporary_workflow_id())
-    
-    with {:ok, enhanced_context} <- enhance_step_execution_context(step_config, context_enhancement_spec, options),
-         {:ok, context_integrated_step} <- integrate_enhanced_context_with_step(step_config, enhanced_context) do
-      
-      context_aware_step = Map.merge(context_integrated_step, %{
-        context_enhancement_level: determine_context_enhancement_level(context_enhancement_spec, options),
-        context_aware_metadata: %{
-          context_enhancement_applied: true,
-          enhancement_timestamp: DateTime.utc_now(),
-          workflow_id: workflow_id
-        }
-      })
+
+    with {:ok, enhanced_context} <-
+           enhance_step_execution_context(step_config, context_enhancement_spec, options),
+         {:ok, context_integrated_step} <-
+           integrate_enhanced_context_with_step(step_config, enhanced_context) do
+      context_aware_step =
+        Map.merge(context_integrated_step, %{
+          context_enhancement_level:
+            determine_context_enhancement_level(context_enhancement_spec, options),
+          context_aware_metadata: %{
+            context_enhancement_applied: true,
+            enhancement_timestamp: DateTime.utc_now(),
+            workflow_id: workflow_id
+          }
+        })
 
       {:ok, context_aware_step}
     else
@@ -231,11 +256,12 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
   defp execute_batch_prompt_injection(steps_config, batch_injection_spec, options) do
     # Execute batch prompt injection for multiple steps
     prompt_injections = Map.get(batch_injection_spec, :prompt_injections, [])
-    
-    injection_results = Enum.zip(steps_config, prompt_injections)
-    |> Enum.map(fn {step_config, injection_spec} ->
-      inject_prompt_into_step(step_config, injection_spec, options)
-    end)
+
+    injection_results =
+      Enum.zip(steps_config, prompt_injections)
+      |> Enum.map(fn {step_config, injection_spec} ->
+        inject_prompt_into_step(step_config, injection_spec, options)
+      end)
 
     successful_injections = Enum.filter(injection_results, &match?({:ok, _}, &1))
     failed_injections = Enum.filter(injection_results, &match?({:error, _}, &1))
@@ -244,7 +270,8 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
       total_steps: length(steps_config),
       successful_injections: length(successful_injections),
       failed_injections: length(failed_injections),
-      steps_enhanced: Enum.map(successful_injections, fn {:ok, result} -> result.enhanced_step end),
+      steps_enhanced:
+        Enum.map(successful_injections, fn {:ok, result} -> result.enhanced_step end),
       injection_success_rate: length(successful_injections) / length(steps_config),
       batch_injection_metadata: %{
         batch_completed_at: DateTime.utc_now(),
@@ -278,7 +305,12 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
     prompt_name = prompt_injection_spec.prompt_name
     context = Map.get(injection_options, :context, %{})
 
-    case WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context, injection_options) do
+    case WorkflowPromptResolver.resolve_workflow_prompt(
+           workflow_id,
+           prompt_name,
+           context,
+           injection_options
+         ) do
       {:ok, resolution_result} ->
         {:ok, resolution_result}
 
@@ -290,18 +322,21 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
   defp inject_prompt_as_parameter(step_config, resolved_prompt, injection_options) do
     # Inject resolved prompt as step parameter
     parameter_name = Map.get(injection_options, :parameter_name, :injected_prompt)
-    
+
     current_parameters = Map.get(step_config, :parameters, %{})
-    updated_parameters = Map.put(current_parameters, parameter_name, resolved_prompt.resolved_prompt)
-    
-    enhanced_step = Map.merge(step_config, %{
-      parameters: updated_parameters,
-      parameter_injection_metadata: %{
-        injected_parameter: parameter_name,
-        prompt_name: resolved_prompt.prompt_name,
-        injection_timestamp: DateTime.utc_now()
-      }
-    })
+
+    updated_parameters =
+      Map.put(current_parameters, parameter_name, resolved_prompt.resolved_prompt)
+
+    enhanced_step =
+      Map.merge(step_config, %{
+        parameters: updated_parameters,
+        parameter_injection_metadata: %{
+          injected_parameter: parameter_name,
+          prompt_name: resolved_prompt.prompt_name,
+          injection_timestamp: DateTime.utc_now()
+        }
+      })
 
     {:ok, enhanced_step}
   end
@@ -314,11 +349,12 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
     case WorkflowContextEnhancer.enhance_context(base_context, workflow_id, injection_options) do
       {:ok, enhanced_context} ->
         # Add prompt-specific context
-        prompt_enhanced_context = Map.merge(enhanced_context, %{
-          prompt_content: resolved_prompt.resolved_prompt,
-          prompt_metadata: resolved_prompt,
-          prompt_context_enhanced: true
-        })
+        prompt_enhanced_context =
+          Map.merge(enhanced_context, %{
+            prompt_content: resolved_prompt.resolved_prompt,
+            prompt_metadata: resolved_prompt,
+            prompt_context_enhanced: true
+          })
 
         {:ok, prompt_enhanced_context}
 
@@ -329,15 +365,16 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
 
   defp apply_context_enhancement_to_step(step_config, enhanced_context) do
     # Apply enhanced context to step configuration
-    enhanced_step = Map.merge(step_config, %{
-      context: enhanced_context,
-      context_enhanced: true,
-      context_enhancement_metadata: %{
-        context_keys: Map.keys(enhanced_context),
-        enhancement_applied: true,
-        enhanced_at: DateTime.utc_now()
-      }
-    })
+    enhanced_step =
+      Map.merge(step_config, %{
+        context: enhanced_context,
+        context_enhanced: true,
+        context_enhancement_metadata: %{
+          context_keys: Map.keys(enhanced_context),
+          enhancement_applied: true,
+          enhanced_at: DateTime.utc_now()
+        }
+      })
 
     {:ok, enhanced_step}
   end
@@ -345,21 +382,23 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
   defp inject_prompt_as_metadata(step_config, resolved_prompt, injection_options) do
     # Inject resolved prompt as step metadata
     metadata_key = Map.get(injection_options, :metadata_key, :prompt_injection)
-    
+
     current_metadata = Map.get(step_config, :metadata, %{})
+
     prompt_metadata = %{
       resolved_prompt: resolved_prompt.resolved_prompt,
       prompt_name: resolved_prompt.prompt_name,
       resolution_metadata: resolved_prompt,
       injection_timestamp: DateTime.utc_now()
     }
-    
+
     updated_metadata = Map.put(current_metadata, metadata_key, prompt_metadata)
-    
-    enhanced_step = Map.merge(step_config, %{
-      metadata: updated_metadata,
-      metadata_injection_applied: true
-    })
+
+    enhanced_step =
+      Map.merge(step_config, %{
+        metadata: updated_metadata,
+        metadata_injection_applied: true
+      })
 
     {:ok, enhanced_step}
   end
@@ -369,19 +408,20 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
     base_context = Map.get(step_config, :execution_context, %{})
     enhancement_config = Map.get(context_enhancement_spec, :enhancement_config, %{})
 
-    enhanced_context = Map.merge(base_context, %{
-      step_name: Map.get(step_config, :name, "unknown"),
-      enhancement_spec: context_enhancement_spec,
-      enhancement_options: options,
-      context_enhancement_applied: true,
-      enhanced_at: DateTime.utc_now()
-    })
+    enhanced_context =
+      Map.merge(base_context, %{
+        step_name: Map.get(step_config, :name, "unknown"),
+        enhancement_spec: context_enhancement_spec,
+        enhancement_options: options,
+        context_enhancement_applied: true,
+        enhanced_at: DateTime.utc_now()
+      })
 
     case WorkflowContextEnhancer.optimize_context_for_workflow(
-      enhanced_context,
-      Map.get(options, :workflow_type, :general),
-      enhancement_config
-    ) do
+           enhanced_context,
+           Map.get(options, :workflow_type, :general),
+           enhancement_config
+         ) do
       {:ok, optimization_result} ->
         {:ok, optimization_result.optimized_context}
 
@@ -393,15 +433,16 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
 
   defp integrate_enhanced_context_with_step(step_config, enhanced_context) do
     # Integrate enhanced context back into step configuration
-    integrated_step = Map.merge(step_config, %{
-      execution_context: enhanced_context,
-      context_integration_applied: true,
-      context_integration_metadata: %{
-        context_keys: Map.keys(enhanced_context),
-        integration_successful: true,
-        integrated_at: DateTime.utc_now()
-      }
-    })
+    integrated_step =
+      Map.merge(step_config, %{
+        execution_context: enhanced_context,
+        context_integration_applied: true,
+        context_integration_metadata: %{
+          context_keys: Map.keys(enhanced_context),
+          integration_successful: true,
+          integrated_at: DateTime.utc_now()
+        }
+      })
 
     {:ok, integrated_step}
   end
@@ -481,18 +522,20 @@ defmodule RubberDuck.Workflows.Enhancements.WorkflowStepPromptInjector do
     base_score = 0.7
 
     # Adjust based on step complexity
-    complexity_adjustment = case Map.get(step_config, :complexity, :medium) do
-      :low -> 0.2
-      :medium -> 0.1
-      :high -> 0.0
-    end
+    complexity_adjustment =
+      case Map.get(step_config, :complexity, :medium) do
+        :low -> 0.2
+        :medium -> 0.1
+        :high -> 0.0
+      end
 
     # Adjust based on injection requirements
-    injection_adjustment = case Map.get(prompt_injection_spec, :injection_type) do
-      :parameter -> 0.1
-      :context -> 0.05
-      :metadata -> 0.0
-    end
+    injection_adjustment =
+      case Map.get(prompt_injection_spec, :injection_type) do
+        :parameter -> 0.1
+        :context -> 0.05
+        :metadata -> 0.0
+      end
 
     total_score = base_score + complexity_adjustment + injection_adjustment
     min(1.0, total_score)

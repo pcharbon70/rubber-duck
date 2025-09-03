@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator do
   @moduledoc """
   Workflow-specific prompt caching coordination service.
-  
+
   Provides intelligent caching coordination between workflow execution and prompt
   systems, enabling efficient cache sharing, invalidation strategies, and 
   performance optimization for workflow-prompt operations.
-  
+
   Features:
   - Workflow-specific prompt caching with intelligent invalidation strategies
   - Cache coordination between workflow execution and prompt composition systems
@@ -66,7 +66,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
   end
 
   def cache_workflow_prompt(workflow_id, prompt_key, prompt_data, cache_options \\ %{}) do
-    GenServer.call(__MODULE__, {:cache_workflow_prompt, workflow_id, prompt_key, prompt_data, cache_options})
+    GenServer.call(
+      __MODULE__,
+      {:cache_workflow_prompt, workflow_id, prompt_key, prompt_data, cache_options}
+    )
   end
 
   def invalidate_workflow_cache(workflow_id, invalidation_options \\ %{}) do
@@ -115,10 +118,15 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     end
   end
 
-  def handle_call({:cache_workflow_prompt, workflow_id, prompt_key, prompt_data, cache_options}, _from, state) do
+  def handle_call(
+        {:cache_workflow_prompt, workflow_id, prompt_key, prompt_data, cache_options},
+        _from,
+        state
+      ) do
     case execute_cache_set(workflow_id, prompt_key, prompt_data, cache_options, state) do
       {:ok, cache_result} ->
-        updated_state = update_workflow_cache(state, workflow_id, prompt_key, prompt_data, cache_options)
+        updated_state =
+          update_workflow_cache(state, workflow_id, prompt_key, prompt_data, cache_options)
 
         Logger.debug("WorkflowPromptCacheCoordinator: Prompt cached successfully",
           workflow_id: workflow_id,
@@ -139,7 +147,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
   end
 
   def handle_cast({:invalidate_workflow_cache, workflow_id, invalidation_options}, state) do
-    Logger.debug("WorkflowPromptCacheCoordinator: Invalidating workflow cache", workflow_id: workflow_id)
+    Logger.debug("WorkflowPromptCacheCoordinator: Invalidating workflow cache",
+      workflow_id: workflow_id
+    )
 
     updated_state = execute_cache_invalidation(workflow_id, invalidation_options, state)
 
@@ -184,7 +194,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
 
   defp execute_cache_set(workflow_id, prompt_key, prompt_data, cache_options, state) do
     cache_strategy = determine_cache_strategy(cache_options, state)
-    
+
     cache_result = %{
       cache_strategy: cache_strategy,
       workflow_id: workflow_id,
@@ -199,19 +209,20 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
   defp get_from_workflow_cache(workflow_id, prompt_key, state) do
     # Get from workflow-specific cache
     workflow_cache = Map.get(state.workflow_caches, workflow_id, %{})
-    
+
     case Map.get(workflow_cache, prompt_key) do
       nil ->
         {:ok, %{cache_hit: false, cache_strategy: :workflow_scoped}}
 
       cached_entry ->
         if cache_entry_valid?(cached_entry) do
-          {:ok, %{
-            cache_hit: true,
-            cached_data: cached_entry.data,
-            cache_strategy: :workflow_scoped,
-            cached_at: cached_entry.cached_at
-          }}
+          {:ok,
+           %{
+             cache_hit: true,
+             cached_data: cached_entry.data,
+             cache_strategy: :workflow_scoped,
+             cached_at: cached_entry.cached_at
+           }}
         else
           {:ok, %{cache_hit: false, cache_expired: true, cache_strategy: :workflow_scoped}}
         end
@@ -229,12 +240,13 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
 
       cached_entry ->
         if cache_entry_valid?(cached_entry) do
-          {:ok, %{
-            cache_hit: true,
-            cached_data: cached_entry.data,
-            cache_strategy: :step_scoped,
-            step_id: step_id
-          }}
+          {:ok,
+           %{
+             cache_hit: true,
+             cached_data: cached_entry.data,
+             cache_strategy: :step_scoped,
+             step_id: step_id
+           }}
         else
           {:ok, %{cache_hit: false, cache_expired: true, cache_strategy: :step_scoped}}
         end
@@ -249,11 +261,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
 
       cached_entry ->
         if cache_entry_valid?(cached_entry) do
-          {:ok, %{
-            cache_hit: true,
-            cached_data: cached_entry.data,
-            cache_strategy: :global_shared
-          }}
+          {:ok,
+           %{
+             cache_hit: true,
+             cached_data: cached_entry.data,
+             cache_strategy: :global_shared
+           }}
         else
           {:ok, %{cache_hit: false, cache_expired: true, cache_strategy: :global_shared}}
         end
@@ -262,10 +275,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
 
   defp get_from_hybrid_cache(workflow_id, prompt_key, cache_options, state) do
     # Try multiple cache levels for hybrid strategy
-    with {:ok, %{cache_hit: false}} <- get_from_step_cache(workflow_id, prompt_key, cache_options, state),
+    with {:ok, %{cache_hit: false}} <-
+           get_from_step_cache(workflow_id, prompt_key, cache_options, state),
          {:ok, %{cache_hit: false}} <- get_from_workflow_cache(workflow_id, prompt_key, state),
          {:ok, %{cache_hit: false}} <- get_from_global_cache(prompt_key, state) do
-      
       {:ok, %{cache_hit: false, cache_strategy: :hybrid, cache_levels_checked: 3}}
     else
       {:ok, cache_result} ->
@@ -285,7 +298,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     # Check if cache entry is still valid (simplified)
     current_time = DateTime.utc_now()
     cached_time = Map.get(cached_entry, :cached_at, current_time)
-    
+
     # 5 minutes default TTL
     DateTime.diff(current_time, cached_time, :second) < 300
   end
@@ -312,23 +325,23 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
   defp execute_immediate_invalidation(workflow_id, state) do
     # Immediately invalidate all workflow caches
     updated_workflow_caches = Map.delete(state.workflow_caches, workflow_id)
-    
+
     %{state | workflow_caches: updated_workflow_caches}
   end
 
   defp execute_delayed_invalidation(workflow_id, invalidation_options, state) do
     # Schedule delayed invalidation (placeholder)
     delay_ms = Map.get(invalidation_options, :delay_ms, 5000)
-    
+
     Process.send_after(self(), {:delayed_invalidation, workflow_id}, delay_ms)
-    
+
     state
   end
 
   defp execute_conditional_invalidation(workflow_id, invalidation_options, state) do
     # Execute conditional invalidation based on conditions
     conditions = Map.get(invalidation_options, :conditions, [])
-    
+
     if should_invalidate_based_on_conditions?(conditions, state) do
       execute_immediate_invalidation(workflow_id, state)
     else
@@ -371,9 +384,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     cleaned_workflow_caches = clean_expired_entries(state.workflow_caches, current_time)
     cleaned_global_cache = clean_expired_entries(state.global_cache, current_time)
 
-    updated_state = %{state |
-      workflow_caches: cleaned_workflow_caches,
-      global_cache: cleaned_global_cache
+    updated_state = %{
+      state
+      | workflow_caches: cleaned_workflow_caches,
+        global_cache: cleaned_global_cache
     }
 
     # Reschedule cleanup
@@ -404,14 +418,16 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     # Update cache analytics
     analytics = state.cache_analytics
 
-    updated_analytics = %{analytics |
-      total_operations: analytics.total_operations + 1,
-      cache_hits: if(cache_hit, do: analytics.cache_hits + 1, else: analytics.cache_hits),
-      average_operation_time_us: calculate_new_average(
-        analytics.average_operation_time_us,
-        cache_time,
-        analytics.total_operations + 1
-      )
+    updated_analytics = %{
+      analytics
+      | total_operations: analytics.total_operations + 1,
+        cache_hits: if(cache_hit, do: analytics.cache_hits + 1, else: analytics.cache_hits),
+        average_operation_time_us:
+          calculate_new_average(
+            analytics.average_operation_time_us,
+            cache_time,
+            analytics.total_operations + 1
+          )
     }
 
     %{state | cache_analytics: updated_analytics}
@@ -422,7 +438,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     Enum.any?(conditions, fn condition ->
       case condition do
         :cache_size_exceeded ->
-          calculate_total_cache_size(state) > state.coordinator_config.cache_size_limit_mb * 1024 * 1024
+          calculate_total_cache_size(state) >
+            state.coordinator_config.cache_size_limit_mb * 1024 * 1024
 
         :low_hit_rate ->
           calculate_cache_hit_rate(state.cache_analytics) < 0.3
@@ -441,7 +458,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     # Determine if smart invalidation should proceed
     hit_rate = Map.get(workflow_cache_usage, :hit_rate, 0.5)
     last_access = Map.get(workflow_cache_usage, :last_access, DateTime.utc_now())
-    
+
     # Invalidate if hit rate is low and not accessed recently
     hit_rate < 0.2 or DateTime.diff(DateTime.utc_now(), last_access, :minute) > 60
   end
@@ -449,7 +466,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
   defp get_workflow_cache_usage(workflow_id, cache_analytics) do
     # Get cache usage statistics for workflow
     workflow_analytics = Map.get(cache_analytics.workflow_analytics, workflow_id, %{})
-    
+
     %{
       hit_rate: Map.get(workflow_analytics, :hit_rate, 0.5),
       total_operations: Map.get(workflow_analytics, :total_operations, 0),
@@ -462,16 +479,14 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     cleaned_workflow_caches = remove_least_used_entries(state.workflow_caches, 0.2)
     cleaned_global_cache = remove_least_used_entries(state.global_cache, 0.2)
 
-    %{state |
-      workflow_caches: cleaned_workflow_caches,
-      global_cache: cleaned_global_cache
-    }
+    %{state | workflow_caches: cleaned_workflow_caches, global_cache: cleaned_global_cache}
   end
 
   defp optimize_for_performance(state) do
     # Optimize cache for performance
-    optimized_analytics = %{state.cache_analytics |
-      optimization_level: min(1.0, state.cache_analytics.optimization_level + 0.1)
+    optimized_analytics = %{
+      state.cache_analytics
+      | optimization_level: min(1.0, state.cache_analytics.optimization_level + 0.1)
     }
 
     %{state | cache_analytics: optimized_analytics}
@@ -508,9 +523,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
 
     if entries_to_remove > 0 do
       # Sort by access count and remove lowest
-      sorted_entries = Enum.sort_by(cache_map, fn {_key, entry} ->
-        Map.get(entry, :access_count, 0)
-      end)
+      sorted_entries =
+        Enum.sort_by(cache_map, fn {_key, entry} ->
+          Map.get(entry, :access_count, 0)
+        end)
 
       entries_to_keep = Enum.drop(sorted_entries, entries_to_remove)
       Map.new(entries_to_keep)
@@ -523,7 +539,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
     # Calculate total cache size in bytes
     workflow_size = calculate_cache_map_size(state.workflow_caches)
     global_size = calculate_cache_map_size(state.global_cache)
-    
+
     workflow_size + global_size
   end
 
@@ -564,7 +580,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowPromptCacheCoordinator 
 
   defp schedule_cache_cleanup do
     # Schedule periodic cache cleanup
-    cleanup_interval = 30 * 60 * 1000  # 30 minutes
+    # 30 minutes
+    cleanup_interval = 30 * 60 * 1000
     Process.send_after(self(), :cleanup_expired_caches, cleanup_interval)
   end
 

@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   @moduledoc """
   Reactor-specific integration utilities for seamless prompt integration.
-  
+
   Provides specialized utilities for integrating prompts with Reactor workflow 
   steps, enabling workflows to leverage prompt composition during execution
   with minimal performance overhead and maximum functionality.
-  
+
   Features:
   - Reactor step enhancement with automatic prompt resolution and composition
   - Workflow execution context integration with prompt agent ecosystem coordination
@@ -24,7 +24,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   }
 
   @integration_modes [:step_enhanced, :context_aware, :performance_optimized, :full_integration]
-  @step_enhancement_types [:prompt_injection, :context_enhancement, :result_transformation, :comprehensive]
+  @step_enhancement_types [
+    :prompt_injection,
+    :context_enhancement,
+    :result_transformation,
+    :comprehensive
+  ]
 
   def enhance_reactor_step(step_config, prompt_config, integration_options \\ %{}) do
     Logger.debug("ReactorPromptIntegration: Enhancing Reactor step with prompt integration",
@@ -66,7 +71,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
     end
   end
 
-  def integrate_context_with_reactor_execution(execution_context, prompt_context, integration_options \\ %{}) do
+  def integrate_context_with_reactor_execution(
+        execution_context,
+        prompt_context,
+        integration_options \\ %{}
+      ) do
     Logger.debug("ReactorPromptIntegration: Integrating context with Reactor execution",
       execution_context_keys: Map.keys(execution_context),
       prompt_context_keys: Map.keys(prompt_context)
@@ -74,7 +83,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
 
     case execute_context_integration(execution_context, prompt_context, integration_options) do
       {:ok, integrated_context} ->
-        integration_metrics = calculate_integration_metrics(execution_context, prompt_context, integrated_context)
+        integration_metrics =
+          calculate_integration_metrics(execution_context, prompt_context, integrated_context)
 
         Logger.info("ReactorPromptIntegration: Context integration completed",
           original_keys: integration_metrics.original_keys,
@@ -82,10 +92,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
           integration_effective: integration_metrics.integration_effective
         )
 
-        {:ok, %{
-          integrated_context: integrated_context,
-          integration_metrics: integration_metrics
-        }}
+        {:ok,
+         %{
+           integrated_context: integrated_context,
+           integration_metrics: integration_metrics
+         }}
 
       {:error, reason} ->
         {:error, reason}
@@ -135,17 +146,18 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
 
   defp execute_step_enhanced_integration(step_config, prompt_config, integration_options) do
     # Execute step-enhanced integration
-    enhanced_step = Map.merge(step_config, %{
-      prompt_integration_enabled: true,
-      integration_mode: :step_enhanced,
-      prompt_name: prompt_config.prompt_name,
-      prompt_resolution_strategy: Map.get(integration_options, :resolution_strategy, :cached),
-      step_enhancement_metadata: %{
-        enhanced_at: DateTime.utc_now(),
-        enhancement_type: :step_enhanced,
-        prompt_integration_version: "6.2.1"
-      }
-    })
+    enhanced_step =
+      Map.merge(step_config, %{
+        prompt_integration_enabled: true,
+        integration_mode: :step_enhanced,
+        prompt_name: prompt_config.prompt_name,
+        prompt_resolution_strategy: Map.get(integration_options, :resolution_strategy, :cached),
+        step_enhancement_metadata: %{
+          enhanced_at: DateTime.utc_now(),
+          enhancement_type: :step_enhanced,
+          prompt_integration_version: "6.2.1"
+        }
+      })
 
     {:ok, enhanced_step}
   end
@@ -158,17 +170,18 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
       context_validation: Map.get(integration_options, :context_validation, true)
     }
 
-    enhanced_step = Map.merge(step_config, %{
-      prompt_integration_enabled: true,
-      integration_mode: :context_aware,
-      prompt_name: prompt_config.prompt_name,
-      context_enhancement_config: context_enhancement_config,
-      context_aware_metadata: %{
-        context_passing_enabled: true,
-        context_optimization_enabled: context_enhancement_config.context_optimization,
-        enhanced_at: DateTime.utc_now()
-      }
-    })
+    enhanced_step =
+      Map.merge(step_config, %{
+        prompt_integration_enabled: true,
+        integration_mode: :context_aware,
+        prompt_name: prompt_config.prompt_name,
+        context_enhancement_config: context_enhancement_config,
+        context_aware_metadata: %{
+          context_passing_enabled: true,
+          context_optimization_enabled: context_enhancement_config.context_optimization,
+          enhanced_at: DateTime.utc_now()
+        }
+      })
 
     {:ok, enhanced_step}
   end
@@ -181,38 +194,46 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
       performance_monitoring: Map.get(integration_options, :performance_monitoring, true)
     }
 
-    enhanced_step = Map.merge(step_config, %{
-      prompt_integration_enabled: true,
-      integration_mode: :performance_optimized,
-      prompt_name: prompt_config.prompt_name,
-      performance_config: performance_config,
-      performance_optimization_metadata: %{
-        caching_enabled: performance_config.enable_caching,
-        cache_strategy: performance_config.cache_strategy,
-        optimization_level: :high,
-        enhanced_at: DateTime.utc_now()
-      }
-    })
+    enhanced_step =
+      Map.merge(step_config, %{
+        prompt_integration_enabled: true,
+        integration_mode: :performance_optimized,
+        prompt_name: prompt_config.prompt_name,
+        performance_config: performance_config,
+        performance_optimization_metadata: %{
+          caching_enabled: performance_config.enable_caching,
+          cache_strategy: performance_config.cache_strategy,
+          optimization_level: :high,
+          enhanced_at: DateTime.utc_now()
+        }
+      })
 
     {:ok, enhanced_step}
   end
 
   defp execute_full_integration(step_config, prompt_config, integration_options) do
     # Execute comprehensive full integration
-    with {:ok, step_enhanced} <- execute_step_enhanced_integration(step_config, prompt_config, integration_options),
-         {:ok, context_aware} <- execute_context_aware_integration(step_enhanced, prompt_config, integration_options),
-         {:ok, performance_optimized} <- execute_performance_optimized_integration(context_aware, prompt_config, integration_options) do
-      
-      full_integration_step = Map.merge(performance_optimized, %{
-        integration_mode: :full_integration,
-        full_integration_metadata: %{
-          step_enhanced: true,
-          context_aware: true,
-          performance_optimized: true,
-          integration_complete: true,
-          enhanced_at: DateTime.utc_now()
-        }
-      })
+    with {:ok, step_enhanced} <-
+           execute_step_enhanced_integration(step_config, prompt_config, integration_options),
+         {:ok, context_aware} <-
+           execute_context_aware_integration(step_enhanced, prompt_config, integration_options),
+         {:ok, performance_optimized} <-
+           execute_performance_optimized_integration(
+             context_aware,
+             prompt_config,
+             integration_options
+           ) do
+      full_integration_step =
+        Map.merge(performance_optimized, %{
+          integration_mode: :full_integration,
+          full_integration_metadata: %{
+            step_enhanced: true,
+            context_aware: true,
+            performance_optimized: true,
+            integration_complete: true,
+            enhanced_at: DateTime.utc_now()
+          }
+        })
 
       {:ok, full_integration_step}
     else
@@ -247,40 +268,44 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
     # Execute context integration between Reactor and prompts
     integration_strategy = Map.get(integration_options, :integration_strategy, :merge)
 
-    integrated_context = case integration_strategy do
-      :merge ->
-        Map.merge(execution_context, prompt_context)
+    integrated_context =
+      case integration_strategy do
+        :merge ->
+          Map.merge(execution_context, prompt_context)
 
-      :prioritize_execution ->
-        Map.merge(prompt_context, execution_context)
+        :prioritize_execution ->
+          Map.merge(prompt_context, execution_context)
 
-      :selective ->
-        selective_context_merge(execution_context, prompt_context, integration_options)
+        :selective ->
+          selective_context_merge(execution_context, prompt_context, integration_options)
 
-      :custom ->
-        apply_custom_integration(execution_context, prompt_context, integration_options)
-    end
+        :custom ->
+          apply_custom_integration(execution_context, prompt_context, integration_options)
+      end
 
     # Add integration metadata
-    final_context = Map.put(integrated_context, :integration_metadata, %{
-      integration_strategy: integration_strategy,
-      integrated_at: DateTime.utc_now(),
-      source_contexts: %{
-        execution_keys: Map.keys(execution_context),
-        prompt_keys: Map.keys(prompt_context)
-      }
-    })
+    final_context =
+      Map.put(integrated_context, :integration_metadata, %{
+        integration_strategy: integration_strategy,
+        integrated_at: DateTime.utc_now(),
+        source_contexts: %{
+          execution_keys: Map.keys(execution_context),
+          prompt_keys: Map.keys(prompt_context)
+        }
+      })
 
     {:ok, final_context}
   end
 
   defp execute_performance_optimization(workflow_id, optimization_config) do
     # Execute performance optimization for workflow-prompt operations
-    optimization_strategies = Map.get(optimization_config, :strategies, [:caching, :context_optimization])
+    optimization_strategies =
+      Map.get(optimization_config, :strategies, [:caching, :context_optimization])
 
-    optimization_results = Enum.map(optimization_strategies, fn strategy ->
-      apply_optimization_strategy(workflow_id, strategy, optimization_config)
-    end)
+    optimization_results =
+      Enum.map(optimization_strategies, fn strategy ->
+        apply_optimization_strategy(workflow_id, strategy, optimization_config)
+      end)
 
     successful_optimizations = Enum.filter(optimization_results, &match?({:ok, _}, &1))
 
@@ -315,23 +340,26 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
     # Build middleware features based on configuration
     features = []
 
-    features = if config.enable_prompt_resolution do
-      [:prompt_resolution | features]
-    else
-      features
-    end
+    features =
+      if config.enable_prompt_resolution do
+        [:prompt_resolution | features]
+      else
+        features
+      end
 
-    features = if config.enable_context_enhancement do
-      [:context_enhancement | features]
-    else
-      features
-    end
+    features =
+      if config.enable_context_enhancement do
+        [:context_enhancement | features]
+      else
+        features
+      end
 
-    features = if config.enable_performance_monitoring do
-      [:performance_monitoring | features]
-    else
-      features
-    end
+    features =
+      if config.enable_performance_monitoring do
+        [:performance_monitoring | features]
+      else
+        features
+      end
 
     features
   end
@@ -339,8 +367,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   defp build_middleware_functions(config) do
     # Build middleware functions based on configuration
     %{
-      before_step: if(config.enable_context_enhancement, do: :enhance_context, else: :pass_through),
-      after_step: if(config.enable_performance_monitoring, do: :track_performance, else: :pass_through),
+      before_step:
+        if(config.enable_context_enhancement, do: :enhance_context, else: :pass_through),
+      after_step:
+        if(config.enable_performance_monitoring, do: :track_performance, else: :pass_through),
       on_error: :handle_prompt_integration_error,
       on_complete: :finalize_prompt_integration
     }
@@ -364,8 +394,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
 
   defp apply_custom_integration(execution_context, prompt_context, integration_options) do
     # Apply custom integration logic
-    custom_logic = Map.get(integration_options, :custom_integration_logic, fn exec, prompt -> Map.merge(exec, prompt) end)
-    
+    custom_logic =
+      Map.get(integration_options, :custom_integration_logic, fn exec, prompt ->
+        Map.merge(exec, prompt)
+      end)
+
     custom_logic.(execution_context, prompt_context)
   end
 
@@ -389,9 +422,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   defp optimize_caching(workflow_id, config) do
     # Optimize caching for workflow
     case WorkflowPromptCacheCoordinator.optimize_cache_performance(%{
-      workflow_id: workflow_id,
-      strategy: :performance_focused
-    }) do
+           workflow_id: workflow_id,
+           strategy: :performance_focused
+         }) do
       {:ok, _result} ->
         {:ok, %{strategy: :caching, improvement: 0.15}}
 
@@ -442,16 +475,18 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
       original_keys: original_keys,
       integrated_keys: integrated_keys,
       key_efficiency: integrated_keys / max(original_keys, 1),
-      integration_effective: integrated_keys <= original_keys * 1.2,  # No more than 20% increase
+      # No more than 20% increase
+      integration_effective: integrated_keys <= original_keys * 1.2,
       integration_timestamp: DateTime.utc_now()
     }
   end
 
   defp calculate_performance_improvement(successful_optimizations) do
     # Calculate overall performance improvement
-    improvements = Enum.map(successful_optimizations, fn {:ok, result} ->
-      Map.get(result, :improvement, 0.0)
-    end)
+    improvements =
+      Enum.map(successful_optimizations, fn {:ok, result} ->
+        Map.get(result, :improvement, 0.0)
+      end)
 
     case improvements do
       [] -> 0.0
@@ -463,16 +498,20 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
 
   def create_prompt_enhanced_reactor_config(base_config, prompt_integration_config) do
     # Create Reactor configuration enhanced with prompt integration
-    enhanced_config = Map.merge(base_config, %{
-      prompt_integration: %{
-        enabled: true,
-        prompt_resolution_enabled: Map.get(prompt_integration_config, :enable_resolution, true),
-        context_enhancement_enabled: Map.get(prompt_integration_config, :enable_context_enhancement, true),
-        performance_monitoring_enabled: Map.get(prompt_integration_config, :enable_monitoring, true),
-        cache_coordination_enabled: Map.get(prompt_integration_config, :enable_cache_coordination, true)
-      },
-      middleware: add_prompt_middleware(base_config.middleware || [])
-    })
+    enhanced_config =
+      Map.merge(base_config, %{
+        prompt_integration: %{
+          enabled: true,
+          prompt_resolution_enabled: Map.get(prompt_integration_config, :enable_resolution, true),
+          context_enhancement_enabled:
+            Map.get(prompt_integration_config, :enable_context_enhancement, true),
+          performance_monitoring_enabled:
+            Map.get(prompt_integration_config, :enable_monitoring, true),
+          cache_coordination_enabled:
+            Map.get(prompt_integration_config, :enable_cache_coordination, true)
+        },
+        middleware: add_prompt_middleware(base_config.middleware || [])
+      })
 
     {:ok, enhanced_config}
   end
@@ -515,12 +554,13 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   defp inject_as_parameter(step_config, resolved_prompt, options) do
     # Inject prompt as step parameter
     parameter_name = Map.get(options, :parameter_name, :prompt)
-    
-    updated_parameters = Map.put(
-      Map.get(step_config, :parameters, %{}),
-      parameter_name,
-      resolved_prompt.resolved_prompt
-    )
+
+    updated_parameters =
+      Map.put(
+        Map.get(step_config, :parameters, %{}),
+        parameter_name,
+        resolved_prompt.resolved_prompt
+      )
 
     enhanced_step = Map.put(step_config, :parameters, updated_parameters)
 
@@ -530,12 +570,13 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   defp inject_as_context(step_config, resolved_prompt, options) do
     # Inject prompt as step context
     context_key = Map.get(options, :context_key, :prompt_content)
-    
-    updated_context = Map.put(
-      Map.get(step_config, :context, %{}),
-      context_key,
-      resolved_prompt.resolved_prompt
-    )
+
+    updated_context =
+      Map.put(
+        Map.get(step_config, :context, %{}),
+        context_key,
+        resolved_prompt.resolved_prompt
+      )
 
     enhanced_step = Map.put(step_config, :context, updated_context)
 
@@ -545,12 +586,13 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
   defp inject_as_metadata(step_config, resolved_prompt, options) do
     # Inject prompt as step metadata
     metadata_key = Map.get(options, :metadata_key, :prompt_data)
-    
-    updated_metadata = Map.put(
-      Map.get(step_config, :metadata, %{}),
-      metadata_key,
-      resolved_prompt
-    )
+
+    updated_metadata =
+      Map.put(
+        Map.get(step_config, :metadata, %{}),
+        metadata_key,
+        resolved_prompt
+      )
 
     enhanced_step = Map.put(step_config, :metadata, updated_metadata)
 
@@ -561,13 +603,14 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.ReactorPromptIntegration do
     # Inject prompt using all methods
     with {:ok, param_injected} <- inject_as_parameter(step_config, resolved_prompt, options),
          {:ok, context_injected} <- inject_as_context(param_injected, resolved_prompt, options),
-         {:ok, metadata_injected} <- inject_as_metadata(context_injected, resolved_prompt, options) do
-      
-      comprehensive_step = Map.merge(metadata_injected, %{
-        comprehensive_prompt_injection: true,
-        injection_complete: true,
-        injection_timestamp: DateTime.utc_now()
-      })
+         {:ok, metadata_injected} <-
+           inject_as_metadata(context_injected, resolved_prompt, options) do
+      comprehensive_step =
+        Map.merge(metadata_injected, %{
+          comprehensive_prompt_injection: true,
+          injection_complete: true,
+          injection_timestamp: DateTime.utc_now()
+        })
 
       {:ok, comprehensive_step}
     else

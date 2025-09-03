@@ -26,7 +26,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       workflow_spec = %{
         type: :code_review,
         components: [
-          %{type: :analysis, name: "quality_analysis", prompt_name: "code_quality_analysis_prompt"},
+          %{
+            type: :analysis,
+            name: "quality_analysis",
+            prompt_name: "code_quality_analysis_prompt"
+          },
           %{type: :validation, name: "security_check", prompt_name: "security_analysis_prompt"},
           %{type: :report, name: "review_summary", prompt_name: "review_summary_prompt"}
         ]
@@ -41,8 +45,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       }
 
       # Step 2: Create prompt-aware workflow
-      assert {:ok, workflow_result} = 
-        PromptAwareWorkflowBuilder.create_prompt_aware_workflow(workflow_spec, prompt_spec)
+      assert {:ok, workflow_result} =
+               PromptAwareWorkflowBuilder.create_prompt_aware_workflow(workflow_spec, prompt_spec)
 
       assert workflow_result.workflow.prompt_integration_enabled == true
       assert workflow_result.prompt_integration_level in [:enhanced, :optimized, :comprehensive]
@@ -52,9 +56,9 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       workflow_id = workflow_result.workflow.id
 
       for prompt_ref <- prompt_spec.prompt_references do
-        assert {:ok, registration_result} = 
-          NamedPromptReferenceManager.register_prompt_reference(workflow_id, prompt_ref)
-        
+        assert {:ok, registration_result} =
+                 NamedPromptReferenceManager.register_prompt_reference(workflow_id, prompt_ref)
+
         assert registration_result.registration_successful == true
         assert registration_result.reference_name == prompt_ref.name
       end
@@ -67,12 +71,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         code_analysis_config: %{quality_threshold: 0.8}
       }
 
-      assert {:ok, resolution_result} = 
-        WorkflowPromptResolver.resolve_workflow_prompt(
-          workflow_id,
-          "code_quality_analysis_prompt",
-          context
-        )
+      assert {:ok, resolution_result} =
+               WorkflowPromptResolver.resolve_workflow_prompt(
+                 workflow_id,
+                 "code_quality_analysis_prompt",
+                 context
+               )
 
       assert resolution_result.prompt_name == "code_quality_analysis_prompt"
       assert resolution_result.workflow_id == workflow_id
@@ -80,11 +84,17 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       assert Map.has_key?(resolution_result, :composition_metadata)
 
       # Step 5: Test context enhancement
-      assert {:ok, enhanced_context} = 
-        WorkflowContextEnhancer.enhance_context(context, workflow_id)
+      assert {:ok, enhanced_context} =
+               WorkflowContextEnhancer.enhance_context(context, workflow_id)
 
       assert Map.has_key?(enhanced_context, :enhancement_metadata)
-      assert enhanced_context.enhancement_metadata.enhancement_strategy in [:merge, :override, :inherit, :custom]
+
+      assert enhanced_context.enhancement_metadata.enhancement_strategy in [
+               :merge,
+               :override,
+               :inherit,
+               :custom
+             ]
 
       # Step 6: Test workflow step prompt injection
       step_config = %{
@@ -105,12 +115,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         injection_strategy: :parameter_injection
       }
 
-      assert {:ok, injection_result} = 
-        WorkflowStepPromptInjector.inject_prompt_into_step(
-          step_config,
-          prompt_injection_spec,
-          injection_options
-        )
+      assert {:ok, injection_result} =
+               WorkflowStepPromptInjector.inject_prompt_into_step(
+                 step_config,
+                 prompt_injection_spec,
+                 injection_options
+               )
 
       assert injection_result.injection_successful == true
       assert injection_result.enhanced_step.name == "quality_analysis_step"
@@ -133,12 +143,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         project_id: "test_project_456"
       }
 
-      assert {:ok, enhanced_workflow} = 
-        ExistingWorkflowEnhancer.enhance_code_review_workflow(
-          workflow_result.workflow,
-          code_review_enhancement_spec,
-          enhancement_options
-        )
+      assert {:ok, enhanced_workflow} =
+               ExistingWorkflowEnhancer.enhance_code_review_workflow(
+                 workflow_result.workflow,
+                 code_review_enhancement_spec,
+                 enhancement_options
+               )
 
       assert enhanced_workflow.workflow_type == :enhanced_code_review
       assert enhanced_workflow.code_review_integration.prompts_integrated > 0
@@ -151,12 +161,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         %{id: "ref3", name: "review_summary_prompt"}
       ]
 
-      assert {:ok, batch_result} = 
-        WorkflowPromptResolver.resolve_batch_prompts(
-          workflow_id,
-          prompt_references,
-          enhanced_context
-        )
+      assert {:ok, batch_result} =
+               WorkflowPromptResolver.resolve_batch_prompts(
+                 workflow_id,
+                 prompt_references,
+                 enhanced_context
+               )
 
       assert batch_result.total_prompts == 3
       assert batch_result.success_count >= 0
@@ -169,23 +179,23 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       }
 
       # Cache a resolved prompt
-      assert {:ok, cache_result} = 
-        WorkflowPromptCacheCoordinator.cache_workflow_prompt(
-          workflow_id,
-          "code_quality_analysis_prompt",
-          resolution_result,
-          cache_options
-        )
+      assert {:ok, cache_result} =
+               WorkflowPromptCacheCoordinator.cache_workflow_prompt(
+                 workflow_id,
+                 "code_quality_analysis_prompt",
+                 resolution_result,
+                 cache_options
+               )
 
       assert cache_result.cache_successful == true
 
       # Retrieve from cache
-      assert {:ok, cached_result} = 
-        WorkflowPromptCacheCoordinator.get_cached_prompt(
-          workflow_id,
-          "code_quality_analysis_prompt",
-          cache_options
-        )
+      assert {:ok, cached_result} =
+               WorkflowPromptCacheCoordinator.get_cached_prompt(
+                 workflow_id,
+                 "code_quality_analysis_prompt",
+                 cache_options
+               )
 
       assert cached_result.cache_hit == true
 
@@ -194,20 +204,21 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       WorkflowPromptPerformanceMonitor.track_workflow_prompt_operation(
         :prompt_resolution,
         %{workflow_id: workflow_id, success: true},
-        %{total_time: 150_000, resolution_time: 100_000}  # microseconds
+        # microseconds
+        %{total_time: 150_000, resolution_time: 100_000}
       )
 
       # Get performance analytics
-      assert {:ok, analytics} = 
-        WorkflowPromptPerformanceMonitor.get_performance_analytics(workflow_id)
+      assert {:ok, analytics} =
+               WorkflowPromptPerformanceMonitor.get_performance_analytics(workflow_id)
 
       assert Map.has_key?(analytics, :metrics)
       assert Map.has_key?(analytics, :summary)
       assert analytics.analytics_level in [:basic, :standard, :detailed, :comprehensive]
 
       # Get performance recommendations
-      assert {:ok, recommendations} = 
-        WorkflowPromptPerformanceMonitor.get_performance_recommendations(workflow_id)
+      assert {:ok, recommendations} =
+               WorkflowPromptPerformanceMonitor.get_performance_recommendations(workflow_id)
 
       assert is_list(recommendations.recommendations)
       assert Map.has_key?(recommendations, :performance_score)
@@ -229,19 +240,19 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         enable_caching: true
       }
 
-      assert {:ok, enhanced_step} = 
-        ReactorPromptIntegration.enhance_reactor_step(
-          reactor_step_config,
-          prompt_config,
-          integration_options
-        )
+      assert {:ok, enhanced_step} =
+               ReactorPromptIntegration.enhance_reactor_step(
+                 reactor_step_config,
+                 prompt_config,
+                 integration_options
+               )
 
       assert enhanced_step.prompt_integration_enabled == true
       assert enhanced_step.integration_mode == :full_integration
 
       # Step 12: Test workflow validation with prompt integration
-      assert {:ok, validation_result} = 
-        PromptAwareWorkflowBuilder.validate_prompt_integrated_workflow(enhanced_workflow)
+      assert {:ok, validation_result} =
+               PromptAwareWorkflowBuilder.validate_prompt_integrated_workflow(enhanced_workflow)
 
       assert validation_result.validation_passed == true
       assert validation_result.prompt_references_valid == true
@@ -261,7 +272,7 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
 
       workflow_id = "test_workflow_cache_#{System.system_time(:nanosecond)}"
       prompt_name = "test_caching_prompt"
-      
+
       context = %{
         user_id: "cache_test_user",
         project_id: "cache_test_project",
@@ -270,10 +281,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
 
       # First resolution (cache miss)
       resolution_start = System.monotonic_time(:microsecond)
-      
-      assert {:ok, first_result} = 
-        WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
-      
+
+      assert {:ok, first_result} =
+               WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
+
       first_resolution_time = System.monotonic_time(:microsecond) - resolution_start
 
       assert first_result.prompt_name == prompt_name
@@ -282,10 +293,10 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
 
       # Second resolution (should be cached)
       cached_resolution_start = System.monotonic_time(:microsecond)
-      
-      assert {:ok, second_result} = 
-        WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
-      
+
+      assert {:ok, second_result} =
+               WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
+
       cached_resolution_time = System.monotonic_time(:microsecond) - cached_resolution_start
 
       # Cached resolution should be faster
@@ -296,8 +307,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       WorkflowPromptResolver.invalidate_workflow_cache(workflow_id)
 
       # Third resolution after invalidation (cache miss again)
-      assert {:ok, third_result} = 
-        WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
+      assert {:ok, third_result} =
+               WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
 
       assert third_result.prompt_name == prompt_name
     end
@@ -308,7 +319,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       base_context = %{
         user_id: "context_test_user",
         project_id: "context_test_project",
-        large_data: String.duplicate("x", 10_000),  # Large context data
+        # Large context data
+        large_data: String.duplicate("x", 10_000),
         metadata: %{
           debug_info: "extensive debug information",
           temporary_data: %{temp1: "data1", temp2: "data2"}
@@ -318,27 +330,33 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       workflow_id = "context_test_workflow_#{System.system_time(:nanosecond)}"
 
       # Test basic context enhancement
-      assert {:ok, enhanced_context} = 
-        WorkflowContextEnhancer.enhance_context(base_context, workflow_id)
+      assert {:ok, enhanced_context} =
+               WorkflowContextEnhancer.enhance_context(base_context, workflow_id)
 
       assert Map.has_key?(enhanced_context, :enhancement_metadata)
-      assert enhanced_context.enhancement_metadata.enhancement_strategy in [:merge, :override, :inherit, :custom]
+
+      assert enhanced_context.enhancement_metadata.enhancement_strategy in [
+               :merge,
+               :override,
+               :inherit,
+               :custom
+             ]
 
       # Test context validation
-      assert {:ok, validation_result} = 
-        WorkflowContextEnhancer.validate_context(enhanced_context)
+      assert {:ok, validation_result} =
+               WorkflowContextEnhancer.validate_context(enhanced_context)
 
       assert validation_result.validation_passed == true
       assert validation_result.validation_score >= 0.0
       assert validation_result.validation_score <= 1.0
 
       # Test context optimization for workflow
-      assert {:ok, optimization_result} = 
-        WorkflowContextEnhancer.optimize_context_for_workflow(
-          enhanced_context,
-          :code_review,
-          %{optimization_priority: :performance}
-        )
+      assert {:ok, optimization_result} =
+               WorkflowContextEnhancer.optimize_context_for_workflow(
+                 enhanced_context,
+                 :code_review,
+                 %{optimization_priority: :performance}
+               )
 
       assert Map.has_key?(optimization_result, :optimized_context)
       assert Map.has_key?(optimization_result, :optimization_metrics)
@@ -369,12 +387,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         }
       }
 
-      assert {:ok, enhanced_code_review} = 
-        ExistingWorkflowEnhancer.enhance_code_review_workflow(
-          code_review_workflow,
-          code_review_enhancement_spec,
-          %{enhancement_level: :advanced}
-        )
+      assert {:ok, enhanced_code_review} =
+               ExistingWorkflowEnhancer.enhance_code_review_workflow(
+                 code_review_workflow,
+                 code_review_enhancement_spec,
+                 %{enhancement_level: :advanced}
+               )
 
       assert enhanced_code_review.workflow_type == :enhanced_code_review
       assert enhanced_code_review.code_review_integration.prompts_integrated > 0
@@ -396,12 +414,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         custom_formats: ["confluence", "notion"]
       }
 
-      assert {:ok, enhanced_documentation} = 
-        ExistingWorkflowEnhancer.enhance_documentation_workflow(
-          documentation_workflow,
-          documentation_enhancement_spec,
-          %{enhancement_level: :standard}
-        )
+      assert {:ok, enhanced_documentation} =
+               ExistingWorkflowEnhancer.enhance_documentation_workflow(
+                 documentation_workflow,
+                 documentation_enhancement_spec,
+                 %{enhancement_level: :standard}
+               )
 
       assert enhanced_documentation.workflow_type == :enhanced_documentation_generation
       assert enhanced_documentation.documentation_integration.styles_count == 3
@@ -429,12 +447,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         }
       }
 
-      assert {:ok, enhanced_refactoring} = 
-        ExistingWorkflowEnhancer.enhance_refactoring_workflow(
-          refactoring_workflow,
-          refactoring_enhancement_spec,
-          %{enhancement_level: :comprehensive}
-        )
+      assert {:ok, enhanced_refactoring} =
+               ExistingWorkflowEnhancer.enhance_refactoring_workflow(
+                 refactoring_workflow,
+                 refactoring_enhancement_spec,
+                 %{enhancement_level: :comprehensive}
+               )
 
       assert enhanced_refactoring.workflow_type == :enhanced_refactoring_suggestions
       assert enhanced_refactoring.refactoring_integration.preferences_integrated == true
@@ -448,18 +466,27 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
 
       # Track various operations
       operations_to_track = [
-        {:prompt_resolution, %{workflow_id: workflow_id, success: true}, %{total_time: 150_000, resolution_time: 100_000}},
-        {:context_enhancement, %{workflow_id: workflow_id, success: true}, %{total_time: 50_000, context_enhancement_time: 45_000}},
-        {:cache_coordination, %{workflow_id: workflow_id, success: true}, %{total_time: 25_000, cache_coordination_time: 20_000}}
+        {:prompt_resolution, %{workflow_id: workflow_id, success: true},
+         %{total_time: 150_000, resolution_time: 100_000}},
+        {:context_enhancement, %{workflow_id: workflow_id, success: true},
+         %{total_time: 50_000, context_enhancement_time: 45_000}},
+        {:cache_coordination, %{workflow_id: workflow_id, success: true},
+         %{total_time: 25_000, cache_coordination_time: 20_000}}
       ]
 
       for {op_type, op_data, timing_data} <- operations_to_track do
-        WorkflowPromptPerformanceMonitor.track_workflow_prompt_operation(op_type, op_data, timing_data)
+        WorkflowPromptPerformanceMonitor.track_workflow_prompt_operation(
+          op_type,
+          op_data,
+          timing_data
+        )
       end
 
       # Get performance analytics
-      assert {:ok, analytics} = 
-        WorkflowPromptPerformanceMonitor.get_performance_analytics(workflow_id, %{analytics_level: :detailed})
+      assert {:ok, analytics} =
+               WorkflowPromptPerformanceMonitor.get_performance_analytics(workflow_id, %{
+                 analytics_level: :detailed
+               })
 
       assert analytics.analytics_level == :detailed
       assert Map.has_key?(analytics, :metrics)
@@ -467,8 +494,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       assert analytics.summary.total_operations >= length(operations_to_track)
 
       # Get performance recommendations
-      assert {:ok, recommendations} = 
-        WorkflowPromptPerformanceMonitor.get_performance_recommendations(workflow_id)
+      assert {:ok, recommendations} =
+               WorkflowPromptPerformanceMonitor.get_performance_recommendations(workflow_id)
 
       assert is_list(recommendations.recommendations)
       assert recommendations.performance_score >= 0.0
@@ -479,8 +506,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       WorkflowPromptPerformanceMonitor.optimize_performance(%{optimization_level: :high})
 
       # Verify optimization was applied
-      assert {:ok, post_optimization_analytics} = 
-        WorkflowPromptPerformanceMonitor.get_performance_analytics(workflow_id)
+      assert {:ok, post_optimization_analytics} =
+               WorkflowPromptPerformanceMonitor.get_performance_analytics(workflow_id)
 
       assert Map.has_key?(post_optimization_analytics, :metrics)
     end
@@ -507,12 +534,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         enable_context_enhancement: true
       }
 
-      assert {:ok, enhanced_reactor_step} = 
-        ReactorPromptIntegration.enhance_reactor_step(
-          reactor_step,
-          prompt_config,
-          integration_options
-        )
+      assert {:ok, enhanced_reactor_step} =
+               ReactorPromptIntegration.enhance_reactor_step(
+                 reactor_step,
+                 prompt_config,
+                 integration_options
+               )
 
       assert enhanced_reactor_step.prompt_integration_enabled == true
       assert enhanced_reactor_step.integration_mode == :full_integration
@@ -526,8 +553,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         integration_level: :comprehensive
       }
 
-      assert {:ok, prompt_middleware} = 
-        ReactorPromptIntegration.create_prompt_aware_reactor_middleware(middleware_config)
+      assert {:ok, prompt_middleware} =
+               ReactorPromptIntegration.create_prompt_aware_reactor_middleware(middleware_config)
 
       assert prompt_middleware.name == :prompt_integration_middleware
       assert prompt_middleware.integration_level == :comprehensive
@@ -551,23 +578,23 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         priority_keys: [:user_preferences, :workflow_metadata]
       }
 
-      assert {:ok, context_integration_result} = 
-        ReactorPromptIntegration.integrate_context_with_reactor_execution(
-          reactor_execution_context,
-          prompt_context,
-          context_integration_options
-        )
+      assert {:ok, context_integration_result} =
+               ReactorPromptIntegration.integrate_context_with_reactor_execution(
+                 reactor_execution_context,
+                 prompt_context,
+                 context_integration_options
+               )
 
       assert Map.has_key?(context_integration_result, :integrated_context)
       assert Map.has_key?(context_integration_result, :integration_metrics)
       assert context_integration_result.integration_metrics.integration_effective in [true, false]
 
       # Test performance optimization
-      assert {:ok, optimization_result} = 
-        ReactorPromptIntegration.optimize_reactor_prompt_performance(
-          "reactor_test_workflow",
-          %{strategies: [:caching, :context_optimization]}
-        )
+      assert {:ok, optimization_result} =
+               ReactorPromptIntegration.optimize_reactor_prompt_performance(
+                 "reactor_test_workflow",
+                 %{strategies: [:caching, :context_optimization]}
+               )
 
       assert optimization_result.optimization_applied == true
       assert optimization_result.performance_improvement >= 0.0
@@ -581,7 +608,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         components: [
           %{type: :input_processing, name: "data_prep", prompt_name: "data_preparation_prompt"},
           %{type: :analysis, name: "main_analysis", prompt_name: "analysis_execution_prompt"},
-          %{type: :output_formatting, name: "result_formatting", prompt_name: "output_formatting_prompt"}
+          %{
+            type: :output_formatting,
+            name: "result_formatting",
+            prompt_name: "output_formatting_prompt"
+          }
         ],
         has_dependencies: true,
         requires_coordination: true
@@ -595,17 +626,18 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         prompt_resolution_strategy: :optimized
       }
 
-      assert {:ok, build_result} = 
-        EnhancedWorkflowBuilder.create_workflow(workflow_spec, builder_config)
+      assert {:ok, build_result} =
+               EnhancedWorkflowBuilder.create_workflow(workflow_spec, builder_config)
 
       assert Map.has_key?(build_result.workflow, :prompt_integration)
       assert build_result.workflow.prompt_integration.enabled == true
       assert build_result.workflow.prompt_integration_applied == true
 
       # Verify prompt integration in components
-      prompt_enhanced_components = Enum.filter(build_result.workflow.components, fn component ->
-        Map.has_key?(component, :prompt_integration)
-      end)
+      prompt_enhanced_components =
+        Enum.filter(build_result.workflow.components, fn component ->
+          Map.has_key?(component, :prompt_integration)
+        end)
 
       assert length(prompt_enhanced_components) == 3
 
@@ -623,8 +655,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         timeout_ms: 120_000
       }
 
-      assert {:ok, execution_context} = 
-        EnhancedWorkflowBuilder.create_execution_context(build_result.workflow, context_config)
+      assert {:ok, execution_context} =
+               EnhancedWorkflowBuilder.create_execution_context(
+                 build_result.workflow,
+                 context_config
+               )
 
       assert execution_context.workflow_id == build_result.workflow.id
       assert Map.has_key?(execution_context, :execution_config)
@@ -636,8 +671,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         validate_performance: true
       }
 
-      assert {:ok, validation_result} = 
-        EnhancedWorkflowBuilder.validate_workflow(build_result.workflow, validation_config)
+      assert {:ok, validation_result} =
+               EnhancedWorkflowBuilder.validate_workflow(build_result.workflow, validation_config)
 
       assert validation_result.validation_passed == true
       assert validation_result.validation_score > 0.0
@@ -654,63 +689,64 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
 
       # Measure integration overhead
       base_start = System.monotonic_time(:microsecond)
-      
+
       # Simulate base workflow step (without prompt integration)
-      :timer.sleep(10)  # Simulate 10ms base processing
-      
+      # Simulate 10ms base processing
+      :timer.sleep(10)
+
       base_time = System.monotonic_time(:microsecond) - base_start
 
       # Measure with prompt integration
       integration_start = System.monotonic_time(:microsecond)
-      
-      assert {:ok, _resolution_result} = 
-        WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
-      
+
+      assert {:ok, _resolution_result} =
+               WorkflowPromptResolver.resolve_workflow_prompt(workflow_id, prompt_name, context)
+
       integration_time = System.monotonic_time(:microsecond) - integration_start
 
       # Calculate integration overhead
       integration_overhead_ms = (integration_time - base_time) / 1000
 
       # Verify overhead is within requirements (<20ms)
-      assert integration_overhead_ms < 20, 
-        "Integration overhead #{integration_overhead_ms}ms exceeds 20ms requirement"
+      assert integration_overhead_ms < 20,
+             "Integration overhead #{integration_overhead_ms}ms exceeds 20ms requirement"
     end
 
     test "cache coordination performance within requirements" do
       # Verify cache coordination performance meets requirements
 
       workflow_id = "cache_perf_test_#{System.system_time(:nanosecond)}"
-      
+
       # Test cache get performance
       cache_get_start = System.monotonic_time(:microsecond)
-      
-      assert {:ok, _cache_result} = 
-        WorkflowPromptCacheCoordinator.get_cached_prompt(workflow_id, "test_prompt")
-      
+
+      assert {:ok, _cache_result} =
+               WorkflowPromptCacheCoordinator.get_cached_prompt(workflow_id, "test_prompt")
+
       cache_get_time = System.monotonic_time(:microsecond) - cache_get_start
       cache_get_time_ms = cache_get_time / 1000
 
       # Cache get should be very fast
-      assert cache_get_time_ms < 5, 
-        "Cache get time #{cache_get_time_ms}ms exceeds 5ms requirement"
+      assert cache_get_time_ms < 5,
+             "Cache get time #{cache_get_time_ms}ms exceeds 5ms requirement"
 
       # Test cache set performance
       cache_set_start = System.monotonic_time(:microsecond)
-      
-      assert {:ok, _cache_result} = 
-        WorkflowPromptCacheCoordinator.cache_workflow_prompt(
-          workflow_id,
-          "test_prompt",
-          %{resolved_prompt: "test content"},
-          %{cache_strategy: :workflow_scoped}
-        )
-      
+
+      assert {:ok, _cache_result} =
+               WorkflowPromptCacheCoordinator.cache_workflow_prompt(
+                 workflow_id,
+                 "test_prompt",
+                 %{resolved_prompt: "test content"},
+                 %{cache_strategy: :workflow_scoped}
+               )
+
       cache_set_time = System.monotonic_time(:microsecond) - cache_set_start
       cache_set_time_ms = cache_set_time / 1000
 
       # Cache set should be reasonable
-      assert cache_set_time_ms < 10, 
-        "Cache set time #{cache_set_time_ms}ms exceeds 10ms requirement"
+      assert cache_set_time_ms < 10,
+             "Cache set time #{cache_set_time_ms}ms exceeds 10ms requirement"
     end
 
     test "backward compatibility maintained" do
@@ -732,8 +768,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         preferred_mode: :template
       }
 
-      assert {:ok, basic_result} = 
-        EnhancedWorkflowBuilder.create_workflow(basic_workflow_spec, basic_builder_config)
+      assert {:ok, basic_result} =
+               EnhancedWorkflowBuilder.create_workflow(basic_workflow_spec, basic_builder_config)
 
       # Should build successfully without prompt integration
       assert Map.get(basic_result.workflow, :prompt_integration_applied, false) == false
@@ -745,8 +781,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       end
 
       # Should still pass validation
-      assert {:ok, validation_result} = 
-        EnhancedWorkflowBuilder.validate_workflow(basic_result.workflow)
+      assert {:ok, validation_result} =
+               EnhancedWorkflowBuilder.validate_workflow(basic_result.workflow)
 
       assert validation_result.validation_passed == true
     end
@@ -768,10 +804,11 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
       for module <- integration_modules do
         # Verify module exists and loads
         assert Code.ensure_loaded?(module), "Module #{module} should be loaded"
-        
+
         # Verify module has required functions (basic check)
-        assert function_exported?(module, :start_link, 0) or function_exported?(module, :start_link, 1),
-          "Module #{module} should have start_link function if it's a GenServer"
+        assert function_exported?(module, :start_link, 0) or
+                 function_exported?(module, :start_link, 1),
+               "Module #{module} should have start_link function if it's a GenServer"
       end
 
       # Test all workflow enhancement modules
@@ -803,12 +840,12 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         performance_optimization: :high
       }
 
-      assert {:ok, bulk_enhancement_result} = 
-        ExistingWorkflowEnhancer.enhance_all_existing_workflows(
-          workflows_config,
-          global_enhancement_spec,
-          %{enhancement_level: :comprehensive}
-        )
+      assert {:ok, bulk_enhancement_result} =
+               ExistingWorkflowEnhancer.enhance_all_existing_workflows(
+                 workflows_config,
+                 global_enhancement_spec,
+                 %{enhancement_level: :comprehensive}
+               )
 
       assert bulk_enhancement_result.total_workflows == 3
       assert bulk_enhancement_result.successful_enhancements >= 0
@@ -822,8 +859,8 @@ defmodule RubberDuck.Prompts.WorkflowIntegration.WorkflowIntegrationEndToEndTest
         enable_forecasting: true
       }
 
-      assert {:ok, cache_analytics} = 
-        WorkflowPromptCacheCoordinator.get_cache_analytics()
+      assert {:ok, cache_analytics} =
+               WorkflowPromptCacheCoordinator.get_cache_analytics()
 
       assert Map.has_key?(cache_analytics, :total_cache_operations)
       assert Map.has_key?(cache_analytics, :cache_hit_rate)
