@@ -1,8 +1,8 @@
 defmodule RubberDuck.Preferences.UserPromptManagementPreferencesIntegrationTest do
   use RubberDuck.DataCase, async: true
 
-  alias RubberDuck.Preferences.Services.{PromptPreferenceResolver, PromptInterfaceCustomizer}
-  alias RubberDuck.Preferences.Resources.{UserPreference, SystemDefault}
+  alias RubberDuck.Preferences.Resources.{SystemDefault, UserPreference}
+  alias RubberDuck.Preferences.Services.{PromptInterfaceCustomizer, PromptPreferenceResolver}
   alias RubberDuck.Prompts.Resources.Prompt
 
   describe "Phase 6.3: User Prompt Management Preferences - Integration Testing" do

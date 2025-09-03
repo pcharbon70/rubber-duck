@@ -324,7 +324,7 @@ defmodule RubberDuck.JidoAI.Configuration do
       Jido.AI.set_session_value(session_key, config)
     end)
 
-    # Set up user session patterns  
+    # Set up user session patterns
     Jido.AI.set_session_value(:user_session_config, session_config.user_session_patterns)
 
     # Set up project session patterns
@@ -375,23 +375,24 @@ defmodule RubberDuck.JidoAI.Configuration do
 
     case Jido.AI.get_session_value(api_key_keyring_key) do
       nil ->
-        # Fallback to environment variable
-        case get_provider_config(provider_name) do
-          {:ok, config} ->
-            case System.get_env(config.api_key_env) do
-              nil ->
-                {:error, :api_key_not_found}
-
-              api_key ->
-                {:ok, api_key}
-            end
-
-          error ->
-            error
-        end
+        get_provider_api_key_from_env(provider_name)
 
       api_key ->
         {:ok, api_key}
+    end
+  end
+
+  defp get_provider_api_key_from_env(provider_name) do
+    # Fallback to environment variable
+    case get_provider_config(provider_name) do
+      {:ok, config} ->
+        case System.get_env(config.api_key_env) do
+          nil -> {:error, :api_key_not_found}
+          api_key -> {:ok, api_key}
+        end
+
+      error ->
+        error
     end
   end
 
@@ -467,15 +468,20 @@ defmodule RubberDuck.JidoAI.Configuration do
   defp validate_provider_configurations do
     required_providers = [:openai, :anthropic]
 
-    case Enum.all?(required_providers, fn provider ->
-           case get_provider_config(provider) do
-             {:ok, _config} -> true
-             {:error, _} -> false
-           end
-         end) do
-      true -> :ok
-      false -> {:error, :missing_required_providers}
+    if all_required_providers_configured?(required_providers) do
+      :ok
+    else
+      {:error, :missing_required_providers}
     end
+  end
+
+  defp all_required_providers_configured?(required_providers) do
+    Enum.all?(required_providers, fn provider ->
+      case get_provider_config(provider) do
+        {:ok, _config} -> true
+        {:error, _} -> false
+      end
+    end)
   end
 
   defp validate_keyring_setup do
@@ -505,15 +511,20 @@ defmodule RubberDuck.JidoAI.Configuration do
       :project_session_config
     ]
 
-    case Enum.all?(session_configs, fn config_key ->
-           case Jido.AI.get_session_value(config_key) do
-             nil -> false
-             _config -> true
-           end
-         end) do
-      true -> :ok
-      false -> {:error, :session_management_incomplete}
+    if all_session_configs_present?(session_configs) do
+      :ok
+    else
+      {:error, :session_management_incomplete}
     end
+  end
+
+  defp all_session_configs_present?(session_configs) do
+    Enum.all?(session_configs, fn config_key ->
+      case Jido.AI.get_session_value(config_key) do
+        nil -> false
+        _config -> true
+      end
+    end)
   end
 
   defp validate_health_monitoring_setup do

@@ -351,7 +351,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
       </div>
 
       <!-- Empty state with preference context -->
-      <div :if={is_empty_state?(@prompts)} style="padding: 40px; text-align: center; color: #666;">
+      <div :if={empty_state?(@prompts)} style="padding: 40px; text-align: center; color: #666;">
         <p>No prompts found in your library.</p>
         <p>Create your first prompt or adjust your search filters.</p>
       </div>
@@ -729,7 +729,7 @@ defmodule RubberDuckWeb.Live.Components.CustomizablePromptBrowserComponent do
     end
   end
 
-  defp is_empty_state?(prompts) do
+  defp empty_state?(prompts) do
     prompt_counts = [
       length(prompts[:system_prompts] || []),
       length(prompts[:project_prompts] || []),

@@ -225,7 +225,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponentSimple do
         </div>
       </div>
 
-      <div :if={is_empty_state?(@prompts, @recommended_prompts)}>
+      <div :if={empty_state?(@prompts, @recommended_prompts)}>
         <p>No prompts available. Create prompts in the Prompt Library.</p>
       </div>
     </div>
@@ -240,7 +240,7 @@ defmodule RubberDuckWeb.Live.Components.WorkflowPromptBrowserComponentSimple do
     |> Enum.find(fn prompt -> prompt.id == prompt_id end)
   end
 
-  defp is_empty_state?(prompts, recommended_prompts) do
+  defp empty_state?(prompts, recommended_prompts) do
     prompt_counts = [
       length(prompts[:system_prompts] || []),
       length(prompts[:project_prompts] || []),

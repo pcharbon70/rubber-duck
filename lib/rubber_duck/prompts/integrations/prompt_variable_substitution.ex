@@ -134,9 +134,10 @@ defmodule RubberDuck.Prompts.Integrations.PromptVariableSubstitution do
 
   defp execute_variable_substitution(prompt_content, validated_values, options) do
     # Execute safe variable substitution
-    substituted_content = Regex.replace(@variable_pattern, prompt_content, fn match_data ->
-      substitute_single_variable_match(match_data, validated_values, options)
-    end)
+    substituted_content =
+      Regex.replace(@variable_pattern, prompt_content, fn match_data ->
+        substitute_single_variable_match(match_data, validated_values, options)
+      end)
 
     case validate_substitution_result(substituted_content, options) do
       {:ok, :valid} ->

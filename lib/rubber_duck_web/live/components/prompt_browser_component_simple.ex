@@ -168,7 +168,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentSimple do
       </div>
 
       <!-- Empty State -->
-      <div :if={is_empty_state?(@prompts)} style="padding: 40px; text-align: center; color: #6c757d;">
+      <div :if={empty_state?(@prompts)} style="padding: 40px; text-align: center; color: #6c757d;">
         <p>No prompts found. Create your first prompt in the Prompt Library.</p>
       </div>
     </div>
@@ -186,7 +186,7 @@ defmodule RubberDuckWeb.Live.Components.PromptBrowserComponentSimple do
     Enum.find(all_prompts, fn prompt -> prompt.id == prompt_id end)
   end
 
-  defp is_empty_state?(prompts) do
+  defp empty_state?(prompts) do
     prompt_counts = [
       length(prompts[:system_prompts] || []),
       length(prompts[:project_prompts] || []),
