@@ -337,21 +337,28 @@ defmodule RubberDuck.Prompts.Security.AccessControlManager do
   # Caching functions
 
   defp check_access_cache(cache_key, %{cache_table: cache_table, config: config}) do
-    if config.enable_caching do
-      case :ets.lookup(cache_table, cache_key) do
-        [{^cache_key, result, expires_at}] ->
-          if System.system_time(:millisecond) < expires_at do
-            {:hit, result}
-          else
-            :ets.delete(cache_table, cache_key)
-            :miss
-          end
+    case config.enable_caching do
+      true -> lookup_cached_result(cache_key, cache_table)
+      false -> :miss
+    end
+  end
 
-        [] ->
-          :miss
-      end
-    else
-      :miss
+  defp lookup_cached_result(cache_key, cache_table) do
+    case :ets.lookup(cache_table, cache_key) do
+      [{^cache_key, result, expires_at}] ->
+        validate_cache_expiration(cache_key, result, expires_at, cache_table)
+
+      [] ->
+        :miss
+    end
+  end
+
+  defp validate_cache_expiration(cache_key, result, expires_at, cache_table) do
+    case System.system_time(:millisecond) < expires_at do
+      true -> {:hit, result}
+      false ->
+        :ets.delete(cache_table, cache_key)
+        :miss
     end
   end
 
