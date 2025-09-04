@@ -16,8 +16,8 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
 
   alias RubberDuck.Prompts.Policies.{
     PromptAccessPolicy,
-    PromptSharingPolicy,
-    PromptApprovalPolicy
+    PromptApprovalPolicy,
+    PromptSharingPolicy
   }
 
   postgres do
@@ -151,7 +151,7 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
     validate one_of(:security_level, ["minimal", "standard", "enhanced", "maximum"])
     validate numericality(:risk_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
 
-    # Custom security validation  
+    # Custom security validation
     validate RubberDuck.Prompts.Validations.SecurityValidator
   end
 

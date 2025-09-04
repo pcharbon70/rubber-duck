@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
   @moduledoc """
   Usage insights and trend analysis service for prompt analytics.
-  
+
   Provides intelligent analysis of usage patterns, trend detection, user
   behavior insights, and predictive analytics for prompt optimization
   and strategic decision making.
-  
+
   Features:
   - Pattern recognition in usage data with ML-driven analysis
   - Trend detection and forecasting with statistical modeling
@@ -14,18 +14,24 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
   - Anomaly detection for unusual usage patterns and potential issues
   - Comparative analysis across prompts, users, and time periods
   """
-  
+
   require Logger
 
-  alias RubberDuck.Prompts.Resources.{PromptUsage, Prompt}
+  alias RubberDuck.Prompts.Resources.{Prompt, PromptUsage}
 
-  @insight_types [:usage_patterns, :trend_analysis, :user_behavior, :performance_insights, :anomaly_detection]
+  @insight_types [
+    :usage_patterns,
+    :trend_analysis,
+    :user_behavior,
+    :performance_insights,
+    :anomaly_detection
+  ]
   @trend_confidence_threshold 0.7
   @pattern_significance_threshold 0.05
 
   def analyze_usage_insights(data_scope, options \\ %{}) do
     insight_start_time = System.monotonic_time(:microsecond)
-    
+
     Logger.debug("PromptInsightEngine: Starting insight analysis",
       data_scope: data_scope,
       options: Map.keys(options)
@@ -34,12 +40,12 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
     case execute_insight_analysis(data_scope, options) do
       {:ok, insights} ->
         insight_time = System.monotonic_time(:microsecond) - insight_start_time
-        
+
         Logger.debug("PromptInsightEngine: Insight analysis completed",
           insight_time_us: insight_time,
           insights_generated: length(insights.key_insights)
         )
-        
+
         {:ok, insights}
 
       {:error, reason} ->
@@ -55,18 +61,19 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
       contextual_patterns: detect_contextual_patterns(usage_records),
       correlation_patterns: detect_correlation_patterns(usage_records)
     }
-    
+
     # Filter patterns based on requested types
-    filtered_patterns = Enum.reduce(pattern_types, %{}, fn type, acc ->
-      case type do
-        :temporal -> Map.put(acc, :temporal_patterns, patterns.temporal_patterns)
-        :behavioral -> Map.put(acc, :behavioral_patterns, patterns.behavioral_patterns)
-        :contextual -> Map.put(acc, :contextual_patterns, patterns.contextual_patterns)
-        :correlation -> Map.put(acc, :correlation_patterns, patterns.correlation_patterns)
-        _ -> acc
-      end
-    end)
-    
+    filtered_patterns =
+      Enum.reduce(pattern_types, %{}, fn type, acc ->
+        case type do
+          :temporal -> Map.put(acc, :temporal_patterns, patterns.temporal_patterns)
+          :behavioral -> Map.put(acc, :behavioral_patterns, patterns.behavioral_patterns)
+          :contextual -> Map.put(acc, :contextual_patterns, patterns.contextual_patterns)
+          :correlation -> Map.put(acc, :correlation_patterns, patterns.correlation_patterns)
+          _ -> acc
+        end
+      end)
+
     {:ok, filtered_patterns}
   end
 
@@ -78,14 +85,15 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
       forecast_accuracy: estimate_forecast_accuracy(trend_data),
       seasonal_components: extract_seasonal_components(trend_data)
     }
-    
+
     is_significant = trend_analysis.confidence_score >= confidence_threshold
-    
-    {:ok, %{
-      trend_analysis: trend_analysis,
-      is_significant: is_significant,
-      actionable_insights: generate_trend_insights(trend_analysis, is_significant)
-    }}
+
+    {:ok,
+     %{
+       trend_analysis: trend_analysis,
+       is_significant: is_significant,
+       actionable_insights: generate_trend_insights(trend_analysis, is_significant)
+     }}
   end
 
   def generate_behavioral_insights(user_usage_records, comparison_data \\ nil) do
@@ -96,35 +104,37 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
       efficiency_patterns: analyze_efficiency_patterns(user_usage_records),
       exploration_behavior: analyze_exploration_behavior(user_usage_records)
     }
-    
+
     # Add comparative insights if comparison data provided
-    insights = case comparison_data do
-      nil -> user_patterns
-      comparison -> add_comparative_insights(user_patterns, comparison)
-    end
-    
+    insights =
+      case comparison_data do
+        nil -> user_patterns
+        comparison -> add_comparative_insights(user_patterns, comparison)
+      end
+
     {:ok, insights}
   end
 
   def detect_anomalies(usage_records, anomaly_types \\ [:usage, :performance, :errors]) do
     anomalies = %{
       usage_anomalies: detect_usage_anomalies(usage_records),
-      performance_anomalies: detect_performance_anomalies(usage_records), 
+      performance_anomalies: detect_performance_anomalies(usage_records),
       error_anomalies: detect_error_anomalies(usage_records),
       temporal_anomalies: detect_temporal_anomalies(usage_records)
     }
-    
+
     # Filter anomalies based on requested types
-    filtered_anomalies = Enum.reduce(anomaly_types, %{}, fn type, acc ->
-      case type do
-        :usage -> Map.put(acc, :usage_anomalies, anomalies.usage_anomalies)
-        :performance -> Map.put(acc, :performance_anomalies, anomalies.performance_anomalies)
-        :errors -> Map.put(acc, :error_anomalies, anomalies.error_anomalies)
-        :temporal -> Map.put(acc, :temporal_anomalies, anomalies.temporal_anomalies)
-        _ -> acc
-      end
-    end)
-    
+    filtered_anomalies =
+      Enum.reduce(anomaly_types, %{}, fn type, acc ->
+        case type do
+          :usage -> Map.put(acc, :usage_anomalies, anomalies.usage_anomalies)
+          :performance -> Map.put(acc, :performance_anomalies, anomalies.performance_anomalies)
+          :errors -> Map.put(acc, :error_anomalies, anomalies.error_anomalies)
+          :temporal -> Map.put(acc, :temporal_anomalies, anomalies.temporal_anomalies)
+          _ -> acc
+        end
+      end)
+
     {:ok, filtered_anomalies}
   end
 
@@ -133,10 +143,10 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
   defp execute_insight_analysis(data_scope, options) do
     insight_types = Map.get(options, :insight_types, @insight_types)
     time_window = Map.get(options, :time_window, %{amount: 30, unit: :days})
-    
+
     with {:ok, usage_data} <- fetch_usage_data_for_scope(data_scope, time_window),
-         {:ok, processed_insights} <- process_insights_for_types(usage_data, insight_types, options) do
-      
+         {:ok, processed_insights} <-
+           process_insights_for_types(usage_data, insight_types, options) do
       comprehensive_insights = %{
         data_scope: data_scope,
         time_window: time_window,
@@ -151,7 +161,7 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
           data_quality_score: assess_insight_data_quality(usage_data)
         }
       }
-      
+
       {:ok, comprehensive_insights}
     else
       {:error, reason} -> {:error, reason}
@@ -160,18 +170,21 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
 
   defp fetch_usage_data_for_scope(data_scope, time_window) do
     cutoff_date = DateTime.add(DateTime.utc_now(), -time_window.amount, time_window.unit)
-    
+
     base_filters = %{inserted_at: {:>=, cutoff_date}}
-    
-    filters = case data_scope do
-      %{user_id: user_id} -> Map.put(base_filters, :used_by_id, user_id)
-      %{prompt_id: prompt_id} -> Map.put(base_filters, :prompt_id, prompt_id)
-      :system -> base_filters
-      _ -> {:error, :invalid_data_scope}
-    end
-    
+
+    filters =
+      case data_scope do
+        %{user_id: user_id} -> Map.put(base_filters, :used_by_id, user_id)
+        %{prompt_id: prompt_id} -> Map.put(base_filters, :prompt_id, prompt_id)
+        :system -> base_filters
+        _ -> {:error, :invalid_data_scope}
+      end
+
     case filters do
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
+
       valid_filters ->
         case RubberDuck.Prompts.Domain.read(PromptUsage, valid_filters) do
           {:ok, usage_records} -> {:ok, usage_records}
@@ -182,19 +195,24 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
 
   defp process_insights_for_types(usage_data, insight_types, options) do
     insights = %{}
-    
+
     # Process each requested insight type
-    processed_insights = Enum.reduce(insight_types, insights, fn type, acc ->
-      case process_single_insight_type(type, usage_data, options) do
-        {:ok, insight_data} -> Map.put(acc, type, insight_data)
-        {:error, reason} -> 
-          Logger.warn("PromptInsightEngine: Failed to process insight type",
-            type: type, error: reason
-          )
-          acc
-      end
-    end)
-    
+    processed_insights =
+      Enum.reduce(insight_types, insights, fn type, acc ->
+        case process_single_insight_type(type, usage_data, options) do
+          {:ok, insight_data} ->
+            Map.put(acc, type, insight_data)
+
+          {:error, reason} ->
+            Logger.warn("PromptInsightEngine: Failed to process insight type",
+              type: type,
+              error: reason
+            )
+
+            acc
+        end
+      end)
+
     {:ok, processed_insights}
   end
 
@@ -205,7 +223,7 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
       context_patterns: analyze_context_usage_patterns(usage_data),
       user_patterns: analyze_user_interaction_patterns(usage_data)
     }
-    
+
     {:ok, patterns}
   end
 
@@ -216,7 +234,7 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
       adoption_trends: calculate_adoption_trends(usage_data),
       efficiency_trends: calculate_efficiency_trends(usage_data)
     }
-    
+
     {:ok, trends}
   end
 
@@ -227,7 +245,7 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
       learning_curves: analyze_learning_curves(usage_data),
       productivity_patterns: analyze_productivity_patterns(usage_data)
     }
-    
+
     {:ok, behavior}
   end
 
@@ -238,7 +256,7 @@ defmodule RubberDuck.Prompts.Services.PromptInsightEngine do
       error_patterns: analyze_comprehensive_error_patterns(usage_data),
       optimization_potential: calculate_optimization_potential(usage_data)
     }
-    
+
     {:ok, performance}
   end
 

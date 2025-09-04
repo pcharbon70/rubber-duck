@@ -15,7 +15,7 @@ defmodule RubberDuck.Prompts.Changes.RejectionChange do
     rejection_reason = Ash.Changeset.get_argument(changeset, :rejection_reason)
     rejector_id = get_rejector_id(context)
 
-    # Update rejection metadata  
+    # Update rejection metadata
     enhanced_changeset =
       changeset
       |> Ash.Changeset.change_attribute(:approved_by, rejector_id)

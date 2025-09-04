@@ -17,7 +17,7 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   require Logger
 
   alias RubberDuck.Prompts.Resources.PromptUsage
-  alias RubberDuck.Prompts.Services.{PromptMetricsCollector, PromptAnalyticsEngine}
+  alias RubberDuck.Prompts.Services.{PromptAnalyticsEngine, PromptMetricsCollector}
 
   @buffer_size 100
   @flush_interval :timer.seconds(10)

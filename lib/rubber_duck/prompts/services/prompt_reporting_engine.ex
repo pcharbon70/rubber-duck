@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
   @moduledoc """
   Report generation and export service for prompt analytics.
-  
+
   Provides comprehensive reporting capabilities with multiple formats,
   automated report generation, export options, and integration with
   analytics engines for data-driven insights and decision making.
-  
+
   Features:
   - Multi-format report generation (JSON, CSV, PDF, HTML)
   - Automated periodic reports with scheduling and delivery
@@ -14,16 +14,23 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
   - Integration with analytics engines for real-time data access
   - Performance optimization for large dataset reports
   """
-  
+
   use GenServer
   require Logger
 
-  alias RubberDuck.Prompts.Services.{PromptAnalyticsEngine, PromptMetricsCollector}
   alias RubberDuck.Prompts.Resources.PromptUsage
+  alias RubberDuck.Prompts.Services.{PromptAnalyticsEngine, PromptMetricsCollector}
 
   @report_formats [:json, :csv, :structured]
-  @report_types [:usage_summary, :effectiveness_report, :optimization_report, :user_analytics, :system_overview]
-  @max_report_size 100_000  # Max records per report
+  @report_types [
+    :usage_summary,
+    :effectiveness_report,
+    :optimization_report,
+    :user_analytics,
+    :system_overview
+  ]
+  # Max records per report
+  @max_report_size 100_000
 
   defstruct [
     :config,
@@ -82,7 +89,7 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
 
   def handle_call({:generate_report, report_type, target_scope, options}, _from, state) do
     report_start_time = System.monotonic_time(:microsecond)
-    
+
     Logger.debug("PromptReportingEngine: Generating report",
       report_type: report_type,
       target_scope: target_scope,
@@ -92,24 +99,24 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
     case execute_report_generation(report_type, target_scope, options, state) do
       {:ok, report} ->
         report_time = System.monotonic_time(:microsecond) - report_start_time
-        
+
         Logger.info("PromptReportingEngine: Report generated successfully",
           report_time_us: report_time,
           report_type: report_type,
           data_points: Map.get(report, :data_points_included, 0)
         )
-        
+
         {:reply, {:ok, report}, state}
 
       {:error, reason} ->
         report_time = System.monotonic_time(:microsecond) - report_start_time
-        
+
         Logger.error("PromptReportingEngine: Report generation failed",
           report_time_us: report_time,
           report_type: report_type,
           error: reason
         )
-        
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -139,20 +146,20 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
     with {:ok, report_config} <- build_report_config(report_type, target_scope, options),
          {:ok, analytics_data} <- fetch_analytics_data_for_report(report_config, state),
          {:ok, processed_report} <- process_report_data(analytics_data, report_config, state) do
-      
       # Add metadata to report
-      final_report = Map.merge(processed_report, %{
-        report_id: generate_report_id(),
-        report_type: report_type,
-        target_scope: target_scope,
-        generated_at: DateTime.utc_now(),
-        data_points_included: count_data_points(analytics_data),
-        report_metadata: build_report_metadata(report_config, analytics_data)
-      })
-      
+      final_report =
+        Map.merge(processed_report, %{
+          report_id: generate_report_id(),
+          report_type: report_type,
+          target_scope: target_scope,
+          generated_at: DateTime.utc_now(),
+          data_points_included: count_data_points(analytics_data),
+          report_metadata: build_report_metadata(report_config, analytics_data)
+        })
+
       # Cache report for potential export
       cache_report(final_report, state)
-      
+
       {:ok, final_report}
     else
       {:error, reason} -> {:error, reason}
@@ -169,7 +176,7 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
       format_options: Map.get(options, :format_options, %{}),
       filters: Map.get(options, :filters, %{})
     }
-    
+
     {:ok, config}
   end
 
@@ -177,19 +184,19 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
     case report_config.report_type do
       :usage_summary ->
         fetch_usage_summary_data(report_config)
-        
+
       :effectiveness_report ->
         fetch_effectiveness_report_data(report_config)
-        
+
       :optimization_report ->
         fetch_optimization_report_data(report_config)
-        
+
       :user_analytics ->
         fetch_user_analytics_data(report_config)
-        
+
       :system_overview ->
         fetch_system_overview_data(report_config)
-        
+
       _ ->
         {:error, {:unsupported_report_type, report_config.report_type}}
     end
@@ -199,19 +206,19 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
     case report_config.report_type do
       :usage_summary ->
         {:ok, generate_usage_summary_report(analytics_data, report_config)}
-        
+
       :effectiveness_report ->
         {:ok, generate_effectiveness_report(analytics_data, report_config)}
-        
+
       :optimization_report ->
         {:ok, generate_optimization_report(analytics_data, report_config)}
-        
+
       :user_analytics ->
         {:ok, generate_user_analytics_report(analytics_data, report_config)}
-        
+
       :system_overview ->
         {:ok, generate_system_overview_report(analytics_data, report_config)}
-        
+
       _ ->
         {:error, :unsupported_report_processing}
     end
@@ -221,9 +228,9 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
 
   defp fetch_usage_summary_data(report_config) do
     cutoff_date = calculate_report_cutoff_date(report_config.time_window)
-    
+
     filters = Map.merge(%{inserted_at: {:>=, cutoff_date}}, report_config.filters)
-    
+
     case RubberDuck.Prompts.Domain.read(PromptUsage, filters) do
       {:ok, usage_records} ->
         summary_data = %{
@@ -232,9 +239,9 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
           time_window: report_config.time_window,
           filters_applied: report_config.filters
         }
-        
+
         {:ok, summary_data}
-        
+
       {:error, reason} ->
         {:error, {:usage_data_fetch_failed, reason}}
     end
@@ -250,9 +257,9 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
           prompt_rankings: calculate_prompt_effectiveness_rankings(usage_data.usage_records),
           improvement_suggestions: generate_effectiveness_improvements(usage_data.usage_records)
         }
-        
+
         {:ok, effectiveness_data}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -267,9 +274,9 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
           performance_bottlenecks: identify_performance_bottlenecks(usage_data.usage_records),
           cost_optimization: calculate_cost_optimization_opportunities(usage_data.usage_records)
         }
-        
+
         {:ok, optimization_data}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -279,12 +286,12 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
     case report_config.target_scope do
       %{user_id: user_id} ->
         cutoff_date = calculate_report_cutoff_date(report_config.time_window)
-        
+
         filters = %{
           used_by_id: user_id,
           inserted_at: {:>=, cutoff_date}
         }
-        
+
         case RubberDuck.Prompts.Domain.read(PromptUsage, filters) do
           {:ok, user_usage_records} ->
             user_data = %{
@@ -293,13 +300,13 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
               user_metrics: calculate_user_specific_metrics(user_usage_records),
               productivity_analysis: calculate_user_productivity(user_usage_records)
             }
-            
+
             {:ok, user_data}
-            
+
           {:error, reason} ->
             {:error, {:user_data_fetch_failed, reason}}
         end
-        
+
       _ ->
         {:error, :missing_user_id_in_target_scope}
     end
@@ -315,9 +322,9 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
           growth_metrics: calculate_growth_metrics(usage_data.usage_records),
           operational_insights: generate_operational_insights(usage_data.usage_records)
         }
-        
+
         {:ok, system_data}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -344,7 +351,8 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
       top_performers: analytics_data.prompt_rankings.top_performers,
       improvement_needed: analytics_data.prompt_rankings.needs_improvement,
       recommendations: analytics_data.improvement_suggestions,
-      effectiveness_distribution: calculate_effectiveness_distribution(analytics_data.usage_data.usage_records)
+      effectiveness_distribution:
+        calculate_effectiveness_distribution(analytics_data.usage_data.usage_records)
     }
   end
 
@@ -371,7 +379,7 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
 
   defp generate_system_overview_report(analytics_data, _report_config) do
     %{
-      summary: "System Overview Report", 
+      summary: "System Overview Report",
       system_health: analytics_data.system_health,
       capacity_analysis: analytics_data.capacity_analysis,
       growth_metrics: analytics_data.growth_metrics,
@@ -403,18 +411,22 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
   end
 
   defp calculate_success_rate([]), do: 0.0
+
   defp calculate_success_rate(usage_records) do
     success_count = Enum.count(usage_records, & &1.success)
     Float.round(success_count / length(usage_records), 3)
   end
 
   defp calculate_avg_response_time(usage_records) do
-    valid_times = Enum.filter(usage_records, fn record ->
-      record.response_time_ms && record.response_time_ms > 0
-    end)
-    
+    valid_times =
+      Enum.filter(usage_records, fn record ->
+        record.response_time_ms && record.response_time_ms > 0
+      end)
+
     case length(valid_times) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         total = Enum.sum(Enum.map(valid_times, & &1.response_time_ms))
         Float.round(total / count, 2)
@@ -422,12 +434,15 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
   end
 
   defp calculate_avg_tokens_used(usage_records) do
-    valid_tokens = Enum.filter(usage_records, fn record ->
-      record.tokens_used && record.tokens_used > 0
-    end)
-    
+    valid_tokens =
+      Enum.filter(usage_records, fn record ->
+        record.tokens_used && record.tokens_used > 0
+      end)
+
     case length(valid_tokens) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         total = Enum.sum(Enum.map(valid_tokens, & &1.tokens_used))
         Float.round(total / count, 2)
@@ -444,9 +459,9 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
   defp group_usage_by_context_and_success(usage_records) do
     usage_records
     |> Enum.group_by(fn record -> {record.context_type, record.success} end)
-    |> Enum.map(fn {{context, success}, records} -> 
+    |> Enum.map(fn {{context, success}, records} ->
       {
-        "#{context}_#{if success, do: "success", else: "failure"}", 
+        "#{context}_#{if success, do: "success", else: "failure"}",
         length(records)
       }
     end)
@@ -556,7 +571,10 @@ defmodule RubberDuck.Prompts.Services.PromptReportingEngine do
   end
 
   defp calculate_effectiveness_analysis(_usage_records), do: %{}
-  defp calculate_prompt_effectiveness_rankings(_usage_records), do: %{top_performers: [], needs_improvement: []}
+
+  defp calculate_prompt_effectiveness_rankings(_usage_records),
+    do: %{top_performers: [], needs_improvement: []}
+
   defp generate_effectiveness_improvements(_usage_records), do: []
   defp calculate_optimization_metrics(_usage_records), do: %{}
   defp identify_performance_bottlenecks(_usage_records), do: []

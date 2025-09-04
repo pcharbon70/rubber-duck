@@ -17,7 +17,7 @@ defmodule RubberDuck.Prompts.Security.ApprovalWorkflowManager do
   use GenServer
   require Logger
 
-  alias RubberDuck.Prompts.Security.{PromptValidator, SecurityAuditLogger, AccessControlManager}
+  alias RubberDuck.Prompts.Security.{AccessControlManager, PromptValidator, SecurityAuditLogger}
 
   @approval_stages [:content_review, :security_review, :final_approval]
   @approval_statuses [:draft, :pending, :approved, :rejected, :expired]

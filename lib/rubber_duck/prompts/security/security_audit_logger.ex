@@ -352,7 +352,7 @@ defmodule RubberDuck.Prompts.Security.SecurityAuditLogger do
 
   defp calculate_correlation_score(patterns) do
     base_score = length(patterns) * 0.1
-    critical_boost = Enum.count(patterns, &is_critical_pattern?/1) * 0.3
+    critical_boost = Enum.count(patterns, &critical_pattern?/1) * 0.3
     min(1.0, base_score + critical_boost)
   end
 
@@ -472,9 +472,9 @@ defmodule RubberDuck.Prompts.Security.SecurityAuditLogger do
   defp requires_investigation?(:policy_violation_detected), do: true
   defp requires_investigation?(_pattern), do: false
 
-  defp is_critical_pattern?(:repeated_access_denial), do: true
-  defp is_critical_pattern?(:policy_violation_detected), do: true
-  defp is_critical_pattern?(_pattern), do: false
+  defp critical_pattern?(:repeated_access_denial), do: true
+  defp critical_pattern?(:policy_violation_detected), do: true
+  defp critical_pattern?(_pattern), do: false
 
   # Initialization functions
 

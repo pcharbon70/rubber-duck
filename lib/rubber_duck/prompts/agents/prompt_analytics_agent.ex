@@ -48,11 +48,11 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     Prompt,
     PromptUsage
   }
-  
+
   alias RubberDuck.Prompts.Services.{
     PromptAnalyticsEngine,
-    PromptMetricsCollector,
-    PromptInsightEngine
+    PromptInsightEngine,
+    PromptMetricsCollector
   }
 
   @analysis_scopes [
@@ -211,19 +211,19 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     case fetch_real_usage_statistics(analytics_plan) do
       {:ok, usage_stats} ->
         {:ok, %{results | usage_statistics: usage_stats}}
-      
+
       {:error, reason} ->
         Logger.warn("PromptAnalyticsAgent: Failed to fetch usage statistics, using fallback",
           error: reason
         )
-        
+
         # Fallback to basic statistics
         fallback_stats = %{
           data_unavailable: true,
           fallback_reason: reason,
           basic_metrics: calculate_basic_fallback_stats(analytics_plan)
         }
-        
+
         {:ok, %{results | usage_statistics: fallback_stats}}
     end
   end
@@ -233,19 +233,19 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     case fetch_real_effectiveness_data(analytics_plan) do
       {:ok, effectiveness_analysis} ->
         {:ok, %{results | effectiveness_analysis: effectiveness_analysis}}
-      
+
       {:error, reason} ->
         Logger.warn("PromptAnalyticsAgent: Failed to fetch effectiveness data",
           error: reason
         )
-        
+
         # Use basic effectiveness analysis
         fallback_analysis = %{
           data_unavailable: true,
           basic_effectiveness_score: 0.75,
           improvement_opportunities: ["Enable detailed usage tracking for better insights"]
         }
-        
+
         {:ok, %{results | effectiveness_analysis: fallback_analysis}}
     end
   end
@@ -255,19 +255,19 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     case fetch_real_optimization_data(analytics_plan) do
       {:ok, optimization_analysis} ->
         {:ok, %{results | optimization_analysis: optimization_analysis}}
-      
+
       {:error, reason} ->
         Logger.warn("PromptAnalyticsAgent: Failed to fetch optimization data",
           error: reason
         )
-        
+
         # Basic optimization analysis
         fallback_analysis = %{
           data_unavailable: true,
           basic_optimization_potential: 0.15,
           recommendations: ["Collect more usage data for detailed optimization insights"]
         }
-        
+
         {:ok, %{results | optimization_analysis: fallback_analysis}}
     end
   end
@@ -808,11 +808,11 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   defp fetch_real_usage_statistics(analytics_plan) do
     time_window = analytics_plan.time_window
     cutoff_date = DateTime.add(DateTime.utc_now(), -time_window.amount, time_window.unit)
-    
+
     # Fetch usage records for the time window
     case RubberDuck.Prompts.Domain.read(PromptUsage, %{
-      inserted_at: {:>=, cutoff_date}
-    }) do
+           inserted_at: {:>=, cutoff_date}
+         }) do
       {:ok, usage_records} ->
         usage_stats = %{
           total_prompts_analyzed: count_unique_prompts(usage_records),
@@ -824,9 +824,9 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
           time_period: time_window,
           data_freshness: DateTime.utc_now()
         }
-        
+
         {:ok, usage_stats}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -843,9 +843,9 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
           effectiveness_trends: analyze_real_effectiveness_trends(analytics_plan),
           improvement_opportunities: generate_real_improvement_opportunities(usage_stats)
         }
-        
+
         {:ok, effectiveness_analysis}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -861,9 +861,9 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
           composition_efficiency: calculate_composition_efficiency(usage_stats),
           optimization_recommendations: generate_real_optimization_recommendations(usage_stats)
         }
-        
+
         {:ok, optimization_analysis}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -880,7 +880,7 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp calculate_usage_frequency_breakdown(usage_records) do
     daily_usage = calculate_daily_average_usage(usage_records)
-    
+
     %{
       daily: daily_usage,
       weekly: daily_usage * 7,
@@ -894,7 +894,7 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     unique_users = count_unique_users_in_records(usage_records)
     active_users = count_active_users(usage_records)
     power_users = count_power_users(usage_records)
-    
+
     %{
       total_users: unique_users,
       active_users: active_users,
@@ -906,7 +906,7 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp calculate_performance_metrics_summary(usage_records) do
     successful_records = Enum.filter(usage_records, & &1.success)
-    
+
     %{
       success_rate: calculate_success_rate(usage_records),
       avg_response_time_ms: calculate_avg_response_time(successful_records),
@@ -926,16 +926,18 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp calculate_system_effectiveness_score(usage_stats) do
     success_rate = usage_stats.performance_metrics.success_rate
-    response_performance = case usage_stats.performance_metrics.avg_response_time_ms do
-      time when time < 1000 -> 1.0
-      time when time < 3000 -> 0.9
-      time when time < 5000 -> 0.8
-      _ -> 0.7
-    end
-    
+
+    response_performance =
+      case usage_stats.performance_metrics.avg_response_time_ms do
+        time when time < 1000 -> 1.0
+        time when time < 3000 -> 0.9
+        time when time < 5000 -> 0.8
+        _ -> 0.7
+      end
+
     user_adoption = min(1.0, usage_stats.user_engagement.active_users / 50.0)
-    
-    weighted_score = (success_rate * 0.5) + (response_performance * 0.3) + (user_adoption * 0.2)
+
+    weighted_score = success_rate * 0.5 + response_performance * 0.3 + user_adoption * 0.2
     Float.round(weighted_score, 3)
   end
 
@@ -948,6 +950,7 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   # Helper calculation functions
   defp calculate_daily_average_usage([]), do: 0.0
+
   defp calculate_daily_average_usage(usage_records) do
     days_span = calculate_date_span(usage_records)
     Float.round(length(usage_records) / max(1, days_span), 2)
@@ -961,22 +964,27 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   end
 
   defp calculate_usage_consistency(usage_records) do
-    daily_counts = usage_records
-    |> Enum.group_by(fn record -> DateTime.to_date(record.inserted_at) end)
-    |> Enum.map(fn {_date, records} -> length(records) end)
-    
+    daily_counts =
+      usage_records
+      |> Enum.group_by(fn record -> DateTime.to_date(record.inserted_at) end)
+      |> Enum.map(fn {_date, records} -> length(records) end)
+
     case length(daily_counts) > 1 do
       true ->
         mean = Enum.sum(daily_counts) / length(daily_counts)
-        variance = Enum.reduce(daily_counts, 0, fn count, acc ->
-          acc + :math.pow(count - mean, 2)
-        end) / length(daily_counts)
-        
+
+        variance =
+          Enum.reduce(daily_counts, 0, fn count, acc ->
+            acc + :math.pow(count - mean, 2)
+          end) / length(daily_counts)
+
         # Consistency score: higher values indicate more consistent usage
         consistency = 1.0 - min(1.0, :math.sqrt(variance) / max(1.0, mean))
         Float.round(consistency, 3)
+
       false ->
-        1.0  # Single day has perfect consistency
+        # Single day has perfect consistency
+        1.0
     end
   end
 
@@ -1001,15 +1009,17 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   defp calculate_engagement_rate(active_users, total_users) when total_users > 0 do
     Float.round(active_users / total_users, 3)
   end
+
   defp calculate_engagement_rate(_active_users, _total_users), do: 0.0
 
   defp calculate_avg_prompts_per_user(usage_records) do
-    user_prompt_counts = usage_records
-    |> Enum.group_by(& &1.used_by_id)
-    |> Enum.map(fn {_user_id, records} -> 
-      records |> Enum.map(& &1.prompt_id) |> Enum.uniq() |> length()
-    end)
-    
+    user_prompt_counts =
+      usage_records
+      |> Enum.group_by(& &1.used_by_id)
+      |> Enum.map(fn {_user_id, records} ->
+        records |> Enum.map(& &1.prompt_id) |> Enum.uniq() |> length()
+      end)
+
     case length(user_prompt_counts) do
       0 -> 0.0
       count -> Enum.sum(user_prompt_counts) / count
@@ -1017,32 +1027,39 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   end
 
   defp calculate_success_rate([]), do: 0.0
+
   defp calculate_success_rate(usage_records) do
     success_count = Enum.count(usage_records, & &1.success)
     Float.round(success_count / length(usage_records), 3)
   end
 
   defp calculate_avg_response_time(usage_records) do
-    valid_times = Enum.filter(usage_records, fn record -> 
-      record.response_time_ms && record.response_time_ms > 0
-    end)
-    
+    valid_times =
+      Enum.filter(usage_records, fn record ->
+        record.response_time_ms && record.response_time_ms > 0
+      end)
+
     case length(valid_times) do
-      0 -> 0.0
-      count -> 
+      0 ->
+        0.0
+
+      count ->
         total = Enum.sum(Enum.map(valid_times, & &1.response_time_ms))
         Float.round(total / count, 2)
     end
   end
 
   defp calculate_p95_response_time(usage_records) do
-    response_times = usage_records
-    |> Enum.map(& &1.response_time_ms)
-    |> Enum.filter(& &1 && &1 > 0)
-    |> Enum.sort()
-    
+    response_times =
+      usage_records
+      |> Enum.map(& &1.response_time_ms)
+      |> Enum.filter(&(&1 && &1 > 0))
+      |> Enum.sort()
+
     case length(response_times) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         p95_index = trunc(count * 0.95)
         Enum.at(response_times, p95_index, 0)
@@ -1050,12 +1067,15 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   end
 
   defp calculate_avg_tokens(usage_records) do
-    valid_tokens = Enum.filter(usage_records, fn record ->
-      record.tokens_used && record.tokens_used > 0
-    end)
-    
+    valid_tokens =
+      Enum.filter(usage_records, fn record ->
+        record.tokens_used && record.tokens_used > 0
+      end)
+
     case length(valid_tokens) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         total = Enum.sum(Enum.map(valid_tokens, & &1.tokens_used))
         Float.round(total / count, 2)
@@ -1063,10 +1083,11 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
   end
 
   defp calculate_date_span([]), do: 1
+
   defp calculate_date_span(usage_records) do
     first_date = usage_records |> Enum.min_by(& &1.inserted_at) |> Map.get(:inserted_at)
     last_date = usage_records |> Enum.max_by(& &1.inserted_at) |> Map.get(:inserted_at)
-    
+
     max(1, DateTime.diff(last_date, first_date, :day))
   end
 
@@ -1074,20 +1095,21 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     # Simple trend: compare first half vs second half performance
     sorted_records = Enum.sort_by(usage_records, & &1.inserted_at)
     midpoint = div(length(sorted_records), 2)
-    
+
     case length(sorted_records) >= 4 do
       true ->
         first_half = Enum.take(sorted_records, midpoint)
         second_half = Enum.drop(sorted_records, midpoint)
-        
+
         first_avg = calculate_avg_response_time(first_half)
         second_avg = calculate_avg_response_time(second_half)
-        
+
         cond do
           second_avg < first_avg * 0.9 -> :improving
           second_avg > first_avg * 1.1 -> :declining
           true -> :stable
         end
+
       false ->
         :insufficient_data
     end
@@ -1102,10 +1124,10 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
         |> Enum.filter(fn {_prompt_id, score} -> score > 0.8 end)
         |> Enum.sort_by(fn {_prompt_id, score} -> score end, :desc)
         |> Enum.take(5)
-        |> Enum.map(fn {prompt_id, score} -> 
+        |> Enum.map(fn {prompt_id, score} ->
           %{prompt_id: prompt_id, effectiveness_score: score}
         end)
-        
+
       {:error, _reason} ->
         []
     end
@@ -1118,10 +1140,10 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
         |> Enum.filter(fn {_prompt_id, score} -> score < 0.6 end)
         |> Enum.sort_by(fn {_prompt_id, score} -> score end)
         |> Enum.take(3)
-        |> Enum.map(fn {prompt_id, score} -> 
+        |> Enum.map(fn {prompt_id, score} ->
           %{prompt_id: prompt_id, effectiveness_score: score, needs_attention: true}
         end)
-        
+
       {:error, _reason} ->
         []
     end
@@ -1129,7 +1151,7 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp analyze_real_effectiveness_trends(analytics_plan) do
     time_window = analytics_plan.time_window
-    
+
     # Analyze trends over smaller time slices
     case analyze_effectiveness_over_time_slices(time_window) do
       {:ok, trend_data} ->
@@ -1139,7 +1161,7 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
           monthly_change: calculate_monthly_effectiveness_change(trend_data),
           forecast: generate_effectiveness_forecast(trend_data)
         }
-        
+
       {:error, _reason} ->
         %{trend_analysis_unavailable: true}
     end
@@ -1147,31 +1169,43 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp generate_real_improvement_opportunities(usage_stats) do
     opportunities = []
-    
+
     # Check response time opportunities
     avg_response_time = usage_stats.performance_metrics.avg_response_time_ms
-    opportunities = if avg_response_time > 3000 do
-      ["Optimize prompts with slow response times (avg: #{trunc(avg_response_time)}ms)" | opportunities]
-    else
-      opportunities
-    end
-    
-    # Check success rate opportunities  
+
+    opportunities =
+      if avg_response_time > 3000 do
+        [
+          "Optimize prompts with slow response times (avg: #{trunc(avg_response_time)}ms)"
+          | opportunities
+        ]
+      else
+        opportunities
+      end
+
+    # Check success rate opportunities
     success_rate = usage_stats.performance_metrics.success_rate
-    opportunities = if success_rate < 0.9 do
-      ["Improve prompt success rate (current: #{trunc(success_rate * 100)}%)" | opportunities]
-    else
-      opportunities
-    end
-    
+
+    opportunities =
+      if success_rate < 0.9 do
+        ["Improve prompt success rate (current: #{trunc(success_rate * 100)}%)" | opportunities]
+      else
+        opportunities
+      end
+
     # Check token efficiency opportunities
     avg_tokens = usage_stats.performance_metrics.avg_tokens_used
-    opportunities = if avg_tokens > 2000 do
-      ["Consider token optimization for cost efficiency (avg: #{trunc(avg_tokens)} tokens)" | opportunities]
-    else
-      opportunities
-    end
-    
+
+    opportunities =
+      if avg_tokens > 2000 do
+        [
+          "Consider token optimization for cost efficiency (avg: #{trunc(avg_tokens)} tokens)"
+          | opportunities
+        ]
+      else
+        opportunities
+      end
+
     case opportunities do
       [] -> ["System performing well - no immediate improvements needed"]
       _ -> opportunities
@@ -1180,27 +1214,32 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
 
   defp calculate_real_token_optimization(usage_stats) do
     avg_tokens = usage_stats.performance_metrics.avg_tokens_used
-    
+
     # Calculate potential token reduction based on average usage
     case avg_tokens do
-      tokens when tokens > 3000 -> 0.3  # 30% reduction potential
-      tokens when tokens > 2000 -> 0.2  # 20% reduction potential
-      tokens when tokens > 1000 -> 0.1  # 10% reduction potential
-      _ -> 0.05  # 5% baseline optimization potential
+      # 30% reduction potential
+      tokens when tokens > 3000 -> 0.3
+      # 20% reduction potential
+      tokens when tokens > 2000 -> 0.2
+      # 10% reduction potential
+      tokens when tokens > 1000 -> 0.1
+      # 5% baseline optimization potential
+      _ -> 0.05
     end
   end
 
   defp calculate_response_time_optimization(usage_stats) do
     avg_response_time = usage_stats.performance_metrics.avg_response_time_ms
-    
+
     %{
       current_avg_ms: avg_response_time,
-      optimization_potential: case avg_response_time do
-        time when time > 5000 -> :high
-        time when time > 2000 -> :medium  
-        time when time > 1000 -> :low
-        _ -> :minimal
-      end,
+      optimization_potential:
+        case avg_response_time do
+          time when time > 5000 -> :high
+          time when time > 2000 -> :medium
+          time when time > 1000 -> :low
+          _ -> :minimal
+        end,
       target_improvement_ms: max(0, avg_response_time - 1000)
     }
   end
@@ -1214,42 +1253,44 @@ defmodule RubberDuck.Prompts.Agents.PromptAnalyticsAgent do
     # Analyze efficiency based on tokens vs response time
     avg_tokens = usage_stats.performance_metrics.avg_tokens_used
     avg_time = usage_stats.performance_metrics.avg_response_time_ms
-    
+
     case {avg_tokens, avg_time} do
       {tokens, time} when tokens > 0 and time > 0 ->
         # Tokens per second as efficiency metric
         efficiency = tokens / (time / 1000.0)
         # Normalize to 0-1 scale (assume 500 tokens/sec is excellent)
         min(1.0, efficiency / 500.0)
+
       _ ->
-        0.5  # Default efficiency
+        # Default efficiency
+        0.5
     end
   end
 
   defp generate_real_optimization_recommendations(usage_stats) do
     recommendations = []
-    
+
     # Performance-based recommendations
     if usage_stats.performance_metrics.avg_response_time_ms > 3000 do
       recommendations = [
         "Consider prompt compression to reduce response times" | recommendations
       ]
     end
-    
+
     # Token efficiency recommendations
     if usage_stats.performance_metrics.avg_tokens_used > 2000 do
       recommendations = [
         "Implement token optimization for cost reduction" | recommendations
       ]
     end
-    
+
     # Success rate recommendations
     if usage_stats.performance_metrics.success_rate < 0.9 do
       recommendations = [
         "Review and improve prompts with low success rates" | recommendations
       ]
     end
-    
+
     case recommendations do
       [] -> ["System is well-optimized - consider advanced optimization strategies"]
       _ -> recommendations

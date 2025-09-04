@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   @moduledoc """
   Core analytics processing engine for prompt usage analysis and insights.
-  
+
   Provides comprehensive analytics processing with real data analysis, trend
   detection, performance metrics, and optimization insights. Designed for
   high-performance analytics with intelligent caching and query optimization.
-  
+
   Features:
   - Real-time usage analytics processing with sub-50ms overhead
   - Historical trend analysis with statistical modeling and forecasting
@@ -14,16 +14,18 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   - Query optimization with intelligent caching and aggregation strategies
   - Multi-dimensional analysis supporting user, prompt, and system-wide views
   """
-  
+
   use GenServer
   require Logger
 
-  alias RubberDuck.Prompts.Resources.{PromptUsage, Prompt}
-  alias RubberDuck.Prompts.Services.{PromptMetricsCollector, PromptInsightEngine}
+  alias RubberDuck.Prompts.Resources.{Prompt, PromptUsage}
+  alias RubberDuck.Prompts.Services.{PromptInsightEngine, PromptMetricsCollector}
 
   @cache_table :prompt_analytics_cache
-  @default_cache_ttl 300_000  # 5 minutes
-  @performance_target_ms 2000  # 2 seconds for standard analytics queries
+  # 5 minutes
+  @default_cache_ttl 300_000
+  # 2 seconds for standard analytics queries
+  @performance_target_ms 2000
 
   defstruct [
     :cache_table,
@@ -39,10 +41,14 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   def init(opts) do
     # Initialize ETS cache for analytics results
-    cache_table = :ets.new(@cache_table, [
-      :set, :public, :named_table,
-      {:read_concurrency, true}, {:write_concurrency, true}
-    ])
+    cache_table =
+      :ets.new(@cache_table, [
+        :set,
+        :public,
+        :named_table,
+        {:read_concurrency, true},
+        {:write_concurrency, true}
+      ])
 
     config = build_analytics_config(opts)
 
@@ -50,7 +56,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
       cache_table: cache_table,
       config: config,
       metrics_collector: initialize_metrics_collector(),
-      insight_engine: initialize_insight_engine(), 
+      insight_engine: initialize_insight_engine(),
       performance_monitor: initialize_performance_monitor()
     }
 
@@ -84,7 +90,8 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
     GenServer.call(__MODULE__, {:get_effectiveness_insights, prompt_id, options})
   end
 
-  @spec get_optimization_recommendations(binary() | :system, map()) :: {:ok, list(map())} | {:error, any()}
+  @spec get_optimization_recommendations(binary() | :system, map()) ::
+          {:ok, list(map())} | {:error, any()}
   def get_optimization_recommendations(target_id, options \\ %{}) do
     GenServer.call(__MODULE__, {:get_optimization_recommendations, target_id, options})
   end
@@ -98,7 +105,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   def handle_call({:analyze_prompt_usage, prompt_id, options}, _from, state) do
     analytics_start_time = System.monotonic_time(:microsecond)
-    
+
     Logger.debug("PromptAnalyticsEngine: Analyzing prompt usage",
       prompt_id: prompt_id,
       options: Map.keys(options)
@@ -107,28 +114,28 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
     case execute_prompt_usage_analysis(prompt_id, options, state) do
       {:ok, analysis_result} ->
         analytics_time = System.monotonic_time(:microsecond) - analytics_start_time
-        
+
         update_performance_metrics(analytics_time, :success, state)
-        
+
         Logger.debug("PromptAnalyticsEngine: Prompt usage analysis completed",
           analytics_time_us: analytics_time,
           prompt_id: prompt_id,
           data_points: analysis_result.data_points_analyzed
         )
-        
+
         {:reply, {:ok, analysis_result}, state}
 
       {:error, reason} ->
         analytics_time = System.monotonic_time(:microsecond) - analytics_start_time
-        
+
         update_performance_metrics(analytics_time, :error, state)
-        
+
         Logger.error("PromptAnalyticsEngine: Prompt usage analysis failed",
           analytics_time_us: analytics_time,
           prompt_id: prompt_id,
           error: reason
         )
-        
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -166,11 +173,12 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
       :all ->
         :ets.delete_all_objects(state.cache_table)
         Logger.info("PromptAnalyticsEngine: Cache fully invalidated")
+
       key when is_binary(key) ->
         :ets.delete(state.cache_table, key)
         Logger.debug("PromptAnalyticsEngine: Cache key invalidated", key: key)
     end
-    
+
     {:noreply, state}
   end
 
@@ -178,17 +186,18 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp execute_prompt_usage_analysis(prompt_id, options, state) do
     cache_key = generate_cache_key("prompt_usage", prompt_id, options)
-    
+
     case check_analytics_cache(cache_key, state) do
       {:hit, cached_result} ->
         Logger.debug("PromptAnalyticsEngine: Cache hit for prompt usage analysis", key: cache_key)
         {:ok, cached_result}
-        
+
       :miss ->
         case analyze_prompt_usage_fresh(prompt_id, options, state) do
           {:ok, result} ->
             cache_analytics_result(cache_key, result, state)
             {:ok, result}
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -197,12 +206,11 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp analyze_prompt_usage_fresh(prompt_id, options, _state) do
     time_window = Map.get(options, :time_window, %{amount: 30, unit: :days})
-    
+
     # Query usage data from PromptUsage resource
     with {:ok, usage_records} <- fetch_prompt_usage_data(prompt_id, time_window),
          {:ok, prompt_info} <- fetch_prompt_info(prompt_id),
          {:ok, analysis_results} <- process_usage_data(usage_records, prompt_info, options) do
-      
       comprehensive_analysis = %{
         prompt_id: prompt_id,
         time_window: time_window,
@@ -214,7 +222,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
         optimization_opportunities: analysis_results.optimization_opportunities,
         analysis_timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, comprehensive_analysis}
     else
       {:error, reason} -> {:error, reason}
@@ -223,12 +231,12 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp fetch_prompt_usage_data(prompt_id, time_window) do
     cutoff_date = calculate_cutoff_date(time_window)
-    
+
     # Use Ash query to fetch usage data
     case RubberDuck.Prompts.Domain.read(PromptUsage, %{
-      prompt_id: prompt_id,
-      used_at: {:>=, cutoff_date}
-    }) do
+           prompt_id: prompt_id,
+           used_at: {:>=, cutoff_date}
+         }) do
       {:ok, usage_records} -> {:ok, usage_records}
       {:error, reason} -> {:error, {:usage_data_fetch_failed, reason}}
     end
@@ -249,7 +257,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
     trend_analysis = calculate_trend_analysis(usage_records)
     effectiveness_score = calculate_effectiveness_score(usage_records, prompt_info)
     optimization_opportunities = identify_optimization_opportunities(usage_records, prompt_info)
-    
+
     analysis_results = %{
       usage_stats: usage_stats,
       performance_metrics: performance_metrics,
@@ -257,7 +265,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
       effectiveness_score: effectiveness_score,
       optimization_opportunities: optimization_opportunities
     }
-    
+
     {:ok, analysis_results}
   end
 
@@ -277,7 +285,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp calculate_performance_metrics(usage_records) do
     successful_records = Enum.filter(usage_records, fn record -> record.success end)
-    
+
     %{
       avg_response_time_ms: calculate_avg_response_time(successful_records),
       p95_response_time_ms: calculate_p95_response_time(successful_records),
@@ -290,7 +298,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   defp calculate_trend_analysis(usage_records) do
     # Group by day and analyze trends
     daily_usage = group_usage_by_day(usage_records)
-    
+
     %{
       trend_direction: determine_trend_direction(daily_usage),
       growth_rate: calculate_growth_rate(daily_usage),
@@ -302,80 +310,108 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp calculate_effectiveness_score(usage_records, prompt_info) do
     base_score = calculate_success_rate(usage_records)
-    
+
     # Factor in response time performance
     avg_response_time = calculate_average_response_time(usage_records)
-    performance_factor = case avg_response_time do
-      time when time < 1000 -> 1.0    # < 1s is excellent
-      time when time < 5000 -> 0.9    # < 5s is good
-      time when time < 10000 -> 0.8   # < 10s is acceptable
-      _ -> 0.7                        # > 10s needs improvement
-    end
-    
+
+    performance_factor =
+      case avg_response_time do
+        # < 1s is excellent
+        time when time < 1000 -> 1.0
+        # < 5s is good
+        time when time < 5000 -> 0.9
+        # < 10s is acceptable
+        time when time < 10_000 -> 0.8
+        # > 10s needs improvement
+        _ -> 0.7
+      end
+
     # Factor in usage frequency (more used = more effective)
     usage_frequency = length(usage_records) / max(1, get_days_since_creation(prompt_info))
-    frequency_factor = min(1.0, usage_frequency / 5.0)  # Normalize to daily usage
-    
+    # Normalize to daily usage
+    frequency_factor = min(1.0, usage_frequency / 5.0)
+
     # Factor in user adoption (more users = more effective)
     unique_users = count_unique_users(usage_records)
-    adoption_factor = min(1.0, unique_users / 10.0)  # Normalize to 10 users
-    
+    # Normalize to 10 users
+    adoption_factor = min(1.0, unique_users / 10.0)
+
     # Calculate weighted effectiveness score
-    weighted_score = (
-      base_score * 0.4 +           # Success rate (40%)
-      performance_factor * 0.3 +   # Performance (30%) 
-      frequency_factor * 0.2 +     # Usage frequency (20%)
-      adoption_factor * 0.1        # User adoption (10%)
-    )
-    
+    # Success rate (40%)
+    # Performance (30%)
+    # Usage frequency (20%)
+    # User adoption (10%)
+    weighted_score =
+      base_score * 0.4 +
+        performance_factor * 0.3 +
+        frequency_factor * 0.2 +
+        adoption_factor * 0.1
+
     Float.round(weighted_score, 3)
   end
 
   defp identify_optimization_opportunities(usage_records, prompt_info) do
     opportunities = []
-    
+
     # Check response time optimization
     avg_response_time = calculate_average_response_time(usage_records)
-    opportunities = if avg_response_time > 5000 do
-      [%{
-        type: :response_time,
-        description: "Response time optimization needed",
-        impact: :high,
-        recommendation: "Consider prompt simplification or caching",
-        potential_improvement: "#{trunc((avg_response_time - 2000) / avg_response_time * 100)}% faster"
-      } | opportunities]
-    else
-      opportunities
-    end
-    
+
+    opportunities =
+      if avg_response_time > 5000 do
+        [
+          %{
+            type: :response_time,
+            description: "Response time optimization needed",
+            impact: :high,
+            recommendation: "Consider prompt simplification or caching",
+            potential_improvement:
+              "#{trunc((avg_response_time - 2000) / avg_response_time * 100)}% faster"
+          }
+          | opportunities
+        ]
+      else
+        opportunities
+      end
+
     # Check token usage optimization
     avg_tokens = calculate_avg_tokens_used(Enum.filter(usage_records, & &1.success))
-    opportunities = if avg_tokens > 3000 do
-      [%{
-        type: :token_usage,
-        description: "High token usage detected",
-        impact: :medium,
-        recommendation: "Consider prompt compression or variable optimization",
-        potential_improvement: "#{trunc((avg_tokens - 1500) / avg_tokens * 100)}% token reduction"
-      } | opportunities]
-    else
-      opportunities
-    end
-    
+
+    opportunities =
+      if avg_tokens > 3000 do
+        [
+          %{
+            type: :token_usage,
+            description: "High token usage detected",
+            impact: :medium,
+            recommendation: "Consider prompt compression or variable optimization",
+            potential_improvement:
+              "#{trunc((avg_tokens - 1500) / avg_tokens * 100)}% token reduction"
+          }
+          | opportunities
+        ]
+      else
+        opportunities
+      end
+
     # Check error rate optimization
     error_rate = 1.0 - calculate_success_rate(usage_records)
-    opportunities = if error_rate > 0.1 do
-      [%{
-        type: :error_rate,
-        description: "High error rate needs attention",
-        impact: :high, 
-        recommendation: "Review prompt structure and validation",
-        potential_improvement: "Up to #{trunc(error_rate * 100)}% error reduction"
-      } | opportunities]
-    else
-      opportunities
-    end
-    
+
+    opportunities =
+      if error_rate > 0.1 do
+        [
+          %{
+            type: :error_rate,
+            description: "High error rate needs attention",
+            impact: :high,
+            recommendation: "Review prompt structure and validation",
+            potential_improvement: "Up to #{trunc(error_rate * 100)}% error reduction"
+          }
+          | opportunities
+        ]
+      else
+        opportunities
+      end
+
     opportunities
   end
 
@@ -389,12 +425,14 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   end
 
   defp calculate_success_rate([]), do: 0.0
+
   defp calculate_success_rate(usage_records) do
     success_count = Enum.count(usage_records, fn record -> record.success end)
     success_count / length(usage_records)
   end
 
   defp calculate_average_response_time([]), do: 0.0
+
   defp calculate_average_response_time(usage_records) do
     response_times = Enum.map(usage_records, fn record -> record.response_time_ms || 0 end)
     Enum.sum(response_times) / length(response_times)
@@ -409,7 +447,9 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp calculate_daily_usage_count(usage_records) do
     case length(usage_records) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         days = get_usage_day_span(usage_records)
         count / max(1, days)
@@ -418,11 +458,12 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp identify_peak_usage_hours(usage_records) do
     usage_records
-    |> Enum.map(fn record -> 
+    |> Enum.map(fn record ->
       record.inserted_at
       |> DateTime.to_time()
       |> Time.to_erl()
-      |> elem(0)  # Extract hour
+      # Extract hour
+      |> elem(0)
     end)
     |> Enum.frequencies()
     |> Enum.sort_by(fn {_hour, count} -> count end, :desc)
@@ -431,12 +472,15 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   end
 
   defp calculate_avg_response_time(usage_records) do
-    valid_times = Enum.filter(usage_records, fn record -> 
-      record.response_time_ms && record.response_time_ms > 0
-    end)
-    
+    valid_times =
+      Enum.filter(usage_records, fn record ->
+        record.response_time_ms && record.response_time_ms > 0
+      end)
+
     case length(valid_times) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         total_time = Enum.sum(Enum.map(valid_times, & &1.response_time_ms))
         total_time / count
@@ -444,13 +488,16 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   end
 
   defp calculate_p95_response_time(usage_records) do
-    response_times = usage_records
-    |> Enum.filter(fn record -> record.response_time_ms && record.response_time_ms > 0 end)
-    |> Enum.map(& &1.response_time_ms)
-    |> Enum.sort()
-    
+    response_times =
+      usage_records
+      |> Enum.filter(fn record -> record.response_time_ms && record.response_time_ms > 0 end)
+      |> Enum.map(& &1.response_time_ms)
+      |> Enum.sort()
+
     case length(response_times) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         p95_index = trunc(count * 0.95)
         Enum.at(response_times, p95_index, 0.0)
@@ -458,12 +505,15 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   end
 
   defp calculate_avg_tokens_used(usage_records) do
-    valid_tokens = Enum.filter(usage_records, fn record ->
-      record.tokens_used && record.tokens_used > 0
-    end)
-    
+    valid_tokens =
+      Enum.filter(usage_records, fn record ->
+        record.tokens_used && record.tokens_used > 0
+      end)
+
     case length(valid_tokens) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         total_tokens = Enum.sum(Enum.map(valid_tokens, & &1.tokens_used))
         total_tokens / count
@@ -472,7 +522,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp analyze_error_patterns(usage_records) do
     error_records = Enum.filter(usage_records, fn record -> not record.success end)
-    
+
     %{
       total_errors: length(error_records),
       error_types: group_errors_by_type(error_records),
@@ -495,17 +545,18 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   defp determine_trend_direction(daily_usage) do
     # Simple trend analysis based on first vs last week
     dates = daily_usage |> Map.keys() |> Enum.sort()
-    
+
     case length(dates) >= 7 do
       true ->
         first_week_avg = calculate_week_average(daily_usage, Enum.take(dates, 7))
         last_week_avg = calculate_week_average(daily_usage, Enum.take(dates, -7))
-        
+
         cond do
           last_week_avg > first_week_avg * 1.1 -> :increasing
           last_week_avg < first_week_avg * 0.9 -> :decreasing
           true -> :stable
         end
+
       false ->
         :insufficient_data
     end
@@ -513,20 +564,23 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp calculate_growth_rate(daily_usage) do
     dates = daily_usage |> Map.keys() |> Enum.sort()
-    
+
     case length(dates) >= 2 do
       true ->
         first_day_usage = Map.get(daily_usage, List.first(dates), 0)
         last_day_usage = Map.get(daily_usage, List.last(dates), 0)
         days_span = length(dates)
-        
+
         case first_day_usage > 0 do
           true ->
             daily_growth = (last_day_usage - first_day_usage) / (first_day_usage * days_span)
-            Float.round(daily_growth * 100, 2)  # Percentage
+            # Percentage
+            Float.round(daily_growth * 100, 2)
+
           false ->
             0.0
         end
+
       false ->
         0.0
     end
@@ -545,6 +599,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
     case :ets.lookup(cache_table, cache_key) do
       [{^cache_key, result, expires_at}] ->
         validate_analytics_cache_expiration(cache_key, result, expires_at, cache_table)
+
       [] ->
         :miss
     end
@@ -552,7 +607,9 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
 
   defp validate_analytics_cache_expiration(cache_key, result, expires_at, cache_table) do
     case System.system_time(:millisecond) < expires_at do
-      true -> {:hit, result}
+      true ->
+        {:hit, result}
+
       false ->
         :ets.delete(cache_table, cache_key)
         :miss
@@ -564,6 +621,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
       expires_at = System.system_time(:millisecond) + @default_cache_ttl
       :ets.insert(cache_table, {cache_key, result, expires_at})
     end
+
     :ok
   end
 
@@ -573,7 +631,7 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
       target_id,
       :crypto.hash(:md5, :erlang.term_to_binary(options)) |> Base.encode16(case: :lower)
     ]
-    
+
     Enum.join(key_components, ":")
   end
 
@@ -588,10 +646,11 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   end
 
   defp get_usage_day_span([]), do: 1
+
   defp get_usage_day_span(usage_records) do
     first_date = usage_records |> Enum.min_by(& &1.inserted_at) |> Map.get(:inserted_at)
     last_date = usage_records |> Enum.max_by(& &1.inserted_at) |> Map.get(:inserted_at)
-    
+
     max(1, DateTime.diff(last_date, first_date, :day))
   end
 
@@ -645,7 +704,8 @@ defmodule RubberDuck.Prompts.Services.PromptAnalyticsEngine do
   defp initialize_metrics_collector do
     %{
       enabled: true,
-      collection_interval_ms: 60_000,  # 1 minute
+      # 1 minute
+      collection_interval_ms: 60_000,
       performance_monitoring: true
     }
   end

@@ -19,15 +19,15 @@ defmodule RubberDuck.Prompts.Security.AccessControlManager do
   require Logger
 
   alias RubberDuck.Prompts.Security.{
-    PromptValidator,
     ContentSanitizer,
+    PromptValidator,
     SecurityMonitorAgent
   }
 
   alias RubberDuck.Prompts.Policies.{
     PromptAccessPolicy,
-    PromptSharingPolicy,
-    PromptApprovalPolicy
+    PromptApprovalPolicy,
+    PromptSharingPolicy
   }
 
   @cache_table :prompt_access_control_cache
@@ -355,7 +355,9 @@ defmodule RubberDuck.Prompts.Security.AccessControlManager do
 
   defp validate_cache_expiration(cache_key, result, expires_at, cache_table) do
     case System.system_time(:millisecond) < expires_at do
-      true -> {:hit, result}
+      true ->
+        {:hit, result}
+
       false ->
         :ets.delete(cache_table, cache_key)
         :miss

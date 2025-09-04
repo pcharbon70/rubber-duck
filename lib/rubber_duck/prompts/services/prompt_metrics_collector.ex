@@ -1,11 +1,11 @@
 defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   @moduledoc """
   Performance metrics collection service for prompt usage analytics.
-  
+
   Provides real-time metrics collection with minimal overhead, intelligent
   aggregation, and integration with analytics engines for comprehensive
   performance monitoring and optimization insights.
-  
+
   Features:
   - Real-time metrics collection with <5ms overhead per event
   - Intelligent aggregation and batching for performance optimization
@@ -14,7 +14,7 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   - ETS-based caching for frequently accessed metrics
   - Configurable retention and cleanup policies
   """
-  
+
   use GenServer
   require Logger
 
@@ -24,7 +24,8 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   @aggregation_intervals [:minute, :hour, :day]
   @default_retention_days 90
   @batch_size 1000
-  @collection_interval_ms 60_000  # 1 minute
+  # 1 minute
+  @collection_interval_ms 60_000
 
   defstruct [
     :metrics_table,
@@ -40,10 +41,14 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
 
   def init(opts) do
     # Initialize ETS table for metrics caching
-    metrics_table = :ets.new(@metrics_table, [
-      :set, :public, :named_table,
-      {:read_concurrency, true}, {:write_concurrency, true}
-    ])
+    metrics_table =
+      :ets.new(@metrics_table, [
+        :set,
+        :public,
+        :named_table,
+        {:read_concurrency, true},
+        {:write_concurrency, true}
+      ])
 
     config = build_metrics_config(opts)
 
@@ -102,35 +107,38 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
 
   def handle_cast({:collect_metrics, usage_event}, state) do
     collection_start_time = System.monotonic_time(:microsecond)
-    
+
     # Process usage event for metrics collection
     processed_metrics = process_usage_event_for_metrics(usage_event)
-    
+
     # Add to collection buffer
     updated_buffer = [processed_metrics | state.collection_buffer]
-    
+
     # Update aggregation state
     updated_aggregation = update_aggregation_state(processed_metrics, state.aggregation_state)
-    
+
     # Check if buffer should be flushed
-    final_state = case length(updated_buffer) >= @batch_size do
-      true ->
-        flush_metrics_buffer(updated_buffer, state)
-        %{state | collection_buffer: [], aggregation_state: updated_aggregation}
-      false ->
-        %{state | collection_buffer: updated_buffer, aggregation_state: updated_aggregation}
-    end
-    
+    final_state =
+      case length(updated_buffer) >= @batch_size do
+        true ->
+          flush_metrics_buffer(updated_buffer, state)
+          %{state | collection_buffer: [], aggregation_state: updated_aggregation}
+
+        false ->
+          %{state | collection_buffer: updated_buffer, aggregation_state: updated_aggregation}
+      end
+
     collection_time = System.monotonic_time(:microsecond) - collection_start_time
-    
+
     # Verify we're meeting performance targets
-    if collection_time > 5000 do  # 5ms target
+    # 5ms target
+    if collection_time > 5000 do
       Logger.warn("PromptMetricsCollector: Collection time exceeded target",
         collection_time_us: collection_time,
         target_us: 5000
       )
     end
-    
+
     {:noreply, final_state}
   end
 
@@ -202,22 +210,22 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
     current_minute = get_current_interval(:minute, metrics.timestamp)
     current_hour = get_current_interval(:hour, metrics.timestamp)
     current_day = get_current_interval(:day, metrics.timestamp)
-    
+
     # Update minute aggregation
     minute_key = "minute:#{current_minute}"
     minute_stats = get_interval_stats(minute_key, aggregation_state)
     updated_minute_stats = add_metrics_to_stats(metrics, minute_stats)
-    
+
     # Update hour aggregation
     hour_key = "hour:#{current_hour}"
     hour_stats = get_interval_stats(hour_key, aggregation_state)
     updated_hour_stats = add_metrics_to_stats(metrics, hour_stats)
-    
+
     # Update day aggregation
     day_key = "day:#{current_day}"
     day_stats = get_interval_stats(day_key, aggregation_state)
     updated_day_stats = add_metrics_to_stats(metrics, day_stats)
-    
+
     aggregation_state
     |> Map.put(minute_key, updated_minute_stats)
     |> Map.put(hour_key, updated_hour_stats)
@@ -225,13 +233,13 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   end
 
   defp flush_metrics_buffer(metrics_buffer, state) do
-    Logger.debug("PromptMetricsCollector: Flushing metrics buffer", 
+    Logger.debug("PromptMetricsCollector: Flushing metrics buffer",
       buffer_size: length(metrics_buffer)
     )
-    
+
     # Store aggregated metrics
     store_metrics_batch(metrics_buffer, state)
-    
+
     # Update performance monitoring
     update_collection_performance(length(metrics_buffer), state)
   end
@@ -239,7 +247,7 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   defp store_metrics_batch(metrics_buffer, %{metrics_table: metrics_table}) do
     # Store metrics in ETS for fast retrieval
     timestamp = System.system_time(:millisecond)
-    
+
     Enum.each(metrics_buffer, fn metrics ->
       key = "metrics:#{metrics.prompt_id}:#{metrics.user_id}:#{timestamp}"
       :ets.insert(metrics_table, {key, metrics, timestamp})
@@ -250,18 +258,18 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
 
   defp fetch_prompt_metrics(prompt_id, options, state) do
     time_window = Map.get(options, :time_window, %{amount: 7, unit: :days})
-    
+
     # Fetch from database using PromptUsage resource
     cutoff_date = calculate_cutoff_date(time_window)
-    
+
     case RubberDuck.Prompts.Domain.read(PromptUsage, %{
-      prompt_id: prompt_id,
-      inserted_at: {:>=, cutoff_date}
-    }) do
+           prompt_id: prompt_id,
+           inserted_at: {:>=, cutoff_date}
+         }) do
       {:ok, usage_records} ->
         metrics = calculate_prompt_metrics(usage_records, prompt_id)
         {:ok, metrics}
-      
+
       {:error, reason} ->
         {:error, {:metrics_fetch_failed, reason}}
     end
@@ -270,15 +278,15 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   defp fetch_user_metrics(user_id, options, state) do
     time_window = Map.get(options, :time_window, %{amount: 30, unit: :days})
     cutoff_date = calculate_cutoff_date(time_window)
-    
+
     case RubberDuck.Prompts.Domain.read(PromptUsage, %{
-      used_by_id: user_id,
-      inserted_at: {:>=, cutoff_date}
-    }) do
+           used_by_id: user_id,
+           inserted_at: {:>=, cutoff_date}
+         }) do
       {:ok, usage_records} ->
         metrics = calculate_user_metrics(usage_records, user_id)
         {:ok, metrics}
-      
+
       {:error, reason} ->
         {:error, {:user_metrics_fetch_failed, reason}}
     end
@@ -287,14 +295,14 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   defp fetch_system_metrics(options, state) do
     time_window = Map.get(options, :time_window, %{amount: 7, unit: :days})
     cutoff_date = calculate_cutoff_date(time_window)
-    
+
     case RubberDuck.Prompts.Domain.read(PromptUsage, %{
-      inserted_at: {:>=, cutoff_date}
-    }) do
+           inserted_at: {:>=, cutoff_date}
+         }) do
       {:ok, usage_records} ->
         metrics = calculate_system_metrics(usage_records)
         {:ok, metrics}
-      
+
       {:error, reason} ->
         {:error, {:system_metrics_fetch_failed, reason}}
     end
@@ -362,18 +370,22 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   end
 
   defp calculate_success_rate([]), do: 0.0
+
   defp calculate_success_rate(usage_records) do
     success_count = Enum.count(usage_records, & &1.success)
     Float.round(success_count / length(usage_records), 3)
   end
 
   defp calculate_avg_response_time(usage_records) do
-    valid_times = Enum.filter(usage_records, fn record ->
-      record.response_time_ms && record.response_time_ms > 0
-    end)
-    
+    valid_times =
+      Enum.filter(usage_records, fn record ->
+        record.response_time_ms && record.response_time_ms > 0
+      end)
+
     case length(valid_times) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         total_time = Enum.sum(Enum.map(valid_times, & &1.response_time_ms))
         Float.round(total_time / count, 2)
@@ -381,12 +393,15 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   end
 
   defp calculate_avg_tokens(usage_records) do
-    valid_tokens = Enum.filter(usage_records, fn record ->
-      record.tokens_used && record.tokens_used > 0
-    end)
-    
+    valid_tokens =
+      Enum.filter(usage_records, fn record ->
+        record.tokens_used && record.tokens_used > 0
+      end)
+
     case length(valid_tokens) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         total_tokens = Enum.sum(Enum.map(valid_tokens, & &1.tokens_used))
         Float.round(total_tokens / count, 2)
@@ -395,7 +410,9 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
 
   defp calculate_usage_frequency(usage_records) do
     case length(usage_records) do
-      0 -> 0.0
+      0 ->
+        0.0
+
       count ->
         days_span = calculate_date_span(usage_records)
         Float.round(count / max(1, days_span), 2)
@@ -413,26 +430,28 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
     # Simple trend calculation based on first half vs second half
     sorted_records = Enum.sort_by(usage_records, & &1.inserted_at)
     midpoint = div(length(sorted_records), 2)
-    
+
     case length(sorted_records) >= 4 do
       true ->
         first_half = Enum.take(sorted_records, midpoint)
         second_half = Enum.drop(sorted_records, midpoint)
-        
+
         first_avg = calculate_avg_response_time(first_half)
         second_avg = calculate_avg_response_time(second_half)
-        
+
         cond do
           second_avg < first_avg * 0.9 -> :improving
           second_avg > first_avg * 1.1 -> :declining
           true -> :stable
         end
+
       false ->
         :insufficient_data
     end
   end
 
   defp get_last_usage_date([]), do: nil
+
   defp get_last_usage_date(usage_records) do
     usage_records
     |> Enum.max_by(& &1.inserted_at)
@@ -442,14 +461,15 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   defp calculate_simple_effectiveness(usage_records) do
     success_rate = calculate_success_rate(usage_records)
     avg_response_time = calculate_avg_response_time(usage_records)
-    
+
     # Simple effectiveness calculation
-    response_score = case avg_response_time do
-      time when time < 1000 -> 1.0
-      time when time < 5000 -> 0.8
-      _ -> 0.6
-    end
-    
+    response_score =
+      case avg_response_time do
+        time when time < 1000 -> 1.0
+        time when time < 5000 -> 0.8
+        _ -> 0.6
+      end
+
     Float.round((success_rate + response_score) / 2, 3)
   end
 
@@ -463,15 +483,16 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
 
   defp calculate_avg_session_length(usage_records) do
     # Group by hour to estimate session lengths
-    hourly_usage = usage_records
-    |> Enum.group_by(fn record ->
-      record.inserted_at
-      |> DateTime.truncate(:hour)
-      |> DateTime.to_iso8601()
-    end)
-    
+    hourly_usage =
+      usage_records
+      |> Enum.group_by(fn record ->
+        record.inserted_at
+        |> DateTime.truncate(:hour)
+        |> DateTime.to_iso8601()
+      end)
+
     session_lengths = Enum.map(hourly_usage, fn {_hour, records} -> length(records) end)
-    
+
     case length(session_lengths) do
       0 -> 0.0
       count -> Enum.sum(session_lengths) / count
@@ -482,9 +503,9 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
     # Calculate productivity based on usage frequency and success rate
     frequency = calculate_usage_frequency(usage_records)
     success_rate = calculate_success_rate(usage_records)
-    
+
     # Weighted score: frequency (40%) + success rate (60%)
-    productivity = (frequency * 0.4) + (success_rate * 0.6)
+    productivity = frequency * 0.4 + success_rate * 0.6
     Float.round(min(1.0, productivity), 3)
   end
 
@@ -539,14 +560,14 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
 
   defp add_metrics_to_stats(metrics, stats) do
     %{
-      stats |
-      usage_count: stats.usage_count + 1,
-      success_count: stats.success_count + (if metrics.success, do: 1, else: 0),
-      total_response_time: stats.total_response_time + (metrics.response_time_ms || 0),
-      total_tokens: stats.total_tokens + (metrics.tokens_used || 0),
-      unique_users: MapSet.put(stats.unique_users, metrics.user_id),
-      unique_prompts: MapSet.put(stats.unique_prompts, metrics.prompt_id),
-      last_updated: DateTime.utc_now()
+      stats
+      | usage_count: stats.usage_count + 1,
+        success_count: stats.success_count + if(metrics.success, do: 1, else: 0),
+        total_response_time: stats.total_response_time + (metrics.response_time_ms || 0),
+        total_tokens: stats.total_tokens + (metrics.tokens_used || 0),
+        unique_users: MapSet.put(stats.unique_users, metrics.user_id),
+        unique_prompts: MapSet.put(stats.unique_prompts, metrics.prompt_id),
+        last_updated: DateTime.utc_now()
     }
   end
 
@@ -557,10 +578,11 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   end
 
   defp calculate_date_span([]), do: 1
+
   defp calculate_date_span(usage_records) do
     first_date = usage_records |> Enum.min_by(& &1.inserted_at) |> Map.get(:inserted_at)
     last_date = usage_records |> Enum.max_by(& &1.inserted_at) |> Map.get(:inserted_at)
-    
+
     max(1, DateTime.diff(last_date, first_date, :day))
   end
 
@@ -573,7 +595,8 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   end
 
   defp schedule_metrics_aggregation do
-    Process.send_after(self(), :aggregate_metrics, @collection_interval_ms * 5)  # Every 5 minutes
+    # Every 5 minutes
+    Process.send_after(self(), :aggregate_metrics, @collection_interval_ms * 5)
   end
 
   defp build_metrics_config(opts) do
@@ -607,7 +630,7 @@ defmodule RubberDuck.Prompts.Services.PromptMetricsCollector do
   defp analyze_session_patterns(_records), do: %{}
   defp find_best_context(_records), do: :llm_request
   defp identify_user_improvement_areas(_records), do: []
-  defp calculate_total_tokens(records), do: Enum.sum(Enum.map(records, & &1.tokens_used || 0))
+  defp calculate_total_tokens(records), do: Enum.sum(Enum.map(records, &(&1.tokens_used || 0)))
   defp calculate_usage_distribution(_records), do: %{}
   defp identify_system_peak_times(_records), do: []
   defp analyze_system_errors(_records), do: %{}

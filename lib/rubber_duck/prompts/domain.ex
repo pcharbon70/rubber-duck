@@ -32,5 +32,4 @@ defmodule RubberDuck.Prompts.Domain do
   authorization do
     authorize :by_default
   end
-
 end
