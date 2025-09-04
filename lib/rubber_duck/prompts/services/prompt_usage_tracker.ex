@@ -17,6 +17,7 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
   require Logger
 
   alias RubberDuck.Prompts.Resources.PromptUsage
+  alias RubberDuck.Prompts.Services.{PromptMetricsCollector, PromptAnalyticsEngine}
 
   @buffer_size 100
   @flush_interval :timer.seconds(10)
@@ -233,6 +234,8 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
 
     case PromptUsage.create(usage_attrs) do
       {:ok, usage_record} ->
+        # Trigger analytics integration
+        trigger_analytics_integration(usage_record, entry)
         {:ok, usage_record}
 
       {:error, reason} ->
@@ -472,6 +475,29 @@ defmodule RubberDuck.Prompts.Services.PromptUsageTracker do
       end
 
     Map.put(filters, :used_at, {:>=, cutoff_date})
+  end
+
+  # Analytics integration functions
+
+  defp trigger_analytics_integration(usage_record, entry) do
+    # Trigger real-time metrics collection (async to avoid performance impact)
+    Task.start(fn ->
+      metrics_event = build_metrics_event(usage_record, entry)
+      PromptMetricsCollector.collect_usage_metrics(metrics_event)
+    end)
+  end
+
+  defp build_metrics_event(usage_record, entry) do
+    %{
+      prompt_id: usage_record.prompt_id,
+      user_id: usage_record.used_by_id,
+      context_type: usage_record.context_type,
+      response_time_ms: entry.metadata[:response_time_ms],
+      tokens_used: entry.metadata[:tokens_used],
+      success: entry.metadata[:success],
+      timestamp: usage_record.inserted_at,
+      usage_metadata: entry.metadata
+    }
   end
 
   # Simplified calculation functions (would be enhanced with more sophisticated analytics)
