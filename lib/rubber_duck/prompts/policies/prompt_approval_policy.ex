@@ -17,7 +17,7 @@ defmodule RubberDuck.Prompts.Policies.PromptApprovalPolicy do
   use Ash.Policy.Check
   require Logger
 
-  alias RubberDuck.Prompts.Security.{PromptValidator, AccessControlManager}
+  alias RubberDuck.Prompts.Security.{AccessControlManager, PromptValidator}
 
   @approval_statuses [:draft, :pending, :approved, :rejected, :expired]
   @approval_stages [:content_review, :security_review, :final_approval]
@@ -292,10 +292,10 @@ defmodule RubberDuck.Prompts.Policies.PromptApprovalPolicy do
       resource_id: get_resource_id(resource),
       prompt_type: get_resource_prompt_type(resource),
       approval_status: get_approval_status(resource),
-      is_owner: is_resource_owner?(actor, resource),
+      is_owner: resource_owner?(actor, resource),
       can_approve: can_actor_approve?(actor, resource),
       risk_level: calculate_risk_level(resource),
-      automated_approval_enabled: is_automated_approval_enabled?(resource),
+      automated_approval_enabled: automated_approval_enabled?(resource),
       security_clearance: get_actor_security_clearance(actor)
     }
   end
@@ -325,15 +325,15 @@ defmodule RubberDuck.Prompts.Policies.PromptApprovalPolicy do
   defp get_approval_status(%{approval_status: status}) when is_atom(status), do: status
   defp get_approval_status(_), do: :draft
 
-  defp is_resource_owner?(%{id: user_id}, %{user_id: resource_user_id}),
+  defp resource_owner?(%{id: user_id}, %{user_id: resource_user_id}),
     do: user_id == resource_user_id
 
-  defp is_resource_owner?(%{id: user_id}, %{project_id: project_id, projects: projects})
+  defp resource_owner?(%{id: user_id}, %{project_id: project_id, projects: projects})
        when not is_nil(project_id) do
     project_id in (projects || [])
   end
 
-  defp is_resource_owner?(_actor, _resource), do: false
+  defp resource_owner?(_actor, _resource), do: false
 
   defp can_actor_approve?(%{role: role}, %{prompt_type: prompt_type}) do
     case {role, prompt_type} do
@@ -357,11 +357,11 @@ defmodule RubberDuck.Prompts.Policies.PromptApprovalPolicy do
 
   defp calculate_risk_level(_resource), do: :medium
 
-  defp is_automated_approval_enabled?(%{access_policy: %{"automated_approval" => enabled}})
+  defp automated_approval_enabled?(%{access_policy: %{"automated_approval" => enabled}})
        when is_boolean(enabled),
        do: enabled
 
-  defp is_automated_approval_enabled?(_resource), do: false
+  defp automated_approval_enabled?(_resource), do: false
 
   defp get_actor_security_clearance(%{role: role}) do
     case role do

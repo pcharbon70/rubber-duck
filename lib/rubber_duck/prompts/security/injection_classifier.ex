@@ -8,7 +8,7 @@ defmodule RubberDuck.Prompts.Security.InjectionClassifier do
 
   Features:
   - Semantic analysis using embedding-based classification with confidence scoring
-  - Feature extraction for injection pattern detection and threat analysis  
+  - Feature extraction for injection pattern detection and threat analysis
   - Performance optimization with sub-100ms classification targets
   - Model versioning and continuous learning with feedback integration
   - Integration with existing security validation infrastructure
@@ -189,7 +189,7 @@ defmodule RubberDuck.Prompts.Security.InjectionClassifier do
       semantic_embeddings: generate_semantic_embeddings(content),
       context_similarity: calculate_context_similarity(content, context),
 
-      # Statistical features  
+      # Statistical features
       entropy: calculate_content_entropy(content),
       repetition_patterns: detect_repetition_patterns(content),
       anomaly_score: calculate_anomaly_score(content)
@@ -240,7 +240,7 @@ defmodule RubberDuck.Prompts.Security.InjectionClassifier do
       prob > 0.8 and conf > @confidence_threshold -> :dangerous
       # High probability but low confidence = suspicious
       prob > 0.6 -> :suspicious
-      # Medium probability = questionable  
+      # Medium probability = questionable
       prob > 0.4 -> :questionable
       # Low probability = safe
       true -> :safe
@@ -485,7 +485,7 @@ defmodule RubberDuck.Prompts.Security.InjectionClassifier do
       # Too short for reliable classification
       length when length < 10 -> 0.3
       # Very long content
-      length when length > 10000 -> 0.7
+      length when length > 10_000 -> 0.7
       # Good length for classification
       _ -> 0.9
     end

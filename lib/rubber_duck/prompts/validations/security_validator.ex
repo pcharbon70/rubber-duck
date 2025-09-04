@@ -10,7 +10,7 @@ defmodule RubberDuck.Prompts.Validations.SecurityValidator do
   use Ash.Resource.Validation
   require Logger
 
-  alias RubberDuck.Prompts.Security.{PromptValidator, ContentSanitizer}
+  alias RubberDuck.Prompts.Security.{ContentSanitizer, PromptValidator}
 
   @impl Ash.Resource.Validation
   def validate(changeset, _opts, _context) do
@@ -121,7 +121,7 @@ defmodule RubberDuck.Prompts.Validations.SecurityValidator do
         recommendations
       end
 
-    # Add sanitization recommendations  
+    # Add sanitization recommendations
     recommendations =
       if sanitization_analysis.sanitization_needed do
         [

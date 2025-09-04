@@ -7,7 +7,7 @@ defmodule RubberDuck.Prompts.Policies.PromptAccessPolicy do
 
   Features:
   - System prompts: Admin-only access with full privileges
-  - Project prompts: Project owner/admin delegation with approval workflows  
+  - Project prompts: Project owner/admin delegation with approval workflows
   - User prompts: Individual ownership with sharing controls
   - Security context validation integrated with access decisions
   - Performance-optimized policy evaluation with ETS caching
@@ -147,7 +147,7 @@ defmodule RubberDuck.Prompts.Policies.PromptAccessPolicy do
     end
   end
 
-  # Project prompt authorization (middle privilege tier)  
+  # Project prompt authorization (middle privilege tier)
   defp authorize_project_prompt_access(%{user_role: role, action: action} = context) do
     case {role, action} do
       # Admins have full access to all project prompts
