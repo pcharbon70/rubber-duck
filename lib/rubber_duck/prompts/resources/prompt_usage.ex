@@ -61,38 +61,46 @@ defmodule RubberDuck.Prompts.Resources.PromptUsage do
     read :analytics_summary do
       argument :time_window_days, :integer, default: 30
       argument :user_id, :uuid
-      
-      prepare build(expr(
-        fragment("? >= NOW() - INTERVAL '? days'", inserted_at, ^arg(:time_window_days))
-      ))
-      
-      filter expr(if not is_nil(^arg(:user_id)), 
-        do: used_by_id == ^arg(:user_id), 
-        else: true
-      )
+
+      prepare build(
+                expr(
+                  fragment("? >= NOW() - INTERVAL '? days'", inserted_at, ^arg(:time_window_days))
+                )
+              )
+
+      filter expr(
+               if is_nil(^arg(:user_id)),
+                 do: true,
+                 else: used_by_id == ^arg(:user_id)
+             )
     end
 
     read :effectiveness_metrics do
       argument :prompt_ids, {:array, :uuid}
       argument :time_window_days, :integer, default: 30
-      
-      prepare build(expr(
-        fragment("? >= NOW() - INTERVAL '? days'", inserted_at, ^arg(:time_window_days))
-      ))
-      
-      filter expr(if not is_nil(^arg(:prompt_ids)), 
-        do: prompt_id in ^arg(:prompt_ids), 
-        else: true
-      )
+
+      prepare build(
+                expr(
+                  fragment("? >= NOW() - INTERVAL '? days'", inserted_at, ^arg(:time_window_days))
+                )
+              )
+
+      filter expr(
+               if is_nil(^arg(:prompt_ids)),
+                 do: true,
+                 else: prompt_id in ^arg(:prompt_ids)
+             )
     end
 
     read :performance_trends do
       argument :time_window_days, :integer, default: 7
       argument :group_by_interval, :string, default: "day"
-      
-      prepare build(expr(
-        fragment("? >= NOW() - INTERVAL '? days'", inserted_at, ^arg(:time_window_days))
-      ))
+
+      prepare build(
+                expr(
+                  fragment("? >= NOW() - INTERVAL '? days'", inserted_at, ^arg(:time_window_days))
+                )
+              )
     end
   end
 
