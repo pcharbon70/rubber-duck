@@ -12,6 +12,14 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
+  alias RubberDuck.Prompts.Security.{AccessControlManager, PromptValidator}
+
+  alias RubberDuck.Prompts.Policies.{
+    PromptAccessPolicy,
+    PromptSharingPolicy,
+    PromptApprovalPolicy
+  }
+
   postgres do
     table "prompts"
     repo RubberDuck.Repo
@@ -77,19 +85,58 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
       argument :user_id, :uuid, allow_nil?: false
       filter expr(user_id == ^arg(:user_id))
     end
+
+    update :share_prompt do
+      argument :shared_with_user_id, :uuid, allow_nil?: false
+      argument :permissions, {:array, :string}, default: ["read"]
+      argument :expires_at, :utc_datetime
+
+      change {RubberDuck.Prompts.Changes.SharePromptChange, []}
+    end
+
+    update :approve_prompt do
+      argument :approval_comments, :string
+
+      change set_attribute(:approval_status, "approved")
+      change set_attribute(:approved_at, &DateTime.utc_now/0)
+      change {RubberDuck.Prompts.Changes.ApprovalChange, []}
+    end
+
+    update :reject_prompt do
+      argument :rejection_reason, :string, allow_nil?: false
+
+      change set_attribute(:approval_status, "rejected")
+      change {RubberDuck.Prompts.Changes.RejectionChange, []}
+    end
   end
 
   policies do
+    # System-level bypass for internal operations
     bypass actor_attribute_equals(:role, :system) do
       authorize_if always()
     end
 
+    # Access control policy for read operations
     policy action_type(:read) do
-      authorize_if always()
+      authorize_if PromptAccessPolicy
     end
 
-    policy action_type([:create, :update, :destroy]) do
-      authorize_if actor_attribute_equals(:role, :admin)
+    # Creation policies with approval workflow integration
+    policy action_type(:create) do
+      authorize_if PromptAccessPolicy
+      authorize_if PromptApprovalPolicy
+    end
+
+    # Update policies with security validation
+    policy action_type(:update) do
+      authorize_if PromptAccessPolicy
+      authorize_if PromptApprovalPolicy
+    end
+
+    # Destroy policies with enhanced authorization
+    policy action_type(:destroy) do
+      authorize_if PromptAccessPolicy
+      authorize_if PromptApprovalPolicy
     end
   end
 
@@ -98,6 +145,14 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
     validate match(:name, ~r/^[a-zA-Z0-9_.-]+$/)
     validate string_length(:content, min: 10, max: 50_000)
     validate string_length(:name, min: 2, max: 100)
+
+    # Security validations
+    validate one_of(:approval_status, ["draft", "pending", "approved", "rejected", "expired"])
+    validate one_of(:security_level, ["minimal", "standard", "enhanced", "maximum"])
+    validate numericality(:risk_score, greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0)
+
+    # Custom security validation  
+    validate RubberDuck.Prompts.Validations.SecurityValidator
   end
 
   attributes do
@@ -120,6 +175,21 @@ defmodule RubberDuck.Prompts.Resources.Prompt do
     attribute :tags, {:array, :string}, default: []
     attribute :is_template, :boolean, default: false
     attribute :effectiveness_score, :decimal
+
+    # Security and access control attributes
+    attribute :approval_status, :string, default: "approved"
+    attribute :approval_required, :boolean, default: false
+    attribute :approved_by, :uuid
+    attribute :approved_at, :utc_datetime
+    attribute :approval_comments, :string
+
+    attribute :security_level, :string, default: "standard"
+    attribute :risk_score, :decimal, default: 0.0
+    attribute :last_security_check, :utc_datetime
+
+    attribute :access_policy, :map, default: %{}
+    attribute :security_validation_results, :map, default: %{}
+    attribute :content_security_hash, :string
 
     timestamps()
   end
