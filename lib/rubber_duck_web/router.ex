@@ -50,6 +50,13 @@ defmodule RubberDuckWeb.Router do
       live("/preferences/analytics", Preferences.AnalyticsLive, :index)
       live("/preferences/edit/:key", Preferences.CategoryEditorLive, :edit)
       live("/preferences/approvals", Preferences.ApprovalWorkflowLive, :index)
+      
+      # Prompt Management Routes
+      live("/prompts", Prompts.PromptLibraryLive, :index)
+      live("/prompts/new", Prompts.PromptEditorLive, :new)
+      live("/prompts/:id", Prompts.PromptEditorLive, :show)
+      live("/prompts/:id/edit", Prompts.PromptEditorLive, :edit)
+      live("/prompts/analytics", Prompts.PromptAnalyticsLive, :index)
     end
   end
 
